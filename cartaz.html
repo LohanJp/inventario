@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Gerador de Cartazes A5 - Único Arquivo</title>
+  <style>
+    /* Estilos integrados do style.css */
+    @font-face {
+      font-family: "ImpactCustom";
+      src: local("Impact"), local("ImpactMT"), local("ImpactRegular");
+      font-weight: 700;
+      font-style: normal;
+      font-display: swap;
+    }
+
+    :root {
+      --a5-w: 558px;
+      --a5-h: 794px;
+      --bg: #f2f2f2;
+      --card-bg: #ffffff;
+      --accent: #222;
+      --muted: #666;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { height: 100%; margin: 0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial; }
+    body { background: var(--bg); padding: 20px; color: var(--accent); }
+
+    .container { max-width: 1000px; margin: 0 auto; display: flex; flex-direction: column; gap: 18px; }
+    .header { background: var(--card-bg); padding: 16px; border-radius: 10px; box-shadow: 0 6px 18px rgba(0,0,0,0.06); }
+    .header h1 { margin: 0; font-family: "ImpactCustom", Impact, "Arial Black", sans-serif; font-size: 20px; }
+    .header .subtitle { margin: 6px 0 0; color: var(--muted); font-size: 13px; }
+
+    .input-area { background: var(--card-bg); padding: 16px; border-radius: 10px; box-shadow: 0 6px 18px rgba(0,0,0,0.06); }
+    .label { font-weight: 600; font-size: 13px; margin-bottom: 6px; display: block; }
+    textarea#input, textarea#input2 { width: 100%; min-height: 180px; padding: 10px; border-radius: 8px; border: 1px solid #ddd; font-family: monospace; font-size: 13px; }
+    
+    .actions { display: flex; gap: 8px; margin-top: 10px; }
+    .btn { background: #0066cc; color: #fff; border: none; padding: 8px 14px; border-radius: 8px; cursor: pointer; font-weight: 600; }
+    .btn.secondary { background: #888; }
+
+    .preview-area { display: flex; flex-direction: column; gap: 18px; align-items: center; margin-bottom: 30px; }
+
+    .cartaz { width: var(--a5-w); height: var(--a5-h); background: #fff; position: relative; box-shadow: 0 6px 18px rgba(0,0,0,0.08); page-break-after: always; overflow: hidden; border: 1px solid #ddd; }
+    .area-util { position: absolute; bottom: 0; width: 100%; height: calc(var(--a5-h) * 0.48); display: flex; flex-direction: column; align-items: center; justify-content: flex-start; }
+
+    .area-util .trovao { position: absolute; width: 70px; object-fit: contain; top: 20px; }
+    .area-util .trovao.left { left: 18px; }
+    .area-util .trovao.right { right: 18px; transform: scaleX(-1); }
+
+    .name-wrap { margin: 0 60px; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+    .name-wrap .name { font-family: "ImpactCustom", Impact, "Arial Black", sans-serif; font-weight: 700; font-size: 34px; text-align: center; line-height: 1; word-break: break-word; max-width: calc(var(--a5-w) - 160px); }
+
+    .bar-top, .bar-bottom { display: block; width: calc(100% - 120px); height: 4px; background: #000; border-radius: 2px; margin: 8px auto; }
+
+    .prices { width: 75%; margin: 12px auto; display: flex; flex-direction: column; gap: 10px; }
+    .box-small, .box-big { border: 2px solid #cfcfcf; border-radius: 8px; padding: 10px; display: flex; gap: 10px; }
+    .box-small .left { width: 25%; font-size: 14px; font-weight: 700; }
+    .box-small .value { width: 55%; font-family: "ImpactCustom"; text-align: center; font-size: 58px; line-height: 1; }
+    .box-big .left { width: 25%; font-size: 18px; font-weight: 700; }
+    .box-big .value { width: 55%; font-family: "ImpactCustom"; text-align: center; font-size: 78px; line-height: 1; }
+
+    .prod-validade { position: absolute; bottom: 10px; left: 10px; right: 10px; text-align: center; font-size: 12px; color: var(--muted); border-top: 1px dashed #e2e2e2; padding-top: 8px; }
+
+    @page { size: A5; margin: 0; }
+    @media print {
+      body { background: white; }
+      .header, .input-area, .btn, .note, .footer { display: none !important; }
+      .preview-area { display: block !important; }
+      .cartaz { box-shadow: none; border: none; page-break-after: always; overflow: visible !important; }
+      .bar-top, .bar-bottom { display: block !important; width: 75% !important; height: 4px !important; background: #000 !important; visibility: visible !important; }
+    }
+  </style>
+</head>
+
+<body>
+  <main class="container">
+    <header class="header">
+      <h1>Gerador de Cartazes A5</h1>
+      <p class="subtitle">Cole a lista de produtos abaixo e clique em "Gerar cartazes".</p>
+    </header>
+
+    <section class="input-area">
+      <label class="label">Lista principal (codigo [TAB] ean [TAB] ... [TAB] NAO):</label>
+      <textarea id="input" placeholder="Cole a lista aqui"></textarea>
+
+      <label class="label" style="margin-top:15px;">Lista secundária (EAN - Preço Normal):</label>
+      <textarea id="input2" placeholder="Cole aqui a lista com EAN e PREÇO NORMAL"></textarea>
+
+      <div class="actions">
+        <button id="generate" class="btn">Gerar cartazes</button>
+        <button id="clear" class="btn secondary">Limpar cartazes</button>
+      </div>
+    </section>
+
+    <section id="preview-area" class="preview-area"></section>
+
+    <footer class="footer">
+      <small>Imprima com CTRL+P → tamanho A5 → margens: nenhuma.</small>
+    </footer>
+  </main>
+
+  <script>
+    /* Imagem em Base64 para não precisar de arquivo externo */
+    const TROVAO_BASE64 = "data:image/webp;base64,UklGRmYAAABXRUJQVlA4IFoAAADQAQCdASpAAEAAPm0ok0WkIqGWBgA4EogCdbYAA/78E3X/p8f//+6P/Tf7X/df9d/9P9v//H98/6AH89v/W9gD//97v9APQA/6X//9QD/9N6AH7//9n0AP//7un6Af//7Z/6AQA="; 
+    // Nota: O Base64 acima é um placeholder. O script usará a variável abaixo com o seu arquivo.
+    const TROVAO_IMG = "https://raw.githubusercontent.com/otavio-pinheiro/cartaz-generator/main/trovao.webp"; // Link temporário ou você pode manter o nome local se subir no mesmo repo.
+
+    /* Lógica do script.js */
+    function lerESepararItens(textoBruto) {
+      if (!textoBruto || textoBruto.trim() === "") return [];
+      const linhas = textoBruto.split(/\n+/).map(l => l.trim()).filter(l => l !== "");
+      const produtos = [];
+      linhas.forEach(linha => {
+        let campos = linha.split(/\t+/);
+        if (campos.length === 1) campos = linha.split(/\s{2,}/);
+        if (campos.length < 9) return;
+        produtos.push({
+          codigo: campos[0], ean: campos[1], cod2: campos[2], nome: campos[3],
+          preco: campos[4], dataInicial: campos[5], validade: campos[6],
+          quantidade: campos[7], ativo: campos[8]
+        });
+      });
+      return produtos;
+    }
+
+    function lerListaSecundaria(texto) {
+      if (!texto || texto.trim() === "") return [];
+      const linhas = texto.split(/\n+/).map(l => l.trim()).filter(l => l !== "");
+      const lista = [];
+      linhas.forEach(linha => {
+        let campos = linha.split(/\t| {2,}/);
+        if (campos.length < 4) campos = linha.split(/\s+/);
+        const ean = campos.find(c => /^\d{5,}$/.test(c));
+        const precos = linha.match(/\d+,\d{2}/g);
+        if (ean && precos) {
+          lista.push({ ean, normal: precos[0], club: precos[1] || "" });
+        }
+      });
+      return lista;
+    }
+
+    function ajustarNomeParaCaixa(nameEl, maxWidth) {
+      let font = 34;
+      nameEl.style.fontSize = font + "px";
+      while (font > 10 && nameEl.scrollWidth > maxWidth) {
+        font -= 1;
+        nameEl.style.fontSize = font + "px";
+      }
+    }
+
+    function ajustarPrecoGrande(precoEl, maxWidth) {
+      let font = 78;
+      precoEl.style.fontSize = font + "px";
+      while (font > 28 && precoEl.scrollWidth > maxWidth) {
+        font -= 2;
+        precoEl.style.fontSize = font + "px";
+      }
+    }
+
+    function criarCartazDOM(produto, precoObj) {
+      const cartaz = document.createElement("div");
+      cartaz.className = "cartaz";
+      const area = document.createElement("div");
+      area.className = "area-util";
+      cartaz.appendChild(area);
+
+      const troL = document.createElement("img");
+      troL.className = "trovao left";
+      troL.src = "trovao.webp"; // Certifique-se que o arquivo esteja na mesma pasta ou use URL absoluta
+      area.appendChild(troL);
+
+      const troR = document.createElement("img");
+      troR.className = "trovao right";
+      troR.src = "trovao.webp";
+      area.appendChild(troR);
+
+      const nameWrap = document.createElement("div");
+      nameWrap.className = "name-wrap";
+      nameWrap.innerHTML = `<div class="bar-top"></div><div class="name">${produto.nome}</div><div class="bar-bottom"></div>`;
+      area.appendChild(nameWrap);
+
+      const prices = document.createElement("div");
+      prices.className = "prices";
+      prices.innerHTML = `
+        <div class="box-small"><div class="left">DE<br>R$:</div><div class="value">${precoObj.de}</div></div>
+        <div class="box-big"><div class="left">POR<br>R$:</div><div class="value">${precoObj.por}</div></div>
+      `;
+      area.appendChild(prices);
+
+      const valid = document.createElement("div");
+      valid.className = "prod-validade";
+      valid.textContent = "PRODUTO PRÓXIMO DA VALIDADE: " + (produto.validade || "");
+      area.appendChild(valid);
+
+      document.body.appendChild(cartaz); // Temporário para medir
+      const maxW = 558 - 160;
+      ajustarNomeParaCaixa(nameWrap.querySelector(".name"), maxW);
+      ajustarPrecoGrande(prices.querySelector(".box-big .value"), maxW);
+      
+      return cartaz;
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+      const btn = document.getElementById("generate");
+      const preview = document.getElementById("preview-area");
+
+      btn.addEventListener("click", () => {
+        preview.innerHTML = "";
+        const itens = lerESepararItens(document.getElementById("input").value);
+        const lista2 = lerListaSecundaria(document.getElementById("input2").value);
+
+        if (!itens.length) return alert("Nenhum produto detectado.");
+
+        itens.filter(p => p.ativo.trim().toUpperCase() === "NÃO").forEach(prod => {
+          const match = lista2.find(x => x.ean === prod.ean);
+          const precoObj = { de: match ? match.normal : prod.preco, por: prod.preco };
+          preview.appendChild(criarCartazDOM(prod, precoObj));
+        });
+        alert("Cartazes gerados!");
+      });
+
+      document.getElementById("clear").addEventListener("click", () => preview.innerHTML = "");
+    });
+  </script>
+</body>
+</html>
