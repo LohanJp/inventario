@@ -2,796 +2,330 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Inventário Scanner</title>
-
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ferramentas — Painel de Controle</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
-
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
-
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --gold:       #f0b429;
-      --gold-dim:   rgba(240,180,41,0.15);
-      --bg:         #0f0f0f;
-      --surface:    #1a1a1a;
-      --border:     #222;
-      --border-lit: #333;
-      --text:       #e8e3d8;
-      --text-muted: #888;
-      --text-dim:   #444;
-      --red:        #ff6b6b;
-      --red-dim:    #3a2020;
+      --bg:        #080c14;
+      --surface:   #0e1420;
+      --border:    rgba(255,255,255,0.06);
+      --border-hi: rgba(255,255,255,0.14);
+      --text:      #e8eaf0;
+      --muted:     #6b7280;
+      --accent-a:  #38bdf8;   /* sky-400 */
+      --accent-b:  #818cf8;   /* indigo-400 */
+      --glow-a:    rgba(56,189,248,0.18);
+      --glow-b:    rgba(129,140,248,0.18);
+      --card-bg:   rgba(255,255,255,0.03);
     }
 
-    html, body {
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
       background: var(--bg);
       color: var(--text);
-      font-family: 'IBM Plex Mono', monospace;
-      min-height: 100vh;
-      -webkit-font-smoothing: antialiased;
-    }
-
-    /* ── Header ── */
-    #header {
+      min-height: 100dvh;
       display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 18px 20px 16px;
-      border-bottom: 1px solid var(--border);
-    }
-    #header .label {
-      font-size: 0.62rem;
-      color: var(--gold);
-      letter-spacing: 0.16em;
-      text-transform: uppercase;
-      margin-bottom: 4px;
-    }
-    #header h1 { font-size: 1.35rem; font-weight: 700; letter-spacing: 0.02em; }
-    #counter-label {
-      font-size: 0.6rem;
-      color: var(--text-dim);
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      text-align: right;
-    }
-    #counter {
-      font-size: 2rem;
-      font-weight: 700;
-      color: var(--text-dim);
-      line-height: 1;
-      text-align: right;
-      transition: color 0.3s;
-    }
-    #counter.active { color: var(--gold); }
-
-    .section-label {
-      font-size: 0.6rem;
-      color: var(--text-dim);
-      letter-spacing: 0.13em;
-      text-transform: uppercase;
-      margin-bottom: 8px;
-    }
-
-    /* ── Camera ── */
-    #camera-section { padding: 16px 20px 0; }
-
-    #camera-shell {
-      position: relative;
-      background: #000;
-      border-radius: 10px;
-      overflow: hidden;
-      border: 2px solid var(--border);
-      transition: border-color 0.3s;
-    }
-    #camera-shell.active { border-color: var(--gold); }
-
-    #qr-reader { width: 100%; }
-    #qr-reader__dashboard,
-    #qr-reader__status_span,
-    #qr-reader__camera_permission_button,
-    #qr-reader__filescan_input { display: none !important; }
-    #qr-reader video { border-radius: 8px; display: block; }
-
-    #cam-badge-top {
-      display: none;
-      position: absolute;
-      top: 8px; left: 0; right: 0;
-      justify-content: center;
-      pointer-events: none;
-      z-index: 10;
-    }
-    #cam-badge-top span {
-      background: rgba(0,0,0,0.65);
-      color: var(--gold);
-      font-size: 0.58rem;
-      letter-spacing: 0.14em;
-      text-transform: uppercase;
-      padding: 4px 12px;
-      border-radius: 20px;
-    }
-    #cam-badge-bottom {
-      display: none;
-      position: absolute;
-      bottom: 8px; left: 0; right: 0;
-      justify-content: center;
-      pointer-events: none;
-      z-index: 10;
-    }
-    #cam-badge-bottom span {
-      background: rgba(240,180,41,0.18);
-      color: var(--gold);
-      border: 1px solid rgba(240,180,41,0.4);
-      font-size: 0.7rem;
-      letter-spacing: 0.05em;
-      padding: 4px 14px;
-      border-radius: 20px;
-      max-width: 90%;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-    #cam-spinner {
-      display: none;
-      position: absolute;
-      inset: 0;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      background: #0a0a0a;
-      gap: 12px;
-      z-index: 20;
+      padding: 2rem 1.25rem 3rem;
+      overflow-x: hidden;
     }
-    .spinner-ring {
-      width: 28px; height: 28px;
-      border: 3px solid #222;
-      border-top-color: var(--gold);
+
+    /* ── Ambient background blobs ── */
+    body::before, body::after {
+      content: '';
+      position: fixed;
       border-radius: 50%;
-      animation: spin 0.8s linear infinite;
+      filter: blur(120px);
+      pointer-events: none;
+      z-index: 0;
     }
-    #cam-spinner span {
-      color: var(--text-dim);
-      font-size: 0.7rem;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
+    body::before {
+      width: 520px; height: 520px;
+      top: -120px; left: -160px;
+      background: radial-gradient(circle, rgba(56,189,248,.12) 0%, transparent 70%);
     }
-    #cam-error {
-      display: none;
-      margin: 8px 0 0;
-      padding: 12px 14px;
-      background: #1e0f0f;
-      border: 1px solid #3a1515;
-      border-radius: 6px;
-      color: var(--red);
-      font-size: 0.78rem;
-      line-height: 1.5;
+    body::after {
+      width: 480px; height: 480px;
+      bottom: -100px; right: -120px;
+      background: radial-gradient(circle, rgba(129,140,248,.12) 0%, transparent 70%);
     }
-    #btn-camera {
-      margin-top: 10px;
-      width: 100%;
-      background: var(--surface);
-      color: var(--gold);
-      border: 2px solid #3a2e00;
-      font-family: 'IBM Plex Mono', monospace;
-      font-weight: 600;
-      font-size: 0.88rem;
-      letter-spacing: 0.08em;
-      padding: 13px 20px;
-      border-radius: 6px;
-      cursor: pointer;
-      text-transform: uppercase;
-      transition: border-color 0.2s, color 0.2s;
-    }
-    #btn-camera.stop { color: var(--red); border-color: var(--red-dim); }
-    #btn-camera:disabled { opacity: 0.4; cursor: not-allowed; }
 
-    /* ── Divider ── */
-    #divider {
-      margin: 16px 20px;
-      border-top: 1px dashed var(--border);
+    /* ── Noise grain overlay ── */
+    body > .grain {
+      position: fixed; inset: 0;
+      pointer-events: none; z-index: 1;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+      opacity: 0.028;
+    }
+
+    /* ── Wrapper ── */
+    .wrapper {
+      position: relative; z-index: 2;
+      width: 100%; max-width: 860px;
+      display: flex; flex-direction: column; align-items: center; gap: 3.5rem;
+    }
+
+    /* ── Header ── */
+    header { text-align: center; }
+
+    .eyebrow {
+      display: inline-flex; align-items: center; gap: .5rem;
+      font-size: .72rem; font-weight: 500; letter-spacing: .14em;
+      text-transform: uppercase; color: var(--muted);
+      padding: .35rem .9rem;
+      border: 1px solid var(--border);
+      border-radius: 100px;
+      margin-bottom: 1.25rem;
+      animation: fadeUp .6s ease both;
+    }
+    .eyebrow .dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--accent-a);
+      box-shadow: 0 0 8px var(--accent-a);
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    h1 {
+      font-family: 'Syne', sans-serif;
+      font-size: clamp(2rem, 5vw, 3.2rem);
+      font-weight: 800;
+      line-height: 1.1;
+      letter-spacing: -.02em;
+      background: linear-gradient(135deg, #e8eaf0 30%, #818cf8 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      animation: fadeUp .7s .1s ease both;
+    }
+
+    .subtitle {
+      margin-top: .75rem;
+      font-size: 1rem; font-weight: 300;
+      color: var(--muted); max-width: 460px;
+      animation: fadeUp .7s .2s ease both;
+    }
+
+    /* ── Cards grid ── */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 1.5rem;
+      width: 100%;
+      animation: fadeUp .7s .3s ease both;
+    }
+
+    /* ── Card ── */
+    .card {
       position: relative;
-    }
-    #divider span {
-      position: absolute;
-      top: 50%; left: 50%;
-      transform: translate(-50%,-50%);
-      background: var(--bg);
-      padding: 0 10px;
-      font-size: 0.58rem;
-      color: var(--text-dim);
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-    }
-
-    /* ── Inputs ── */
-    #input-section { padding: 0 20px 14px; }
-    .input-row {
-      display: grid;
-      grid-template-columns: 1fr 110px;
-      gap: 10px;
-      margin-bottom: 10px;
-    }
-    .field-label {
-      font-size: 0.6rem;
-      color: var(--text-dim);
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      margin-bottom: 5px;
-    }
-    .scanner-input {
-      background: var(--surface);
-      border: 2px solid var(--border-lit);
-      color: var(--text);
-      font-family: 'IBM Plex Mono', monospace;
-      font-size: 1.05rem;
-      padding: 13px 14px;
-      border-radius: 6px;
-      outline: none;
-      width: 100%;
-      transition: border-color 0.15s;
-      letter-spacing: 0.05em;
-      -webkit-appearance: none;
-    }
-    .scanner-input:focus { border-color: var(--gold); }
-    .scanner-input::placeholder { color: #444; }
-    #qty-input { text-align: right; }
-
-    /* ── Buttons ── */
-    .btn-primary {
-      background: var(--gold);
-      color: #0f0f0f;
-      font-family: 'IBM Plex Mono', monospace;
-      font-weight: 700;
-      font-size: 1rem;
-      padding: 17px 24px;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      width: 100%;
-      min-height: 54px;
-      transition: background 0.15s, transform 0.1s;
-    }
-    .btn-primary:hover { background: #ffc53d; }
-    .btn-primary:active { transform: scale(0.97); }
-
-    #action-row {
-      padding: 0 20px 14px;
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-    }
-    .btn-secondary {
-      background: transparent;
-      color: var(--text);
-      font-family: 'IBM Plex Mono', monospace;
-      font-weight: 600;
-      font-size: 0.88rem;
-      padding: 14px 16px;
-      border: 2px solid var(--border-lit);
-      border-radius: 6px;
-      cursor: pointer;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-      min-height: 54px;
-      transition: border-color 0.15s;
-    }
-    .btn-secondary:hover { border-color: var(--text); }
-    .btn-secondary:disabled { opacity: 0.3; cursor: not-allowed; }
-
-    .btn-danger {
-      background: transparent;
-      color: var(--red);
-      font-family: 'IBM Plex Mono', monospace;
-      font-weight: 600;
-      font-size: 0.88rem;
-      padding: 14px 16px;
-      border: 2px solid var(--red-dim);
-      border-radius: 6px;
-      cursor: pointer;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-      min-height: 54px;
-      transition: border-color 0.15s;
-    }
-    .btn-danger:hover { border-color: var(--red); }
-    .btn-danger:disabled { opacity: 0.3; cursor: not-allowed; }
-
-    /* ── Table ── */
-    #list-section { padding: 0 20px 32px; }
-    #list-box { border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
-
-    #list-header {
-      display: grid;
-      grid-template-columns: 1fr 90px 36px;
-      padding: 9px 14px;
-      background: #141414;
-      border-bottom: 1px solid var(--border);
-    }
-    #list-header span {
-      font-size: 0.6rem;
-      color: var(--text-dim);
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-    }
-    #list-header span:nth-child(2) { text-align: right; }
-
-    #list-body { max-height: 340px; overflow-y: auto; }
-
-    #list-empty {
-      padding: 36px 14px;
-      text-align: center;
-      color: #2a2a2a;
-      font-size: 0.8rem;
-      letter-spacing: 0.05em;
-    }
-
-    .list-row {
-      display: grid;
-      grid-template-columns: 1fr 90px 36px;
-      padding: 10px 14px;
-      border-bottom: 1px solid #181818;
-      align-items: center;
-      transition: background 0.15s;
-    }
-    .list-row:nth-child(even) { background: rgba(255,255,255,0.025); }
-    .list-row:hover { background: rgba(240,180,41,0.06); }
-
-    .row-code {
-      font-size: 0.86rem;
-      letter-spacing: 0.04em;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-      padding-right: 8px;
-      color: var(--text-muted);
-    }
-    .list-row.new .row-code { color: var(--gold); }
-
-    .row-qty {
-      font-size: 0.88rem;
-      text-align: right;
-      color: var(--text);
-      padding-right: 6px;
-    }
-
-    /* ── Delete button per row ── */
-    .btn-del {
-      background: none;
-      border: none;
-      cursor: pointer;
-      color: #3a2020;
-      font-size: 0.95rem;
-      line-height: 1;
-      padding: 4px;
-      border-radius: 4px;
-      transition: color 0.15s, background 0.15s;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      width: 28px;
-      height: 28px;
-      font-family: 'IBM Plex Mono', monospace;
-    }
-    .btn-del:hover { color: var(--red); background: rgba(255,107,107,0.12); }
-
-    /* ── Badge ── */
-    .badge {
-      display: inline-block;
-      background: var(--gold);
-      color: #0f0f0f;
-      font-size: 0.58rem;
-      font-weight: 700;
-      padding: 2px 6px;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
       border-radius: 20px;
-      letter-spacing: 0.04em;
-      margin-left: 6px;
-      vertical-align: middle;
+      padding: 2.25rem 2rem 2rem;
+      text-decoration: none;
+      color: inherit;
+      cursor: pointer;
+      overflow: hidden;
+      transition:
+        transform .35s cubic-bezier(.22,1,.36,1),
+        border-color .3s,
+        box-shadow .35s;
+      display: flex; flex-direction: column; gap: 1.25rem;
     }
+
+    /* Shine layer */
+    .card::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: linear-gradient(135deg, rgba(255,255,255,.045) 0%, transparent 60%);
+      border-radius: inherit;
+      pointer-events: none;
+      transition: opacity .3s;
+    }
+
+    /* Glow spotlight on hover */
+    .card::after {
+      content: '';
+      position: absolute;
+      width: 280px; height: 280px;
+      border-radius: 50%;
+      top: -80px; left: -80px;
+      transition: opacity .4s, transform .4s cubic-bezier(.22,1,.36,1);
+      pointer-events: none;
+      opacity: 0;
+    }
+    .card.card-a::after { background: radial-gradient(circle, var(--glow-a) 0%, transparent 70%); }
+    .card.card-b::after { background: radial-gradient(circle, var(--glow-b) 0%, transparent 70%); }
+
+    .card:hover {
+      transform: translateY(-8px) scale(1.01);
+      border-color: var(--border-hi);
+    }
+    .card.card-a:hover { box-shadow: 0 24px 60px rgba(56,189,248,.12), 0 4px 20px rgba(0,0,0,.5); }
+    .card.card-b:hover { box-shadow: 0 24px 60px rgba(129,140,248,.12), 0 4px 20px rgba(0,0,0,.5); }
+    .card:hover::after { opacity: 1; transform: translate(60px, 60px); }
+
+    /* Icon wrapper */
+    .icon-wrap {
+      width: 52px; height: 52px;
+      border-radius: 14px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+      border: 1px solid var(--border);
+      transition: transform .3s cubic-bezier(.22,1,.36,1);
+    }
+    .card-a .icon-wrap { background: rgba(56,189,248,.1); }
+    .card-b .icon-wrap { background: rgba(129,140,248,.1); }
+    .card:hover .icon-wrap { transform: scale(1.1) rotate(-4deg); }
+
+    .icon-wrap svg {
+      width: 26px; height: 26px; stroke-width: 1.75;
+      flex-shrink: 0;
+    }
+    .card-a .icon-wrap svg { stroke: var(--accent-a); }
+    .card-b .icon-wrap svg { stroke: var(--accent-b); }
+
+    .card-body { flex: 1; }
+
+    .card-title {
+      font-family: 'Syne', sans-serif;
+      font-size: 1.25rem; font-weight: 700;
+      letter-spacing: -.01em;
+      margin-bottom: .4rem;
+    }
+
+    .card-desc {
+      font-size: .88rem; font-weight: 300;
+      color: var(--muted); line-height: 1.55;
+    }
+
+    .card-cta {
+      display: inline-flex; align-items: center; gap: .4rem;
+      font-size: .8rem; font-weight: 500; letter-spacing: .04em;
+      text-transform: uppercase;
+      margin-top: .5rem;
+      transition: gap .25s ease;
+    }
+    .card-a .card-cta { color: var(--accent-a); }
+    .card-b .card-cta { color: var(--accent-b); }
+    .card:hover .card-cta { gap: .7rem; }
+
+    /* ── Footer ── */
+    footer {
+      position: relative; z-index: 2;
+      font-size: .72rem; color: var(--muted);
+      text-align: center;
+      animation: fadeUp .7s .5s ease both;
+    }
+    footer a { color: inherit; text-decoration: underline; opacity: .7; }
+    footer a:hover { opacity: 1; }
 
     /* ── Animations ── */
-    @keyframes flashRow {
-      0%   { background: rgba(240,180,41,0.22); }
-      100% { background: transparent; }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
     }
-    .flash-anim { animation: flashRow 0.5s ease forwards; }
 
-    @keyframes spin { to { transform: rotate(360deg); } }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: .35; }
+    }
 
-    /* ── Scrollbar ── */
-    ::-webkit-scrollbar { width: 5px; }
-    ::-webkit-scrollbar-track { background: var(--bg); }
-    ::-webkit-scrollbar-thumb { background: #2a2a2a; border-radius: 3px; }
+    /* ── Mobile ── */
+    @media (max-width: 480px) {
+      .grid { grid-template-columns: 1fr; }
+      .card { padding: 1.75rem 1.5rem; }
+      h1 { font-size: 2rem; }
+    }
   </style>
 </head>
 <body>
+  <div class="grain" aria-hidden="true"></div>
 
-  <!-- Header -->
-  <div id="header">
-    <div>
-      <div class="label">▸ Scanner Ativo</div>
-      <h1>INVENTÁRIO</h1>
+  <div class="wrapper">
+
+    <header>
+      <div class="eyebrow">
+        <span class="dot"></span>
+        Ferramentas Internas
+      </div>
+      <h1>Painel de Controle</h1>
+      <p class="subtitle">Escolha uma ferramenta abaixo para continuar.</p>
+    </header>
+
+    <div class="grid">
+
+      <!-- Card 1 — Gerador de Cartazes -->
+      <a class="card card-a" href="https://lohanjp.github.io/inventario/cartaz" aria-label="Acessar Gerador de Cartazes">
+        <div class="icon-wrap" aria-hidden="true">
+          <!-- Lucide: layout-template -->
+          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="3" y="3" width="18" height="7" rx="2"/>
+            <rect x="3" y="14" width="8" height="7" rx="2"/>
+            <rect x="15" y="14" width="6" height="3" rx="1"/>
+            <rect x="15" y="20" width="6" height="1" rx=".5"/>
+          </svg>
+        </div>
+        <div class="card-body">
+          <p class="card-title">Gerador de Cartazes</p>
+          <p class="card-desc">Criação rápida de cartazes de oferta A5 com filtro de produtos.</p>
+          <p class="card-cta">
+            Abrir ferramenta
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+          </p>
+        </div>
+      </a>
+
+      <!-- Card 2 — Controle de Inventário -->
+      <a class="card card-b" href="https://lohanjp.github.io/inventario/inventario" aria-label="Acessar Controle de Inventário">
+        <div class="icon-wrap" aria-hidden="true">
+          <!-- Lucide: package-search -->
+          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M21 10V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l2-1.14"/>
+            <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
+            <line x1="12" y1="22.08" x2="12" y2="12"/>
+            <circle cx="18.5" cy="18.5" r="2.5"/>
+            <line x1="20.27" y1="20.27" x2="22" y2="22"/>
+          </svg>
+        </div>
+        <div class="card-body">
+          <p class="card-title">Controle de Inventário</p>
+          <p class="card-desc">Gestão e conferência de produtos do estoque.</p>
+          <p class="card-cta">
+            Abrir ferramenta
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+          </p>
+        </div>
+      </a>
+
     </div>
-    <div>
-      <div id="counter-label">Capturados</div>
-      <div id="counter">000</div>
-    </div>
+
+    <footer>
+      <p>© <span id="yr"></span> Ferramentas internas &mdash; lohanjp.github.io</p>
+    </footer>
+
   </div>
 
-  <!-- Camera -->
-  <div id="camera-section">
-    <div class="section-label">Leitor de câmera</div>
-    <div id="camera-shell">
-      <div id="qr-reader"></div>
-      <div id="cam-badge-top"><span>● CÂMERA ATIVA</span></div>
-      <div id="cam-badge-bottom"><span id="last-code-label"></span></div>
-      <div id="cam-spinner">
-        <div class="spinner-ring"></div>
-        <span>Iniciando câmera…</span>
-      </div>
-    </div>
-    <div id="cam-error"></div>
-    <button id="btn-camera" onclick="toggleCamera()">◉ Ativar Câmera</button>
-  </div>
+  <script>
+    document.getElementById('yr').textContent = new Date().getFullYear();
 
-  <!-- Divider -->
-  <div id="divider"><span>ou digitar</span></div>
-
-  <!-- Inputs -->
-  <div id="input-section">
-    <div class="input-row">
-      <div>
-        <div class="field-label">Código de barras</div>
-        <input id="barcode-input" class="scanner-input"
-          placeholder="Escanear ou digitar…"
-          autocomplete="off" autocorrect="off" spellcheck="false"
-          onkeydown="handleBarcodeKey(event)" />
-      </div>
-      <div>
-        <div class="field-label">Qtd.</div>
-        <input id="qty-input" class="scanner-input"
-          placeholder="1" type="number" step="any" min="0"
-          onkeydown="handleQtyKey(event)" />
-      </div>
-    </div>
-    <button class="btn-primary" onclick="addItem()">+ Adicionar Item</button>
-  </div>
-
-  <!-- Actions -->
-  <div id="action-row">
-    <button id="btn-txt"   class="btn-secondary" onclick="generateTxt()" disabled>↓ Gerar TXT</button>
-    <button id="btn-clear" class="btn-danger"     onclick="clearList()"   disabled>✕ Limpar Tudo</button>
-  </div>
-
-  <!-- List -->
-  <div id="list-section">
-    <div id="list-box">
-      <div id="list-header">
-        <span>Código</span>
-        <span>Qtd.</span>
-        <span></span>
-      </div>
-      <div id="list-body">
-        <div id="list-empty">— nenhum item capturado —</div>
-      </div>
-    </div>
-  </div>
-
-<script>
-  /* ═══════════════════════════════════════════
-     CONSTANTS & STATE
-  ═══════════════════════════════════════════ */
-  const STORAGE_KEY = 'inventario_items_v1';
-
-  let items = [];
-  try {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved) items = JSON.parse(saved);
-  } catch(_) { items = []; }
-
-  let scannerInstance = null;
-  let cameraState = 'idle';   // idle | starting | active | error
-  let cooldown = false;
-
-  /* ═══════════════════════════════════════════
-     LOCALSTORAGE
-  ═══════════════════════════════════════════ */
-  function saveToStorage() {
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(items)); } catch(_) {}
-  }
-
-  /* ═══════════════════════════════════════════
-     HELPERS
-  ═══════════════════════════════════════════ */
-  function formatQty(value) {
-    const num = parseFloat(value);
-    if (isNaN(num) || value === '' || value === null) return (1).toFixed(3);
-    return num.toFixed(3);
-  }
-
-  function vibrate() {
-    try { navigator.vibrate && navigator.vibrate(120); } catch(_) {}
-  }
-
-  function escHtml(str) {
-    return String(str)
-      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-  }
-
-  function focusBarcode() { document.getElementById('barcode-input').focus(); }
-  function focusQty() {
-    const q = document.getElementById('qty-input');
-    q.focus(); q.select();
-  }
-
-  /* ═══════════════════════════════════════════
-     UI / COUNTER
-  ═══════════════════════════════════════════ */
-  function updateUI() {
-    const counter = document.getElementById('counter');
-    counter.textContent = String(items.length).padStart(3, '0');
-    counter.classList.toggle('active', items.length > 0);
-    document.getElementById('btn-txt').disabled   = items.length === 0;
-    document.getElementById('btn-clear').disabled = items.length === 0;
-  }
-
-  /* ═══════════════════════════════════════════
-     FLASH ANIMATION
-  ═══════════════════════════════════════════ */
-  function flashRow(el) {
-    el.classList.remove('flash-anim');
-    void el.offsetWidth;
-    el.classList.add('flash-anim');
-    setTimeout(() => el.classList.remove('flash-anim'), 500);
-  }
-
-  /* ═══════════════════════════════════════════
-     LIST — FULL REBUILD
-     highlightIndex = items[] index to mark as "new", or -1 for none
-  ═══════════════════════════════════════════ */
-  function renderList(highlightIndex) {
-    const body = document.getElementById('list-body');
-
-    if (items.length === 0) {
-      body.innerHTML = '<div id="list-empty">— nenhum item capturado —</div>';
-      return;
-    }
-
-    body.innerHTML = '';
-
-    // Show newest first (reverse order)
-    for (let i = items.length - 1; i >= 0; i--) {
-      const item  = items[i];
-      const isNew = (i === highlightIndex);
-
-      const row = document.createElement('div');
-      row.className = 'list-row' + (isNew ? ' new' : '');
-
-      row.innerHTML =
-        '<span class="row-code">' +
-          escHtml(item.code) +
-          (isNew ? '<span class="badge">novo</span>' : '') +
-        '</span>' +
-        '<span class="row-qty">' + escHtml(item.qty) + '</span>' +
-        '<button class="btn-del" title="Excluir" onclick="deleteItem(' + i + ')">✕</button>';
-
-      body.appendChild(row);
-      if (isNew) flashRow(row);
-    }
-  }
-
-  /* ═══════════════════════════════════════════
-     ADD ITEM
-  ═══════════════════════════════════════════ */
-  function addItem() {
-    const barcodeEl = document.getElementById('barcode-input');
-    const qtyEl     = document.getElementById('qty-input');
-    const code      = barcodeEl.value.trim();
-    if (!code) { barcodeEl.focus(); return; }
-
-    const qty = formatQty(qtyEl.value);
-    items.push({ code, qty });
-
-    barcodeEl.value = '';
-    qtyEl.value     = '';
-
-    saveToStorage();
-    renderList(items.length - 1);
-    updateUI();
-    focusBarcode();
-  }
-
-  function handleBarcodeKey(e) { if (e.key === 'Enter') addItem(); }
-  function handleQtyKey(e)     { if (e.key === 'Enter') addItem(); }
-
-  /* ═══════════════════════════════════════════
-     DELETE SINGLE ITEM
-  ═══════════════════════════════════════════ */
-  function deleteItem(index) {
-    items.splice(index, 1);
-    saveToStorage();
-    renderList(-1);
-    updateUI();
-  }
-
-  /* ═══════════════════════════════════════════
-     GENERATE TXT  — separator: single space
-  ═══════════════════════════════════════════ */
-  function generateTxt() {
-    if (!items.length) return;
-    const content = items.map(i => i.code + ' ' + i.qty).join('\n');
-    const blob = new Blob([content], { type: 'text/plain' });
-    const url  = URL.createObjectURL(blob);
-    const a    = document.createElement('a');
-    a.href     = url;
-    a.download = 'inventario_' + new Date().toISOString().slice(0,10) + '.txt';
-    a.click();
-    URL.revokeObjectURL(url);
-  }
-
-  /* ═══════════════════════════════════════════
-     CLEAR LIST  — with confirmation dialog
-  ═══════════════════════════════════════════ */
-  function clearList() {
-    if (!items.length) return;
-    if (!confirm('Apagar toda a lista de captura?\n\nEsta ação não pode ser desfeita.')) return;
-    items = [];
-    saveToStorage();
-    renderList(-1);
-    updateUI();
-    focusBarcode();
-  }
-
-  /* ═══════════════════════════════════════════
-     CAMERA STATE MACHINE
-  ═══════════════════════════════════════════ */
-  function setCameraState(state) {
-    cameraState = state;
-    const shell    = document.getElementById('camera-shell');
-    const spinner  = document.getElementById('cam-spinner');
-    const topBadge = document.getElementById('cam-badge-top');
-    const botBadge = document.getElementById('cam-badge-bottom');
-    const btn      = document.getElementById('btn-camera');
-    const errBox   = document.getElementById('cam-error');
-
-    // Reset all
-    shell.classList.remove('active');
-    spinner.style.display  = 'none';
-    topBadge.style.display = 'none';
-    botBadge.style.display = 'none';
-    btn.disabled = false;
-    btn.classList.remove('stop');
-
-    if (state === 'starting') {
-      spinner.style.display = 'flex';
-      btn.disabled = true;
-      btn.textContent = 'Aguarde…';
-      errBox.style.display = 'none';
-    } else if (state === 'active') {
-      shell.classList.add('active');
-      topBadge.style.display = 'flex';
-      btn.classList.add('stop');
-      btn.textContent = '◼ Desligar Câmera';
-      errBox.style.display = 'none';
-    } else if (state === 'error') {
-      btn.textContent = '◉ Ativar Câmera';
-    } else {
-      // idle
-      btn.textContent = '◉ Ativar Câmera';
-      errBox.style.display = 'none';
-    }
-  }
-
-  function showCamError(msg) {
-    const box = document.getElementById('cam-error');
-    box.textContent = '⚠ ' + msg;
-    box.style.display = 'block';
-  }
-
-  /* ═══════════════════════════════════════════
-     ON CODE DETECTED — auto-stop then focus qty
-  ═══════════════════════════════════════════ */
-  async function onCodeDetected(code) {
-    if (cooldown) return;
-    cooldown = true;
-    setTimeout(() => { cooldown = false; }, 1500);
-
-    // 1. Stop camera immediately
-    await stopCamera();
-
-    // 2. Brief confirmation badge below viewfinder
-    const botBadge = document.getElementById('cam-badge-bottom');
-    const label    = document.getElementById('last-code-label');
-    label.textContent = '✓ ' + code;
-    botBadge.style.display = 'flex';
-    setTimeout(() => { botBadge.style.display = 'none'; }, 2500);
-
-    // 3. Fill barcode field
-    document.getElementById('barcode-input').value = code;
-
-    // 4. Vibrate
-    vibrate();
-
-    // 5. Move focus to qty field
-    setTimeout(focusQty, 80);
-  }
-
-  /* ═══════════════════════════════════════════
-     START / STOP / TOGGLE CAMERA
-  ═══════════════════════════════════════════ */
-  async function startCamera() {
-    setCameraState('starting');
-    try {
-      const instance = new Html5Qrcode('qr-reader');
-      scannerInstance = instance;
-
-      const formats = [];
-      const SF = Html5QrcodeSupportedFormats;
-      if (SF) {
-        [SF.EAN_13, SF.EAN_8, SF.CODE_128, SF.CODE_39,
-         SF.UPC_A, SF.UPC_E, SF.QR_CODE]
-          .forEach(f => { if (f !== undefined) formats.push(f); });
-      }
-
-      const config = {
-        fps: 12,
-        qrbox: { width: 260, height: 120 },
-        aspectRatio: 1.777,
-        ...(formats.length ? { formatsToSupport: formats } : {})
-      };
-
-      await instance.start(
-        { facingMode: 'environment' },
-        config,
-        onCodeDetected,
-        () => {}   // per-frame failures — silent
-      );
-      setCameraState('active');
-    } catch (err) {
-      scannerInstance = null;
-      const msg = (err && (err.message || String(err))) || '';
-      let friendly;
-      if (/NotAllowed|Permission/i.test(msg)) {
-        friendly = 'Permissão de câmera negada. Habilite nas configurações do navegador.';
-      } else if (/NotFound|device not found/i.test(msg)) {
-        friendly = 'Nenhuma câmera encontrada neste dispositivo.';
-      } else {
-        friendly = 'Erro ao acessar câmera: ' + (msg || 'desconhecido');
-      }
-      setCameraState('error');
-      showCamError(friendly);
-    }
-  }
-
-  async function stopCamera() {
-    if (scannerInstance) {
-      try { await scannerInstance.stop(); } catch(_) {}
-      scannerInstance = null;
-    }
-    setCameraState('idle');
-  }
-
-  function toggleCamera() {
-    if (cameraState === 'active') {
-      stopCamera();
-    } else if (cameraState === 'idle' || cameraState === 'error') {
-      startCamera();
-    }
-  }
-
-  /* ═══════════════════════════════════════════
-     INIT
-  ═══════════════════════════════════════════ */
-  window.addEventListener('DOMContentLoaded', () => {
-    renderList(-1);        // restore from localStorage
-    updateUI();
-    setTimeout(focusBarcode, 100);
-  });
-</script>
+    // Spotlight follow on hover
+    document.querySelectorAll('.card').forEach(card => {
+      card.addEventListener('mousemove', e => {
+        const rect = card.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        card.style.setProperty('--mx', `${x}px`);
+        card.style.setProperty('--my', `${y}px`);
+      });
+    });
+  </script>
 </body>
 </html>
