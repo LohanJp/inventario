@@ -8,7 +8,6 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
-
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
 
   <style>
@@ -17,6 +16,8 @@
     :root {
       --gold:       #f0b429;
       --gold-dim:   rgba(240,180,41,0.15);
+      --green:      #2a9d8f;
+      --green-dim:  rgba(42,157,143,0.15);
       --bg:         #0f0f0f;
       --surface:    #1a1a1a;
       --border:     #222;
@@ -41,30 +42,59 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 18px 20px 16px;
+      padding: 14px 20px 12px;
       border-bottom: 1px solid var(--border);
+      gap: 10px;
     }
+    #header-left { flex: 1; min-width: 0; }
     #header .label {
-      font-size: 0.62rem;
-      color: var(--gold);
+      font-size: 0.6rem;
       letter-spacing: 0.16em;
       text-transform: uppercase;
-      margin-bottom: 4px;
+      margin-bottom: 3px;
     }
-    #header h1 { font-size: 1.35rem; font-weight: 700; letter-spacing: 0.02em; }
+    #header h1 { font-size: 1.25rem; font-weight: 700; letter-spacing: 0.02em; }
+    #lock-badge {
+      display: none;
+      align-items: center;
+      gap: 6px;
+      background: rgba(42,157,143,0.12);
+      border: 1px solid rgba(42,157,143,0.35);
+      border-radius: 6px;
+      padding: 5px 10px;
+      white-space: nowrap;
+    }
+    #lock-badge .lock-icon { font-size: 0.9rem; }
+    #lock-badge .lock-text {
+      font-size: 0.58rem;
+      color: var(--green);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      line-height: 1.2;
+    }
+    #lock-badge .lock-count {
+      font-size: 0.65rem;
+      color: var(--green);
+      font-weight: 700;
+    }
+    #header-right {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 2px;
+      flex-shrink: 0;
+    }
     #counter-label {
-      font-size: 0.6rem;
+      font-size: 0.58rem;
       color: var(--text-dim);
       letter-spacing: 0.1em;
       text-transform: uppercase;
-      text-align: right;
     }
     #counter {
-      font-size: 2rem;
+      font-size: 1.9rem;
       font-weight: 700;
       color: var(--text-dim);
       line-height: 1;
-      text-align: right;
       transition: color 0.3s;
     }
     #counter.active { color: var(--gold); }
@@ -76,6 +106,49 @@
       text-transform: uppercase;
       margin-bottom: 8px;
     }
+
+    /* ── Carga banner ── */
+    #carga-bar {
+      display: none;
+      margin: 12px 20px 0;
+      padding: 10px 14px;
+      background: rgba(42,157,143,0.08);
+      border: 1px solid rgba(42,157,143,0.25);
+      border-radius: 8px;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    #carga-bar-info { flex: 1; min-width: 0; }
+    #carga-bar-title {
+      font-size: 0.6rem;
+      color: var(--green);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      margin-bottom: 2px;
+    }
+    #carga-bar-name {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    #btn-carga-clear {
+      background: none;
+      border: 1px solid var(--red-dim);
+      color: var(--red);
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.65rem;
+      padding: 5px 9px;
+      border-radius: 5px;
+      cursor: pointer;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    #btn-carga-clear:hover { border-color: var(--red); }
 
     /* ── Camera ── */
     #camera-section { padding: 16px 20px 0; }
@@ -191,7 +264,7 @@
 
     /* ── Divider ── */
     #divider {
-      margin: 16px 20px;
+      margin: 14px 20px;
       border-top: 1px dashed var(--border);
       position: relative;
     }
@@ -240,6 +313,29 @@
     .scanner-input::placeholder { color: #444; }
     #qty-input { text-align: right; }
 
+    /* ── Product info box (shown after scan/lookup) ── */
+    #product-info {
+      display: none;
+      margin-bottom: 10px;
+      padding: 10px 13px;
+      background: rgba(42,157,143,0.07);
+      border: 1px solid rgba(42,157,143,0.22);
+      border-radius: 6px;
+    }
+    #product-name {
+      font-size: 0.8rem;
+      color: var(--green);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-bottom: 2px;
+    }
+    #product-price {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      letter-spacing: 0.04em;
+    }
+
     /* ── Buttons ── */
     .btn-primary {
       background: var(--gold);
@@ -260,7 +356,35 @@
     .btn-primary:hover { background: #ffc53d; }
     .btn-primary:active { transform: scale(0.97); }
 
+    /* ── Carga button row ── */
+    #carga-row {
+      padding: 0 20px 14px;
+    }
+    #btn-carga {
+      width: 100%;
+      background: transparent;
+      color: var(--green);
+      border: 2px solid rgba(42,157,143,0.3);
+      font-family: 'IBM Plex Mono', monospace;
+      font-weight: 600;
+      font-size: 0.88rem;
+      letter-spacing: 0.08em;
+      padding: 13px 20px;
+      border-radius: 6px;
+      cursor: pointer;
+      text-transform: uppercase;
+      transition: border-color 0.2s;
+    }
+    #btn-carga:hover { border-color: var(--green); }
+
+    /* ── Action rows ── */
     #action-row {
+      padding: 0 20px 14px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    #action-row2 {
       padding: 0 20px 14px;
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -271,15 +395,16 @@
       color: var(--text);
       font-family: 'IBM Plex Mono', monospace;
       font-weight: 600;
-      font-size: 0.88rem;
-      padding: 14px 16px;
+      font-size: 0.82rem;
+      padding: 13px 10px;
       border: 2px solid var(--border-lit);
       border-radius: 6px;
       cursor: pointer;
-      letter-spacing: 0.06em;
+      letter-spacing: 0.04em;
       text-transform: uppercase;
-      min-height: 54px;
+      min-height: 52px;
       transition: border-color 0.15s;
+      line-height: 1.2;
     }
     .btn-secondary:hover { border-color: var(--text); }
     .btn-secondary:disabled { opacity: 0.3; cursor: not-allowed; }
@@ -289,18 +414,38 @@
       color: var(--red);
       font-family: 'IBM Plex Mono', monospace;
       font-weight: 600;
-      font-size: 0.88rem;
-      padding: 14px 16px;
+      font-size: 0.82rem;
+      padding: 13px 10px;
       border: 2px solid var(--red-dim);
       border-radius: 6px;
       cursor: pointer;
-      letter-spacing: 0.06em;
+      letter-spacing: 0.04em;
       text-transform: uppercase;
-      min-height: 54px;
+      min-height: 52px;
       transition: border-color 0.15s;
+      line-height: 1.2;
     }
     .btn-danger:hover { border-color: var(--red); }
     .btn-danger:disabled { opacity: 0.3; cursor: not-allowed; }
+
+    .btn-teal {
+      background: transparent;
+      color: var(--green);
+      font-family: 'IBM Plex Mono', monospace;
+      font-weight: 600;
+      font-size: 0.82rem;
+      padding: 13px 10px;
+      border: 2px solid rgba(42,157,143,0.3);
+      border-radius: 6px;
+      cursor: pointer;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      min-height: 52px;
+      transition: border-color 0.15s;
+      line-height: 1.2;
+    }
+    .btn-teal:hover { border-color: var(--green); }
+    .btn-teal:disabled { opacity: 0.3; cursor: not-allowed; }
 
     /* ── Table ── */
     #list-section { padding: 0 20px 32px; }
@@ -308,20 +453,21 @@
 
     #list-header {
       display: grid;
-      grid-template-columns: 1fr 90px 36px;
+      grid-template-columns: 120px 1fr 70px 36px;
       padding: 9px 14px;
       background: #141414;
       border-bottom: 1px solid var(--border);
+      gap: 6px;
     }
     #list-header span {
-      font-size: 0.6rem;
+      font-size: 0.58rem;
       color: var(--text-dim);
-      letter-spacing: 0.12em;
+      letter-spacing: 0.1em;
       text-transform: uppercase;
     }
-    #list-header span:nth-child(2) { text-align: right; }
+    #list-header span:nth-child(3) { text-align: right; }
 
-    #list-body { max-height: 340px; overflow-y: auto; }
+    #list-body { max-height: 360px; overflow-y: auto; }
 
     #list-empty {
       padding: 36px 14px;
@@ -333,40 +479,51 @@
 
     .list-row {
       display: grid;
-      grid-template-columns: 1fr 90px 36px;
-      padding: 10px 14px;
+      grid-template-columns: 120px 1fr 70px 36px;
+      padding: 9px 14px;
       border-bottom: 1px solid #181818;
       align-items: center;
+      gap: 6px;
       transition: background 0.15s;
     }
     .list-row:nth-child(even) { background: rgba(255,255,255,0.025); }
     .list-row:hover { background: rgba(240,180,41,0.06); }
 
     .row-code {
-      font-size: 0.86rem;
-      letter-spacing: 0.04em;
+      font-size: 0.8rem;
+      letter-spacing: 0.03em;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
-      padding-right: 8px;
       color: var(--text-muted);
     }
     .list-row.new .row-code { color: var(--gold); }
+    .list-row.updated .row-code { color: var(--green); }
+
+    .row-name {
+      font-size: 0.75rem;
+      color: var(--text-dim);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      letter-spacing: 0.02em;
+    }
+    .list-row.new .row-name,
+    .list-row.updated .row-name { color: var(--text-muted); }
 
     .row-qty {
-      font-size: 0.88rem;
+      font-size: 0.82rem;
       text-align: right;
       color: var(--text);
-      padding-right: 6px;
+      letter-spacing: 0.03em;
     }
 
-    /* ── Delete button per row ── */
     .btn-del {
       background: none;
       border: none;
       cursor: pointer;
       color: #3a2020;
-      font-size: 0.95rem;
+      font-size: 0.9rem;
       line-height: 1;
       padding: 4px;
       border-radius: 4px;
@@ -380,53 +537,73 @@
     }
     .btn-del:hover { color: var(--red); background: rgba(255,107,107,0.12); }
 
-    /* ── Badge ── */
+    /* ── Badges ── */
     .badge {
       display: inline-block;
       background: var(--gold);
       color: #0f0f0f;
-      font-size: 0.58rem;
+      font-size: 0.55rem;
       font-weight: 700;
-      padding: 2px 6px;
+      padding: 2px 5px;
       border-radius: 20px;
       letter-spacing: 0.04em;
-      margin-left: 6px;
+      margin-left: 5px;
       vertical-align: middle;
     }
-    .badge-sum {
-      background: #2a9d8f;
-      color: #fff;
-    }
-    .list-row.updated .row-code { color: #2a9d8f; }
-    .list-row.updated .row-qty  { color: #2a9d8f; }
+    .badge-sum { background: var(--green); color: #fff; }
 
     /* ── Animations ── */
     @keyframes flashRow {
       0%   { background: rgba(240,180,41,0.22); }
       100% { background: transparent; }
     }
-    .flash-anim { animation: flashRow 0.5s ease forwards; }
+    @keyframes flashGreen {
+      0%   { background: rgba(42,157,143,0.25); }
+      100% { background: transparent; }
+    }
+    .flash-anim      { animation: flashRow   0.5s ease forwards; }
+    .flash-anim-sum  { animation: flashGreen 0.5s ease forwards; }
 
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    /* ── Scrollbar ── */
     ::-webkit-scrollbar { width: 5px; }
     ::-webkit-scrollbar-track { background: var(--bg); }
     ::-webkit-scrollbar-thumb { background: #2a2a2a; border-radius: 3px; }
+
+    /* hidden file input */
+    #file-input { display: none; }
   </style>
 </head>
 <body>
 
+  <input type="file" id="file-input" accept=".txt,.TXT" onchange="handleFileLoad(event)" />
+
   <!-- Header -->
   <div id="header">
-    <div>
-      <div class="label">▸ Scanner Ativo</div>
+    <div id="header-left">
+      <div class="label" id="header-label" style="color: var(--gold)">▸ Scanner Ativo</div>
       <h1>INVENTÁRIO</h1>
     </div>
-    <div>
+    <div id="lock-badge">
+      <span class="lock-icon">🔒</span>
+      <div>
+        <div class="lock-text">Carga ativa</div>
+        <div class="lock-count" id="lock-count">0 produtos</div>
+      </div>
+    </div>
+    <div id="header-right">
       <div id="counter-label">Capturados</div>
       <div id="counter">000</div>
     </div>
+  </div>
+
+  <!-- Carga active banner -->
+  <div id="carga-bar">
+    <div id="carga-bar-info">
+      <div id="carga-bar-title">📦 Carga carregada</div>
+      <div id="carga-bar-name">—</div>
+    </div>
+    <button id="btn-carga-clear" onclick="clearMasterData()">✕ Remover</button>
   </div>
 
   <!-- Camera -->
@@ -450,13 +627,20 @@
 
   <!-- Inputs -->
   <div id="input-section">
+    <!-- Product info (appears when master data match found) -->
+    <div id="product-info">
+      <div id="product-name">—</div>
+      <div id="product-price">—</div>
+    </div>
+
     <div class="input-row">
       <div>
         <div class="field-label">Código de barras</div>
         <input id="barcode-input" class="scanner-input"
           placeholder="Escanear ou digitar…"
           autocomplete="off" autocorrect="off" spellcheck="false"
-          onkeydown="handleBarcodeKey(event)" />
+          onkeydown="handleBarcodeKey(event)"
+          oninput="handleBarcodeInput()" />
       </div>
       <div>
         <div class="field-label">Qtd.</div>
@@ -468,10 +652,22 @@
     <button class="btn-primary" onclick="addItem()">+ Adicionar Item</button>
   </div>
 
-  <!-- Actions -->
+  <!-- Carga button -->
+  <div id="carga-row">
+    <button id="btn-carga" onclick="document.getElementById('file-input').click()">
+      📦 Carga — Carregar PRODUTO.TXT
+    </button>
+  </div>
+
+  <!-- Actions row 1: exports -->
   <div id="action-row">
-    <button id="btn-txt"   class="btn-secondary" onclick="generateTxt()" disabled>↓ Gerar TXT</button>
-    <button id="btn-clear" class="btn-danger"     onclick="clearList()"   disabled>✕ Limpar Tudo</button>
+    <button id="btn-coleta" class="btn-secondary" onclick="generateColetaCega()" disabled>↓ Coleta Cega</button>
+    <button id="btn-inv"    class="btn-teal"      onclick="generateInventario()"  disabled>↓ Inventário</button>
+  </div>
+
+  <!-- Actions row 2: clear -->
+  <div id="action-row2">
+    <button id="btn-clear" class="btn-danger" onclick="clearList()" disabled style="grid-column: 1 / -1;">✕ Limpar Tudo</button>
   </div>
 
   <!-- List -->
@@ -479,6 +675,7 @@
     <div id="list-box">
       <div id="list-header">
         <span>Código</span>
+        <span>Produto</span>
         <span>Qtd.</span>
         <span></span>
       </div>
@@ -489,78 +686,188 @@
   </div>
 
 <script>
-  /* ═══════════════════════════════════════════
-     CONSTANTS & STATE
-  ═══════════════════════════════════════════ */
-  const STORAGE_KEY = 'inventario_items_v1';
+  /* ═══════════════════════════════════════
+     STORAGE KEYS
+  ═══════════════════════════════════════ */
+  const SK_ITEMS  = 'inventario_items_v1';
+  const SK_MASTER = 'inventario_master_v1';
+  const SK_MNAME  = 'inventario_master_name_v1';
 
+  /* ═══════════════════════════════════════
+     STATE
+  ═══════════════════════════════════════ */
   let items = [];
+  try { const s = localStorage.getItem(SK_ITEMS);  if (s) items = JSON.parse(s); } catch(_) {}
+
+  // masterData: Map<code(string) → { name, price }>
+  let masterData = new Map();
+  let masterFileName = '';
   try {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved) items = JSON.parse(saved);
-  } catch(_) { items = []; }
+    const s = localStorage.getItem(SK_MASTER);
+    if (s) masterData = new Map(JSON.parse(s));
+    masterFileName = localStorage.getItem(SK_MNAME) || '';
+  } catch(_) {}
 
   let scannerInstance = null;
-  let cameraState = 'idle';   // idle | starting | active | error
+  let cameraState = 'idle';
   let cooldown = false;
 
-  /* ═══════════════════════════════════════════
-     LOCALSTORAGE
-  ═══════════════════════════════════════════ */
-  function saveToStorage() {
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(items)); } catch(_) {}
+  /* ═══════════════════════════════════════
+     PERSISTENCE
+  ═══════════════════════════════════════ */
+  function saveItems()  { try { localStorage.setItem(SK_ITEMS, JSON.stringify(items)); } catch(_) {} }
+  function saveMaster() {
+    try {
+      localStorage.setItem(SK_MASTER, JSON.stringify([...masterData]));
+      localStorage.setItem(SK_MNAME, masterFileName);
+    } catch(_) {}
   }
 
-  /* ═══════════════════════════════════════════
+  /* ═══════════════════════════════════════
      HELPERS
-  ═══════════════════════════════════════════ */
+  ═══════════════════════════════════════ */
   function formatQty(value) {
-    const num = parseFloat(value);
-    if (isNaN(num) || value === '' || value === null) return (1).toFixed(3);
-    return num.toFixed(3);
+    const n = parseFloat(value);
+    return (isNaN(n) || value === '' || value === null) ? (1).toFixed(3) : n.toFixed(3);
   }
-
-  function vibrate() {
-    try { navigator.vibrate && navigator.vibrate(120); } catch(_) {}
+  function vibrate() { try { navigator.vibrate && navigator.vibrate(120); } catch(_) {} }
+  function escHtml(s) {
+    return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   }
-
-  function escHtml(str) {
-    return String(str)
-      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-  }
-
   function focusBarcode() { document.getElementById('barcode-input').focus(); }
-  function focusQty() {
-    const q = document.getElementById('qty-input');
-    q.focus(); q.select();
+  function focusQty() { const q = document.getElementById('qty-input'); q.focus(); q.select(); }
+
+  function today() { return new Date().toISOString().slice(0,10); }
+
+  /* ═══════════════════════════════════════
+     MASTER DATA LOAD — parse PRODUTO.TXT
+     Layout: [0-12] code (13 chars)
+             [13..end-8] name (trimmed)
+             [end-8..end] price (8 chars, trimmed)
+  ═══════════════════════════════════════ */
+  function parseProdutoTxt(text, fileName) {
+    const lines = text.split(/\r?\n/);
+    const map = new Map();
+    let ok = 0;
+
+    for (const raw of lines) {
+      const line = raw; // keep original length
+      if (line.length < 14) continue; // too short to have code + price
+
+      const code  = line.substring(0, 13).trim();
+      const price = line.length >= 21 ? line.substring(line.length - 8).trim() : '';
+      const name  = line.length > 21
+        ? line.substring(13, line.length - 8).trim()
+        : line.substring(13).trim();
+
+      if (!code) continue;
+      map.set(code, { name: name || '—', price: price || '' });
+      ok++;
+    }
+
+    if (ok === 0) {
+      alert('Nenhum produto válido encontrado no arquivo.\n\nVerifique o formato: 13 chars de código + nome + 8 chars de preço.');
+      return;
+    }
+
+    masterData = map;
+    masterFileName = fileName;
+    saveMaster();
+    updateMasterUI();
+    alert('✅ Carga carregada com sucesso!\n' + ok + ' produto(s) importado(s).');
   }
 
-  /* ═══════════════════════════════════════════
-     UI / COUNTER
-  ═══════════════════════════════════════════ */
+  function handleFileLoad(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    event.target.value = ''; // reset so same file can be reloaded
+    const reader = new FileReader();
+    reader.onload = function(e) { parseProdutoTxt(e.target.result, file.name); };
+    reader.readAsText(file, 'latin1'); // common encoding for Brazilian ERP exports
+  }
+
+  function clearMasterData() {
+    if (!confirm('Remover a carga atual?\n\nO modo blindado será desativado.')) return;
+    masterData = new Map();
+    masterFileName = '';
+    try { localStorage.removeItem(SK_MASTER); localStorage.removeItem(SK_MNAME); } catch(_) {}
+    updateMasterUI();
+    hideProductInfo();
+  }
+
+  /* look up a code; returns { name, price } or null */
+  function lookupCode(code) {
+    return masterData.size > 0 ? (masterData.get(code) || null) : null;
+  }
+
+  /* ═══════════════════════════════════════
+     UI UPDATES
+  ═══════════════════════════════════════ */
+  function updateMasterUI() {
+    const hasMaster = masterData.size > 0;
+    const lockBadge = document.getElementById('lock-badge');
+    const cargaBar  = document.getElementById('carga-bar');
+
+    lockBadge.style.display = hasMaster ? 'flex' : 'none';
+    document.getElementById('lock-count').textContent = masterData.size + ' produtos';
+
+    cargaBar.style.display = hasMaster ? 'flex' : 'none';
+    document.getElementById('carga-bar-name').textContent = masterFileName || 'PRODUTO.TXT';
+
+    // Update header label color
+    const label = document.getElementById('header-label');
+    label.style.color = hasMaster ? 'var(--green)' : 'var(--gold)';
+    label.textContent = hasMaster ? '🔒 Modo Blindado' : '▸ Scanner Ativo';
+  }
+
   function updateUI() {
     const counter = document.getElementById('counter');
     counter.textContent = String(items.length).padStart(3, '0');
     counter.classList.toggle('active', items.length > 0);
-    document.getElementById('btn-txt').disabled   = items.length === 0;
-    document.getElementById('btn-clear').disabled = items.length === 0;
+    const dis = items.length === 0;
+    document.getElementById('btn-coleta').disabled = dis;
+    document.getElementById('btn-inv').disabled    = dis;
+    document.getElementById('btn-clear').disabled  = dis;
   }
 
-  /* ═══════════════════════════════════════════
-     FLASH ANIMATION
-  ═══════════════════════════════════════════ */
-  function flashRow(el) {
-    el.classList.remove('flash-anim');
+  function showProductInfo(name, price) {
+    const box = document.getElementById('product-info');
+    document.getElementById('product-name').textContent  = name  || '—';
+    document.getElementById('product-price').textContent = price ? 'R$ ' + price : '';
+    box.style.display = 'block';
+  }
+
+  function hideProductInfo() {
+    document.getElementById('product-info').style.display = 'none';
+    document.getElementById('product-name').textContent   = '—';
+    document.getElementById('product-price').textContent  = '—';
+  }
+
+  /* Called when barcode field changes (typed or auto-filled) */
+  function handleBarcodeInput() {
+    const code = document.getElementById('barcode-input').value.trim();
+    if (!code) { hideProductInfo(); return; }
+    if (masterData.size > 0) {
+      const found = lookupCode(code);
+      if (found) showProductInfo(found.name, found.price);
+      else hideProductInfo();
+    }
+  }
+
+  /* ═══════════════════════════════════════
+     FLASH
+  ═══════════════════════════════════════ */
+  function flashRow(el, type) {
+    const cls = type === 'sum' ? 'flash-anim-sum' : 'flash-anim';
+    el.classList.remove('flash-anim', 'flash-anim-sum');
     void el.offsetWidth;
-    el.classList.add('flash-anim');
-    setTimeout(() => el.classList.remove('flash-anim'), 500);
+    el.classList.add(cls);
+    setTimeout(() => el.classList.remove(cls), 500);
   }
 
-  /* ═══════════════════════════════════════════
-     LIST — FULL REBUILD
-     highlightIndex = items[] index to highlight, or -1 for none
-     highlightMode  = 'new' (inserted) | 'updated' (qty summed)
-  ═══════════════════════════════════════════ */
+  /* ═══════════════════════════════════════
+     LIST RENDER
+  ═══════════════════════════════════════ */
   function renderList(highlightIndex, highlightMode) {
     const body = document.getElementById('list-body');
     const mode = highlightMode || 'new';
@@ -569,10 +876,8 @@
       body.innerHTML = '<div id="list-empty">— nenhum item capturado —</div>';
       return;
     }
-
     body.innerHTML = '';
 
-    // Show newest first (reverse order)
     for (let i = items.length - 1; i >= 0; i--) {
       const item      = items[i];
       const isHit     = (i === highlightIndex);
@@ -586,40 +891,64 @@
       if (isNew)     badge = '<span class="badge">novo</span>';
       if (isUpdated) badge = '<span class="badge badge-sum">+soma</span>';
 
+      const displayName = escHtml(item.name || '—');
+      const displayCode = escHtml(item.code);
+      const displayQty  = escHtml(item.qty);
+
       row.innerHTML =
-        '<span class="row-code">' + escHtml(item.code) + badge + '</span>' +
-        '<span class="row-qty">'  + escHtml(item.qty)  + '</span>' +
+        '<span class="row-code">' + displayCode + badge + '</span>' +
+        '<span class="row-name">' + displayName + '</span>' +
+        '<span class="row-qty">'  + displayQty  + '</span>' +
         '<button class="btn-del" title="Excluir" onclick="deleteItem(' + i + ')">✕</button>';
 
       body.appendChild(row);
-      if (isHit) flashRow(row);
+      if (isHit) flashRow(row, isUpdated ? 'sum' : 'new');
     }
   }
 
-  /* ═══════════════════════════════════════════
-     ADD ITEM
-  ═══════════════════════════════════════════ */
+  /* ═══════════════════════════════════════
+     ADD ITEM  (with master validation + sum)
+  ═══════════════════════════════════════ */
   function addItem() {
     const barcodeEl = document.getElementById('barcode-input');
     const qtyEl     = document.getElementById('qty-input');
     const code      = barcodeEl.value.trim();
     if (!code) { barcodeEl.focus(); return; }
 
-    const incomingQty = parseFloat(qtyEl.value) || 1;
+    // ── Modo Blindado: validate against master ──
+    let productName  = '';
+    let productPrice = '';
+    if (masterData.size > 0) {
+      const found = lookupCode(code);
+      if (!found) {
+        alert('⚠️ Produto não cadastrado!\n\nCódigo: ' + code + '\n\nEste código não existe na carga carregada.');
+        barcodeEl.select();
+        return;
+      }
+      productName  = found.name;
+      productPrice = found.price;
+    }
 
+    const incomingQty = parseFloat(qtyEl.value) || 1;
     barcodeEl.value = '';
     qtyEl.value     = '';
+    hideProductInfo();
 
-    const existingIndex = items.findIndex(function(item) { return item.code === code; });
+    const existingIndex = items.findIndex(function(it) { return it.code === code; });
 
     if (existingIndex !== -1) {
-      const currentQty = parseFloat(items[existingIndex].qty) || 0;
-      items[existingIndex].qty = (currentQty + incomingQty).toFixed(3);
-      saveToStorage();
+      const current = parseFloat(items[existingIndex].qty) || 0;
+      items[existingIndex].qty = (current + incomingQty).toFixed(3);
+      // update name/price if we now have master data
+      if (productName) {
+        items[existingIndex].name  = productName;
+        items[existingIndex].price = productPrice;
+      }
+      saveItems();
       renderList(existingIndex, 'updated');
     } else {
-      items.push({ code: code, qty: incomingQty.toFixed(3) });
-      saveToStorage();
+      items.push({ code, qty: incomingQty.toFixed(3), name: productName, price: productPrice });
+      saveItems();
       renderList(items.length - 1, 'new');
     }
 
@@ -630,47 +959,63 @@
   function handleBarcodeKey(e) { if (e.key === 'Enter') addItem(); }
   function handleQtyKey(e)     { if (e.key === 'Enter') addItem(); }
 
-  /* ═══════════════════════════════════════════
-     DELETE SINGLE ITEM
-  ═══════════════════════════════════════════ */
+  /* ═══════════════════════════════════════
+     DELETE
+  ═══════════════════════════════════════ */
   function deleteItem(index) {
     items.splice(index, 1);
-    saveToStorage();
+    saveItems();
     renderList(-1);
     updateUI();
   }
 
-  /* ═══════════════════════════════════════════
-     GENERATE TXT  — separator: single space
-  ═══════════════════════════════════════════ */
-  function generateTxt() {
-    if (!items.length) return;
-    const content = items.map(i => i.code + ' ' + i.qty).join('\n');
+  /* ═══════════════════════════════════════
+     EXPORTS
+  ═══════════════════════════════════════ */
+  function downloadTxt(content, filename) {
     const blob = new Blob([content], { type: 'text/plain' });
     const url  = URL.createObjectURL(blob);
     const a    = document.createElement('a');
-    a.href     = url;
-    a.download = 'inventario_' + new Date().toISOString().slice(0,10) + '.txt';
+    a.href = url;
+    a.download = filename;
     a.click();
     URL.revokeObjectURL(url);
   }
 
-  /* ═══════════════════════════════════════════
-     CLEAR LIST  — with confirmation dialog
-  ═══════════════════════════════════════════ */
+  // Coleta cega: código[espaço]quantidade
+  function generateColetaCega() {
+    if (!items.length) return;
+    downloadTxt(
+      items.map(i => i.code + ' ' + i.qty).join('\n'),
+      'coleta_cega_' + today() + '.txt'
+    );
+  }
+
+  // Inventário: inventario código quantidade
+  function generateInventario() {
+    if (!items.length) return;
+    downloadTxt(
+      items.map(i => 'inventario ' + i.code + ' ' + i.qty).join('\n'),
+      'inventario_' + today() + '.txt'
+    );
+  }
+
+  /* ═══════════════════════════════════════
+     CLEAR LIST
+  ═══════════════════════════════════════ */
   function clearList() {
     if (!items.length) return;
     if (!confirm('Apagar toda a lista de captura?\n\nEsta ação não pode ser desfeita.')) return;
     items = [];
-    saveToStorage();
+    saveItems();
     renderList(-1);
     updateUI();
     focusBarcode();
   }
 
-  /* ═══════════════════════════════════════════
-     CAMERA STATE MACHINE
-  ═══════════════════════════════════════════ */
+  /* ═══════════════════════════════════════
+     CAMERA
+  ═══════════════════════════════════════ */
   function setCameraState(state) {
     cameraState = state;
     const shell    = document.getElementById('camera-shell');
@@ -680,7 +1025,6 @@
     const btn      = document.getElementById('btn-camera');
     const errBox   = document.getElementById('cam-error');
 
-    // Reset all
     shell.classList.remove('active');
     spinner.style.display  = 'none';
     topBadge.style.display = 'none';
@@ -702,7 +1046,6 @@
     } else if (state === 'error') {
       btn.textContent = '◉ Ativar Câmera';
     } else {
-      // idle
       btn.textContent = '◉ Ativar Câmera';
       errBox.style.display = 'none';
     }
@@ -714,37 +1057,25 @@
     box.style.display = 'block';
   }
 
-  /* ═══════════════════════════════════════════
-     ON CODE DETECTED — auto-stop then focus qty
-  ═══════════════════════════════════════════ */
   async function onCodeDetected(code) {
     if (cooldown) return;
     cooldown = true;
     setTimeout(() => { cooldown = false; }, 1500);
 
-    // 1. Stop camera immediately
     await stopCamera();
 
-    // 2. Brief confirmation badge below viewfinder
+    // Show bottom badge
     const botBadge = document.getElementById('cam-badge-bottom');
-    const label    = document.getElementById('last-code-label');
-    label.textContent = '✓ ' + code;
+    document.getElementById('last-code-label').textContent = '✓ ' + code;
     botBadge.style.display = 'flex';
     setTimeout(() => { botBadge.style.display = 'none'; }, 2500);
 
-    // 3. Fill barcode field
     document.getElementById('barcode-input').value = code;
-
-    // 4. Vibrate
     vibrate();
-
-    // 5. Move focus to qty field
+    handleBarcodeInput(); // trigger master lookup display
     setTimeout(focusQty, 80);
   }
 
-  /* ═══════════════════════════════════════════
-     START / STOP / TOGGLE CAMERA
-  ═══════════════════════════════════════════ */
   async function startCamera() {
     setCameraState('starting');
     try {
@@ -754,36 +1085,25 @@
       const formats = [];
       const SF = Html5QrcodeSupportedFormats;
       if (SF) {
-        [SF.EAN_13, SF.EAN_8, SF.CODE_128, SF.CODE_39,
-         SF.UPC_A, SF.UPC_E, SF.QR_CODE]
+        [SF.EAN_13, SF.EAN_8, SF.CODE_128, SF.CODE_39, SF.UPC_A, SF.UPC_E, SF.QR_CODE]
           .forEach(f => { if (f !== undefined) formats.push(f); });
       }
 
-      const config = {
-        fps: 12,
-        qrbox: { width: 260, height: 120 },
-        aspectRatio: 1.777,
-        ...(formats.length ? { formatsToSupport: formats } : {})
-      };
-
       await instance.start(
         { facingMode: 'environment' },
-        config,
+        { fps: 12, qrbox: { width: 260, height: 120 }, aspectRatio: 1.777,
+          ...(formats.length ? { formatsToSupport: formats } : {}) },
         onCodeDetected,
-        () => {}   // per-frame failures — silent
+        () => {}
       );
       setCameraState('active');
     } catch (err) {
       scannerInstance = null;
       const msg = (err && (err.message || String(err))) || '';
       let friendly;
-      if (/NotAllowed|Permission/i.test(msg)) {
-        friendly = 'Permissão de câmera negada. Habilite nas configurações do navegador.';
-      } else if (/NotFound|device not found/i.test(msg)) {
-        friendly = 'Nenhuma câmera encontrada neste dispositivo.';
-      } else {
-        friendly = 'Erro ao acessar câmera: ' + (msg || 'desconhecido');
-      }
+      if (/NotAllowed|Permission/i.test(msg))      friendly = 'Permissão de câmera negada. Habilite nas configurações do navegador.';
+      else if (/NotFound|device not found/i.test(msg)) friendly = 'Nenhuma câmera encontrada neste dispositivo.';
+      else                                          friendly = 'Erro ao acessar câmera: ' + (msg || 'desconhecido');
       setCameraState('error');
       showCamError(friendly);
     }
@@ -798,18 +1118,16 @@
   }
 
   function toggleCamera() {
-    if (cameraState === 'active') {
-      stopCamera();
-    } else if (cameraState === 'idle' || cameraState === 'error') {
-      startCamera();
-    }
+    if (cameraState === 'active')                     stopCamera();
+    else if (cameraState === 'idle' || cameraState === 'error') startCamera();
   }
 
-  /* ═══════════════════════════════════════════
+  /* ═══════════════════════════════════════
      INIT
-  ═══════════════════════════════════════════ */
+  ═══════════════════════════════════════ */
   window.addEventListener('DOMContentLoaded', () => {
-    renderList(-1);        // restore from localStorage
+    updateMasterUI();
+    renderList(-1);
     updateUI();
     setTimeout(focusBarcode, 100);
   });
