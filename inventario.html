@@ -453,11 +453,11 @@
 
     #list-header {
       display: grid;
-      grid-template-columns: 120px 1fr 70px 36px;
+      grid-template-columns: 110px 1fr 62px 58px 30px;
       padding: 9px 14px;
       background: #141414;
       border-bottom: 1px solid var(--border);
-      gap: 6px;
+      gap: 5px;
     }
     #list-header span {
       font-size: 0.58rem;
@@ -465,7 +465,8 @@
       letter-spacing: 0.1em;
       text-transform: uppercase;
     }
-    #list-header span:nth-child(3) { text-align: right; }
+    #list-header span:nth-child(3),
+    #list-header span:nth-child(4) { text-align: right; }
 
     #list-body { max-height: 360px; overflow-y: auto; }
 
@@ -479,11 +480,11 @@
 
     .list-row {
       display: grid;
-      grid-template-columns: 120px 1fr 70px 36px;
+      grid-template-columns: 110px 1fr 62px 58px 30px;
       padding: 9px 14px;
       border-bottom: 1px solid #181818;
       align-items: center;
-      gap: 6px;
+      gap: 5px;
       transition: background 0.15s;
     }
     .list-row:nth-child(even) { background: rgba(255,255,255,0.025); }
@@ -510,6 +511,16 @@
     }
     .list-row.new .row-name,
     .list-row.updated .row-name { color: var(--text-muted); }
+
+    .row-price {
+      font-size: 0.75rem;
+      text-align: right;
+      color: var(--text-dim);
+      letter-spacing: 0.02em;
+      white-space: nowrap;
+    }
+    .list-row.new .row-price,
+    .list-row.updated .row-price { color: var(--text-muted); }
 
     .row-qty {
       font-size: 0.82rem;
@@ -676,6 +687,7 @@
       <div id="list-header">
         <span>Código</span>
         <span>Produto</span>
+        <span>Valor</span>
         <span>Qtd.</span>
         <span></span>
       </div>
@@ -741,9 +753,9 @@
 
   /* ═══════════════════════════════════════
      MASTER DATA LOAD — parse PRODUTO.TXT
-     Layout: [0-12] code (13 chars)
-             [13..end-8] name (trimmed)
-             [end-8..end] price (8 chars, trimmed)
+     Layout: [0-13]  code  (13 chars)
+             [13-33] name  (20 chars, trimmed)
+             [33-]   price (remainder, trimmed)
   ═══════════════════════════════════════ */
   function parseProdutoTxt(text, fileName) {
     const lines = text.split(/\r?\n/);
@@ -751,14 +763,11 @@
     let ok = 0;
 
     for (const raw of lines) {
-      const line = raw; // keep original length
-      if (line.length < 14) continue; // too short to have code + price
+      if (raw.length < 14) continue; // too short to hold code + anything
 
-      const code  = line.substring(0, 13).trim();
-      const price = line.length >= 21 ? line.substring(line.length - 8).trim() : '';
-      const name  = line.length > 21
-        ? line.substring(13, line.length - 8).trim()
-        : line.substring(13).trim();
+      const code  = raw.substring(0, 13).trim();
+      const name  = raw.length > 13 ? raw.substring(13, 33).trim() : '';
+      const price = raw.length > 33 ? raw.substring(33).trim()     : '';
 
       if (!code) continue;
       map.set(code, { name: name || '—', price: price || '' });
@@ -766,7 +775,7 @@
     }
 
     if (ok === 0) {
-      alert('Nenhum produto válido encontrado no arquivo.\n\nVerifique o formato: 13 chars de código + nome + 8 chars de preço.');
+      alert('Nenhum produto válido encontrado no arquivo.\n\nVerifique o formato: 13 chars código | 20 chars nome | restante preço.');
       return;
     }
 
@@ -795,9 +804,17 @@
     hideProductInfo();
   }
 
-  /* look up a code; returns { name, price } or null */
-  function lookupCode(code) {
-    return masterData.size > 0 ? (masterData.get(code) || null) : null;
+  /* Pad a raw code to 13 digits with leading zeros */
+  function padCode(raw) {
+    const s = String(raw || '').trim();
+    return s.length < 13 ? s.padStart(13, '0') : s;
+  }
+
+  /* look up a code (auto-pads to 13 digits); returns { name, price } or null */
+  function lookupCode(rawCode) {
+    if (masterData.size === 0) return null;
+    const code = padCode(rawCode);
+    return masterData.get(code) || null;
   }
 
   /* ═══════════════════════════════════════
@@ -845,10 +862,10 @@
 
   /* Called when barcode field changes (typed or auto-filled) */
   function handleBarcodeInput() {
-    const code = document.getElementById('barcode-input').value.trim();
-    if (!code) { hideProductInfo(); return; }
+    const raw = document.getElementById('barcode-input').value.trim();
+    if (!raw) { hideProductInfo(); return; }
     if (masterData.size > 0) {
-      const found = lookupCode(code);
+      const found = lookupCode(raw); // pads automatically
       if (found) showProductInfo(found.name, found.price);
       else hideProductInfo();
     }
@@ -891,14 +908,16 @@
       if (isNew)     badge = '<span class="badge">novo</span>';
       if (isUpdated) badge = '<span class="badge badge-sum">+soma</span>';
 
-      const displayName = escHtml(item.name || '—');
-      const displayCode = escHtml(item.code);
-      const displayQty  = escHtml(item.qty);
+      const displayName  = escHtml(item.name  || '—');
+      const displayCode  = escHtml(item.code);
+      const displayQty   = escHtml(item.qty);
+      const displayPrice = escHtml(item.price || '');
 
       row.innerHTML =
-        '<span class="row-code">' + displayCode + badge + '</span>' +
-        '<span class="row-name">' + displayName + '</span>' +
-        '<span class="row-qty">'  + displayQty  + '</span>' +
+        '<span class="row-code">'  + displayCode  + badge + '</span>' +
+        '<span class="row-name">'  + displayName  + '</span>' +
+        '<span class="row-price">' + displayPrice + '</span>' +
+        '<span class="row-qty">'   + displayQty   + '</span>' +
         '<button class="btn-del" title="Excluir" onclick="deleteItem(' + i + ')">✕</button>';
 
       body.appendChild(row);
@@ -912,14 +931,17 @@
   function addItem() {
     const barcodeEl = document.getElementById('barcode-input');
     const qtyEl     = document.getElementById('qty-input');
-    const code      = barcodeEl.value.trim();
-    if (!code) { barcodeEl.focus(); return; }
+    const rawCode   = barcodeEl.value.trim();
+    if (!rawCode) { barcodeEl.focus(); return; }
+
+    // Always normalise to 13-digit padded code
+    const code = padCode(rawCode);
 
     // ── Modo Blindado: validate against master ──
     let productName  = '';
     let productPrice = '';
     if (masterData.size > 0) {
-      const found = lookupCode(code);
+      const found = lookupCode(code); // lookupCode already pads, but code is already padded here
       if (!found) {
         alert('⚠️ Produto não cadastrado!\n\nCódigo: ' + code + '\n\nEste código não existe na carga carregada.');
         barcodeEl.select();
@@ -934,12 +956,12 @@
     qtyEl.value     = '';
     hideProductInfo();
 
+    // Dedup using the padded code
     const existingIndex = items.findIndex(function(it) { return it.code === code; });
 
     if (existingIndex !== -1) {
       const current = parseFloat(items[existingIndex].qty) || 0;
       items[existingIndex].qty = (current + incomingQty).toFixed(3);
-      // update name/price if we now have master data
       if (productName) {
         items[existingIndex].name  = productName;
         items[existingIndex].price = productPrice;
