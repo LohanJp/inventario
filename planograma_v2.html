@@ -6,7 +6,7 @@
 <title>Leitor de Planograma — Condor</title>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
-  /* ── VARIABLES ── */
+  /* ─── VARIABLES ─── */
   :root {
     --bg:        #0d1117;
     --surface:   #161b22;
@@ -20,6 +20,7 @@
     --info:      #58a6ff;
     --row-hover: #1c2128;
     --header-bg: #0d1117;
+    --done-bg:   rgba(63,185,80,.04);
   }
 
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -32,20 +33,20 @@
     min-height: 100vh;
   }
 
-  /* ── TOP BAR ── */
+  /* ─── HEADER ─── */
   header {
     background: var(--surface);
     border-bottom: 1px solid var(--border);
     padding: 0 24px;
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 10px;
     height: 56px;
     position: sticky;
     top: 0;
     z-index: 200;
   }
-  header .logo {
+  .logo {
     font-family: 'IBM Plex Mono', monospace;
     font-size: 14px;
     font-weight: 600;
@@ -53,8 +54,8 @@
     letter-spacing: .04em;
     white-space: nowrap;
   }
-  header .logo span { color: var(--muted); font-weight: 400; }
-  header .spacer { flex: 1; }
+  .logo span { color: var(--muted); font-weight: 400; }
+  .spacer { flex: 1; }
   #header-meta {
     font-size: 11px;
     color: var(--muted);
@@ -62,500 +63,393 @@
     white-space: nowrap;
   }
 
-  /* ── BUTTONS ── */
+  /* ─── BUTTONS ─── */
   label.btn, button.btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    background: var(--accent);
-    color: #000;
+    display: inline-flex; align-items: center; gap: 8px;
+    background: var(--accent); color: #000;
     font-family: 'IBM Plex Sans', sans-serif;
-    font-size: 13px;
-    font-weight: 600;
-    padding: 8px 18px;
-    border-radius: 6px;
-    cursor: pointer;
-    border: none;
-    transition: background .15s;
-    white-space: nowrap;
+    font-size: 13px; font-weight: 600;
+    padding: 8px 18px; border-radius: 6px;
+    cursor: pointer; border: none;
+    transition: background .15s; white-space: nowrap;
   }
   label.btn:hover, button.btn:hover { background: var(--accent2); }
 
   button.btn-outline {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
+    display: inline-flex; align-items: center; gap: 6px;
     background: transparent;
     border: 1px solid var(--border);
     color: var(--muted);
-    font-size: 12px;
-    padding: 6px 14px;
-    border-radius: 5px;
-    cursor: pointer;
-    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 12px; padding: 6px 13px; border-radius: 5px;
+    cursor: pointer; font-family: 'IBM Plex Sans', sans-serif;
     transition: border-color .15s, color .15s, background .15s;
-    white-space: nowrap;
+    white-space: nowrap; height: 32px;
   }
-  button.btn-outline:hover { border-color: var(--accent); color: var(--accent); }
+  button.btn-outline:hover  { border-color: var(--accent); color: var(--accent); }
   button.btn-outline.active { border-color: var(--accent); color: var(--accent); background: rgba(240,165,0,.08); }
+
+  button.btn-danger {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: transparent;
+    border: 1px solid rgba(248,81,73,.4);
+    color: var(--danger);
+    font-size: 12px; padding: 6px 13px; border-radius: 5px;
+    cursor: pointer; font-family: 'IBM Plex Sans', sans-serif;
+    transition: border-color .15s, background .15s;
+    white-space: nowrap; height: 32px;
+  }
+  button.btn-danger:hover { border-color: var(--danger); background: rgba(248,81,73,.08); }
 
   #file-input { display: none; }
 
-  /* ── UPLOAD ZONE ── */
+  /* ─── UPLOAD ─── */
   #upload-area {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 20px;
-    min-height: calc(100vh - 56px);
-    padding: 40px;
-    text-align: center;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 20px; min-height: calc(100vh - 56px);
+    padding: 40px; text-align: center;
   }
   #upload-area h2 {
     font-family: 'IBM Plex Mono', monospace;
-    font-size: 22px;
-    color: var(--text);
-    letter-spacing: .02em;
+    font-size: 22px; color: var(--text); letter-spacing: .02em;
   }
   #upload-area p { color: var(--muted); max-width: 400px; line-height: 1.6; }
 
   .drop-zone {
-    border: 2px dashed var(--border);
-    border-radius: 12px;
-    padding: 48px 80px;
-    cursor: pointer;
+    border: 2px dashed var(--border); border-radius: 12px;
+    padding: 48px 80px; cursor: pointer;
     transition: border-color .2s, background .2s;
     background: var(--surface);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 12px;
+    display: flex; flex-direction: column; align-items: center; gap: 12px;
   }
   .drop-zone:hover, .drop-zone.drag-over {
-    border-color: var(--accent);
-    background: rgba(240,165,0,.06);
+    border-color: var(--accent); background: rgba(240,165,0,.06);
   }
   .drop-zone svg { color: var(--accent); }
-  .drop-zone .dz-label {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 13px;
-    color: var(--muted);
-  }
-  .drop-zone .dz-label strong { color: var(--accent); }
+  .dz-label { font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: var(--muted); }
+  .dz-label strong { color: var(--accent); }
 
-  /* ── DASHBOARD ── */
+  /* ─── DASHBOARD ─── */
   #dashboard { display: none; padding: 20px 24px; }
 
   .meta-bar {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 12px;
-    align-items: center;
-    margin-bottom: 16px;
+    display: flex; flex-wrap: wrap; gap: 12px;
+    align-items: center; margin-bottom: 16px;
   }
   .meta-pill {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    padding: 6px 14px;
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 11px;
-    color: var(--muted);
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 6px; padding: 6px 14px;
+    font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--muted);
   }
   .meta-pill strong { color: var(--text); }
 
-  /* ── FILTER BAR ── */
+  /* ─── FILTER BAR ─── */
   .filter-bar {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 14px 18px;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 12px;
-    align-items: flex-end;
-    margin-bottom: 16px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 8px; padding: 14px 18px;
+    display: flex; flex-wrap: wrap; gap: 12px;
+    align-items: flex-end; margin-bottom: 16px;
   }
   .filter-group { display: flex; flex-direction: column; gap: 4px; }
   .filter-group > label {
-    font-size: 10px;
-    font-weight: 600;
-    color: var(--muted);
-    text-transform: uppercase;
-    letter-spacing: .08em;
+    font-size: 10px; font-weight: 600; color: var(--muted);
+    text-transform: uppercase; letter-spacing: .08em;
   }
-  .filter-group input,
+  .filter-group input[type=text],
   .filter-group select {
-    background: var(--bg);
-    border: 1px solid var(--border);
-    border-radius: 5px;
-    color: var(--text);
+    background: var(--bg); border: 1px solid var(--border);
+    border-radius: 5px; color: var(--text);
     font-family: 'IBM Plex Mono', monospace;
-    font-size: 12px;
-    padding: 6px 10px;
-    outline: none;
-    transition: border-color .15s;
-    min-width: 140px;
-    height: 32px;
+    font-size: 12px; padding: 6px 10px;
+    outline: none; transition: border-color .15s;
+    min-width: 140px; height: 32px;
   }
-  .filter-group input:focus,
+  .filter-group input[type=text]:focus,
   .filter-group select:focus { border-color: var(--accent); }
   .filter-group select option { background: var(--surface); }
   #search-box { min-width: 240px; }
 
-  .filter-actions { margin-left: auto; display: flex; gap: 8px; align-items: flex-end; }
+  /* "Mostrar itens feitos" toggle */
+  .check-label {
+    display: inline-flex; align-items: center; gap: 8px;
+    cursor: pointer; user-select: none;
+    font-size: 12px; color: var(--muted);
+    font-family: 'IBM Plex Sans', sans-serif;
+    height: 32px; white-space: nowrap;
+    transition: color .15s;
+  }
+  .check-label:hover { color: var(--text); }
+  .check-label input[type=checkbox] {
+    accent-color: var(--ok);
+    width: 14px; height: 14px; cursor: pointer;
+  }
 
-  /* ── COLUMN PICKER DROPDOWN ── */
+  /* Progress counter pill */
+  #progress-pill {
+    background: rgba(63,185,80,.1);
+    border: 1px solid rgba(63,185,80,.25);
+    border-radius: 6px; padding: 6px 14px;
+    font-family: 'IBM Plex Mono', monospace; font-size: 11px;
+    color: var(--ok); display: none;
+  }
+  #progress-pill strong { font-weight: 700; }
+
+  .filter-actions { margin-left: auto; display: flex; gap: 8px; align-items: flex-end; flex-wrap: wrap; }
+
+  /* ─── COLUMN PICKER ─── */
   .col-picker-wrap { position: relative; }
-
   #col-dropdown {
-    display: none;
-    position: absolute;
-    top: calc(100% + 6px);
-    right: 0;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 8px 0;
-    z-index: 300;
-    min-width: 210px;
-    box-shadow: 0 8px 24px rgba(0,0,0,.5);
+    display: none; position: absolute; top: calc(100% + 6px); right: 0;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 8px; padding: 8px 0; z-index: 300;
+    min-width: 210px; box-shadow: 0 8px 24px rgba(0,0,0,.5);
   }
   #col-dropdown.open { display: block; }
-
   .col-dropdown-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 6px 14px 10px;
-    border-bottom: 1px solid var(--border);
-    margin-bottom: 4px;
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 6px 14px 10px; border-bottom: 1px solid var(--border); margin-bottom: 4px;
   }
   .col-dropdown-header span {
-    font-size: 10px;
-    font-weight: 600;
-    color: var(--muted);
-    text-transform: uppercase;
-    letter-spacing: .08em;
+    font-size: 10px; font-weight: 600; color: var(--muted);
+    text-transform: uppercase; letter-spacing: .08em;
   }
   .col-dropdown-header button {
-    background: none;
-    border: none;
-    color: var(--accent);
-    font-size: 10px;
-    cursor: pointer;
-    font-family: 'IBM Plex Sans', sans-serif;
-    padding: 0;
+    background: none; border: none; color: var(--accent);
+    font-size: 10px; cursor: pointer;
+    font-family: 'IBM Plex Sans', sans-serif; padding: 0;
   }
   .col-dropdown-header button:hover { text-decoration: underline; }
-
   .col-item {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 6px 14px;
-    cursor: pointer;
-    transition: background .1s;
-    user-select: none;
+    display: flex; align-items: center; gap: 10px;
+    padding: 6px 14px; cursor: pointer;
+    transition: background .1s; user-select: none;
   }
   .col-item:hover { background: var(--row-hover); }
   .col-item input[type=checkbox] {
-    accent-color: var(--accent);
-    width: 13px;
-    height: 13px;
-    cursor: pointer;
-    flex-shrink: 0;
+    accent-color: var(--accent); width: 13px; height: 13px;
+    cursor: pointer; flex-shrink: 0;
   }
-  .col-item span {
-    font-size: 12px;
-    color: var(--text);
-    font-family: 'IBM Plex Mono', monospace;
-  }
+  .col-item span { font-size: 12px; color: var(--text); font-family: 'IBM Plex Mono', monospace; }
 
-  /* ── TABLE WRAPPER ── */
+  /* ─── TABLE WRAPPER ─── */
   .table-wrap {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    overflow: hidden;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 8px; overflow: hidden;
   }
   .table-info {
-    padding: 10px 16px;
-    border-bottom: 1px solid var(--border);
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 11px;
-    color: var(--muted);
+    padding: 10px 16px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 8px;
+    font-size: 11px; color: var(--muted);
   }
-  .table-info #row-count {
+  #row-count {
     font-family: 'IBM Plex Mono', monospace;
-    color: var(--accent);
-    font-weight: 600;
-    font-size: 12px;
+    color: var(--accent); font-weight: 600; font-size: 12px;
   }
 
   .scroll-x { overflow-x: auto; }
 
-  /* ── TABLE ── */
+  /* ─── TABLE ─── */
   table {
-    width: 100%;
-    border-collapse: collapse;
+    width: 100%; border-collapse: collapse;
     font-family: 'IBM Plex Mono', monospace;
-    font-size: 11px;
-    table-layout: auto; /* fills width naturally when cols are hidden */
+    font-size: 11px; table-layout: auto;
   }
   thead {
     background: var(--header-bg);
-    position: sticky;
-    top: 56px;
-    z-index: 10;
+    position: sticky; top: 56px; z-index: 10;
   }
   thead th {
-    padding: 9px 12px;
-    text-align: left;
-    color: var(--muted);
-    font-size: 10px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: .08em;
-    white-space: nowrap;
-    border-bottom: 1px solid var(--border);
-    cursor: pointer;
-    user-select: none;
-    transition: color .15s;
+    padding: 9px 10px; text-align: left;
+    color: var(--muted); font-size: 10px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: .07em;
+    white-space: nowrap; border-bottom: 1px solid var(--border);
+    cursor: pointer; user-select: none; transition: color .15s;
   }
   thead th:hover { color: var(--accent); }
   thead th.sort-asc::after  { content: ' ▲'; color: var(--accent); font-size: 8px; }
   thead th.sort-desc::after { content: ' ▼'; color: var(--accent); font-size: 8px; }
+  /* Check column header — not sortable */
+  #th-check { cursor: default; width: 36px; }
+  #th-check:hover { color: var(--muted); }
 
-  /* Hidden column: both th and td */
+  /* Hidden columns */
   th.col-hidden, td.col-hidden { display: none !important; }
 
-  tbody tr {
-    border-bottom: 1px solid var(--border);
-    transition: background .1s;
-  }
+  /* ─── ROWS ─── */
+  tbody tr { border-bottom: 1px solid var(--border); transition: background .1s; }
   tbody tr:last-child { border-bottom: none; }
   tbody tr:hover { background: var(--row-hover); }
 
-  /* category separator */
+  /* Category separator */
   tr.cat-row td {
-    background: rgba(240,165,0,.08);
-    color: var(--accent);
+    background: rgba(240,165,0,.08); color: var(--accent);
     font-family: 'IBM Plex Sans', sans-serif;
-    font-size: 10px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: .1em;
-    padding: 6px 12px;
+    font-size: 10px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: .1em; padding: 6px 12px;
     border-top: 1px solid rgba(240,165,0,.25);
     border-bottom: 1px solid rgba(240,165,0,.15);
   }
 
   td {
-    padding: 7px 12px;
-    white-space: nowrap;
-    color: var(--text);
-    vertical-align: middle;
+    padding: 7px 10px; white-space: nowrap;
+    color: var(--text); vertical-align: middle;
   }
-  td.muted { color: var(--muted); }
-  td.num     { text-align: right; color: var(--info); }
-  td.num-neg { text-align: right; color: var(--danger); }
-  td.num-ok  { text-align: right; color: var(--ok); }
+  td.muted     { color: var(--muted); }
+  td.num       { text-align: right; color: var(--info); }
+  td.num-neg   { text-align: right; color: var(--danger); }
+  td.num-ok    { text-align: right; color: var(--ok); }
 
-  /* Status badge */
+  /* ─── DONE ROW ─── */
+  tr.row-done {
+    background: var(--done-bg);
+    opacity: .55;
+  }
+  tr.row-done:hover { background: var(--done-bg); opacity: .7; }
+  tr.row-done td:not(.td-check) {
+    text-decoration: line-through;
+    text-decoration-color: rgba(125,133,144,.5);
+    color: var(--muted) !important;
+  }
+  tr.row-done .badge, tr.row-done .giro { opacity: .5; }
+
+  /* ─── CHECK CELL ─── */
+  .td-check {
+    width: 36px; text-align: center; padding: 0 6px; cursor: pointer;
+  }
+  .check-btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 22px; height: 22px; border-radius: 5px; border: 1.5px solid var(--border);
+    background: transparent; cursor: pointer; transition: all .15s;
+    flex-shrink: 0;
+  }
+  .check-btn svg { display: none; }
+  .check-btn:hover { border-color: var(--ok); background: rgba(63,185,80,.1); }
+  .check-btn.checked {
+    border-color: var(--ok); background: rgba(63,185,80,.18);
+  }
+  .check-btn.checked svg { display: block; }
+
+  /* ─── BADGES ─── */
   .badge {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 22px; height: 22px;
-    border-radius: 4px;
-    font-size: 11px;
-    font-weight: 700;
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 22px; height: 22px; border-radius: 4px;
+    font-size: 11px; font-weight: 700;
   }
   .badge-A { background: rgba(63,185,80,.15);   color: var(--ok); }
   .badge-I { background: rgba(248,81,73,.15);   color: var(--danger); }
   .badge-X { background: rgba(125,133,144,.15); color: var(--muted); }
 
-  /* Giro badges */
   .giro {
-    display: inline-flex;
-    align-items: center;
-    padding: 2px 7px;
-    border-radius: 3px;
-    font-size: 10px;
-    font-weight: 700;
-    letter-spacing: .04em;
+    display: inline-flex; align-items: center;
+    padding: 2px 7px; border-radius: 3px;
+    font-size: 10px; font-weight: 700; letter-spacing: .04em;
   }
-  .giro-A  { background: rgba(63,185,80,.15); color: var(--ok); }
+  .giro-A  { background: rgba(63,185,80,.15);  color: var(--ok); }
   .giro-B  { background: rgba(88,166,255,.15); color: var(--info); }
   .giro-CA { background: rgba(240,165,0,.15);  color: var(--accent); }
   .giro-CB { background: rgba(240,165,0,.10);  color: #c88a00; }
   .giro-CC { background: rgba(248,81,73,.10);  color: var(--danger); }
 
-  .desc-cell { max-width: 260px; overflow: hidden; text-overflow: ellipsis; color: var(--text); }
-  .nome-cell { max-width: 180px; overflow: hidden; text-overflow: ellipsis; color: var(--muted); }
+  .desc-cell { max-width: 240px; overflow: hidden; text-overflow: ellipsis; }
+  .nome-cell { max-width: 170px; overflow: hidden; text-overflow: ellipsis; color: var(--muted); }
 
-  /* ── LOADING ── */
+  /* ─── LOADING ─── */
   #loading {
-    display: none;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 16px;
-    min-height: calc(100vh - 56px);
-    color: var(--muted);
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 13px;
+    display: none; flex-direction: column; align-items: center;
+    justify-content: center; gap: 16px; min-height: calc(100vh - 56px);
+    color: var(--muted); font-family: 'IBM Plex Mono', monospace; font-size: 13px;
   }
   .spinner {
     width: 36px; height: 36px;
-    border: 3px solid var(--border);
-    border-top-color: var(--accent);
-    border-radius: 50%;
-    animation: spin .7s linear infinite;
+    border: 3px solid var(--border); border-top-color: var(--accent);
+    border-radius: 50%; animation: spin .7s linear infinite;
   }
   @keyframes spin { to { transform: rotate(360deg); } }
 
-  /* ── EMPTY STATE ── */
+  /* ─── EMPTY ─── */
   #empty-state {
-    display: none;
-    padding: 60px;
-    text-align: center;
-    color: var(--muted);
-    font-size: 13px;
+    display: none; padding: 60px; text-align: center;
+    color: var(--muted); font-size: 13px;
   }
 
-  /* ── SCROLLBAR ── */
+  /* ─── SCROLLBAR ─── */
   ::-webkit-scrollbar { width: 6px; height: 6px; }
   ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
   ::-webkit-scrollbar-thumb:hover { background: var(--muted); }
 
-  /* ════════════════════════════════════════════════════════
-     PRINT STYLES
-     ════════════════════════════════════════════════════════ */
+  /* ═══════════════════════════════════════
+     PRINT
+     ═══════════════════════════════════════ */
   @media print {
-    /* Reset all dark-mode colors */
     :root {
-      --bg: #fff;
-      --surface: #fff;
-      --border: #ccc;
-      --accent: #c07000;
-      --text: #111;
-      --muted: #555;
-      --ok: #1a7a30;
-      --danger: #b91c1c;
-      --info: #1d4ed8;
-      --row-hover: #fff;
-      --header-bg: #f5f5f5;
+      --bg: #fff; --surface: #fff; --border: #ccc;
+      --accent: #b06000; --text: #111; --muted: #555;
+      --ok: #1a7a30; --danger: #b91c1c; --info: #1d4ed8;
+      --row-hover: #fff; --header-bg: #f5f5f5;
     }
-
     body { background: #fff; color: #111; font-size: 11px; }
 
-    /* Hide non-essential chrome */
-    header,
-    #upload-area,
-    #loading,
-    .meta-bar,
-    .filter-bar,
-    .table-info,
-    #empty-state { display: none !important; }
+    header, #upload-area, #loading, .meta-bar,
+    .filter-bar, .table-info, #empty-state,
+    .td-check, #th-check { display: none !important; }
 
     #dashboard { display: block !important; padding: 0; }
-
-    .table-wrap {
-      border: 1px solid #ccc;
-      border-radius: 0;
-      box-shadow: none;
-    }
+    .table-wrap { border: 1px solid #ccc; border-radius: 0; }
     .scroll-x { overflow: visible; }
 
-    table {
-      width: 100%;
-      font-size: 9px;
-      border-collapse: collapse;
-      page-break-inside: auto;
-    }
-
-    thead {
-      position: static; /* disable sticky for print */
-      background: #f0f0f0;
-    }
+    table { width: 100%; font-size: 9px; page-break-inside: auto; }
+    thead { position: static; background: #f0f0f0; }
     thead th {
-      color: #333;
-      background: #f0f0f0;
-      border-bottom: 2px solid #bbb;
-      padding: 5px 7px;
-      font-size: 8px;
+      color: #333; background: #f0f0f0;
+      border-bottom: 2px solid #bbb; padding: 5px 6px; font-size: 8px;
     }
-    thead th::after { display: none; } /* remove sort arrows */
-
+    thead th::after { display: none; }
     tbody tr { page-break-inside: avoid; }
     tbody tr:hover { background: #fff; }
-
-    td {
-      color: #111;
-      padding: 4px 7px;
-      border-bottom: 1px solid #e0e0e0;
-    }
-    td.muted     { color: #555; }
-    td.num       { color: #1d4ed8; }
-    td.num-neg   { color: #b91c1c; }
-    td.num-ok    { color: #1a7a30; }
-
+    td { color: #111; padding: 4px 6px; border-bottom: 1px solid #e0e0e0; }
+    td.muted   { color: #555; }
+    td.num     { color: #1d4ed8; }
+    td.num-neg { color: #b91c1c; }
+    td.num-ok  { color: #1a7a30; }
     tr.cat-row td {
-      background: #fff8e1;
-      color: #c07000;
-      border-top: 1px solid #e0c060;
-      border-bottom: 1px solid #e0c060;
-      font-size: 8px;
+      background: #fff8e1; color: #b06000;
+      border-top: 1px solid #e0c060; border-bottom: 1px solid #e0c060; font-size: 8px;
     }
-
-    /* Badges: print-friendly */
+    tr.row-done { opacity: .45; }
+    tr.row-done td { text-decoration: line-through; color: #999 !important; }
     .badge-A { background: #d1fae5; color: #065f46; }
     .badge-I { background: #fee2e2; color: #991b1b; }
-    .badge-X { background: #f3f4f6; color: #374151; }
-    .giro    { background: transparent !important; border: 1px solid #999; color: #333 !important; }
+    .giro { background: transparent !important; border: 1px solid #999; color: #333 !important; }
+    .desc-cell, .nome-cell { max-width: none; overflow: visible; }
 
-    .desc-cell, .nome-cell { max-width: none; overflow: visible; text-overflow: clip; }
-
-    /* Print title */
     #dashboard::before {
       content: 'Planograma — Condor Super Center';
-      display: block;
-      font-family: 'IBM Plex Mono', monospace;
-      font-size: 13px;
-      font-weight: 600;
-      color: #111;
-      margin-bottom: 10px;
-      padding-bottom: 6px;
-      border-bottom: 2px solid #111;
+      display: block; font-family: 'IBM Plex Mono', monospace;
+      font-size: 13px; font-weight: 600; color: #111;
+      margin-bottom: 10px; padding-bottom: 6px; border-bottom: 2px solid #111;
     }
   }
 </style>
 </head>
 <body>
 
-<!-- ── HEADER ── -->
+<!-- ─── HEADER ─── -->
 <header>
   <div class="logo">PLANOGRAMA<span> // CONDOR</span></div>
   <div class="spacer"></div>
   <div id="header-meta"></div>
 
-  <!-- Print button (only shown after file loaded) -->
-  <button class="btn-outline" id="print-btn" style="display:none;" onclick="window.print()">
+  <button class="btn-outline" id="print-btn" style="display:none" onclick="window.print()">
     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
-      <polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>
+      <polyline points="6 9 6 2 18 2 18 9"/>
+      <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>
       <rect x="6" y="14" width="12" height="8"/>
     </svg>
     Imprimir
   </button>
 
-  <!-- Reload button -->
-  <label class="btn" id="reload-btn" style="display:none;" for="file-input">
+  <label class="btn" id="reload-btn" style="display:none" for="file-input">
     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
       <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/>
     </svg>
@@ -564,7 +458,7 @@
   <input type="file" id="file-input" accept=".txt">
 </header>
 
-<!-- ── UPLOAD ── -->
+<!-- ─── UPLOAD ─── -->
 <div id="upload-area">
   <h2>Leitor de Planograma</h2>
   <p>Carregue o arquivo <strong>.txt</strong> exportado do sistema Condor para visualizar os dados em tabela interativa.</p>
@@ -572,29 +466,27 @@
     <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
       <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
       <polyline points="14 2 14 8 20 8"/>
-      <line x1="12" y1="18" x2="12" y2="12"/>
-      <polyline points="9 15 12 12 15 15"/>
+      <line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 12 15 15"/>
     </svg>
     <span class="dz-label">Arraste o arquivo aqui ou <strong>clique para selecionar</strong></span>
-    <span class="dz-label" style="font-size:10px;">Formato: relatório listaplanograma.w</span>
+    <span class="dz-label" style="font-size:10px">Formato: relatório listaplanograma.w</span>
   </div>
   <label class="btn" for="file-input">
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
       <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-      <polyline points="17 8 12 3 7 8"/>
-      <line x1="12" y1="3" x2="12" y2="15"/>
+      <polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
     </svg>
     Selecionar arquivo
   </label>
 </div>
 
-<!-- ── LOADING ── -->
+<!-- ─── LOADING ─── -->
 <div id="loading">
   <div class="spinner"></div>
   <span>Processando arquivo…</span>
 </div>
 
-<!-- ── DASHBOARD ── -->
+<!-- ─── DASHBOARD ─── -->
 <div id="dashboard">
   <div class="meta-bar" id="meta-bar"></div>
 
@@ -633,12 +525,28 @@
         <option value="pos">Positivo</option>
       </select>
     </div>
+    <!-- Mostrar feitos -->
+    <div class="filter-group" style="justify-content:flex-end">
+      <label style="opacity:0;font-size:10px">x</label>
+      <label class="check-label" id="show-done-label">
+        <input type="checkbox" id="show-done-cb">
+        Mostrar itens feitos
+      </label>
+    </div>
 
     <!-- Actions -->
     <div class="filter-actions">
       <button class="btn-outline" id="clear-btn">Limpar filtros</button>
+      <button class="btn-danger" id="reset-progress-btn" style="display:none">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+          <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+          <path d="M10 11v6"/><path d="M14 11v6"/>
+          <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+        </svg>
+        Resetar baixas
+      </button>
 
-      <!-- ── Column picker ── -->
+      <!-- Column picker -->
       <div class="col-picker-wrap">
         <button class="btn-outline" id="col-btn">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -654,7 +562,7 @@
         <div id="col-dropdown">
           <div class="col-dropdown-header">
             <span>Colunas visíveis</span>
-            <button id="col-toggle-all">Marcar todas</button>
+            <button id="col-toggle-all">Desmarcar todas</button>
           </div>
           <!-- items injected by JS -->
         </div>
@@ -662,15 +570,18 @@
     </div>
   </div>
 
-  <!-- ── TABLE ── -->
+  <!-- TABLE -->
   <div class="table-wrap">
     <div class="table-info">
       Exibindo <span id="row-count">0</span> produto(s)
+      &nbsp;<span id="progress-pill"></span>
     </div>
     <div class="scroll-x">
       <table id="main-table">
         <thead>
           <tr id="thead-row">
+            <!-- Check column — always visible, not in COLS array -->
+            <th id="th-check" title="Dar baixa"></th>
             <th data-col="st">St</th>
             <th data-col="automacao">Automação / EAN</th>
             <th data-col="produto">Produto</th>
@@ -699,9 +610,9 @@
 </div>
 
 <script>
-/* ═══════════════════════════════════════════════════════
-   COLUMN DEFINITIONS — fixed-width positions in the .txt
-   ═══════════════════════════════════════════════════════ */
+/* ════════════════════════════════════════════════════════
+   COLUMN POSITIONS — fixed-width positions in the .txt
+   ════════════════════════════════════════════════════════ */
 const COLS = [
   { key: 'st',         start: 0,   end: 2   },
   { key: 'automacao',  start: 3,   end: 16  },
@@ -723,20 +634,52 @@ const COLS = [
   { key: 'pbl',        start: 192, end: 195 },
 ];
 
-// Tracks which columns are currently visible (all visible by default)
+const COL_LABELS = {
+  st:'St (Status)', automacao:'Automação / EAN', produto:'Produto',
+  descricao:'Descrição', emb:'Emb', referencia:'Referência',
+  fornec:'Fornec.', nome:'Nome Fornecedor', sist:'Sist',
+  giro:'Giro', corredor:'Corredor', altura:'Altura',
+  largura:'Largura', prof:'Prof', total:'Total',
+  cobplan:'Cob.Plan', qtdestoque:'Qtd.Estoque', pbl:'PBL',
+};
+
 const visibleCols = new Set(COLS.map(c => c.key));
 
-/* ═══════════════════════════════════════════════════════
+/* ════════════════════════════════════════════════════════
+   LOCALSTORAGE — DONE SET
+   Key: "planograma_done_<filialKey>"
+   Value: JSON array of EAN strings
+   ════════════════════════════════════════════════════════ */
+let lsKey = 'planograma_done_default';
+let doneSet = new Set(); // EANs marked as done
+
+function lsLoad() {
+  try {
+    const raw = localStorage.getItem(lsKey);
+    doneSet = new Set(raw ? JSON.parse(raw) : []);
+  } catch { doneSet = new Set(); }
+}
+
+function lsSave() {
+  try { localStorage.setItem(lsKey, JSON.stringify([...doneSet])); } catch {}
+}
+
+function lsClear() {
+  doneSet.clear();
+  try { localStorage.removeItem(lsKey); } catch {}
+}
+
+/* ════════════════════════════════════════════════════════
    REGEXES
-   ═══════════════════════════════════════════════════════ */
-const RE_CAT  = /^\s{2,}\d{2}\.\d{3}\.\d{3}\.\d{3}\s+(.+)/;
-const RE_DATA = /^([A-Z])\s{2}(\d{13})/;
-const RE_DATE = /Data:\s*([\d/]+)/;
+   ════════════════════════════════════════════════════════ */
+const RE_CAT    = /^\s{2,}\d{2}\.\d{3}\.\d{3}\.\d{3}\s+(.+)/;
+const RE_DATA   = /^([A-Z])\s{2}(\d{13})/;
+const RE_DATE   = /Data:\s*([\d/]+)/;
 const RE_FILIAL = /Filial:\s*(.+?)\s{3,}/;
 
-/* ═══════════════════════════════════════════════════════
+/* ════════════════════════════════════════════════════════
    PARSER
-   ═══════════════════════════════════════════════════════ */
+   ════════════════════════════════════════════════════════ */
 function extractField(line, col) {
   if (line.length <= col.start) return '';
   return (line.substring(col.start, col.end) || '').trim();
@@ -755,28 +698,24 @@ function parseFile(text) {
   let metaDate = '', metaFilial = '', metaHora = '';
 
   for (const line of lines) {
-    // metadata
-    if (!metaDate) { const m = RE_DATE.exec(line); if (m) metaDate = m[1]; }
+    if (!metaDate)   { const m = RE_DATE.exec(line);   if (m) metaDate = m[1]; }
     if (!metaFilial) {
       const m = RE_FILIAL.exec(line);
-      if (m) metaFilial = m[1].replace(/CONDOR SUPER CENTER LTDA\.\s*/i, '').trim();
+      if (m) metaFilial = m[1].replace(/CONDOR SUPER CENTER LTDA\.\s*/i,'').trim();
     }
     if (!metaHora && line.includes('Hora:')) {
       const m = /Hora:\s*([\d:]+)/.exec(line);
       if (m) metaHora = m[1];
     }
 
-    // category
-    const catMatch = RE_CAT.exec(line);
-    if (catMatch) { currentCat = catMatch[1].trim(); continue; }
+    const catM = RE_CAT.exec(line);
+    if (catM) { currentCat = catM[1].trim(); continue; }
 
-    // data row
     if (RE_DATA.test(line)) {
       const row = parseLine(line);
       row.categoria = currentCat;
-      // clean underscores used as blanks in numeric fields
       ['corredor','altura','largura','prof','total','cobplan','qtdestoque'].forEach(k => {
-        if (row[k]) row[k] = row[k].replace(/_+/g, '').trim();
+        if (row[k]) row[k] = row[k].replace(/_+/g,'').trim();
       });
       records.push(row);
     }
@@ -785,41 +724,44 @@ function parseFile(text) {
   return { records, meta: { date: metaDate, filial: metaFilial, hora: metaHora } };
 }
 
-/* ═══════════════════════════════════════════════════════
+/* ════════════════════════════════════════════════════════
    STATE
-   ═══════════════════════════════════════════════════════ */
+   ════════════════════════════════════════════════════════ */
 let allRecords = [];
 let filtered   = [];
 let sortCol    = null, sortDir = 1;
 
-/* ═══════════════════════════════════════════════════════
+/* ════════════════════════════════════════════════════════
    DOM REFS
-   ═══════════════════════════════════════════════════════ */
-const fileInput   = document.getElementById('file-input');
-const dropZone    = document.getElementById('drop-zone');
-const uploadArea  = document.getElementById('upload-area');
-const loadingEl   = document.getElementById('loading');
-const dashboard   = document.getElementById('dashboard');
-const tbody       = document.getElementById('tbody');
-const rowCount    = document.getElementById('row-count');
-const searchBox   = document.getElementById('search-box');
-const catFilter   = document.getElementById('cat-filter');
-const stFilter    = document.getElementById('st-filter');
-const giroFilter  = document.getElementById('giro-filter');
-const stockFilter = document.getElementById('stock-filter');
-const clearBtn    = document.getElementById('clear-btn');
-const emptyState  = document.getElementById('empty-state');
-const reloadBtn   = document.getElementById('reload-btn');
-const printBtn    = document.getElementById('print-btn');
-const metaBar     = document.getElementById('meta-bar');
-const headerMeta  = document.getElementById('header-meta');
-const colBtn      = document.getElementById('col-btn');
-const colDropdown = document.getElementById('col-dropdown');
-const colToggleAll= document.getElementById('col-toggle-all');
+   ════════════════════════════════════════════════════════ */
+const fileInput        = document.getElementById('file-input');
+const dropZone         = document.getElementById('drop-zone');
+const uploadArea       = document.getElementById('upload-area');
+const loadingEl        = document.getElementById('loading');
+const dashboard        = document.getElementById('dashboard');
+const tbody            = document.getElementById('tbody');
+const rowCountEl       = document.getElementById('row-count');
+const searchBox        = document.getElementById('search-box');
+const catFilter        = document.getElementById('cat-filter');
+const stFilter         = document.getElementById('st-filter');
+const giroFilter       = document.getElementById('giro-filter');
+const stockFilter      = document.getElementById('stock-filter');
+const showDoneCb       = document.getElementById('show-done-cb');
+const clearBtn         = document.getElementById('clear-btn');
+const resetProgressBtn = document.getElementById('reset-progress-btn');
+const emptyState       = document.getElementById('empty-state');
+const reloadBtn        = document.getElementById('reload-btn');
+const printBtn         = document.getElementById('print-btn');
+const metaBar          = document.getElementById('meta-bar');
+const headerMeta       = document.getElementById('header-meta');
+const colBtn           = document.getElementById('col-btn');
+const colDropdown      = document.getElementById('col-dropdown');
+const colToggleAll     = document.getElementById('col-toggle-all');
+const progressPill     = document.getElementById('progress-pill');
 
-/* ═══════════════════════════════════════════════════════
+/* ════════════════════════════════════════════════════════
    FILE LOAD
-   ═══════════════════════════════════════════════════════ */
+   ════════════════════════════════════════════════════════ */
 fileInput.addEventListener('change', e => { if (e.target.files[0]) loadFile(e.target.files[0]); });
 dropZone.addEventListener('click', () => fileInput.click());
 dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
@@ -834,10 +776,16 @@ function loadFile(file) {
   uploadArea.style.display = 'none';
   loadingEl.style.display  = 'flex';
   const reader = new FileReader();
-  reader.onload = e => {
+  reader.onload = ev => {
     setTimeout(() => {
-      const { records, meta } = parseFile(e.target.result);
+      const { records, meta } = parseFile(ev.target.result);
       allRecords = records;
+
+      // Build a stable localStorage key from filial+date
+      const slug = (meta.filial + '_' + meta.date).replace(/[^a-zA-Z0-9]/g,'_').toLowerCase();
+      lsKey = 'planograma_done_' + (slug || 'default');
+      lsLoad();
+
       buildDashboard(meta);
       loadingEl.style.display = 'none';
       dashboard.style.display = 'block';
@@ -848,11 +796,10 @@ function loadFile(file) {
   reader.readAsText(file, 'latin1');
 }
 
-/* ═══════════════════════════════════════════════════════
+/* ════════════════════════════════════════════════════════
    BUILD DASHBOARD
-   ═══════════════════════════════════════════════════════ */
+   ════════════════════════════════════════════════════════ */
 function buildDashboard(meta) {
-  // meta pills
   metaBar.innerHTML = '';
   [
     ['Filial', meta.filial || '—'],
@@ -868,96 +815,83 @@ function buildDashboard(meta) {
 
   headerMeta.textContent = meta.filial ? `Filial ${meta.filial} · ${meta.date}` : '';
 
-  // category filter
   const cats = [...new Set(allRecords.map(r => r.categoria).filter(Boolean))].sort();
   catFilter.innerHTML = '<option value="">Todas as categorias</option>';
-  cats.forEach(c => {
-    const o = document.createElement('option');
-    o.value = c; o.textContent = c;
-    catFilter.appendChild(o);
-  });
+  cats.forEach(c => { const o = document.createElement('option'); o.value = c; o.textContent = c; catFilter.appendChild(o); });
 
-  // giro filter
-  const giros = [...new Set(allRecords.map(r => (r.giro || '').trim()).filter(Boolean))].sort();
+  const giros = [...new Set(allRecords.map(r => (r.giro||'').trim()).filter(Boolean))].sort();
   giroFilter.innerHTML = '<option value="">Todos</option>';
-  giros.forEach(g => {
-    const o = document.createElement('option');
-    o.value = g; o.textContent = g;
-    giroFilter.appendChild(o);
-  });
+  giros.forEach(g => { const o = document.createElement('option'); o.value = g; o.textContent = g; giroFilter.appendChild(o); });
 
   buildColDropdown();
   applyFilters();
 }
 
-/* ═══════════════════════════════════════════════════════
+/* ════════════════════════════════════════════════════════
+   DONE SET HELPERS
+   ════════════════════════════════════════════════════════ */
+function toggleDone(ean) {
+  if (doneSet.has(ean)) doneSet.delete(ean);
+  else doneSet.add(ean);
+  lsSave();
+  updateResetBtn();
+  applyFilters(); // re-render: item may now disappear if "show done" is off
+}
+
+function updateResetBtn() {
+  resetProgressBtn.style.display = doneSet.size > 0 ? 'inline-flex' : 'none';
+}
+
+function updateProgressPill() {
+  const total = allRecords.length;
+  const done  = allRecords.filter(r => doneSet.has(r.automacao)).length;
+  if (done === 0) {
+    progressPill.textContent = '';
+    progressPill.style.display = 'none';
+  } else {
+    progressPill.innerHTML = `✓ <strong>${done}</strong> / ${total} feitos`;
+    progressPill.style.display = 'inline-block';
+  }
+}
+
+/* ════════════════════════════════════════════════════════
    COLUMN PICKER
-   ═══════════════════════════════════════════════════════ */
-// Human-readable labels for each column key
-const COL_LABELS = {
-  st: 'St (Status)', automacao: 'Automação / EAN', produto: 'Produto',
-  descricao: 'Descrição', emb: 'Emb', referencia: 'Referência',
-  fornec: 'Fornec.', nome: 'Nome Fornecedor', sist: 'Sist',
-  giro: 'Giro', corredor: 'Corredor', altura: 'Altura',
-  largura: 'Largura', prof: 'Prof', total: 'Total',
-  cobplan: 'Cob.Plan', qtdestoque: 'Qtd.Estoque', pbl: 'PBL',
-};
-
+   ════════════════════════════════════════════════════════ */
 function buildColDropdown() {
-  // Remove existing items (keep header)
   colDropdown.querySelectorAll('.col-item').forEach(el => el.remove());
-
   COLS.forEach(col => {
     const item = document.createElement('label');
     item.className = 'col-item';
-
     const cb = document.createElement('input');
-    cb.type = 'checkbox';
-    cb.checked = visibleCols.has(col.key);
-    cb.dataset.colKey = col.key;
+    cb.type = 'checkbox'; cb.checked = visibleCols.has(col.key); cb.dataset.colKey = col.key;
     cb.addEventListener('change', () => {
-      if (cb.checked) visibleCols.add(col.key);
-      else visibleCols.delete(col.key);
-      applyColVisibility();
-      updateToggleAllLabel();
+      if (cb.checked) visibleCols.add(col.key); else visibleCols.delete(col.key);
+      applyColVisibility(); updateToggleAllLabel();
     });
-
     const lbl = document.createElement('span');
     lbl.textContent = COL_LABELS[col.key] || col.key;
-
-    item.appendChild(cb);
-    item.appendChild(lbl);
+    item.appendChild(cb); item.appendChild(lbl);
     colDropdown.appendChild(item);
   });
 }
 
 function applyColVisibility() {
-  const allVisible = visibleCols.size;
-  // Count visible columns for cat-row colspan
-  const visibleCount = COLS.filter(c => visibleCols.has(c.key)).length;
-
-  // th elements
-  document.querySelectorAll('#thead-row th').forEach(th => {
+  const visCount = COLS.filter(c => visibleCols.has(c.key)).length + 1; // +1 for check col
+  document.querySelectorAll('#thead-row th[data-col]').forEach(th => {
     th.classList.toggle('col-hidden', !visibleCols.has(th.dataset.col));
   });
-
-  // td elements (data rows only — identified by data-col attribute)
   document.querySelectorAll('#tbody td[data-col]').forEach(td => {
     td.classList.toggle('col-hidden', !visibleCols.has(td.dataset.col));
   });
-
-  // Update cat-row colSpan dynamically
   document.querySelectorAll('#tbody tr.cat-row td').forEach(td => {
-    td.colSpan = visibleCount || 1;
+    td.colSpan = visCount || 1;
   });
 }
 
 function updateToggleAllLabel() {
-  const allChecked = visibleCols.size === COLS.length;
-  colToggleAll.textContent = allChecked ? 'Desmarcar todas' : 'Marcar todas';
+  colToggleAll.textContent = visibleCols.size === COLS.length ? 'Desmarcar todas' : 'Marcar todas';
 }
 
-// Toggle dropdown open/close
 colBtn.addEventListener('click', e => {
   e.stopPropagation();
   colDropdown.classList.toggle('open');
@@ -965,244 +899,252 @@ colBtn.addEventListener('click', e => {
 });
 document.addEventListener('click', e => {
   if (!colDropdown.contains(e.target) && e.target !== colBtn) {
-    colDropdown.classList.remove('open');
-    colBtn.classList.remove('active');
+    colDropdown.classList.remove('open'); colBtn.classList.remove('active');
   }
 });
-
 colToggleAll.addEventListener('click', () => {
   const allChecked = visibleCols.size === COLS.length;
-  if (allChecked) {
-    // keep at least one column always visible
-    COLS.forEach((c, i) => { if (i > 0) visibleCols.delete(c.key); });
-  } else {
-    COLS.forEach(c => visibleCols.add(c.key));
-  }
-  // Sync checkboxes
+  if (allChecked) COLS.forEach((c,i) => { if (i>0) visibleCols.delete(c.key); });
+  else COLS.forEach(c => visibleCols.add(c.key));
   colDropdown.querySelectorAll('input[type=checkbox]').forEach(cb => {
     cb.checked = visibleCols.has(cb.dataset.colKey);
   });
-  applyColVisibility();
-  updateToggleAllLabel();
+  applyColVisibility(); updateToggleAllLabel();
 });
 
-/* ═══════════════════════════════════════════════════════
-   FILTERS & SORTING
-   ═══════════════════════════════════════════════════════ */
+/* ════════════════════════════════════════════════════════
+   FILTERS + SORT
+   ════════════════════════════════════════════════════════ */
 function applyFilters() {
-  const q     = searchBox.value.toLowerCase();
-  const cat   = catFilter.value;
-  const st    = stFilter.value;
-  const giro  = giroFilter.value;
-  const stock = stockFilter.value;
+  const q      = searchBox.value.toLowerCase();
+  const cat    = catFilter.value;
+  const st     = stFilter.value;
+  const giro   = giroFilter.value;
+  const stock  = stockFilter.value;
+  const showDone = showDoneCb.checked;
 
   filtered = allRecords.filter(r => {
-    if (cat  && r.categoria !== cat)           return false;
-    if (st   && r.st !== st)                   return false;
-    if (giro && (r.giro || '').trim() !== giro) return false;
+    // hide done items unless "show done" is checked
+    if (!showDone && doneSet.has(r.automacao)) return false;
+
+    if (cat  && r.categoria !== cat)            return false;
+    if (st   && r.st !== st)                    return false;
+    if (giro && (r.giro||'').trim() !== giro)   return false;
     if (stock) {
-      const v = parseFloat((r.qtdestoque || '0').replace(/\./g,'').replace(',','.'));
+      const v = parseFloat((r.qtdestoque||'0').replace(/\./g,'').replace(',','.'));
       if (stock === 'neg'  && v >= 0)  return false;
       if (stock === 'zero' && v !== 0) return false;
       if (stock === 'pos'  && v <= 0)  return false;
     }
     if (q) {
-      const hay = [r.descricao, r.automacao, r.produto, r.nome, r.referencia, r.fornec]
-                    .join(' ').toLowerCase();
+      const hay = [r.descricao,r.automacao,r.produto,r.nome,r.referencia,r.fornec].join(' ').toLowerCase();
       if (!hay.includes(q)) return false;
     }
     return true;
   });
 
   if (sortCol) {
-    filtered.sort((a, b) => {
-      let va = a[sortCol] || '', vb = b[sortCol] || '';
+    filtered.sort((a,b) => {
+      let va = a[sortCol]||'', vb = b[sortCol]||'';
       const na = parseFloat(va.replace(/\./g,'').replace(',','.')),
             nb = parseFloat(vb.replace(/\./g,'').replace(',','.'));
-      if (!isNaN(na) && !isNaN(nb)) return (na - nb) * sortDir;
-      return va.localeCompare(vb) * sortDir;
+      if (!isNaN(na) && !isNaN(nb)) return (na-nb)*sortDir;
+      return va.localeCompare(vb)*sortDir;
     });
   }
 
   renderTable();
+  updateProgressPill();
+  updateResetBtn();
 }
 
-/* ═══════════════════════════════════════════════════════
-   RENDER TABLE  — FIX: td elements now carry data-col
-   so column visibility can be toggled independently of
-   the number of rows displayed.
-   ═══════════════════════════════════════════════════════ */
+/* ════════════════════════════════════════════════════════
+   RENDER TABLE
+   — FIX: cat-row colSpan counts both check col + visible data cols
+   — FIX: every td carries data-col so visibility works at any row count
+   ════════════════════════════════════════════════════════ */
 function renderTable() {
   tbody.innerHTML = '';
-  rowCount.textContent = filtered.length;
+  rowCountEl.textContent = filtered.length;
   emptyState.style.display = filtered.length === 0 ? 'block' : 'none';
 
-  const visibleCount = COLS.filter(c => visibleCols.has(c.key)).length || 1;
+  // +1 for the always-visible check column
+  const visCount = COLS.filter(c => visibleCols.has(c.key)).length + 1;
   let lastCat = null;
 
   filtered.forEach(r => {
-    // ── Category separator ──
+    /* ── Category separator ── */
     if (r.categoria && r.categoria !== lastCat) {
       lastCat = r.categoria;
       const tr = document.createElement('tr');
       tr.className = 'cat-row';
       const td = document.createElement('td');
-      td.colSpan = visibleCount;
+      td.colSpan = visCount;
       td.textContent = r.categoria;
       tr.appendChild(td);
       tbody.appendChild(tr);
     }
 
-    // ── Data row ──
+    /* ── Data row ── */
+    const isDone = doneSet.has(r.automacao);
     const tr = document.createElement('tr');
+    if (isDone) tr.classList.add('row-done');
+    tr.dataset.ean = r.automacao;
 
-    // Each cell carries data-col so we can show/hide it independently.
+    // Helper: append td with data-col & optional hide
     const appendTd = (td, colKey) => {
-      td.dataset.col = colKey;
-      if (!visibleCols.has(colKey)) td.classList.add('col-hidden');
+      if (colKey) {
+        td.dataset.col = colKey;
+        if (!visibleCols.has(colKey)) td.classList.add('col-hidden');
+      }
       tr.appendChild(td);
     };
 
-    // St
-    appendTd(badgeCell(r.st), 'st');
-    // Automação
-    appendTd(monoCell(r.automacao), 'automacao');
-    // Produto
-    appendTd(monoCell(r.produto, 'muted'), 'produto');
-    // Descrição
+    /* Check cell */
+    const checkTd = document.createElement('td');
+    checkTd.className = 'td-check';
+    const checkBtn = document.createElement('button');
+    checkBtn.className = 'check-btn' + (isDone ? ' checked' : '');
+    checkBtn.title = isDone ? 'Desmarcar item' : 'Dar baixa neste item';
+    checkBtn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--ok)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
+    checkBtn.addEventListener('click', e => {
+      e.stopPropagation();
+      toggleDone(r.automacao);
+    });
+    checkTd.appendChild(checkBtn);
+    tr.appendChild(checkTd); // check col has no data-col (always visible)
+
+    /* Data cells */
+    appendTd(badgeCell(r.st),                 'st');
+    appendTd(monoCell(r.automacao),           'automacao');
+    appendTd(monoCell(r.produto, 'muted'),    'produto');
+
     const descTd = document.createElement('td');
     descTd.className = 'desc-cell';
     descTd.textContent = r.descricao || '—';
     descTd.title = r.descricao || '';
     appendTd(descTd, 'descricao');
-    // Emb
-    appendTd(monoCell(r.emb, 'muted'), 'emb');
-    // Referência
+
+    appendTd(monoCell(r.emb, 'muted'),        'emb');
     appendTd(monoCell(r.referencia, 'muted'), 'referencia');
-    // Fornec
-    appendTd(monoCell(r.fornec, 'muted'), 'fornec');
-    // Nome
+    appendTd(monoCell(r.fornec, 'muted'),     'fornec');
+
     const nomeTd = document.createElement('td');
     nomeTd.className = 'nome-cell';
     nomeTd.textContent = r.nome || '—';
     nomeTd.title = r.nome || '';
     appendTd(nomeTd, 'nome');
-    // Sist
-    appendTd(monoCell(r.sist, 'muted'), 'sist');
-    // Giro
-    appendTd(giroCell((r.giro || '').trim()), 'giro');
-    // Numerics
+
+    appendTd(monoCell(r.sist, 'muted'),                        'sist');
+    appendTd(giroCell((r.giro||'').trim()),                    'giro');
     ['corredor','altura','largura','prof','total'].forEach(k => appendTd(numCell(r[k]), k));
-    // Cob.Plan
-    appendTd(cobCell(r.cobplan), 'cobplan');
-    // Qtd.Estoque
-    appendTd(estCell(r.qtdestoque), 'qtdestoque');
-    // PBL
-    appendTd(monoCell(r.pbl, 'muted'), 'pbl');
+    appendTd(cobCell(r.cobplan),    'cobplan');
+    appendTd(estCell(r.qtdestoque),'qtdestoque');
+    appendTd(monoCell(r.pbl,'muted'), 'pbl');
 
     tbody.appendChild(tr);
   });
 }
 
-/* ═══════════════════════════════════════════════════════
+/* ════════════════════════════════════════════════════════
    CELL HELPERS
-   ═══════════════════════════════════════════════════════ */
-function monoCell(val, cls = '') {
+   ════════════════════════════════════════════════════════ */
+function monoCell(val, cls='') {
   const td = document.createElement('td');
   td.textContent = val || '—';
   if (cls) td.className = cls;
   return td;
 }
-
 function numCell(val) {
   const td = document.createElement('td');
   td.textContent = val || '—';
   td.className = 'num';
   return td;
 }
-
 function badgeCell(st) {
   const td = document.createElement('td');
   const sp = document.createElement('span');
-  sp.className = `badge badge-${st || 'X'}`;
+  sp.className = `badge badge-${st||'X'}`;
   sp.textContent = st || '?';
   td.appendChild(sp);
   return td;
 }
-
 function giroCell(giro) {
   const td = document.createElement('td');
   if (!giro) { td.textContent = '—'; td.className = 'muted'; return td; }
   const sp = document.createElement('span');
-  const map = { A:'giro-A', B:'giro-B', CA:'giro-CA', CB:'giro-CB', CC:'giro-CC' };
-  sp.className = `giro ${map[giro] || ''}`;
+  const map = {A:'giro-A',B:'giro-B',CA:'giro-CA',CB:'giro-CB',CC:'giro-CC'};
+  sp.className = `giro ${map[giro]||''}`;
   sp.textContent = giro;
   td.appendChild(sp);
   return td;
 }
-
 function cobCell(val) {
   const td = document.createElement('td');
-  const v = parseInt(val || '0', 10);
+  const v = parseInt(val||'0',10);
   td.textContent = val || '—';
-  if      (v === 999) { td.className = 'num'; td.style.color = 'var(--muted)'; }
-  else if (v <= 5)    td.className = 'num-neg';
-  else if (v >= 20)   td.className = 'num-ok';
-  else                td.className = 'num';
+  if      (v===999) { td.className='num'; td.style.color='var(--muted)'; }
+  else if (v<=5)    td.className = 'num-neg';
+  else if (v>=20)   td.className = 'num-ok';
+  else              td.className = 'num';
   return td;
 }
-
 function estCell(val) {
   const td = document.createElement('td');
-  const v = parseFloat((val || '0').replace(/\./g,'').replace(',','.'));
+  const v = parseFloat((val||'0').replace(/\./g,'').replace(',','.'));
   td.textContent = val || '—';
-  if      (v < 0)  td.className = 'num-neg';
-  else if (v === 0) td.className = 'num';
-  else              td.className = 'num-ok';
+  if      (v<0)  td.className = 'num-neg';
+  else if (v===0) td.className = 'num';
+  else            td.className = 'num-ok';
   return td;
 }
 
-/* ═══════════════════════════════════════════════════════
-   SORTING (click on th)
-   ═══════════════════════════════════════════════════════ */
-document.querySelectorAll('#thead-row th').forEach(th => {
+/* ════════════════════════════════════════════════════════
+   SORTING
+   ════════════════════════════════════════════════════════ */
+document.querySelectorAll('#thead-row th[data-col]').forEach(th => {
   th.addEventListener('click', () => {
     const col = th.dataset.col;
-    if (sortCol === col) sortDir *= -1;
-    else { sortCol = col; sortDir = 1; }
+    if (sortCol===col) sortDir*=-1; else { sortCol=col; sortDir=1; }
     document.querySelectorAll('#thead-row th').forEach(h => h.classList.remove('sort-asc','sort-desc'));
-    th.classList.add(sortDir === 1 ? 'sort-asc' : 'sort-desc');
+    th.classList.add(sortDir===1 ? 'sort-asc' : 'sort-desc');
     applyFilters();
   });
 });
 
-/* ═══════════════════════════════════════════════════════
+/* ════════════════════════════════════════════════════════
    FILTER EVENTS
-   ═══════════════════════════════════════════════════════ */
+   ════════════════════════════════════════════════════════ */
 searchBox.addEventListener('input', applyFilters);
 catFilter.addEventListener('change', applyFilters);
 stFilter.addEventListener('change', applyFilters);
 giroFilter.addEventListener('change', applyFilters);
 stockFilter.addEventListener('change', applyFilters);
+showDoneCb.addEventListener('change', applyFilters);
 
 clearBtn.addEventListener('click', () => {
-  searchBox.value = '';
-  catFilter.value  = '';
-  stFilter.value   = '';
-  giroFilter.value = '';
-  stockFilter.value = '';
-  sortCol = null; sortDir = 1;
-  document.querySelectorAll('#thead-row th').forEach(h => h.classList.remove('sort-asc','sort-desc'));
+  searchBox.value=''; catFilter.value=''; stFilter.value='';
+  giroFilter.value=''; stockFilter.value=''; showDoneCb.checked=false;
+  sortCol=null; sortDir=1;
+  document.querySelectorAll('#thead-row th').forEach(h=>h.classList.remove('sort-asc','sort-desc'));
+  applyFilters();
+});
+
+resetProgressBtn.addEventListener('click', () => {
+  if (!confirm(`Isso vai desmarcar todos os ${doneSet.size} itens concluídos. Confirmar?`)) return;
+  lsClear();
   applyFilters();
 });
 
 reloadBtn.addEventListener('click', () => {
-  dashboard.style.display = 'none';
-  reloadBtn.style.display = 'none';
-  printBtn.style.display  = 'none';
-  headerMeta.textContent  = '';
-  uploadArea.style.display = '';
-  fileInput.value = '';
+  dashboard.style.display='none';
+  reloadBtn.style.display='none';
+  printBtn.style.display='none';
+  headerMeta.textContent='';
+  uploadArea.style.display='';
+  fileInput.value='';
+  allRecords=[]; filtered=[];
+  doneSet.clear();
 });
 </script>
 </body>
