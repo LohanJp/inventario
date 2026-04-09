@@ -6,435 +6,544 @@
 <title>Leitor de Planograma — Condor</title>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
-  /* ─── VARIABLES ─── */
+/* ═══════════════════════════════════════════════════════
+   VARIABLES
+═══════════════════════════════════════════════════════ */
+:root {
+  --bg:        #0d1117;
+  --surface:   #161b22;
+  --surface2:  #1c2128;
+  --border:    #21262d;
+  --accent:    #f0a500;
+  --accent2:   #e06c00;
+  --text:      #e6edf3;
+  --muted:     #7d8590;
+  --ok:        #3fb950;
+  --danger:    #f85149;
+  --info:      #58a6ff;
+  --done-bg:   rgba(63,185,80,.04);
+  --header-h:  56px;  /* height of the sticky site-header */
+  --thead-h:   38px;  /* approx height of table thead */
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'IBM Plex Sans', sans-serif;
+  font-size: 13px;
+  min-height: 100vh;
+}
+
+/* ═══════════════════════════════════════════════════════
+   SITE HEADER  (z-index 200 — topmost layer)
+═══════════════════════════════════════════════════════ */
+header {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 0 24px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: var(--header-h);
+  position: sticky;
+  top: 0;
+  z-index: 200;   /* above everything */
+}
+.logo {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--accent);
+  letter-spacing: .04em;
+  white-space: nowrap;
+}
+.logo span { color: var(--muted); font-weight: 400; }
+.spacer { flex: 1; }
+#header-meta {
+  font-size: 11px;
+  color: var(--muted);
+  font-family: 'IBM Plex Mono', monospace;
+  white-space: nowrap;
+}
+
+/* ═══════════════════════════════════════════════════════
+   BUTTONS
+═══════════════════════════════════════════════════════ */
+label.btn, button.btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: var(--accent); color: #000;
+  font-family: 'IBM Plex Sans', sans-serif;
+  font-size: 13px; font-weight: 600;
+  padding: 8px 18px; border-radius: 6px;
+  cursor: pointer; border: none;
+  transition: background .15s; white-space: nowrap;
+  text-decoration: none;
+}
+label.btn:hover, button.btn:hover { background: var(--accent2); }
+
+button.btn-outline {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 12px; padding: 6px 13px; border-radius: 5px;
+  cursor: pointer; font-family: 'IBM Plex Sans', sans-serif;
+  transition: border-color .15s, color .15s, background .15s;
+  white-space: nowrap; height: 32px;
+}
+button.btn-outline:hover  { border-color: var(--accent); color: var(--accent); }
+button.btn-outline.active { border-color: var(--accent); color: var(--accent); background: rgba(240,165,0,.08); }
+
+button.btn-ghost {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: transparent; border: 1px solid var(--border);
+  color: var(--muted); font-size: 12px; padding: 6px 13px;
+  border-radius: 5px; cursor: pointer;
+  font-family: 'IBM Plex Sans', sans-serif;
+  transition: border-color .15s, color .15s; white-space: nowrap;
+}
+button.btn-ghost:hover { border-color: var(--muted); color: var(--text); }
+
+button.btn-danger {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: transparent; border: 1px solid rgba(248,81,73,.4);
+  color: var(--danger); font-size: 12px; padding: 6px 13px;
+  border-radius: 5px; cursor: pointer;
+  font-family: 'IBM Plex Sans', sans-serif;
+  transition: border-color .15s, background .15s;
+  white-space: nowrap; height: 32px;
+}
+button.btn-danger:hover { border-color: var(--danger); background: rgba(248,81,73,.08); }
+
+#file-input { display: none; }
+
+/* ═══════════════════════════════════════════════════════
+   UPLOAD / START SCREEN
+═══════════════════════════════════════════════════════ */
+#upload-area {
+  display: none;            /* controlled by JS */
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  min-height: calc(100vh - var(--header-h));
+  padding: 40px;
+  text-align: center;
+}
+#upload-area h2 {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 22px; color: var(--text); letter-spacing: .02em;
+}
+#upload-area p { color: var(--muted); max-width: 420px; line-height: 1.7; }
+
+.drop-zone {
+  border: 2px dashed var(--border); border-radius: 12px;
+  padding: 44px 80px; cursor: pointer;
+  transition: border-color .2s, background .2s;
+  background: var(--surface);
+  display: flex; flex-direction: column; align-items: center; gap: 12px;
+}
+.drop-zone:hover, .drop-zone.drag-over {
+  border-color: var(--accent); background: rgba(240,165,0,.06);
+}
+.drop-zone svg { color: var(--accent); }
+.dz-label { font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: var(--muted); }
+.dz-label strong { color: var(--accent); }
+
+/* ── Saved file card ── */
+#saved-card {
+  display: none;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 20px 28px;
+  max-width: 480px;
+  width: 100%;
+  text-align: left;
+}
+#saved-card .sc-title {
+  font-size: 10px; font-weight: 600; color: var(--muted);
+  text-transform: uppercase; letter-spacing: .1em; margin-bottom: 10px;
+}
+#saved-card .sc-name {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 14px; color: var(--accent); font-weight: 600;
+  margin-bottom: 4px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+#saved-card .sc-meta {
+  font-size: 11px; color: var(--muted);
+  font-family: 'IBM Plex Mono', monospace; margin-bottom: 18px;
+}
+#saved-card .sc-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+
+.divider {
+  display: flex; align-items: center; gap: 12px;
+  color: var(--muted); font-size: 11px;
+  max-width: 480px; width: 100%;
+}
+.divider::before, .divider::after {
+  content: ''; flex: 1; height: 1px; background: var(--border);
+}
+
+/* ═══════════════════════════════════════════════════════
+   LOADING
+═══════════════════════════════════════════════════════ */
+#loading {
+  display: none; flex-direction: column; align-items: center;
+  justify-content: center; gap: 16px;
+  min-height: calc(100vh - var(--header-h));
+  color: var(--muted); font-family: 'IBM Plex Mono', monospace; font-size: 13px;
+}
+#loading-msg { transition: opacity .2s; }
+.spinner {
+  width: 36px; height: 36px;
+  border: 3px solid var(--border); border-top-color: var(--accent);
+  border-radius: 50%; animation: spin .7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ═══════════════════════════════════════════════════════
+   DASHBOARD
+═══════════════════════════════════════════════════════ */
+#dashboard { display: none; padding: 20px 24px; }
+
+.meta-bar {
+  display: flex; flex-wrap: wrap; gap: 10px;
+  align-items: center; margin-bottom: 14px;
+}
+.meta-pill {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 6px; padding: 5px 13px;
+  font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--muted);
+}
+.meta-pill strong { color: var(--text); }
+
+/* ═══════════════════════════════════════════════════════
+   FILTER BAR
+═══════════════════════════════════════════════════════ */
+.filter-bar {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 8px; padding: 14px 18px;
+  display: flex; flex-wrap: wrap; gap: 12px;
+  align-items: flex-end; margin-bottom: 16px;
+}
+.filter-group { display: flex; flex-direction: column; gap: 4px; }
+.filter-group > label {
+  font-size: 10px; font-weight: 600; color: var(--muted);
+  text-transform: uppercase; letter-spacing: .08em;
+}
+.filter-group input[type=text],
+.filter-group select {
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: 5px; color: var(--text);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 12px; padding: 6px 10px;
+  outline: none; transition: border-color .15s;
+  min-width: 140px; height: 32px;
+}
+.filter-group input[type=text]:focus,
+.filter-group select:focus { border-color: var(--accent); }
+.filter-group select option { background: var(--surface); }
+#search-box { min-width: 230px; }
+
+.check-label {
+  display: inline-flex; align-items: center; gap: 8px;
+  cursor: pointer; user-select: none;
+  font-size: 12px; color: var(--muted);
+  font-family: 'IBM Plex Sans', sans-serif;
+  height: 32px; white-space: nowrap; transition: color .15s;
+}
+.check-label:hover { color: var(--text); }
+.check-label input[type=checkbox] {
+  accent-color: var(--ok); width: 14px; height: 14px; cursor: pointer;
+}
+
+#progress-pill {
+  background: rgba(63,185,80,.1); border: 1px solid rgba(63,185,80,.25);
+  border-radius: 6px; padding: 3px 10px;
+  font-family: 'IBM Plex Mono', monospace; font-size: 11px;
+  color: var(--ok); display: none; white-space: nowrap;
+}
+#progress-pill strong { font-weight: 700; }
+
+.filter-actions { margin-left: auto; display: flex; gap: 8px; align-items: flex-end; flex-wrap: wrap; }
+
+/* ═══════════════════════════════════════════════════════
+   COLUMN PICKER DROPDOWN
+═══════════════════════════════════════════════════════ */
+.col-picker-wrap { position: relative; }
+
+#col-dropdown {
+  display: none; position: absolute; top: calc(100% + 6px); right: 0;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 8px; padding: 8px 0; z-index: 300;
+  min-width: 210px; box-shadow: 0 8px 24px rgba(0,0,0,.6);
+}
+#col-dropdown.open { display: block; }
+
+.col-dropdown-header {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 6px 14px 10px; border-bottom: 1px solid var(--border); margin-bottom: 4px;
+}
+.col-dropdown-header span {
+  font-size: 10px; font-weight: 600; color: var(--muted);
+  text-transform: uppercase; letter-spacing: .08em;
+}
+.col-dropdown-header button {
+  background: none; border: none; color: var(--accent);
+  font-size: 10px; cursor: pointer;
+  font-family: 'IBM Plex Sans', sans-serif; padding: 0;
+}
+.col-dropdown-header button:hover { text-decoration: underline; }
+
+.col-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 6px 14px; cursor: pointer;
+  transition: background .1s; user-select: none;
+}
+.col-item:hover { background: var(--surface2); }
+.col-item input[type=checkbox] {
+  accent-color: var(--accent); width: 13px; height: 13px;
+  cursor: pointer; flex-shrink: 0;
+}
+.col-item span { font-size: 12px; color: var(--text); font-family: 'IBM Plex Mono', monospace; }
+
+/* ═══════════════════════════════════════════════════════
+   TABLE WRAPPER
+═══════════════════════════════════════════════════════ */
+.table-wrap {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 8px;
+  /* NO overflow:hidden — traps sticky thead inside the box */
+}
+.table-info {
+  padding: 10px 16px; border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: 10px;
+  font-size: 11px; color: var(--muted);
+  flex-wrap: wrap;
+}
+#row-count {
+  font-family: 'IBM Plex Mono', monospace;
+  color: var(--accent); font-weight: 600; font-size: 12px;
+}
+
+/*
+  SCROLL CONTAINER
+  ─────────────────────────────────────────────────────────
+  Root cause of the "first row hidden" bug:
+    • .table-wrap had overflow:hidden → trapped the sticky thead
+      inside that box, so it stuck to the wrong top edge.
+    • thead top:var(--header-h) fought against the clipping ancestor.
+
+  Fix strategy — make .scroll-x the single scroll parent:
+    • overflow-x: auto   → horizontal scroll for wide tables
+    • overflow-y: auto   → vertical scroll here, NOT on the page
+    • max-height: calc(100vh - header - controls) fills the viewport
+    • thead position:sticky; top:0 → sticks to the TOP of .scroll-x
+      (its actual scroll ancestor), never behind anything.
+    • No conflict with the site header at all.
+  ───────────────────────────────────────────────────────── */
+.scroll-x {
+  overflow-x: auto;
+  overflow-y: auto;
+  /* Viewport minus: site header (56px) + dashboard padding (40px)
+     + meta-bar (~42px) + filter-bar (~68px) + table-info (~40px) */
+  max-height: calc(100vh - 56px - 200px);
+  /* scroll-padding-top pushes anchored/focused rows below the sticky thead */
+  scroll-padding-top: 40px;
+}
+
+/* ═══════════════════════════════════════════════════════
+   TABLE
+   border-collapse:separate + border-spacing:0 is required
+   so that each th can carry its own solid background —
+   border-collapse:collapse makes backgrounds merge/bleed.
+═══════════════════════════════════════════════════════ */
+table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  table-layout: auto;
+}
+
+thead {
+  position: sticky;
+  top: 0;          /* relative to .scroll-x, the scroll container */
+  z-index: 20;     /* above tbody rows; site header is z-index:200 */
+}
+
+thead th {
+  /* Hard-coded opaque color — CSS variables can resolve to
+     transparent in some engines, breaking the sticky cover. */
+  background: #0d1117;
+  padding: 9px 10px;
+  text-align: left;
+  color: var(--muted);
+  font-size: 10px; font-weight: 600;
+  text-transform: uppercase; letter-spacing: .07em;
+  white-space: nowrap;
+  border-bottom: 2px solid var(--border);
+  cursor: pointer; user-select: none; transition: color .15s;
+}
+
+/* Extra top padding on the very first tbody row so it never
+   visually touches the thead border on load. */
+#tbody tr:first-child td { padding-top: 10px; }
+thead th:hover { color: var(--accent); }
+thead th.sort-asc::after  { content: ' ▲'; color: var(--accent); font-size: 8px; }
+thead th.sort-desc::after { content: ' ▼'; color: var(--accent); font-size: 8px; }
+#th-check { cursor: default; width: 36px; }
+#th-check:hover { color: var(--muted); }
+
+/* Hidden columns */
+th.col-hidden, td.col-hidden { display: none !important; }
+
+/* ─── ROWS ─── */
+tbody tr { transition: background .1s; }
+/* Simulate row separator (can't use border-collapse:collapse) */
+tbody td { border-bottom: 1px solid var(--border); }
+tbody tr:last-child td { border-bottom: none; }
+tbody tr:hover td { background: var(--surface2); }
+
+/* Category separator */
+tr.cat-row td {
+  background: rgba(240,165,0,.08) !important;
+  color: var(--accent);
+  font-family: 'IBM Plex Sans', sans-serif;
+  font-size: 10px; font-weight: 600; text-transform: uppercase;
+  letter-spacing: .1em; padding: 6px 12px;
+  border-top: 1px solid rgba(240,165,0,.2);
+  border-bottom: 1px solid rgba(240,165,0,.15) !important;
+}
+
+td {
+  padding: 7px 10px; white-space: nowrap;
+  color: var(--text); vertical-align: middle;
+  background: transparent; /* needed for hover override above */
+}
+td.muted     { color: var(--muted); }
+td.num       { text-align: right; color: var(--info); }
+td.num-neg   { text-align: right; color: var(--danger); }
+td.num-ok    { text-align: right; color: var(--ok); }
+
+/* ─── DONE ROW ─── */
+tr.row-done td { background: var(--done-bg); }
+tr.row-done:hover td { background: rgba(63,185,80,.06); }
+tr.row-done td:not(.td-check) {
+  text-decoration: line-through;
+  text-decoration-color: rgba(125,133,144,.45);
+  color: var(--muted) !important;
+}
+tr.row-done .badge, tr.row-done .giro { opacity: .45; }
+
+/* ─── CHECK CELL ─── */
+.td-check {
+  width: 36px; text-align: center; padding: 0 4px; cursor: pointer;
+}
+.check-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 22px; height: 22px; border-radius: 5px;
+  border: 1.5px solid var(--border);
+  background: transparent; cursor: pointer; transition: all .15s; flex-shrink: 0;
+}
+.check-btn svg { display: none; }
+.check-btn:hover { border-color: var(--ok); background: rgba(63,185,80,.1); }
+.check-btn.checked { border-color: var(--ok); background: rgba(63,185,80,.18); }
+.check-btn.checked svg { display: block; }
+
+/* ─── BADGES ─── */
+.badge {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 22px; height: 22px; border-radius: 4px;
+  font-size: 11px; font-weight: 700;
+}
+.badge-A { background: rgba(63,185,80,.15);   color: var(--ok); }
+.badge-I { background: rgba(248,81,73,.15);   color: var(--danger); }
+.badge-X { background: rgba(125,133,144,.15); color: var(--muted); }
+
+.giro {
+  display: inline-flex; align-items: center;
+  padding: 2px 7px; border-radius: 3px;
+  font-size: 10px; font-weight: 700; letter-spacing: .04em;
+}
+.giro-A  { background: rgba(63,185,80,.15);  color: var(--ok); }
+.giro-B  { background: rgba(88,166,255,.15); color: var(--info); }
+.giro-CA { background: rgba(240,165,0,.15);  color: var(--accent); }
+.giro-CB { background: rgba(240,165,0,.10);  color: #c88a00; }
+.giro-CC { background: rgba(248,81,73,.10);  color: var(--danger); }
+
+.desc-cell { max-width: 240px; overflow: hidden; text-overflow: ellipsis; }
+.nome-cell { max-width: 170px; overflow: hidden; text-overflow: ellipsis; color: var(--muted); }
+
+/* ─── EMPTY ─── */
+#empty-state {
+  display: none; padding: 60px; text-align: center;
+  color: var(--muted); font-size: 13px;
+}
+
+/* ─── SCROLLBAR ─── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--muted); }
+
+/* ═══════════════════════════════════════════════════════
+   PRINT
+═══════════════════════════════════════════════════════ */
+@media print {
   :root {
-    --bg:        #0d1117;
-    --surface:   #161b22;
-    --border:    #21262d;
-    --accent:    #f0a500;
-    --accent2:   #e06c00;
-    --text:      #e6edf3;
-    --muted:     #7d8590;
-    --ok:        #3fb950;
-    --danger:    #f85149;
-    --info:      #58a6ff;
-    --row-hover: #1c2128;
-    --header-bg: #0d1117;
-    --done-bg:   rgba(63,185,80,.04);
+    --bg:#fff; --surface:#fff; --surface2:#fff; --border:#ccc;
+    --accent:#b06000; --text:#111; --muted:#555;
+    --ok:#1a7a30; --danger:#b91c1c; --info:#1d4ed8;
   }
+  body { background:#fff; color:#111; font-size:10px; }
 
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  header, #upload-area, #loading, .meta-bar,
+  .filter-bar, .table-info, #empty-state,
+  .td-check, #th-check { display:none !important; }
 
-  body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: 'IBM Plex Sans', sans-serif;
-    font-size: 13px;
-    min-height: 100vh;
-  }
+  #dashboard { display:block !important; padding:0; }
+  .table-wrap { border:1px solid #ccc; border-radius:0; }
+  .scroll-x { overflow:visible; }
 
-  /* ─── HEADER ─── */
-  header {
-    background: var(--surface);
-    border-bottom: 1px solid var(--border);
-    padding: 0 24px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    height: 56px;
-    position: sticky;
-    top: 0;
-    z-index: 200;
-  }
-  .logo {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 14px;
-    font-weight: 600;
-    color: var(--accent);
-    letter-spacing: .04em;
-    white-space: nowrap;
-  }
-  .logo span { color: var(--muted); font-weight: 400; }
-  .spacer { flex: 1; }
-  #header-meta {
-    font-size: 11px;
-    color: var(--muted);
-    font-family: 'IBM Plex Mono', monospace;
-    white-space: nowrap;
-  }
-
-  /* ─── BUTTONS ─── */
-  label.btn, button.btn {
-    display: inline-flex; align-items: center; gap: 8px;
-    background: var(--accent); color: #000;
-    font-family: 'IBM Plex Sans', sans-serif;
-    font-size: 13px; font-weight: 600;
-    padding: 8px 18px; border-radius: 6px;
-    cursor: pointer; border: none;
-    transition: background .15s; white-space: nowrap;
-  }
-  label.btn:hover, button.btn:hover { background: var(--accent2); }
-
-  button.btn-outline {
-    display: inline-flex; align-items: center; gap: 6px;
-    background: transparent;
-    border: 1px solid var(--border);
-    color: var(--muted);
-    font-size: 12px; padding: 6px 13px; border-radius: 5px;
-    cursor: pointer; font-family: 'IBM Plex Sans', sans-serif;
-    transition: border-color .15s, color .15s, background .15s;
-    white-space: nowrap; height: 32px;
-  }
-  button.btn-outline:hover  { border-color: var(--accent); color: var(--accent); }
-  button.btn-outline.active { border-color: var(--accent); color: var(--accent); background: rgba(240,165,0,.08); }
-
-  button.btn-danger {
-    display: inline-flex; align-items: center; gap: 6px;
-    background: transparent;
-    border: 1px solid rgba(248,81,73,.4);
-    color: var(--danger);
-    font-size: 12px; padding: 6px 13px; border-radius: 5px;
-    cursor: pointer; font-family: 'IBM Plex Sans', sans-serif;
-    transition: border-color .15s, background .15s;
-    white-space: nowrap; height: 32px;
-  }
-  button.btn-danger:hover { border-color: var(--danger); background: rgba(248,81,73,.08); }
-
-  #file-input { display: none; }
-
-  /* ─── UPLOAD ─── */
-  #upload-area {
-    display: flex; flex-direction: column;
-    align-items: center; justify-content: center;
-    gap: 20px; min-height: calc(100vh - 56px);
-    padding: 40px; text-align: center;
-  }
-  #upload-area h2 {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 22px; color: var(--text); letter-spacing: .02em;
-  }
-  #upload-area p { color: var(--muted); max-width: 400px; line-height: 1.6; }
-
-  .drop-zone {
-    border: 2px dashed var(--border); border-radius: 12px;
-    padding: 48px 80px; cursor: pointer;
-    transition: border-color .2s, background .2s;
-    background: var(--surface);
-    display: flex; flex-direction: column; align-items: center; gap: 12px;
-  }
-  .drop-zone:hover, .drop-zone.drag-over {
-    border-color: var(--accent); background: rgba(240,165,0,.06);
-  }
-  .drop-zone svg { color: var(--accent); }
-  .dz-label { font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: var(--muted); }
-  .dz-label strong { color: var(--accent); }
-
-  /* ─── DASHBOARD ─── */
-  #dashboard { display: none; padding: 20px 24px; }
-
-  .meta-bar {
-    display: flex; flex-wrap: wrap; gap: 12px;
-    align-items: center; margin-bottom: 16px;
-  }
-  .meta-pill {
-    background: var(--surface); border: 1px solid var(--border);
-    border-radius: 6px; padding: 6px 14px;
-    font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--muted);
-  }
-  .meta-pill strong { color: var(--text); }
-
-  /* ─── FILTER BAR ─── */
-  .filter-bar {
-    background: var(--surface); border: 1px solid var(--border);
-    border-radius: 8px; padding: 14px 18px;
-    display: flex; flex-wrap: wrap; gap: 12px;
-    align-items: flex-end; margin-bottom: 16px;
-  }
-  .filter-group { display: flex; flex-direction: column; gap: 4px; }
-  .filter-group > label {
-    font-size: 10px; font-weight: 600; color: var(--muted);
-    text-transform: uppercase; letter-spacing: .08em;
-  }
-  .filter-group input[type=text],
-  .filter-group select {
-    background: var(--bg); border: 1px solid var(--border);
-    border-radius: 5px; color: var(--text);
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 12px; padding: 6px 10px;
-    outline: none; transition: border-color .15s;
-    min-width: 140px; height: 32px;
-  }
-  .filter-group input[type=text]:focus,
-  .filter-group select:focus { border-color: var(--accent); }
-  .filter-group select option { background: var(--surface); }
-  #search-box { min-width: 240px; }
-
-  /* "Mostrar itens feitos" toggle */
-  .check-label {
-    display: inline-flex; align-items: center; gap: 8px;
-    cursor: pointer; user-select: none;
-    font-size: 12px; color: var(--muted);
-    font-family: 'IBM Plex Sans', sans-serif;
-    height: 32px; white-space: nowrap;
-    transition: color .15s;
-  }
-  .check-label:hover { color: var(--text); }
-  .check-label input[type=checkbox] {
-    accent-color: var(--ok);
-    width: 14px; height: 14px; cursor: pointer;
-  }
-
-  /* Progress counter pill */
-  #progress-pill {
-    background: rgba(63,185,80,.1);
-    border: 1px solid rgba(63,185,80,.25);
-    border-radius: 6px; padding: 6px 14px;
-    font-family: 'IBM Plex Mono', monospace; font-size: 11px;
-    color: var(--ok); display: none;
-  }
-  #progress-pill strong { font-weight: 700; }
-
-  .filter-actions { margin-left: auto; display: flex; gap: 8px; align-items: flex-end; flex-wrap: wrap; }
-
-  /* ─── COLUMN PICKER ─── */
-  .col-picker-wrap { position: relative; }
-  #col-dropdown {
-    display: none; position: absolute; top: calc(100% + 6px); right: 0;
-    background: var(--surface); border: 1px solid var(--border);
-    border-radius: 8px; padding: 8px 0; z-index: 300;
-    min-width: 210px; box-shadow: 0 8px 24px rgba(0,0,0,.5);
-  }
-  #col-dropdown.open { display: block; }
-  .col-dropdown-header {
-    display: flex; justify-content: space-between; align-items: center;
-    padding: 6px 14px 10px; border-bottom: 1px solid var(--border); margin-bottom: 4px;
-  }
-  .col-dropdown-header span {
-    font-size: 10px; font-weight: 600; color: var(--muted);
-    text-transform: uppercase; letter-spacing: .08em;
-  }
-  .col-dropdown-header button {
-    background: none; border: none; color: var(--accent);
-    font-size: 10px; cursor: pointer;
-    font-family: 'IBM Plex Sans', sans-serif; padding: 0;
-  }
-  .col-dropdown-header button:hover { text-decoration: underline; }
-  .col-item {
-    display: flex; align-items: center; gap: 10px;
-    padding: 6px 14px; cursor: pointer;
-    transition: background .1s; user-select: none;
-  }
-  .col-item:hover { background: var(--row-hover); }
-  .col-item input[type=checkbox] {
-    accent-color: var(--accent); width: 13px; height: 13px;
-    cursor: pointer; flex-shrink: 0;
-  }
-  .col-item span { font-size: 12px; color: var(--text); font-family: 'IBM Plex Mono', monospace; }
-
-  /* ─── TABLE WRAPPER ─── */
-  .table-wrap {
-    background: var(--surface); border: 1px solid var(--border);
-    border-radius: 8px; overflow: hidden;
-  }
-  .table-info {
-    padding: 10px 16px; border-bottom: 1px solid var(--border);
-    display: flex; align-items: center; gap: 8px;
-    font-size: 11px; color: var(--muted);
-  }
-  #row-count {
-    font-family: 'IBM Plex Mono', monospace;
-    color: var(--accent); font-weight: 600; font-size: 12px;
-  }
-
-  .scroll-x { overflow-x: auto; }
-
-  /* ─── TABLE ─── */
-  table {
-    width: 100%; border-collapse: collapse;
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 11px; table-layout: auto;
-  }
-  thead {
-    background: var(--header-bg);
-    position: sticky; top: 56px; z-index: 10;
-  }
+  table { width:100%; font-size:9px; page-break-inside:auto; border-collapse:collapse; }
+  thead { position:static; background:#f0f0f0; z-index:auto; }
   thead th {
-    padding: 9px 10px; text-align: left;
-    color: var(--muted); font-size: 10px; font-weight: 600;
-    text-transform: uppercase; letter-spacing: .07em;
-    white-space: nowrap; border-bottom: 1px solid var(--border);
-    cursor: pointer; user-select: none; transition: color .15s;
+    background:#f0f0f0 !important; color:#333;
+    border-bottom:2px solid #bbb; padding:5px 6px; font-size:8px;
   }
-  thead th:hover { color: var(--accent); }
-  thead th.sort-asc::after  { content: ' ▲'; color: var(--accent); font-size: 8px; }
-  thead th.sort-desc::after { content: ' ▼'; color: var(--accent); font-size: 8px; }
-  /* Check column header — not sortable */
-  #th-check { cursor: default; width: 36px; }
-  #th-check:hover { color: var(--muted); }
+  thead th::after { display:none; }
+  tbody tr { page-break-inside:avoid; }
+  td { color:#111; padding:4px 6px; border-bottom:1px solid #e0e0e0; background:#fff !important; }
+  td.muted   { color:#555; }
+  td.num     { color:#1d4ed8; }
+  td.num-neg { color:#b91c1c; }
+  td.num-ok  { color:#1a7a30; }
+  tr.cat-row td { background:#fff8e1 !important; color:#b06000; border-top:1px solid #e0c060; }
+  tr.row-done { opacity:.4; }
+  tr.row-done td { text-decoration:line-through; color:#999 !important; }
+  .badge-A { background:#d1fae5; color:#065f46; }
+  .badge-I { background:#fee2e2; color:#991b1b; }
+  .giro { background:transparent !important; border:1px solid #999; color:#333 !important; }
+  .desc-cell, .nome-cell { max-width:none; overflow:visible; }
 
-  /* Hidden columns */
-  th.col-hidden, td.col-hidden { display: none !important; }
-
-  /* ─── ROWS ─── */
-  tbody tr { border-bottom: 1px solid var(--border); transition: background .1s; }
-  tbody tr:last-child { border-bottom: none; }
-  tbody tr:hover { background: var(--row-hover); }
-
-  /* Category separator */
-  tr.cat-row td {
-    background: rgba(240,165,0,.08); color: var(--accent);
-    font-family: 'IBM Plex Sans', sans-serif;
-    font-size: 10px; font-weight: 600; text-transform: uppercase;
-    letter-spacing: .1em; padding: 6px 12px;
-    border-top: 1px solid rgba(240,165,0,.25);
-    border-bottom: 1px solid rgba(240,165,0,.15);
+  #dashboard::before {
+    content:'Planograma — Condor Super Center';
+    display:block; font-family:'IBM Plex Mono',monospace;
+    font-size:13px; font-weight:600; color:#111;
+    margin-bottom:10px; padding-bottom:6px; border-bottom:2px solid #111;
   }
-
-  td {
-    padding: 7px 10px; white-space: nowrap;
-    color: var(--text); vertical-align: middle;
-  }
-  td.muted     { color: var(--muted); }
-  td.num       { text-align: right; color: var(--info); }
-  td.num-neg   { text-align: right; color: var(--danger); }
-  td.num-ok    { text-align: right; color: var(--ok); }
-
-  /* ─── DONE ROW ─── */
-  tr.row-done {
-    background: var(--done-bg);
-    opacity: .55;
-  }
-  tr.row-done:hover { background: var(--done-bg); opacity: .7; }
-  tr.row-done td:not(.td-check) {
-    text-decoration: line-through;
-    text-decoration-color: rgba(125,133,144,.5);
-    color: var(--muted) !important;
-  }
-  tr.row-done .badge, tr.row-done .giro { opacity: .5; }
-
-  /* ─── CHECK CELL ─── */
-  .td-check {
-    width: 36px; text-align: center; padding: 0 6px; cursor: pointer;
-  }
-  .check-btn {
-    display: inline-flex; align-items: center; justify-content: center;
-    width: 22px; height: 22px; border-radius: 5px; border: 1.5px solid var(--border);
-    background: transparent; cursor: pointer; transition: all .15s;
-    flex-shrink: 0;
-  }
-  .check-btn svg { display: none; }
-  .check-btn:hover { border-color: var(--ok); background: rgba(63,185,80,.1); }
-  .check-btn.checked {
-    border-color: var(--ok); background: rgba(63,185,80,.18);
-  }
-  .check-btn.checked svg { display: block; }
-
-  /* ─── BADGES ─── */
-  .badge {
-    display: inline-flex; align-items: center; justify-content: center;
-    width: 22px; height: 22px; border-radius: 4px;
-    font-size: 11px; font-weight: 700;
-  }
-  .badge-A { background: rgba(63,185,80,.15);   color: var(--ok); }
-  .badge-I { background: rgba(248,81,73,.15);   color: var(--danger); }
-  .badge-X { background: rgba(125,133,144,.15); color: var(--muted); }
-
-  .giro {
-    display: inline-flex; align-items: center;
-    padding: 2px 7px; border-radius: 3px;
-    font-size: 10px; font-weight: 700; letter-spacing: .04em;
-  }
-  .giro-A  { background: rgba(63,185,80,.15);  color: var(--ok); }
-  .giro-B  { background: rgba(88,166,255,.15); color: var(--info); }
-  .giro-CA { background: rgba(240,165,0,.15);  color: var(--accent); }
-  .giro-CB { background: rgba(240,165,0,.10);  color: #c88a00; }
-  .giro-CC { background: rgba(248,81,73,.10);  color: var(--danger); }
-
-  .desc-cell { max-width: 240px; overflow: hidden; text-overflow: ellipsis; }
-  .nome-cell { max-width: 170px; overflow: hidden; text-overflow: ellipsis; color: var(--muted); }
-
-  /* ─── LOADING ─── */
-  #loading {
-    display: none; flex-direction: column; align-items: center;
-    justify-content: center; gap: 16px; min-height: calc(100vh - 56px);
-    color: var(--muted); font-family: 'IBM Plex Mono', monospace; font-size: 13px;
-  }
-  .spinner {
-    width: 36px; height: 36px;
-    border: 3px solid var(--border); border-top-color: var(--accent);
-    border-radius: 50%; animation: spin .7s linear infinite;
-  }
-  @keyframes spin { to { transform: rotate(360deg); } }
-
-  /* ─── EMPTY ─── */
-  #empty-state {
-    display: none; padding: 60px; text-align: center;
-    color: var(--muted); font-size: 13px;
-  }
-
-  /* ─── SCROLLBAR ─── */
-  ::-webkit-scrollbar { width: 6px; height: 6px; }
-  ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
-  ::-webkit-scrollbar-thumb:hover { background: var(--muted); }
-
-  /* ═══════════════════════════════════════
-     PRINT
-     ═══════════════════════════════════════ */
-  @media print {
-    :root {
-      --bg: #fff; --surface: #fff; --border: #ccc;
-      --accent: #b06000; --text: #111; --muted: #555;
-      --ok: #1a7a30; --danger: #b91c1c; --info: #1d4ed8;
-      --row-hover: #fff; --header-bg: #f5f5f5;
-    }
-    body { background: #fff; color: #111; font-size: 11px; }
-
-    header, #upload-area, #loading, .meta-bar,
-    .filter-bar, .table-info, #empty-state,
-    .td-check, #th-check { display: none !important; }
-
-    #dashboard { display: block !important; padding: 0; }
-    .table-wrap { border: 1px solid #ccc; border-radius: 0; }
-    .scroll-x { overflow: visible; }
-
-    table { width: 100%; font-size: 9px; page-break-inside: auto; }
-    thead { position: static; background: #f0f0f0; }
-    thead th {
-      color: #333; background: #f0f0f0;
-      border-bottom: 2px solid #bbb; padding: 5px 6px; font-size: 8px;
-    }
-    thead th::after { display: none; }
-    tbody tr { page-break-inside: avoid; }
-    tbody tr:hover { background: #fff; }
-    td { color: #111; padding: 4px 6px; border-bottom: 1px solid #e0e0e0; }
-    td.muted   { color: #555; }
-    td.num     { color: #1d4ed8; }
-    td.num-neg { color: #b91c1c; }
-    td.num-ok  { color: #1a7a30; }
-    tr.cat-row td {
-      background: #fff8e1; color: #b06000;
-      border-top: 1px solid #e0c060; border-bottom: 1px solid #e0c060; font-size: 8px;
-    }
-    tr.row-done { opacity: .45; }
-    tr.row-done td { text-decoration: line-through; color: #999 !important; }
-    .badge-A { background: #d1fae5; color: #065f46; }
-    .badge-I { background: #fee2e2; color: #991b1b; }
-    .giro { background: transparent !important; border: 1px solid #999; color: #333 !important; }
-    .desc-cell, .nome-cell { max-width: none; overflow: visible; }
-
-    #dashboard::before {
-      content: 'Planograma — Condor Super Center';
-      display: block; font-family: 'IBM Plex Mono', monospace;
-      font-size: 13px; font-weight: 600; color: #111;
-      margin-bottom: 10px; padding-bottom: 6px; border-bottom: 2px solid #111;
-    }
-  }
+}
 </style>
 </head>
 <body>
 
-<!-- ─── HEADER ─── -->
+<!-- ═══ SITE HEADER ═══ -->
 <header>
   <div class="logo">PLANOGRAMA<span> // CONDOR</span></div>
   <div class="spacer"></div>
@@ -458,18 +567,45 @@
   <input type="file" id="file-input" accept=".txt">
 </header>
 
-<!-- ─── UPLOAD ─── -->
+<!-- ═══ UPLOAD / START SCREEN ═══ -->
 <div id="upload-area">
   <h2>Leitor de Planograma</h2>
-  <p>Carregue o arquivo <strong>.txt</strong> exportado do sistema Condor para visualizar os dados em tabela interativa.</p>
+  <p>Carregue o arquivo <strong>.txt</strong> exportado do sistema Condor. Após carregado, o arquivo fica salvo no navegador — você pode fechar e voltar sem perder o progresso.</p>
+
+  <!-- Card: saved file (shown if IndexedDB has data) -->
+  <div id="saved-card">
+    <div class="sc-title">📂 Relatório salvo no navegador</div>
+    <div class="sc-name" id="sc-filename">—</div>
+    <div class="sc-meta" id="sc-meta">—</div>
+    <div class="sc-actions">
+      <button class="btn" id="sc-open-btn">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>
+        </svg>
+        Abrir último relatório
+      </button>
+      <button class="btn-danger" id="sc-delete-btn">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+          <polyline points="3 6 5 6 21 6"/>
+          <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+          <path d="M10 11v6"/><path d="M14 11v6"/>
+          <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+        </svg>
+        Excluir arquivo salvo
+      </button>
+    </div>
+  </div>
+
+  <div class="divider" id="divider-or" style="display:none">ou</div>
+
   <div class="drop-zone" id="drop-zone">
-    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+    <svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
       <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
       <polyline points="14 2 14 8 20 8"/>
       <line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 12 15 15"/>
     </svg>
     <span class="dz-label">Arraste o arquivo aqui ou <strong>clique para selecionar</strong></span>
-    <span class="dz-label" style="font-size:10px">Formato: relatório listaplanograma.w</span>
+    <span class="dz-label" style="font-size:10px">Formato: relatório listaplanograma.w (.txt)</span>
   </div>
   <label class="btn" for="file-input">
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
@@ -480,28 +616,25 @@
   </label>
 </div>
 
-<!-- ─── LOADING ─── -->
+<!-- ═══ LOADING ═══ -->
 <div id="loading">
   <div class="spinner"></div>
-  <span>Processando arquivo…</span>
+  <span id="loading-msg">Carregando…</span>
 </div>
 
-<!-- ─── DASHBOARD ─── -->
+<!-- ═══ DASHBOARD ═══ -->
 <div id="dashboard">
   <div class="meta-bar" id="meta-bar"></div>
 
   <div class="filter-bar">
-    <!-- Search -->
     <div class="filter-group">
       <label>Buscar</label>
       <input type="text" id="search-box" placeholder="Descrição, EAN, código…">
     </div>
-    <!-- Category -->
     <div class="filter-group">
       <label>Categoria</label>
       <select id="cat-filter"><option value="">Todas as categorias</option></select>
     </div>
-    <!-- Status -->
     <div class="filter-group">
       <label>Status</label>
       <select id="st-filter">
@@ -510,12 +643,10 @@
         <option value="I">I – Inativo</option>
       </select>
     </div>
-    <!-- Giro -->
     <div class="filter-group">
       <label>Giro</label>
       <select id="giro-filter"><option value="">Todos</option></select>
     </div>
-    <!-- Estoque -->
     <div class="filter-group">
       <label>Estoque</label>
       <select id="stock-filter">
@@ -525,36 +656,32 @@
         <option value="pos">Positivo</option>
       </select>
     </div>
-    <!-- Mostrar feitos -->
     <div class="filter-group" style="justify-content:flex-end">
-      <label style="opacity:0;font-size:10px">x</label>
-      <label class="check-label" id="show-done-label">
+      <label style="opacity:0;pointer-events:none;font-size:10px">_</label>
+      <label class="check-label">
         <input type="checkbox" id="show-done-cb">
-        Mostrar itens feitos
+        Mostrar concluídos
       </label>
     </div>
 
-    <!-- Actions -->
     <div class="filter-actions">
       <button class="btn-outline" id="clear-btn">Limpar filtros</button>
       <button class="btn-danger" id="reset-progress-btn" style="display:none">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
-          <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+          <polyline points="3 6 5 6 21 6"/>
+          <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
           <path d="M10 11v6"/><path d="M14 11v6"/>
           <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
         </svg>
         Resetar baixas
       </button>
 
-      <!-- Column picker -->
       <div class="col-picker-wrap">
         <button class="btn-outline" id="col-btn">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <line x1="8"  y1="6"  x2="21" y2="6"/>
-            <line x1="8"  y1="12" x2="21" y2="12"/>
+            <line x1="8"  y1="6"  x2="21" y2="6"/><line x1="8"  y1="12" x2="21" y2="12"/>
             <line x1="8"  y1="18" x2="21" y2="18"/>
-            <line x1="3"  y1="6"  x2="3.01" y2="6"/>
-            <line x1="3"  y1="12" x2="3.01" y2="12"/>
+            <line x1="3"  y1="6"  x2="3.01" y2="6"/><line x1="3"  y1="12" x2="3.01" y2="12"/>
             <line x1="3"  y1="18" x2="3.01" y2="18"/>
           </svg>
           Colunas
@@ -564,7 +691,6 @@
             <span>Colunas visíveis</span>
             <button id="col-toggle-all">Desmarcar todas</button>
           </div>
-          <!-- items injected by JS -->
         </div>
       </div>
     </div>
@@ -580,8 +706,7 @@
       <table id="main-table">
         <thead>
           <tr id="thead-row">
-            <!-- Check column — always visible, not in COLS array -->
-            <th id="th-check" title="Dar baixa"></th>
+            <th id="th-check" title="Dar baixa / Concluído"></th>
             <th data-col="st">St</th>
             <th data-col="automacao">Automação / EAN</th>
             <th data-col="produto">Produto</th>
@@ -609,29 +734,34 @@
   </div>
 </div>
 
+<!-- ═══════════════════════════════════════════════════════
+     JAVASCRIPT
+═══════════════════════════════════════════════════════ -->
 <script>
-/* ════════════════════════════════════════════════════════
-   COLUMN POSITIONS — fixed-width positions in the .txt
-   ════════════════════════════════════════════════════════ */
+'use strict';
+
+/* ────────────────────────────────────────────────────────
+   COLUMN DEFINITIONS — fixed-width positions in the .txt
+──────────────────────────────────────────────────────── */
 const COLS = [
-  { key: 'st',         start: 0,   end: 2   },
-  { key: 'automacao',  start: 3,   end: 16  },
-  { key: 'produto',    start: 17,  end: 25  },
-  { key: 'descricao',  start: 26,  end: 66  },
-  { key: 'emb',        start: 67,  end: 71  },
-  { key: 'referencia', start: 72,  end: 87  },
-  { key: 'fornec',     start: 88,  end: 96  },
-  { key: 'nome',       start: 97,  end: 119 },
-  { key: 'sist',       start: 120, end: 124 },
-  { key: 'giro',       start: 125, end: 129 },
-  { key: 'corredor',   start: 130, end: 138 },
-  { key: 'altura',     start: 139, end: 146 },
-  { key: 'largura',    start: 147, end: 154 },
-  { key: 'prof',       start: 155, end: 162 },
-  { key: 'total',      start: 163, end: 170 },
-  { key: 'cobplan',    start: 171, end: 179 },
-  { key: 'qtdestoque', start: 180, end: 191 },
-  { key: 'pbl',        start: 192, end: 195 },
+  { key:'st',         start:0,   end:2   },
+  { key:'automacao',  start:3,   end:16  },
+  { key:'produto',    start:17,  end:25  },
+  { key:'descricao',  start:26,  end:66  },
+  { key:'emb',        start:67,  end:71  },
+  { key:'referencia', start:72,  end:87  },
+  { key:'fornec',     start:88,  end:96  },
+  { key:'nome',       start:97,  end:119 },
+  { key:'sist',       start:120, end:124 },
+  { key:'giro',       start:125, end:129 },
+  { key:'corredor',   start:130, end:138 },
+  { key:'altura',     start:139, end:146 },
+  { key:'largura',    start:147, end:154 },
+  { key:'prof',       start:155, end:162 },
+  { key:'total',      start:163, end:170 },
+  { key:'cobplan',    start:171, end:179 },
+  { key:'qtdestoque', start:180, end:191 },
+  { key:'pbl',        start:192, end:195 },
 ];
 
 const COL_LABELS = {
@@ -645,41 +775,91 @@ const COL_LABELS = {
 
 const visibleCols = new Set(COLS.map(c => c.key));
 
-/* ════════════════════════════════════════════════════════
-   LOCALSTORAGE — DONE SET
-   Key: "planograma_done_<filialKey>"
-   Value: JSON array of EAN strings
-   ════════════════════════════════════════════════════════ */
-let lsKey = 'planograma_done_default';
-let doneSet = new Set(); // EANs marked as done
+/* ────────────────────────────────────────────────────────
+   INDEXEDDB  — stores the raw .txt file content
+   DB: PlanogramaDB  |  Store: files
+   Record: { id:'current', name, content, savedAt, filial, date }
+──────────────────────────────────────────────────────── */
+const IDB_NAME    = 'PlanogramaDB';
+const IDB_VERSION = 1;
+const IDB_STORE   = 'files';
 
-function lsLoad() {
-  try {
-    const raw = localStorage.getItem(lsKey);
-    doneSet = new Set(raw ? JSON.parse(raw) : []);
-  } catch { doneSet = new Set(); }
+let idb = null; // will hold the opened IDBDatabase
+
+function idbOpen() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(IDB_NAME, IDB_VERSION);
+    req.onupgradeneeded = e => {
+      e.target.result.createObjectStore(IDB_STORE, { keyPath:'id' });
+    };
+    req.onsuccess = e => { idb = e.target.result; resolve(idb); };
+    req.onerror   = e => reject(e.target.error);
+  });
 }
 
-function lsSave() {
+function idbSave(record) {
+  return new Promise((resolve, reject) => {
+    const tx = idb.transaction(IDB_STORE, 'readwrite');
+    tx.objectStore(IDB_STORE).put(record);
+    tx.oncomplete = resolve;
+    tx.onerror    = e => reject(e.target.error);
+  });
+}
+
+function idbGet(id) {
+  return new Promise((resolve, reject) => {
+    const tx  = idb.transaction(IDB_STORE, 'readonly');
+    const req = tx.objectStore(IDB_STORE).get(id);
+    req.onsuccess = e => resolve(e.target.result || null);
+    req.onerror   = e => reject(e.target.error);
+  });
+}
+
+function idbDelete(id) {
+  return new Promise((resolve, reject) => {
+    const tx = idb.transaction(IDB_STORE, 'readwrite');
+    tx.objectStore(IDB_STORE).delete(id);
+    tx.oncomplete = resolve;
+    tx.onerror    = e => reject(e.target.error);
+  });
+}
+
+/* ────────────────────────────────────────────────────────
+   LOCALSTORAGE — done-set (EANs)
+   Key: planograma_done_<slug>
+──────────────────────────────────────────────────────── */
+let lsKey  = 'planograma_done_default';
+let doneSet = new Set();
+
+function lsKeyFor(filial, date) {
+  const slug = (filial + '_' + date).replace(/[^a-zA-Z0-9]/g,'_').toLowerCase();
+  return 'planograma_done_' + (slug || 'default');
+}
+
+function lsLoad()  {
+  try { doneSet = new Set(JSON.parse(localStorage.getItem(lsKey) || '[]')); }
+  catch { doneSet = new Set(); }
+}
+function lsSave()  {
   try { localStorage.setItem(lsKey, JSON.stringify([...doneSet])); } catch {}
 }
-
 function lsClear() {
   doneSet.clear();
   try { localStorage.removeItem(lsKey); } catch {}
 }
 
-/* ════════════════════════════════════════════════════════
+/* ────────────────────────────────────────────────────────
    REGEXES
-   ════════════════════════════════════════════════════════ */
+──────────────────────────────────────────────────────── */
 const RE_CAT    = /^\s{2,}\d{2}\.\d{3}\.\d{3}\.\d{3}\s+(.+)/;
 const RE_DATA   = /^([A-Z])\s{2}(\d{13})/;
 const RE_DATE   = /Data:\s*([\d/]+)/;
 const RE_FILIAL = /Filial:\s*(.+?)\s{3,}/;
+const RE_HORA   = /Hora:\s*([\d:]+)/;
 
-/* ════════════════════════════════════════════════════════
+/* ────────────────────────────────────────────────────────
    PARSER
-   ════════════════════════════════════════════════════════ */
+──────────────────────────────────────────────────────── */
 function extractField(line, col) {
   if (line.length <= col.start) return '';
   return (line.substring(col.start, col.end) || '').trim();
@@ -698,19 +878,14 @@ function parseFile(text) {
   let metaDate = '', metaFilial = '', metaHora = '';
 
   for (const line of lines) {
-    if (!metaDate)   { const m = RE_DATE.exec(line);   if (m) metaDate = m[1]; }
+    if (!metaDate)   { const m = RE_DATE.exec(line);   if (m) metaDate   = m[1]; }
+    if (!metaHora)   { const m = RE_HORA.exec(line);   if (m) metaHora   = m[1]; }
     if (!metaFilial) {
       const m = RE_FILIAL.exec(line);
       if (m) metaFilial = m[1].replace(/CONDOR SUPER CENTER LTDA\.\s*/i,'').trim();
     }
-    if (!metaHora && line.includes('Hora:')) {
-      const m = /Hora:\s*([\d:]+)/.exec(line);
-      if (m) metaHora = m[1];
-    }
-
     const catM = RE_CAT.exec(line);
     if (catM) { currentCat = catM[1].trim(); continue; }
-
     if (RE_DATA.test(line)) {
       const row = parseLine(line);
       row.categoria = currentCat;
@@ -720,409 +895,441 @@ function parseFile(text) {
       records.push(row);
     }
   }
-
-  return { records, meta: { date: metaDate, filial: metaFilial, hora: metaHora } };
+  return { records, meta:{ date:metaDate, filial:metaFilial, hora:metaHora } };
 }
 
-/* ════════════════════════════════════════════════════════
+/* ────────────────────────────────────────────────────────
    STATE
-   ════════════════════════════════════════════════════════ */
+──────────────────────────────────────────────────────── */
 let allRecords = [];
 let filtered   = [];
 let sortCol    = null, sortDir = 1;
+let currentMeta = {};
 
-/* ════════════════════════════════════════════════════════
+/* ────────────────────────────────────────────────────────
    DOM REFS
-   ════════════════════════════════════════════════════════ */
-const fileInput        = document.getElementById('file-input');
-const dropZone         = document.getElementById('drop-zone');
-const uploadArea       = document.getElementById('upload-area');
-const loadingEl        = document.getElementById('loading');
-const dashboard        = document.getElementById('dashboard');
-const tbody            = document.getElementById('tbody');
-const rowCountEl       = document.getElementById('row-count');
-const searchBox        = document.getElementById('search-box');
-const catFilter        = document.getElementById('cat-filter');
-const stFilter         = document.getElementById('st-filter');
-const giroFilter       = document.getElementById('giro-filter');
-const stockFilter      = document.getElementById('stock-filter');
-const showDoneCb       = document.getElementById('show-done-cb');
-const clearBtn         = document.getElementById('clear-btn');
-const resetProgressBtn = document.getElementById('reset-progress-btn');
-const emptyState       = document.getElementById('empty-state');
-const reloadBtn        = document.getElementById('reload-btn');
-const printBtn         = document.getElementById('print-btn');
-const metaBar          = document.getElementById('meta-bar');
-const headerMeta       = document.getElementById('header-meta');
-const colBtn           = document.getElementById('col-btn');
-const colDropdown      = document.getElementById('col-dropdown');
-const colToggleAll     = document.getElementById('col-toggle-all');
-const progressPill     = document.getElementById('progress-pill');
+──────────────────────────────────────────────────────── */
+const $ = id => document.getElementById(id);
+const uploadArea      = $('upload-area');
+const loadingEl       = $('loading');
+const loadingMsg      = $('loading-msg');
+const dashboard       = $('dashboard');
+const fileInput       = $('file-input');
+const dropZone        = $('drop-zone');
+const savedCard       = $('saved-card');
+const scFilename      = $('sc-filename');
+const scMeta          = $('sc-meta');
+const scOpenBtn       = $('sc-open-btn');
+const scDeleteBtn     = $('sc-delete-btn');
+const dividerOr       = $('divider-or');
+const tbody           = $('tbody');
+const rowCountEl      = $('row-count');
+const searchBox       = $('search-box');
+const catFilter       = $('cat-filter');
+const stFilter        = $('st-filter');
+const giroFilter      = $('giro-filter');
+const stockFilter     = $('stock-filter');
+const showDoneCb      = $('show-done-cb');
+const clearBtn        = $('clear-btn');
+const resetProgressBtn= $('reset-progress-btn');
+const reloadBtn       = $('reload-btn');
+const printBtn        = $('print-btn');
+const metaBar         = $('meta-bar');
+const headerMeta      = $('header-meta');
+const colBtn          = $('col-btn');
+const colDropdown     = $('col-dropdown');
+const colToggleAll    = $('col-toggle-all');
+const progressPill    = $('progress-pill');
+const emptyState      = $('empty-state');
 
-/* ════════════════════════════════════════════════════════
-   FILE LOAD
-   ════════════════════════════════════════════════════════ */
-fileInput.addEventListener('change', e => { if (e.target.files[0]) loadFile(e.target.files[0]); });
-dropZone.addEventListener('click', () => fileInput.click());
-dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
-dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
-dropZone.addEventListener('drop', e => {
-  e.preventDefault();
-  dropZone.classList.remove('drag-over');
-  if (e.dataTransfer.files[0]) loadFile(e.dataTransfer.files[0]);
+/* ────────────────────────────────────────────────────────
+   SCREEN TRANSITIONS
+──────────────────────────────────────────────────────── */
+function showScreen(name) {
+  uploadArea.style.display  = name==='upload'  ? 'flex' : 'none';
+  loadingEl.style.display   = name==='loading' ? 'flex' : 'none';
+  dashboard.style.display   = name==='dash'    ? 'block': 'none';
+}
+
+function setLoading(msg) {
+  showScreen('loading');
+  loadingMsg.textContent = msg || 'Carregando…';
+}
+
+/* ────────────────────────────────────────────────────────
+   INIT — open IndexedDB, then check for saved file
+──────────────────────────────────────────────────────── */
+async function init() {
+  setLoading('Verificando dados salvos…');
+  try {
+    await idbOpen();
+    const saved = await idbGet('current');
+    if (saved) {
+      scFilename.textContent = saved.name;
+      scMeta.textContent     = `Filial: ${saved.filial || '?'} · ${saved.date || '?'} · Salvo em: ${saved.savedAt}`;
+      savedCard.style.display  = 'block';
+      dividerOr.style.display  = 'flex';
+    }
+  } catch(e) {
+    console.warn('IndexedDB unavailable:', e);
+  }
+  showScreen('upload');
+}
+
+/* ────────────────────────────────────────────────────────
+   FILE INPUT / DRAG-DROP
+──────────────────────────────────────────────────────── */
+fileInput.addEventListener('change', e => { if (e.target.files[0]) readFile(e.target.files[0]); });
+dropZone.addEventListener('click',   () => fileInput.click());
+dropZone.addEventListener('dragover',e  => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+dropZone.addEventListener('dragleave',  () => dropZone.classList.remove('drag-over'));
+dropZone.addEventListener('drop',    e  => {
+  e.preventDefault(); dropZone.classList.remove('drag-over');
+  if (e.dataTransfer.files[0]) readFile(e.dataTransfer.files[0]);
 });
 
-function loadFile(file) {
-  uploadArea.style.display = 'none';
-  loadingEl.style.display  = 'flex';
+/* read a File object (from input or drop) */
+function readFile(file) {
+  setLoading('Lendo arquivo…');
   const reader = new FileReader();
-  reader.onload = ev => {
-    setTimeout(() => {
-      const { records, meta } = parseFile(ev.target.result);
-      allRecords = records;
-
-      // Build a stable localStorage key from filial+date
-      const slug = (meta.filial + '_' + meta.date).replace(/[^a-zA-Z0-9]/g,'_').toLowerCase();
-      lsKey = 'planograma_done_' + (slug || 'default');
-      lsLoad();
-
-      buildDashboard(meta);
-      loadingEl.style.display = 'none';
-      dashboard.style.display = 'block';
-      reloadBtn.style.display = 'inline-flex';
-      printBtn.style.display  = 'inline-flex';
-    }, 60);
+  reader.onload = async ev => {
+    const text = ev.target.result;
+    await processText(text, file.name);
   };
   reader.readAsText(file, 'latin1');
 }
 
-/* ════════════════════════════════════════════════════════
+/* ────────────────────────────────────────────────────────
+   SAVED FILE BUTTONS
+──────────────────────────────────────────────────────── */
+scOpenBtn.addEventListener('click', async () => {
+  setLoading('Abrindo relatório salvo…');
+  try {
+    const saved = await idbGet('current');
+    if (saved) await processText(saved.content, saved.name, /*persist=*/false);
+    else showScreen('upload');
+  } catch { showScreen('upload'); }
+});
+
+scDeleteBtn.addEventListener('click', async () => {
+  if (!confirm('Excluir o arquivo salvo? Os itens marcados como feitos serão mantidos caso você recarregue o mesmo arquivo.')) return;
+  await idbDelete('current');
+  savedCard.style.display = 'none';
+  dividerOr.style.display = 'none';
+});
+
+/* ────────────────────────────────────────────────────────
+   PROCESS TEXT  (parse + optionally save to IDB + render)
+──────────────────────────────────────────────────────── */
+async function processText(text, filename, persist=true) {
+  loadingMsg.textContent = 'Processando registros…';
+
+  await tick(); // let the DOM update
+
+  const { records, meta } = parseFile(text);
+  allRecords  = records;
+  currentMeta = meta;
+
+  // localStorage key for done-set
+  lsKey = lsKeyFor(meta.filial, meta.date);
+  lsLoad();
+
+  // Save to IndexedDB (skip if we just loaded FROM idb)
+  if (persist && idb) {
+    const now = new Date().toLocaleString('pt-BR');
+    await idbSave({
+      id: 'current',
+      name: filename,
+      content: text,
+      savedAt: now,
+      filial: meta.filial,
+      date: meta.date,
+    }).catch(()=>{});
+  }
+
+  buildDashboard(meta);
+  showScreen('dash');
+  reloadBtn.style.display = 'inline-flex';
+  printBtn.style.display  = 'inline-flex';
+}
+
+/* requestAnimationFrame tick so loading message renders */
+function tick() { return new Promise(r => requestAnimationFrame(r)); }
+
+/* ────────────────────────────────────────────────────────
    BUILD DASHBOARD
-   ════════════════════════════════════════════════════════ */
+──────────────────────────────────────────────────────── */
 function buildDashboard(meta) {
+  // meta pills
   metaBar.innerHTML = '';
   [
     ['Filial', meta.filial || '—'],
     ['Data',   meta.date   || '—'],
     ['Hora',   meta.hora   || '—'],
-    ['Total de produtos', allRecords.length],
-  ].forEach(([l, v]) => {
+    ['Total',  allRecords.length + ' produtos'],
+  ].forEach(([l,v]) => {
     const p = document.createElement('div');
     p.className = 'meta-pill';
     p.innerHTML = `${l}: <strong>${v}</strong>`;
     metaBar.appendChild(p);
   });
+  headerMeta.textContent = meta.filial ? `${meta.filial} · ${meta.date}` : '';
 
-  headerMeta.textContent = meta.filial ? `Filial ${meta.filial} · ${meta.date}` : '';
-
-  const cats = [...new Set(allRecords.map(r => r.categoria).filter(Boolean))].sort();
+  // category filter
+  const cats = [...new Set(allRecords.map(r=>r.categoria).filter(Boolean))].sort();
   catFilter.innerHTML = '<option value="">Todas as categorias</option>';
-  cats.forEach(c => { const o = document.createElement('option'); o.value = c; o.textContent = c; catFilter.appendChild(o); });
+  cats.forEach(c => { const o=document.createElement('option'); o.value=c; o.textContent=c; catFilter.appendChild(o); });
 
-  const giros = [...new Set(allRecords.map(r => (r.giro||'').trim()).filter(Boolean))].sort();
+  // giro filter
+  const giros = [...new Set(allRecords.map(r=>(r.giro||'').trim()).filter(Boolean))].sort();
   giroFilter.innerHTML = '<option value="">Todos</option>';
-  giros.forEach(g => { const o = document.createElement('option'); o.value = g; o.textContent = g; giroFilter.appendChild(o); });
+  giros.forEach(g => { const o=document.createElement('option'); o.value=g; o.textContent=g; giroFilter.appendChild(o); });
 
   buildColDropdown();
   applyFilters();
 }
 
-/* ════════════════════════════════════════════════════════
-   DONE SET HELPERS
-   ════════════════════════════════════════════════════════ */
+/* ────────────────────────────────────────────────────────
+   DONE-SET HELPERS
+──────────────────────────────────────────────────────── */
 function toggleDone(ean) {
-  if (doneSet.has(ean)) doneSet.delete(ean);
-  else doneSet.add(ean);
-  lsSave();
-  updateResetBtn();
-  applyFilters(); // re-render: item may now disappear if "show done" is off
+  if (doneSet.has(ean)) doneSet.delete(ean); else doneSet.add(ean);
+  lsSave(); updateResetBtn(); applyFilters();
 }
-
 function updateResetBtn() {
   resetProgressBtn.style.display = doneSet.size > 0 ? 'inline-flex' : 'none';
 }
-
 function updateProgressPill() {
   const total = allRecords.length;
-  const done  = allRecords.filter(r => doneSet.has(r.automacao)).length;
-  if (done === 0) {
-    progressPill.textContent = '';
-    progressPill.style.display = 'none';
-  } else {
-    progressPill.innerHTML = `✓ <strong>${done}</strong> / ${total} feitos`;
-    progressPill.style.display = 'inline-block';
-  }
+  const done  = allRecords.filter(r=>doneSet.has(r.automacao)).length;
+  if (done===0) { progressPill.textContent=''; progressPill.style.display='none'; return; }
+  progressPill.innerHTML = `✓ <strong>${done}</strong> / ${total} feitos`;
+  progressPill.style.display = 'inline-block';
 }
 
-/* ════════════════════════════════════════════════════════
+/* ────────────────────────────────────────────────────────
    COLUMN PICKER
-   ════════════════════════════════════════════════════════ */
+──────────────────────────────────────────────────────── */
 function buildColDropdown() {
-  colDropdown.querySelectorAll('.col-item').forEach(el => el.remove());
+  colDropdown.querySelectorAll('.col-item').forEach(el=>el.remove());
   COLS.forEach(col => {
     const item = document.createElement('label');
     item.className = 'col-item';
     const cb = document.createElement('input');
-    cb.type = 'checkbox'; cb.checked = visibleCols.has(col.key); cb.dataset.colKey = col.key;
+    cb.type='checkbox'; cb.checked=visibleCols.has(col.key); cb.dataset.colKey=col.key;
     cb.addEventListener('change', () => {
-      if (cb.checked) visibleCols.add(col.key); else visibleCols.delete(col.key);
-      applyColVisibility(); updateToggleAllLabel();
+      if(cb.checked) visibleCols.add(col.key); else visibleCols.delete(col.key);
+      applyColVisibility(); syncToggleAllLabel();
     });
-    const lbl = document.createElement('span');
-    lbl.textContent = COL_LABELS[col.key] || col.key;
-    item.appendChild(cb); item.appendChild(lbl);
-    colDropdown.appendChild(item);
+    const lbl=document.createElement('span'); lbl.textContent=COL_LABELS[col.key]||col.key;
+    item.appendChild(cb); item.appendChild(lbl); colDropdown.appendChild(item);
   });
 }
 
 function applyColVisibility() {
-  const visCount = COLS.filter(c => visibleCols.has(c.key)).length + 1; // +1 for check col
-  document.querySelectorAll('#thead-row th[data-col]').forEach(th => {
+  const visCount = COLS.filter(c=>visibleCols.has(c.key)).length + 1; // +1 check col
+  document.querySelectorAll('#thead-row th[data-col]').forEach(th=>{
     th.classList.toggle('col-hidden', !visibleCols.has(th.dataset.col));
   });
-  document.querySelectorAll('#tbody td[data-col]').forEach(td => {
+  document.querySelectorAll('#tbody td[data-col]').forEach(td=>{
     td.classList.toggle('col-hidden', !visibleCols.has(td.dataset.col));
   });
-  document.querySelectorAll('#tbody tr.cat-row td').forEach(td => {
-    td.colSpan = visCount || 1;
-  });
+  document.querySelectorAll('#tbody tr.cat-row td').forEach(td=>{ td.colSpan=visCount||1; });
 }
 
-function updateToggleAllLabel() {
-  colToggleAll.textContent = visibleCols.size === COLS.length ? 'Desmarcar todas' : 'Marcar todas';
+function syncToggleAllLabel() {
+  colToggleAll.textContent = visibleCols.size===COLS.length ? 'Desmarcar todas' : 'Marcar todas';
 }
 
-colBtn.addEventListener('click', e => {
+colBtn.addEventListener('click', e=>{
   e.stopPropagation();
   colDropdown.classList.toggle('open');
   colBtn.classList.toggle('active', colDropdown.classList.contains('open'));
 });
-document.addEventListener('click', e => {
-  if (!colDropdown.contains(e.target) && e.target !== colBtn) {
+document.addEventListener('click', e=>{
+  if(!colDropdown.contains(e.target)&&e.target!==colBtn){
     colDropdown.classList.remove('open'); colBtn.classList.remove('active');
   }
 });
-colToggleAll.addEventListener('click', () => {
-  const allChecked = visibleCols.size === COLS.length;
-  if (allChecked) COLS.forEach((c,i) => { if (i>0) visibleCols.delete(c.key); });
-  else COLS.forEach(c => visibleCols.add(c.key));
-  colDropdown.querySelectorAll('input[type=checkbox]').forEach(cb => {
-    cb.checked = visibleCols.has(cb.dataset.colKey);
+colToggleAll.addEventListener('click', ()=>{
+  const all = visibleCols.size===COLS.length;
+  if(all) COLS.forEach((c,i)=>{ if(i>0) visibleCols.delete(c.key); });
+  else    COLS.forEach(c=>visibleCols.add(c.key));
+  colDropdown.querySelectorAll('input[type=checkbox]').forEach(cb=>{
+    cb.checked=visibleCols.has(cb.dataset.colKey);
   });
-  applyColVisibility(); updateToggleAllLabel();
+  applyColVisibility(); syncToggleAllLabel();
 });
 
-/* ════════════════════════════════════════════════════════
+/* ────────────────────────────────────────────────────────
    FILTERS + SORT
-   ════════════════════════════════════════════════════════ */
+──────────────────────────────────────────────────────── */
 function applyFilters() {
-  const q      = searchBox.value.toLowerCase();
-  const cat    = catFilter.value;
-  const st     = stFilter.value;
-  const giro   = giroFilter.value;
-  const stock  = stockFilter.value;
-  const showDone = showDoneCb.checked;
+  const q       = searchBox.value.toLowerCase();
+  const cat     = catFilter.value;
+  const st      = stFilter.value;
+  const giro    = giroFilter.value;
+  const stock   = stockFilter.value;
+  const showDone= showDoneCb.checked;
 
   filtered = allRecords.filter(r => {
-    // hide done items unless "show done" is checked
     if (!showDone && doneSet.has(r.automacao)) return false;
-
     if (cat  && r.categoria !== cat)            return false;
     if (st   && r.st !== st)                    return false;
     if (giro && (r.giro||'').trim() !== giro)   return false;
     if (stock) {
-      const v = parseFloat((r.qtdestoque||'0').replace(/\./g,'').replace(',','.'));
-      if (stock === 'neg'  && v >= 0)  return false;
-      if (stock === 'zero' && v !== 0) return false;
-      if (stock === 'pos'  && v <= 0)  return false;
+      const v=parseFloat((r.qtdestoque||'0').replace(/\./g,'').replace(',','.'));
+      if(stock==='neg'  && v>=0)  return false;
+      if(stock==='zero' && v!==0) return false;
+      if(stock==='pos'  && v<=0)  return false;
     }
     if (q) {
-      const hay = [r.descricao,r.automacao,r.produto,r.nome,r.referencia,r.fornec].join(' ').toLowerCase();
-      if (!hay.includes(q)) return false;
+      const hay=[r.descricao,r.automacao,r.produto,r.nome,r.referencia,r.fornec].join(' ').toLowerCase();
+      if(!hay.includes(q)) return false;
     }
     return true;
   });
 
   if (sortCol) {
-    filtered.sort((a,b) => {
-      let va = a[sortCol]||'', vb = b[sortCol]||'';
-      const na = parseFloat(va.replace(/\./g,'').replace(',','.')),
-            nb = parseFloat(vb.replace(/\./g,'').replace(',','.'));
-      if (!isNaN(na) && !isNaN(nb)) return (na-nb)*sortDir;
+    filtered.sort((a,b)=>{
+      let va=a[sortCol]||'', vb=b[sortCol]||'';
+      const na=parseFloat(va.replace(/\./g,'').replace(',','.')),
+            nb=parseFloat(vb.replace(/\./g,'').replace(',','.'));
+      if(!isNaN(na)&&!isNaN(nb)) return (na-nb)*sortDir;
       return va.localeCompare(vb)*sortDir;
     });
   }
-
   renderTable();
   updateProgressPill();
   updateResetBtn();
 }
 
-/* ════════════════════════════════════════════════════════
+/* ────────────────────────────────────────────────────────
    RENDER TABLE
-   — FIX: cat-row colSpan counts both check col + visible data cols
-   — FIX: every td carries data-col so visibility works at any row count
-   ════════════════════════════════════════════════════════ */
+   ─ Each td carries data-col for per-column hide/show.
+   ─ cat-row colspan = visible data cols + 1 (check col).
+   ─ This is the definitive fix for the 1-item display bug:
+     we compute colSpan fresh each render, after filtering.
+──────────────────────────────────────────────────────── */
 function renderTable() {
-  tbody.innerHTML = '';
+  tbody.innerHTML  = '';
   rowCountEl.textContent = filtered.length;
-  emptyState.style.display = filtered.length === 0 ? 'block' : 'none';
+  emptyState.style.display = filtered.length===0 ? 'block' : 'none';
 
-  // +1 for the always-visible check column
-  const visCount = COLS.filter(c => visibleCols.has(c.key)).length + 1;
+  const visCount = COLS.filter(c=>visibleCols.has(c.key)).length + 1;
   let lastCat = null;
 
   filtered.forEach(r => {
-    /* ── Category separator ── */
-    if (r.categoria && r.categoria !== lastCat) {
+    /* Category separator */
+    if (r.categoria && r.categoria!==lastCat) {
       lastCat = r.categoria;
-      const tr = document.createElement('tr');
-      tr.className = 'cat-row';
-      const td = document.createElement('td');
-      td.colSpan = visCount;
-      td.textContent = r.categoria;
-      tr.appendChild(td);
-      tbody.appendChild(tr);
+      const tr=document.createElement('tr'); tr.className='cat-row';
+      const td=document.createElement('td'); td.colSpan=visCount; td.textContent=r.categoria;
+      tr.appendChild(td); tbody.appendChild(tr);
     }
 
-    /* ── Data row ── */
-    const isDone = doneSet.has(r.automacao);
-    const tr = document.createElement('tr');
-    if (isDone) tr.classList.add('row-done');
-    tr.dataset.ean = r.automacao;
+    /* Data row */
+    const isDone=doneSet.has(r.automacao);
+    const tr=document.createElement('tr');
+    if(isDone) tr.classList.add('row-done');
+    tr.dataset.ean=r.automacao;
 
-    // Helper: append td with data-col & optional hide
-    const appendTd = (td, colKey) => {
-      if (colKey) {
-        td.dataset.col = colKey;
-        if (!visibleCols.has(colKey)) td.classList.add('col-hidden');
-      }
+    const appendTd=(td,colKey)=>{
+      if(colKey){ td.dataset.col=colKey; if(!visibleCols.has(colKey)) td.classList.add('col-hidden'); }
       tr.appendChild(td);
     };
 
-    /* Check cell */
-    const checkTd = document.createElement('td');
-    checkTd.className = 'td-check';
-    const checkBtn = document.createElement('button');
-    checkBtn.className = 'check-btn' + (isDone ? ' checked' : '');
-    checkBtn.title = isDone ? 'Desmarcar item' : 'Dar baixa neste item';
-    checkBtn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--ok)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
-    checkBtn.addEventListener('click', e => {
-      e.stopPropagation();
-      toggleDone(r.automacao);
-    });
-    checkTd.appendChild(checkBtn);
-    tr.appendChild(checkTd); // check col has no data-col (always visible)
+    /* Check cell — no data-col, always visible */
+    const checkTd=document.createElement('td'); checkTd.className='td-check';
+    const btn=document.createElement('button'); btn.className='check-btn'+(isDone?' checked':'');
+    btn.title=isDone?'Desmarcar':'Dar baixa';
+    btn.innerHTML=`<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--ok)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
+    btn.addEventListener('click', e=>{ e.stopPropagation(); toggleDone(r.automacao); });
+    checkTd.appendChild(btn); tr.appendChild(checkTd);
 
     /* Data cells */
-    appendTd(badgeCell(r.st),                 'st');
-    appendTd(monoCell(r.automacao),           'automacao');
-    appendTd(monoCell(r.produto, 'muted'),    'produto');
-
-    const descTd = document.createElement('td');
-    descTd.className = 'desc-cell';
-    descTd.textContent = r.descricao || '—';
-    descTd.title = r.descricao || '';
-    appendTd(descTd, 'descricao');
-
-    appendTd(monoCell(r.emb, 'muted'),        'emb');
-    appendTd(monoCell(r.referencia, 'muted'), 'referencia');
-    appendTd(monoCell(r.fornec, 'muted'),     'fornec');
-
-    const nomeTd = document.createElement('td');
-    nomeTd.className = 'nome-cell';
-    nomeTd.textContent = r.nome || '—';
-    nomeTd.title = r.nome || '';
-    appendTd(nomeTd, 'nome');
-
-    appendTd(monoCell(r.sist, 'muted'),                        'sist');
-    appendTd(giroCell((r.giro||'').trim()),                    'giro');
-    ['corredor','altura','largura','prof','total'].forEach(k => appendTd(numCell(r[k]), k));
+    appendTd(badgeCell(r.st),              'st');
+    appendTd(monoCell(r.automacao),        'automacao');
+    appendTd(monoCell(r.produto,'muted'),  'produto');
+    const dTd=document.createElement('td'); dTd.className='desc-cell'; dTd.textContent=r.descricao||'—'; dTd.title=r.descricao||'';
+    appendTd(dTd,'descricao');
+    appendTd(monoCell(r.emb,'muted'),        'emb');
+    appendTd(monoCell(r.referencia,'muted'), 'referencia');
+    appendTd(monoCell(r.fornec,'muted'),     'fornec');
+    const nTd=document.createElement('td'); nTd.className='nome-cell'; nTd.textContent=r.nome||'—'; nTd.title=r.nome||'';
+    appendTd(nTd,'nome');
+    appendTd(monoCell(r.sist,'muted'),     'sist');
+    appendTd(giroCell((r.giro||'').trim()),'giro');
+    ['corredor','altura','largura','prof','total'].forEach(k=>appendTd(numCell(r[k]),k));
     appendTd(cobCell(r.cobplan),    'cobplan');
     appendTd(estCell(r.qtdestoque),'qtdestoque');
-    appendTd(monoCell(r.pbl,'muted'), 'pbl');
+    appendTd(monoCell(r.pbl,'muted'),'pbl');
 
     tbody.appendChild(tr);
   });
 }
 
-/* ════════════════════════════════════════════════════════
+/* ────────────────────────────────────────────────────────
    CELL HELPERS
-   ════════════════════════════════════════════════════════ */
-function monoCell(val, cls='') {
-  const td = document.createElement('td');
-  td.textContent = val || '—';
-  if (cls) td.className = cls;
+──────────────────────────────────────────────────────── */
+function monoCell(val,cls=''){
+  const td=document.createElement('td'); td.textContent=val||'—'; if(cls) td.className=cls; return td;
+}
+function numCell(val){
+  const td=document.createElement('td'); td.textContent=val||'—'; td.className='num'; return td;
+}
+function badgeCell(st){
+  const td=document.createElement('td');
+  const sp=document.createElement('span'); sp.className=`badge badge-${st||'X'}`; sp.textContent=st||'?';
+  td.appendChild(sp); return td;
+}
+function giroCell(giro){
+  const td=document.createElement('td');
+  if(!giro){td.textContent='—';td.className='muted';return td;}
+  const sp=document.createElement('span');
+  const m={A:'giro-A',B:'giro-B',CA:'giro-CA',CB:'giro-CB',CC:'giro-CC'};
+  sp.className=`giro ${m[giro]||''}`; sp.textContent=giro; td.appendChild(sp); return td;
+}
+function cobCell(val){
+  const td=document.createElement('td'); const v=parseInt(val||'0',10); td.textContent=val||'—';
+  if(v===999){td.className='num';td.style.color='var(--muted)';}
+  else if(v<=5) td.className='num-neg';
+  else if(v>=20)td.className='num-ok';
+  else          td.className='num';
   return td;
 }
-function numCell(val) {
-  const td = document.createElement('td');
-  td.textContent = val || '—';
-  td.className = 'num';
-  return td;
-}
-function badgeCell(st) {
-  const td = document.createElement('td');
-  const sp = document.createElement('span');
-  sp.className = `badge badge-${st||'X'}`;
-  sp.textContent = st || '?';
-  td.appendChild(sp);
-  return td;
-}
-function giroCell(giro) {
-  const td = document.createElement('td');
-  if (!giro) { td.textContent = '—'; td.className = 'muted'; return td; }
-  const sp = document.createElement('span');
-  const map = {A:'giro-A',B:'giro-B',CA:'giro-CA',CB:'giro-CB',CC:'giro-CC'};
-  sp.className = `giro ${map[giro]||''}`;
-  sp.textContent = giro;
-  td.appendChild(sp);
-  return td;
-}
-function cobCell(val) {
-  const td = document.createElement('td');
-  const v = parseInt(val||'0',10);
-  td.textContent = val || '—';
-  if      (v===999) { td.className='num'; td.style.color='var(--muted)'; }
-  else if (v<=5)    td.className = 'num-neg';
-  else if (v>=20)   td.className = 'num-ok';
-  else              td.className = 'num';
-  return td;
-}
-function estCell(val) {
-  const td = document.createElement('td');
-  const v = parseFloat((val||'0').replace(/\./g,'').replace(',','.'));
-  td.textContent = val || '—';
-  if      (v<0)  td.className = 'num-neg';
-  else if (v===0) td.className = 'num';
-  else            td.className = 'num-ok';
+function estCell(val){
+  const td=document.createElement('td');
+  const v=parseFloat((val||'0').replace(/\./g,'').replace(',','.'));
+  td.textContent=val||'—';
+  if(v<0) td.className='num-neg'; else if(v===0) td.className='num'; else td.className='num-ok';
   return td;
 }
 
-/* ════════════════════════════════════════════════════════
+/* ────────────────────────────────────────────────────────
    SORTING
-   ════════════════════════════════════════════════════════ */
-document.querySelectorAll('#thead-row th[data-col]').forEach(th => {
-  th.addEventListener('click', () => {
-    const col = th.dataset.col;
-    if (sortCol===col) sortDir*=-1; else { sortCol=col; sortDir=1; }
-    document.querySelectorAll('#thead-row th').forEach(h => h.classList.remove('sort-asc','sort-desc'));
-    th.classList.add(sortDir===1 ? 'sort-asc' : 'sort-desc');
+──────────────────────────────────────────────────────── */
+document.querySelectorAll('#thead-row th[data-col]').forEach(th=>{
+  th.addEventListener('click',()=>{
+    const col=th.dataset.col;
+    if(sortCol===col) sortDir*=-1; else{sortCol=col;sortDir=1;}
+    document.querySelectorAll('#thead-row th').forEach(h=>h.classList.remove('sort-asc','sort-desc'));
+    th.classList.add(sortDir===1?'sort-asc':'sort-desc');
     applyFilters();
   });
 });
 
-/* ════════════════════════════════════════════════════════
+/* ────────────────────────────────────────────────────────
    FILTER EVENTS
-   ════════════════════════════════════════════════════════ */
-searchBox.addEventListener('input', applyFilters);
+──────────────────────────────────────────────────────── */
+searchBox.addEventListener('input',  applyFilters);
 catFilter.addEventListener('change', applyFilters);
-stFilter.addEventListener('change', applyFilters);
-giroFilter.addEventListener('change', applyFilters);
-stockFilter.addEventListener('change', applyFilters);
-showDoneCb.addEventListener('change', applyFilters);
+stFilter.addEventListener('change',  applyFilters);
+giroFilter.addEventListener('change',applyFilters);
+stockFilter.addEventListener('change',applyFilters);
+showDoneCb.addEventListener('change',applyFilters);
 
-clearBtn.addEventListener('click', () => {
+clearBtn.addEventListener('click',()=>{
   searchBox.value=''; catFilter.value=''; stFilter.value='';
   giroFilter.value=''; stockFilter.value=''; showDoneCb.checked=false;
   sortCol=null; sortDir=1;
@@ -1130,22 +1337,33 @@ clearBtn.addEventListener('click', () => {
   applyFilters();
 });
 
-resetProgressBtn.addEventListener('click', () => {
-  if (!confirm(`Isso vai desmarcar todos os ${doneSet.size} itens concluídos. Confirmar?`)) return;
-  lsClear();
-  applyFilters();
+resetProgressBtn.addEventListener('click',()=>{
+  if(!confirm(`Desmarcar todos os ${doneSet.size} itens concluídos?`)) return;
+  lsClear(); applyFilters();
 });
 
-reloadBtn.addEventListener('click', () => {
-  dashboard.style.display='none';
-  reloadBtn.style.display='none';
-  printBtn.style.display='none';
+reloadBtn.addEventListener('click',()=>{
+  showScreen('upload');
+  reloadBtn.style.display='none'; printBtn.style.display='none';
   headerMeta.textContent='';
-  uploadArea.style.display='';
+  allRecords=[]; filtered=[]; doneSet.clear();
   fileInput.value='';
-  allRecords=[]; filtered=[];
-  doneSet.clear();
+  // Re-check saved card
+  if(idb) idbGet('current').then(saved=>{
+    if(saved){
+      scFilename.textContent=saved.name;
+      scMeta.textContent=`Filial: ${saved.filial||'?'} · ${saved.date||'?'} · Salvo em: ${saved.savedAt}`;
+      savedCard.style.display='block'; dividerOr.style.display='flex';
+    } else {
+      savedCard.style.display='none'; dividerOr.style.display='none';
+    }
+  }).catch(()=>{});
 });
+
+/* ────────────────────────────────────────────────────────
+   BOOT
+──────────────────────────────────────────────────────── */
+init();
 </script>
 </body>
 </html>
