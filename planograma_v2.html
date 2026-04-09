@@ -539,6 +539,44 @@ tr.row-done .badge, tr.row-done .giro { opacity: .45; }
     margin-bottom:10px; padding-bottom:6px; border-bottom:2px solid #111;
   }
 }
+
+  /* ─── TOAST NOTIFICATION ─── */
+  #toast {
+    position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%) translateY(12px);
+    background: #1c2128; border: 1px solid var(--ok);
+    color: var(--text); font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px; padding: 9px 20px; border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0,0,0,.5);
+    opacity: 0; pointer-events: none;
+    transition: opacity .2s, transform .2s;
+    z-index: 9999; white-space: nowrap;
+    display: flex; align-items: center; gap: 8px;
+  }
+  #toast.show {
+    opacity: 1; transform: translateX(-50%) translateY(0);
+  }
+  #toast .toast-icon { color: var(--ok); flex-shrink: 0; }
+  #toast.toast-copy  { border-color: var(--info); }
+  #toast.toast-copy .toast-icon { color: var(--info); }
+
+  /* Produto cell in auto-done mode */
+  .auto-done-active td.td-produto {
+    cursor: pointer;
+    color: var(--accent) !important;
+    text-decoration: underline;
+    text-decoration-style: dotted;
+    text-underline-offset: 3px;
+    transition: color .1s;
+  }
+  .auto-done-active td.td-produto:hover { color: var(--accent2) !important; }
+
+  /* Flash animation when auto-done fires */
+  @keyframes flash-copy {
+    0%   { background: rgba(88,166,255,.25); }
+    100% { background: transparent; }
+  }
+  tr.flash-copy td { animation: flash-copy .55s ease-out forwards; }
+
 </style>
 </head>
 <body>
@@ -656,11 +694,26 @@ tr.row-done .badge, tr.row-done .giro { opacity: .45; }
         <option value="pos">Positivo</option>
       </select>
     </div>
+    <!-- toggles row ─────────────────────────────── -->
     <div class="filter-group" style="justify-content:flex-end">
       <label style="opacity:0;pointer-events:none;font-size:10px">_</label>
       <label class="check-label">
         <input type="checkbox" id="show-done-cb">
         Mostrar concluídos
+      </label>
+    </div>
+    <div class="filter-group" style="justify-content:flex-end">
+      <label style="opacity:0;pointer-events:none;font-size:10px">_</label>
+      <label class="check-label" title="Oculta itens com Cob.Plan ≤ 0 ou inválida">
+        <input type="checkbox" id="hide-invalid-cob-cb">
+        Ocultar Cob. Inválida
+      </label>
+    </div>
+    <div class="filter-group" style="justify-content:flex-end">
+      <label style="opacity:0;pointer-events:none;font-size:10px">_</label>
+      <label class="check-label" title="Clique no código Produto para copiar e dar baixa automaticamente">
+        <input type="checkbox" id="auto-done-cb">
+        Aut. Conclusão
       </label>
     </div>
 
@@ -700,6 +753,7 @@ tr.row-done .badge, tr.row-done .giro { opacity: .45; }
   <div class="table-wrap">
     <div class="table-info">
       Exibindo <span id="row-count">0</span> produto(s)
+      &nbsp;<span id="shown-badge" style="font-size:10px;color:var(--muted);display:none"></span>
       &nbsp;<span id="progress-pill"></span>
     </div>
     <div class="scroll-x">
@@ -730,6 +784,8 @@ tr.row-done .badge, tr.row-done .giro { opacity: .45; }
         <tbody id="tbody"></tbody>
       </table>
       <div id="empty-state">Nenhum produto encontrado com os filtros atuais.</div>
+      <!-- Sentinel: IntersectionObserver watches this to trigger next page load -->
+      <div id="load-sentinel" style="height:1px;"></div>
     </div>
   </div>
 </div>
@@ -901,9 +957,12 @@ function parseFile(text) {
 /* ────────────────────────────────────────────────────────
    STATE
 ──────────────────────────────────────────────────────── */
-let allRecords = [];
-let filtered   = [];
-let sortCol    = null, sortDir = 1;
+let allRecords   = [];
+let filtered     = [];   // full filtered+sorted array (ALL matching records)
+let sortCol      = null, sortDir = 1;
+const PAGE       = 200;  // rows per lazy-load page
+let displayLimit = PAGE; // how many rows are currently in the DOM
+let lastCat      = null; // last category header rendered (shared across incremental appends)
 let currentMeta = {};
 
 /* ────────────────────────────────────────────────────────
@@ -940,7 +999,25 @@ const colBtn          = $('col-btn');
 const colDropdown     = $('col-dropdown');
 const colToggleAll    = $('col-toggle-all');
 const progressPill    = $('progress-pill');
+const hideInvalidCobCb = $('hide-invalid-cob-cb');
+const autoDoneCb       = $('auto-done-cb');
+const toastEl          = $('toast');
+const toastMsg         = $('toast-msg');
 const emptyState      = $('empty-state');
+
+/* ────────────────────────────────────────────────────────
+   TOAST
+──────────────────────────────────────────────────────── */
+let toastTimer = null;
+function showToast(msg, type='ok') {
+  toastMsg.textContent = msg;
+  toastEl.className = type==='copy' ? 'toast-copy' : '';
+  // swap icon colour via class; the SVG stroke is set by CSS
+  void toastEl.offsetWidth; // force reflow to restart transition
+  toastEl.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>{ toastEl.classList.remove('show'); }, 2200);
+}
 
 /* ────────────────────────────────────────────────────────
    SCREEN TRANSITIONS
@@ -1163,83 +1240,113 @@ colToggleAll.addEventListener('click', ()=>{
 
 /* ────────────────────────────────────────────────────────
    FILTERS + SORT
+   Processes the FULL allRecords array every time.
+   Only the rendering step respects displayLimit.
 ──────────────────────────────────────────────────────── */
 function applyFilters() {
-  const q       = searchBox.value.toLowerCase();
-  const cat     = catFilter.value;
-  const st      = stFilter.value;
-  const giro    = giroFilter.value;
-  const stock   = stockFilter.value;
-  const showDone= showDoneCb.checked;
+  const q        = searchBox.value.toLowerCase();
+  const cat      = catFilter.value;
+  const st       = stFilter.value;
+  const giro     = giroFilter.value;
+  const stock    = stockFilter.value;
+  const showDone = showDoneCb.checked;
+  const hideInvalidCob = hideInvalidCobCb.checked;
 
+  // ① Filter the COMPLETE dataset
   filtered = allRecords.filter(r => {
     if (!showDone && doneSet.has(r.automacao)) return false;
-    if (cat  && r.categoria !== cat)            return false;
-    if (st   && r.st !== st)                    return false;
-    if (giro && (r.giro||'').trim() !== giro)   return false;
+    if (cat   && r.categoria !== cat)           return false;
+    if (st    && r.st !== st)                   return false;
+    if (giro  && (r.giro||'').trim() !== giro)  return false;
     if (stock) {
-      const v=parseFloat((r.qtdestoque||'0').replace(/\./g,'').replace(',','.'));
-      if(stock==='neg'  && v>=0)  return false;
-      if(stock==='zero' && v!==0) return false;
-      if(stock==='pos'  && v<=0)  return false;
+      const v = parseFloat((r.qtdestoque||'0').replace(/\./g,'').replace(',','.'));
+      if (stock==='neg'  && v>=0)  return false;
+      if (stock==='zero' && v!==0) return false;
+      if (stock==='pos'  && v<=0)  return false;
+    }
+    // Ocultar Cobertura Inválida: remove items where cobplan ≤ 0, blank, or '—'
+    if (hideInvalidCob) {
+      const cob = (r.cobplan||'').replace(/[_\-—]/g,'').trim();
+      const cv  = parseFloat(cob);
+      if (!cob || isNaN(cv) || cv <= 0) return false;
     }
     if (q) {
-      const hay=[r.descricao,r.automacao,r.produto,r.nome,r.referencia,r.fornec].join(' ').toLowerCase();
-      if(!hay.includes(q)) return false;
+      const hay = [r.descricao,r.automacao,r.produto,r.nome,r.referencia,r.fornec]
+                    .join(' ').toLowerCase();
+      if (!hay.includes(q)) return false;
     }
     return true;
   });
 
+  // ② Sort the COMPLETE filtered array
   if (sortCol) {
-    filtered.sort((a,b)=>{
+    filtered.sort((a,b) => {
       let va=a[sortCol]||'', vb=b[sortCol]||'';
       const na=parseFloat(va.replace(/\./g,'').replace(',','.')),
             nb=parseFloat(vb.replace(/\./g,'').replace(',','.'));
-      if(!isNaN(na)&&!isNaN(nb)) return (na-nb)*sortDir;
+      if (!isNaN(na)&&!isNaN(nb)) return (na-nb)*sortDir;
       return va.localeCompare(vb)*sortDir;
     });
   }
+
+  // ③ Reset lazy-load window and render first page
+  displayLimit = PAGE;
   renderTable();
   updateProgressPill();
   updateResetBtn();
 }
 
 /* ────────────────────────────────────────────────────────
-   RENDER TABLE
-   ─ Each td carries data-col for per-column hide/show.
-   ─ cat-row colspan = visible data cols + 1 (check col).
-   ─ This is the definitive fix for the 1-item display bug:
-     we compute colSpan fresh each render, after filtering.
+   RENDER TABLE  (lazy / incremental)
+
+   renderTable()   → wipes tbody, draws rows [0, displayLimit)
+   appendNextPage()→ called by IntersectionObserver; draws the
+                     next PAGE rows and advances displayLimit.
+
+   Category separators are tracked via the module-level `lastCat`
+   so incremental appends never duplicate or skip headers.
 ──────────────────────────────────────────────────────── */
 function renderTable() {
-  tbody.innerHTML  = '';
+  tbody.innerHTML = '';
+  lastCat = null;                // reset category tracker for fresh render
+
   rowCountEl.textContent = filtered.length;
   emptyState.style.display = filtered.length===0 ? 'block' : 'none';
 
-  const visCount = COLS.filter(c=>visibleCols.has(c.key)).length + 1;
-  let lastCat = null;
+  const end = Math.min(displayLimit, filtered.length);
+  appendRows(0, end);
+  updateShownBadge();
+}
 
-  filtered.forEach(r => {
-    /* Category separator */
-    if (r.categoria && r.categoria!==lastCat) {
+/* Append rows [from, to) to tbody without clearing it */
+function appendRows(from, to) {
+  if (from >= to) return;
+  const visCount = COLS.filter(c=>visibleCols.has(c.key)).length + 1;
+  const frag = document.createDocumentFragment();
+
+  for (let i = from; i < to; i++) {
+    const r = filtered[i];
+
+    /* Category separator — only when category changes */
+    if (r.categoria && r.categoria !== lastCat) {
       lastCat = r.categoria;
       const tr=document.createElement('tr'); tr.className='cat-row';
       const td=document.createElement('td'); td.colSpan=visCount; td.textContent=r.categoria;
-      tr.appendChild(td); tbody.appendChild(tr);
+      tr.appendChild(td); frag.appendChild(tr);
     }
 
     /* Data row */
-    const isDone=doneSet.has(r.automacao);
-    const tr=document.createElement('tr');
-    if(isDone) tr.classList.add('row-done');
-    tr.dataset.ean=r.automacao;
+    const isDone = doneSet.has(r.automacao);
+    const tr = document.createElement('tr');
+    if (isDone) tr.classList.add('row-done');
+    tr.dataset.ean = r.automacao;
 
-    const appendTd=(td,colKey)=>{
-      if(colKey){ td.dataset.col=colKey; if(!visibleCols.has(colKey)) td.classList.add('col-hidden'); }
+    const appendTd = (td, colKey) => {
+      if (colKey) { td.dataset.col=colKey; if(!visibleCols.has(colKey)) td.classList.add('col-hidden'); }
       tr.appendChild(td);
     };
 
-    /* Check cell — no data-col, always visible */
+    /* Check cell */
     const checkTd=document.createElement('td'); checkTd.className='td-check';
     const btn=document.createElement('button'); btn.className='check-btn'+(isDone?' checked':'');
     btn.title=isDone?'Desmarcar':'Dar baixa';
@@ -1247,10 +1354,42 @@ function renderTable() {
     btn.addEventListener('click', e=>{ e.stopPropagation(); toggleDone(r.automacao); });
     checkTd.appendChild(btn); tr.appendChild(checkTd);
 
-    /* Data cells */
-    appendTd(badgeCell(r.st),              'st');
-    appendTd(monoCell(r.automacao),        'automacao');
-    appendTd(monoCell(r.produto,'muted'),  'produto');
+    appendTd(badgeCell(r.st),             'st');
+    appendTd(monoCell(r.automacao),       'automacao');
+    /* Produto cell — supports Aut. Conclusão click-to-copy-and-done */
+    const prodTd = monoCell(r.produto, 'muted');
+    prodTd.classList.add('td-produto');
+    prodTd.addEventListener('click', async () => {
+      if (!autoDoneCb.checked) return;
+      const code = r.produto.trim();
+      if (!code || code==='—') return;
+      // ① Copy to clipboard
+      try {
+        await navigator.clipboard.writeText(code);
+      } catch {
+        // fallback for browsers that require user-gesture on non-https
+        const ta = document.createElement('textarea');
+        ta.value = code; ta.style.position='fixed'; ta.style.opacity='0';
+        document.body.appendChild(ta); ta.select();
+        document.execCommand('copy'); document.body.removeChild(ta);
+      }
+      // ② Mark as done
+      const alreadyDone = doneSet.has(r.automacao);
+      if (!alreadyDone) toggleDone(r.automacao);  // triggers re-render
+      // ③ Flash the row briefly (find by EAN since toggleDone re-renders)
+      requestAnimationFrame(()=>{
+        const row = tbody.querySelector(`tr[data-ean="${r.automacao}"]`);
+        if (row) {
+          row.classList.remove('flash-copy');
+          void row.offsetWidth;
+          row.classList.add('flash-copy');
+          setTimeout(()=>row.classList.remove('flash-copy'), 600);
+        }
+      });
+      // ④ Toast
+      showToast(`Copiado: ${code}  ✓ Baixa dada`, 'copy');
+    });
+    appendTd(prodTd, 'produto');
     const dTd=document.createElement('td'); dTd.className='desc-cell'; dTd.textContent=r.descricao||'—'; dTd.title=r.descricao||'';
     appendTd(dTd,'descricao');
     appendTd(monoCell(r.emb,'muted'),        'emb');
@@ -1258,16 +1397,52 @@ function renderTable() {
     appendTd(monoCell(r.fornec,'muted'),     'fornec');
     const nTd=document.createElement('td'); nTd.className='nome-cell'; nTd.textContent=r.nome||'—'; nTd.title=r.nome||'';
     appendTd(nTd,'nome');
-    appendTd(monoCell(r.sist,'muted'),     'sist');
-    appendTd(giroCell((r.giro||'').trim()),'giro');
+    appendTd(monoCell(r.sist,'muted'),      'sist');
+    appendTd(giroCell((r.giro||'').trim()), 'giro');
     ['corredor','altura','largura','prof','total'].forEach(k=>appendTd(numCell(r[k]),k));
     appendTd(cobCell(r.cobplan),    'cobplan');
     appendTd(estCell(r.qtdestoque),'qtdestoque');
     appendTd(monoCell(r.pbl,'muted'),'pbl');
 
-    tbody.appendChild(tr);
-  });
+    frag.appendChild(tr);
+  }
+
+  tbody.appendChild(frag);   // single DOM write for the whole batch
 }
+
+/* Load the next PAGE of rows when the sentinel enters the viewport */
+function appendNextPage() {
+  if (displayLimit >= filtered.length) return;   // nothing left to load
+  const from = displayLimit;
+  displayLimit = Math.min(displayLimit + PAGE, filtered.length);
+  appendRows(from, displayLimit);
+  updateShownBadge();
+}
+
+/* Badge: "mostrando 200 de 6000" — hidden when all rows are rendered */
+const shownBadge = document.getElementById('shown-badge');
+function updateShownBadge() {
+  if (!shownBadge) return;
+  if (displayLimit >= filtered.length) {
+    shownBadge.style.display = 'none';
+  } else {
+    shownBadge.textContent = `— mostrando ${displayLimit} de ${filtered.length}`;
+    shownBadge.style.display = 'inline';
+  }
+}
+
+/* ────────────────────────────────────────────────────────
+   INTERSECTION OBSERVER — scroll-to-load-more
+   Watches #load-sentinel inside .scroll-x.
+   root: scrollEl  → fires relative to the scroll container,
+   not the viewport, so it works even with max-height scroll.
+──────────────────────────────────────────────────────── */
+const scrollEl  = document.querySelector('.scroll-x');
+const sentinel  = document.getElementById('load-sentinel');
+const observer  = new IntersectionObserver(entries => {
+  if (entries[0].isIntersecting) appendNextPage();
+}, { root: scrollEl, threshold: 0 });
+observer.observe(sentinel);
 
 /* ────────────────────────────────────────────────────────
    CELL HELPERS
@@ -1327,11 +1502,21 @@ catFilter.addEventListener('change', applyFilters);
 stFilter.addEventListener('change',  applyFilters);
 giroFilter.addEventListener('change',applyFilters);
 stockFilter.addEventListener('change',applyFilters);
-showDoneCb.addEventListener('change',applyFilters);
+showDoneCb.addEventListener('change', applyFilters);
+hideInvalidCobCb.addEventListener('change', applyFilters);
+
+/* Aut. Conclusão — toggle class on table; the click handler
+   lives inside appendRows on each td.td-produto */
+autoDoneCb.addEventListener('change', () => {
+  document.getElementById('main-table')
+    .classList.toggle('auto-done-active', autoDoneCb.checked);
+});
 
 clearBtn.addEventListener('click',()=>{
   searchBox.value=''; catFilter.value=''; stFilter.value='';
   giroFilter.value=''; stockFilter.value=''; showDoneCb.checked=false;
+  hideInvalidCobCb.checked=false; autoDoneCb.checked=false;
+  document.getElementById('main-table').classList.remove('auto-done-active');
   sortCol=null; sortDir=1;
   document.querySelectorAll('#thead-row th').forEach(h=>h.classList.remove('sort-asc','sort-desc'));
   applyFilters();
@@ -1365,5 +1550,12 @@ reloadBtn.addEventListener('click',()=>{
 ──────────────────────────────────────────────────────── */
 init();
 </script>
+<!-- ─── TOAST ─── -->
+<div id="toast">
+  <svg class="toast-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+    <polyline points="20 6 9 17 4 12"/>
+  </svg>
+  <span id="toast-msg"></span>
+</div>
 </body>
 </html>
