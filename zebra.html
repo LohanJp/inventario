@@ -1,1 +1,1464 @@
-<!doctypehtml><html lang=pt-BR><meta charset=UTF-8><meta content="width=device-width,initial-scale=1"name=viewport><title>ZPL Label Studio</title><link href=https://fonts.googleapis.com rel=preconnect><link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap"rel=stylesheet><style>:root{--bg:#0f1117;--surface:#1a1d27;--surface2:#22263a;--border:#2e3250;--accent:#4f7bff;--accent2:#00e5c3;--danger:#ff4f6a;--gold:#f5c518;--gold-dim:rgba(245,197,24,0.12);--text:#e8eaf6;--text-muted:#8891b4;--radius:10px;--mono:'Space Mono',monospace;--sans:'DM Sans',sans-serif;--sidebar-l:240px;--sidebar-r:290px}*,::after,::before{box-sizing:border-box;margin:0;padding:0}body{font-family:var(--sans);background:var(--bg);color:var(--text);height:100vh;display:flex;flex-direction:column;overflow:hidden}header{display:flex;align-items:center;justify-content:space-between;padding:12px 20px;background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0;z-index:10}.logo{display:flex;align-items:center;gap:10px}.logo-icon{width:30px;height:30px;background:linear-gradient(135deg,var(--accent),var(--accent2));border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:15px}.logo h1{font-family:var(--mono);font-size:14px;font-weight:700;letter-spacing:.04em}.logo span{font-size:10px;color:var(--text-muted);font-weight:300;display:block;letter-spacing:.08em;text-transform:uppercase}.header-actions{display:flex;align-items:center;gap:8px}.btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:var(--radius);font-family:var(--sans);font-size:13px;font-weight:500;cursor:pointer;border:none;transition:all .18s ease;white-space:nowrap}.btn svg{width:14px;height:14px;flex-shrink:0}.btn-ghost{background:0 0;color:var(--text-muted);border:1px solid var(--border)}.btn-ghost:hover{background:var(--surface2);color:var(--text);border-color:var(--accent)}.btn-primary{background:var(--accent);color:#fff}.btn-primary:hover{background:#6b8fff;transform:translateY(-1px);box-shadow:0 4px 20px rgba(79,123,255,.4)}.btn-export{background:linear-gradient(135deg,var(--accent2),#00b8a0);color:#0a1a18;font-weight:700;font-family:var(--mono);font-size:11px;letter-spacing:.05em;padding:8px 16px}.btn-export:hover{transform:translateY(-1px);box-shadow:0 4px 24px rgba(0,229,195,.45)}.btn-danger{width:100%;justify-content:center;background:0 0;color:var(--danger);border:1px solid rgba(255,79,106,.3);padding:8px 12px;font-size:12px;margin-top:4px}.btn-danger:hover{background:rgba(255,79,106,.1)}.btn-admin{background:0 0;color:var(--gold);border:1px solid rgba(245,197,24,.3);font-size:12px;padding:6px 12px}.btn-admin:hover{background:var(--gold-dim);border-color:var(--gold)}.btn-admin.unlocked{background:var(--gold-dim);border-color:var(--gold)}.btn-promo{width:100%;justify-content:center;background:linear-gradient(135deg,rgba(245,197,24,.15),rgba(245,197,24,.05));color:var(--gold);border:1px solid rgba(245,197,24,.4);font-weight:600;font-size:12px;padding:10px;letter-spacing:.03em}.btn-promo:hover{background:linear-gradient(135deg,rgba(245,197,24,.25),rgba(245,197,24,.1));transform:translateY(-1px);box-shadow:0 4px 16px rgba(245,197,24,.2)}main{flex:1;display:grid;grid-template-columns:var(--sidebar-l) 1fr var(--sidebar-r);overflow:hidden}.sidebar{background:var(--surface);display:flex;flex-direction:column;overflow-y:auto;flex-shrink:0}.sidebar-left{border-right:1px solid var(--border)}.sidebar-right{border-left:1px solid var(--border)}.sidebar-section{padding:14px 16px;border-bottom:1px solid var(--border)}.sidebar-section h2{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.12em;color:var(--text-muted);margin-bottom:12px}.layer-list{display:flex;flex-direction:column;gap:5px;min-height:30px}.layer-item{display:flex;align-items:center;gap:7px;padding:7px 9px;border-radius:8px;cursor:pointer;border:1px solid transparent;transition:all .15s;color:var(--text-muted)}.layer-item:hover{background:var(--surface2);color:var(--text)}.layer-item.active{background:rgba(79,123,255,.12);border-color:rgba(79,123,255,.35);color:var(--text)}.layer-icon{width:20px;height:20px;background:var(--surface2);border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;color:var(--text-muted)}.layer-item.active .layer-icon{background:rgba(79,123,255,.2);color:var(--accent)}.layer-label{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px}.layer-size{font-size:10px;color:var(--text-muted);font-family:var(--mono)}.empty-hint{font-size:12px;color:var(--text-muted);opacity:.55;text-align:center;padding:10px 0}.zpl-box{font-family:var(--mono);font-size:10px;color:var(--accent2);background:var(--bg);border-radius:8px;padding:10px;max-height:160px;overflow-y:auto;line-height:1.8;word-break:break-all;border:1px solid var(--border)}.admin-section{display:none;padding:14px 16px;border-bottom:1px solid var(--border);border-top:1px solid rgba(245,197,24,.2);background:linear-gradient(180deg,rgba(245,197,24,.04) 0,transparent 100%)}.admin-section h2{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.12em;color:var(--gold);margin-bottom:12px;display:flex;align-items:center;gap:6px}.admin-section h2::before{content:'★';font-size:9px}.canvas-area{display:flex;align-items:center;justify-content:center;background:var(--bg);background-image:linear-gradient(rgba(79,123,255,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(79,123,255,.04) 1px,transparent 1px);background-size:28px 28px;position:relative;overflow:hidden}.canvas-wrapper{position:relative}#labelary-img{display:block;width:800px;height:400px;border-radius:5px;box-shadow:0 0 0 1px rgba(0,0,0,.15),0 16px 52px rgba(0,0,0,.55),0 0 0 5px rgba(255,255,255,.03);background:#fff;object-fit:contain;transform-origin:top left;transition:opacity .2s}#preview-shimmer{display:none;position:absolute;inset:0;border-radius:5px;pointer-events:none;background:linear-gradient(90deg,rgba(255,255,255,0) 0,rgba(79,123,255,.12) 50%,rgba(255,255,255,0) 100%);background-size:200% 100%;animation:shimmer 1.1s infinite}#preview-shimmer.on{display:block}@keyframes shimmer{from{background-position:-200% 0}to{background-position:200% 0}}#preview-error{display:none;position:absolute;inset:0;border-radius:5px;background:#fff;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:32px;text-align:center}#preview-error.on{display:flex}#preview-error .err-title{font-size:14px;font-weight:700;color:#c0392b}#preview-error p{font-size:12px;color:#555;line-height:1.7}#preview-error code{font-family:monospace;font-size:10px;background:#f2f2f2;padding:3px 7px;border-radius:4px;color:#333;word-break:break-all}#preview-error a{color:#4f7bff}#live-badge{position:absolute;top:-11px;left:50%;transform:translateX(-50%);font-family:var(--mono);font-size:9px;font-weight:700;letter-spacing:.07em;color:#0a1a18;background:var(--accent2);padding:2px 12px;border-radius:20px;white-space:nowrap;pointer-events:none;opacity:0;transition:opacity .35s}#live-badge.on{opacity:1}.canvas-ruler{position:absolute;bottom:-28px;right:0;font-family:var(--mono);font-size:10px;color:var(--text-muted);background:rgba(15,17,23,.75);padding:3px 10px;border-radius:20px;border:1px solid var(--border);white-space:nowrap}#editor-idle{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:32px 20px;text-align:center;color:var(--text-muted);flex:1}.idle-icon{width:44px;height:44px;border-radius:12px;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:20px;margin-bottom:4px}#editor-idle p{font-size:12px;line-height:1.7;opacity:.65}#editor-content{display:none}#promo-editor{display:none}.editor-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}.editor-header h3{font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:var(--text-muted);font-weight:600}.el-badge{font-family:var(--mono);font-size:10px;color:var(--accent);background:rgba(79,123,255,.12);border:1px solid rgba(79,123,255,.3);border-radius:12px;padding:2px 8px}.promo-badge{font-family:var(--mono);font-size:10px;color:var(--gold);background:var(--gold-dim);border:1px solid rgba(245,197,24,.35);border-radius:12px;padding:2px 8px}.field-group{margin-bottom:12px}.field-group label{display:block;font-size:11px;color:var(--text-muted);margin-bottom:5px;font-weight:500;letter-spacing:.03em}.field-group input{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:7px;color:var(--text);font-family:var(--sans);font-size:13px;padding:7px 10px;outline:0;transition:border-color .15s}.field-group input:focus{border-color:var(--accent)}.field-group input[type=range]{padding:4px 0;border:none;background:0 0;accent-color:var(--accent);cursor:pointer}.range-row{display:flex;align-items:center;gap:8px}.range-row input[type=range]{flex:1}.range-val{font-family:var(--mono);font-size:12px;color:var(--accent2);min-width:26px;text-align:right}.pos-row{display:flex;gap:8px}.pos-row input{width:50%}.toggle-row{display:flex;gap:6px}.toggle-btn{flex:1;padding:7px;border-radius:7px;border:1px solid var(--border);background:0 0;color:var(--text-muted);font-size:12px;cursor:pointer;transition:all .15s;font-family:var(--sans);text-align:center}.toggle-btn.active{background:rgba(79,123,255,.15);border-color:var(--accent);color:var(--text)}.editor-divider{height:1px;background:var(--border);margin:12px 0}.promo-input:focus{border-color:var(--gold)!important;box-shadow:0 0 0 2px rgba(245,197,24,.1)}.mirror-note{font-size:10px;color:var(--gold);opacity:.7;margin-top:3px}.coord-hint{font-family:var(--mono);font-size:9px;color:var(--text-muted);opacity:.5;margin-top:2px}::-webkit-scrollbar{width:4px;height:4px}::-webkit-scrollbar-track{background:0 0}::-webkit-scrollbar-thumb{background:var(--border);border-radius:10px}::-webkit-scrollbar-thumb:hover{background:var(--text-muted)}#admin-modal-overlay{display:none;position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.55);backdrop-filter:blur(4px);align-items:center;justify-content:center}#admin-modal-overlay.open{display:flex}#admin-modal{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:28px 28px 22px;width:320px;box-shadow:0 24px 64px rgba(0,0,0,.7);animation:modalIn .18s ease}@keyframes modalIn{from{opacity:0;transform:scale(.94) translateY(8px)}to{opacity:1;transform:scale(1) translateY(0)}}@keyframes shake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-8px)}40%,80%{transform:translateX(8px)}}#admin-modal .modal-icon{font-size:28px;text-align:center;margin-bottom:6px}#admin-modal h3{font-family:var(--mono);font-size:13px;font-weight:700;letter-spacing:.04em;color:var(--gold);text-align:center;margin-bottom:18px}#admin-modal .modal-label{font-size:11px;color:var(--text-muted);font-weight:500;letter-spacing:.03em;margin-bottom:6px;display:block}#modal-senha{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--sans);font-size:14px;padding:9px 12px;outline:0;transition:border-color .15s,box-shadow .15s;letter-spacing:.12em}#modal-senha:focus{border-color:var(--gold);box-shadow:0 0 0 3px rgba(245,197,24,.15)}.modal-error{font-size:11px;color:var(--danger);min-height:16px;margin-top:6px;text-align:center;opacity:0;transition:opacity .2s}.modal-error.show{opacity:1}.modal-btns{display:flex;gap:8px;margin-top:20px}.modal-btns button{flex:1;padding:9px;border-radius:8px;font-family:var(--sans);font-size:13px;font-weight:600;cursor:pointer;border:none;transition:all .16s ease}.modal-btn-cancel{background:var(--surface2);color:var(--text-muted);border:1px solid var(--border)!important}.modal-btn-cancel:hover{background:var(--border);color:var(--text)}.modal-btn-ok{background:var(--gold);color:#0a0a00}#toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(16px);background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:24px;padding:9px 20px;font-size:13px;font-weight:500;opacity:0;transition:all .22s ease;pointer-events:none;z-index:200;white-space:nowrap}#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}#drag-layer{position:absolute;top:0;left:0;width:800px;height:400px;transform-origin:top left;pointer-events:auto;z-index:20}.drag-handle{position:absolute;cursor:grab;border:1.5px dashed transparent;background:0 0;border-radius:3px;padding:2px 5px;font-family:Arial,sans-serif;color:transparent;white-space:nowrap;user-select:none;box-sizing:border-box;min-width:16px;min-height:14px;transition:border-color .12s,background .12s}.drag-handle:hover{border-color:rgba(79,123,255,.5);background:rgba(79,123,255,.06)}.drag-handle.selected{border-style:solid;border-color:rgba(79,123,255,.75);background:rgba(79,123,255,.06)}.drag-handle.dragging{cursor:grabbing;border-color:rgba(79,123,255,.9);background:rgba(79,123,255,.08);opacity:1}.drag-handle.barcode-handle{font-size:18px;letter-spacing:1px;color:transparent}.drag-handle.rotated-handle{transform-origin:top left;transform:rotate(90deg) translateY(-100%);color:transparent}</style><header><div class=logo><div class=logo-icon>🏷</div><div><h1>ZPL Label Studio</h1><span>Gerador Universal de Etiquetas</span></div></div><div class=header-actions><button class="btn btn-admin"onclick=adminLogin() id=btn-admin>🔒 Admin</button> <button class="btn btn-ghost"onclick=clearCanvas()><svg fill=none stroke=currentColor stroke-width=2 viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.85"/></svg> Limpar</button> <button class="btn btn-primary"onclick=addTextElement()><svg fill=none stroke=currentColor stroke-width=2.5 viewBox="0 0 24 24"><line x1=12 x2=12 y1=5 y2=19 /><line x1=5 x2=19 y1=12 y2=12 /></svg> Adicionar Texto</button> <button class="btn btn-export"onclick=exportZPL()><svg fill=none stroke=currentColor stroke-width=2.5 viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1=12 x2=12 y1=15 y2=3 /></svg> BAIXAR SCRIPT .SH</button></div></header><main><aside class="sidebar sidebar-left"><div class=sidebar-section><h2>Camadas</h2><div class=layer-list id=layer-list><p class=empty-hint id=empty-hint>Nenhuma camada ainda</div></div><div class=sidebar-section><h2>Código ZPL</h2><div class=zpl-box id=zpl-preview>^XA ^XZ</div></div><div class=admin-section id=admin-section><h2>Painel de Promoções</h2><button class="btn btn-promo"onclick=loadPromoTemplate()>⚡ Carregar Promoção Relâmpago</button></div></aside><section class=canvas-area id=canvas-area><div class=canvas-wrapper id=canvas-wrapper><div id=live-badge>● PRÉVIA REAL · LABELARY</div><img alt="Prévia ZPL"id=labelary-img><div id=drag-layer></div><div id=preview-shimmer></div><div id=preview-error><div class=err-title>⚠ Prévia indisponível</div><p>Não foi possível carregar a imagem do Labelary.<br>Verifique sua conexão com a internet.<p style=font-size:11px;color:#888;margin-top:4px>O ZPL gerado está correto.<br>Use <strong>BAIXAR ARQUIVO ZPL</strong> e cole em<br><a href=https://labelary.com/viewer.html target=_blank>labelary.com/viewer.html</a></div><div class=canvas-ruler>4″ × 2″ · 8 dpmm · Labelary API</div></div></section><aside class="sidebar sidebar-right"><div id=editor-idle><div class=idle-icon>✎️</div><p>Clique numa camada<br>para editar o elemento</div><div id=editor-content><div class=sidebar-section><div class=editor-header><h3>Editar Elemento</h3><span class=el-badge id=el-badge>#1</span></div><div class=field-group><label>Conteúdo</label> <input id=ep-text oninput=updateSelectedElement() placeholder="Digite o texto..."></div><div class=field-group><label>Tamanho da fonte</label><div class=range-row><input id=ep-size oninput=updateSelectedElement() type=range max=96 min=8 value=24> <span class=range-val id=ep-size-val>24</span></div></div><div class=field-group><label>Estilo</label><div class=toggle-row><button class=toggle-btn onclick='setFontWeight("normal")'id=tb-normal>Normal</button> <button class="toggle-btn active"onclick='setFontWeight("bold")'id=tb-bold>Bold</button></div></div><div class=editor-divider></div><div class=field-group><label>Posição — X & Y (pts ZPL)</label><div class=pos-row><input id=ep-x oninput=updatePosFromPanel() placeholder=X type=number> <input id=ep-y oninput=updatePosFromPanel() placeholder=Y type=number></div></div><button class="btn btn-danger"onclick=deleteSelected()><svg fill=none stroke=currentColor stroke-width=2 viewBox="0 0 24 24"style=width:13px;height:13px><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg> Excluir elemento</button></div></div><div id=promo-editor><div class=sidebar-section><div class=editor-header><h3>Promoção Relâmpago</h3><span class=promo-badge>⚡ Ativo</span></div><div class=field-group><label>Produto — Linha 1</label> <input id=promo-l1 oninput='syncPromo("l1")'placeholder="Ex: ARROZ TIPO 1"class=promo-input><div class=coord-hint>^FO0,50 · ^FO330,50 · ^A0N,33,25</div><div class=mirror-note>⇄ espelhado L + R</div></div><div class=field-group><label>Produto — Linha 2</label> <input id=promo-l2 oninput='syncPromo("l2")'placeholder="Ex: PACOTE 5KG"class=promo-input><div class=coord-hint>^FO0,83 · ^FO330,83 · ^A0N,33,25</div><div class=mirror-note>⇄ espelhado L + R</div></div><div class=field-group><label>EAN Original (Controle)</label> <input id=promo-ean-ctrl oninput='syncPromo("eanCtrl")'placeholder="Ex: 7891234567890"class=promo-input maxlength=13><div class=coord-hint>^A0N,22,21 · ^FO70,115 · ^FO410,115 — texto topo</div><div class=mirror-note>⇄ espelhado L + R</div></div><div class=field-group><label>EAN Promoção (Barras)</label> <input id=promo-ean-bar oninput='syncPromo("eanBar")'placeholder="Ex: 7899999999999"class=promo-input maxlength=13><div class=coord-hint>^BY2^BEN,80,Y,N · ^FO80,140 · ^FO417,140 — barcode</div><div class=mirror-note>⇄ espelhado L + R</div></div><div class=field-group><label>Vigência</label> <input id=promo-vig oninput='syncPromo("vig")'placeholder="01/01 a 07/01/2025"class=promo-input><div class=coord-hint>^FO50,265 · ^FO380,265 · ^A0N,31,15</div><div class=mirror-note>⇄ espelhado L + R</div></div><div class=field-group><label>Cód. Lateral (rotacionado)</label> <input id=promo-lat oninput='syncPromo("lat")'placeholder=OFERTA-001 class=promo-input><div class=coord-hint>^FO10,115 · ^FO340,115 · ^AOR,14,10</div><div class=mirror-note>⇄ espelhado L + R</div></div><div class=editor-divider></div><button class="btn btn-danger"onclick=exitPromoMode()>Sair do Modo Promoção</button></div></div></aside></main><div id=admin-modal-overlay onclick=modalClickOutside(event)><div id=admin-modal aria-labelledby=modal-title aria-modal=true role=dialog><div class=modal-icon>🔒</div><h3 id=modal-title>ACESSO RESTRITO</h3><label class=modal-label for=modal-senha>Senha de administrador</label> <input id=modal-senha placeholder=•••••••• type=password autocomplete=current-password onkeydown=modalKeydown(event)><div class=modal-error id=modal-error>Senha incorreta. Tente novamente.</div><div class=modal-btns><button class=modal-btn-cancel onclick=closeAdminModal()>Cancelar</button> <button class=modal-btn-ok onclick=submitAdminModal()>Entrar</button></div></div></div><div id=toast></div><script>var elements=[],selectedId=null,idCounter=0,isPromoMode=!1,isAdminMode=!1,promoData={l1:"PRODUTO EXEMPLO",l2:"DESCRICAO LINHA 2",eanCtrl:"7891234567890",eanBar:"7899999999999",vig:"01/01 a 07/01/2025",lat:"OFERTA-001"},promoPos={titulo:{xL:0,xR:330,y:10,gapR:330},l1:{xL:0,xR:330,y:50,gapR:330},l2:{xL:0,xR:330,y:83,gapR:330},eanTxt:{xL:70,xR:410,y:115,gapR:340},barcode:{xL:80,xR:417,y:140,gapR:337},vig:{xL:50,xR:380,y:265,gapR:330},lat:{xL:10,xR:340,y:115,gapR:330}},ZPL_W=800,ZPL_H=400,currentScale=1,LABELARY_BASE="https://api.labelary.com/v1/printers/8dpmm/labels/4x2/0/",_debounceId=null;function schedulePreview(e){clearTimeout(_debounceId),_debounceId=setTimeout(_updatePreview,void 0!==e?e:550)}function _updatePreview(){var e=document.getElementById("labelary-img"),t=document.getElementById("preview-shimmer"),a=document.getElementById("preview-error"),l=document.getElementById("live-badge");t.classList.add("on"),a.classList.remove("on"),e.style.opacity="0.35";var o=LABELARY_BASE+encodeURIComponent(toZPL());e.onload=function(){t.classList.remove("on"),e.style.opacity="1",l.classList.add("on"),clearTimeout(l._t),l._t=setTimeout(function(){l.classList.remove("on")},3e3)},e.onerror=function(){t.classList.remove("on"),e.style.opacity="0.1",a.classList.add("on")},e.src=o}function scalePreview(){var e=document.getElementById("canvas-area"),t=document.getElementById("labelary-img"),a=document.getElementById("drag-layer"),l=document.getElementById("canvas-wrapper"),o=document.getElementById("preview-shimmer"),d=document.getElementById("preview-error");currentScale=Math.min((e.clientWidth-64)/ZPL_W,(e.clientHeight-64)/ZPL_H,1);var n=ZPL_W*currentScale,r=ZPL_H*currentScale,e="scale("+currentScale+")";t.style.width=ZPL_W+"px",t.style.height=ZPL_H+"px",t.style.transform=e,t.style.transformOrigin="top left",a&&(a.style.transform=e,a.style.transformOrigin="top left"),l.style.width=n+"px",l.style.height=r+"px",o.style.width=n+"px",o.style.height=r+"px",d.style.width=n+"px",d.style.height=r+"px"}window.addEventListener("resize",scalePreview);var _drag={active:!1,key:null,handle:null,startMouseX:0,startMouseY:0,startElX:0,startElY:0};function buildDragLayer(){var e=document.getElementById("drag-layer");e&&(e.innerHTML="",(isPromoMode?_buildPromoHandles:_buildFreeHandles)(e))}function _buildPromoHandles(e){for(var t=[{key:"titulo",label:"PROMOCAO RELAMPAGO",fs:33,bold:!0},{key:"l1",label:promoData.l1,fs:33,bold:!1},{key:"l2",label:promoData.l2,fs:33,bold:!1},{key:"eanTxt",label:promoData.eanCtrl,fs:22,bold:!1},{key:"barcode",label:promoData.eanBar,fs:60,bold:!1,isBarcode:!0},{key:"vig",label:promoData.vig,fs:31,bold:!1},{key:"lat",label:promoData.lat,fs:14,bold:!1,isRotated:!0}],a=0;a<t.length;a++){var l=t[a],o=promoPos[l.key],l=_createHandle(l.key,l.label,o.xL,o.y,l.fs,l.bold,l.isBarcode,l.isRotated);e.appendChild(l)}}function _buildFreeHandles(e){for(var t=0;t<elements.length;t++){var a=elements[t],l=_createHandle("el-"+a.id,a.text,a.x,a.y,a.fontSize,a.bold,!1,!1);l.dataset.elId=a.id,a.id===selectedId&&l.classList.add("selected"),e.appendChild(l)}}function _createHandle(t,e,a,l,o,d,n,r){var s=document.createElement("div");return s.className="drag-handle",s.dataset.key=t,s.style.left=a+"px",s.style.top=l+"px",s.style.fontSize=Math.max(8,Math.round(.82*o))+"px",s.style.fontWeight=d?"bold":"normal",n?(s.classList.add("barcode-handle"),s.textContent="||| ||| ||| |||",s.style.height=Math.round(.9*o)+"px"):(r&&s.classList.add("rotated-handle"),s.textContent=e||""),s.addEventListener("mousedown",function(e){e.stopPropagation(),_startDrag(e,s,t)}),s}function _startDrag(e,t,a){var l,o;isPromoMode||selectElement(parseInt(t.dataset.elId,10)),o=isPromoMode&&promoPos[a]?(l=promoPos[a].xL,promoPos[a].y):(l=(o=_findEl(parseInt(t.dataset.elId,10)))?o.x:0,o?o.y:0),_drag.active=!0,_drag.key=a,_drag.handle=t,_drag.startMouseX=e.clientX,_drag.startMouseY=e.clientY,_drag.startElX=l,_drag.startElY=o,t.classList.add("dragging"),e.preventDefault()}function _findEl(e){for(var t=0;t<elements.length;t++)if(elements[t].id===e)return elements[t];return null}function newEl(e,t,a,l,o){return{id:++idCounter,text:e,x:t,y:a,fontSize:l,bold:o}}function addTextElement(){var e;isPromoMode?showToast("Saia do modo Promoção antes de adicionar texto livre"):(e=elements.length%8*24,e=newEl("Texto "+(idCounter+1),40+e,40+e,28,!0),elements.push(e),updateLayerList(),buildDragLayer(),updateZPLPreview(),schedulePreview(300),selectElement(e.id),showToast("Texto adicionado 🎉"))}function selectElement(e){if(!isPromoMode){if(null!==selectedId){var t=document.getElementById("layer-item-"+selectedId);t&&t.classList.remove("active");t=document.querySelector('#drag-layer .drag-handle[data-el-id="'+selectedId+'"]');if(t)t.classList.remove("selected");else for(var a=document.querySelectorAll("#drag-layer .drag-handle"),l=0;l<a.length;l++)parseInt(a[l].dataset.elId,10)===selectedId&&a[l].classList.remove("selected")}selectedId=e;t=document.getElementById("layer-item-"+e);t&&t.classList.add("active");for(var a=document.querySelectorAll("#drag-layer .drag-handle"),o=0;o<a.length;o++)parseInt(a[o].dataset.elId,10)===e&&a[o].classList.add("selected");populateEditorPanel(e)}}function deselectAll(){var e;null===selectedId||(e=document.getElementById("layer-item-"+selectedId))&&e.classList.remove("active"),selectedId=null,isPromoMode||showEditorIdle()}function showEditorIdle(){document.getElementById("editor-idle").style.display="flex",document.getElementById("editor-content").style.display="none",document.getElementById("promo-editor").style.display="none"}function showEditorContent(){document.getElementById("editor-idle").style.display="none",document.getElementById("editor-content").style.display="block",document.getElementById("promo-editor").style.display="none"}function showPromoEditorPanel(){document.getElementById("editor-idle").style.display="none",document.getElementById("editor-content").style.display="none",document.getElementById("promo-editor").style.display="block",document.getElementById("promo-l1").value=promoData.l1,document.getElementById("promo-l2").value=promoData.l2,document.getElementById("promo-ean-ctrl").value=promoData.eanCtrl,document.getElementById("promo-ean-bar").value=promoData.eanBar,document.getElementById("promo-vig").value=promoData.vig,document.getElementById("promo-lat").value=promoData.lat}function populateEditorPanel(e){e=_findEl(e);e?(showEditorContent(),document.getElementById("el-badge").textContent="#"+e.id,document.getElementById("ep-text").value=e.text,document.getElementById("ep-size").value=e.fontSize,document.getElementById("ep-size-val").textContent=e.fontSize,document.getElementById("ep-x").value=e.x,document.getElementById("ep-y").value=e.y,document.getElementById("tb-normal").classList.toggle("active",!e.bold),document.getElementById("tb-bold").classList.toggle("active",e.bold)):showEditorIdle()}function updateSelectedElement(){var e,t,a;!selectedId||(e=_findEl(selectedId))&&(e.text=document.getElementById("ep-text").value||" ",e.fontSize=parseInt(document.getElementById("ep-size").value,10),document.getElementById("ep-size-val").textContent=e.fontSize,(a=document.getElementById("layer-item-"+selectedId))&&(t=a.querySelector(".layer-label"),a=a.querySelector(".layer-size"),t&&(t.textContent=e.text),a&&(a.textContent=e.fontSize+"pt")),buildDragLayer(),updateZPLPreview(),schedulePreview())}function updatePosFromPanel(){var e,t,a;!selectedId||(e=_findEl(selectedId))&&(t=parseInt(document.getElementById("ep-x").value,10),a=parseInt(document.getElementById("ep-y").value,10),isNaN(t)||(e.x=Math.max(0,Math.min(ZPL_W,t))),isNaN(a)||(e.y=Math.max(0,Math.min(ZPL_H,a))),buildDragLayer(),updateZPLPreview(),schedulePreview())}function setFontWeight(e){var t;!selectedId||(t=_findEl(selectedId))&&(t.bold="bold"===e,document.getElementById("tb-normal").classList.toggle("active",!t.bold),document.getElementById("tb-bold").classList.toggle("active",t.bold),buildDragLayer(),updateZPLPreview(),schedulePreview())}function deleteSelected(){if(selectedId){for(var e=[],t=0;t<elements.length;t++)elements[t].id!==selectedId&&e.push(elements[t]);elements=e,selectedId=null,showEditorIdle(),updateLayerList(),buildDragLayer(),updateZPLPreview(),schedulePreview(300),showToast("Elemento removido")}}function clearCanvas(){(0!==elements.length||isPromoMode)&&confirm("Limpar todos os elementos?")&&(isPromoMode=!1,elements=[],selectedId=null,idCounter=0,showEditorIdle(),updateLayerList(),buildDragLayer(),updateZPLPreview(),schedulePreview(300),showToast("Canvas limpo"))}function updateLayerList(){var e=document.getElementById("layer-list");if(e){for(var t=e.querySelectorAll(".layer-item"),a=0;a<t.length;a++)t[a].remove();var l=document.getElementById("empty-hint");if(isPromoMode){l&&(l.style.display="none");for(var o=[{icon:"T",label:"PROMOCAO RELAMPAGO",size:"33"},{icon:"T",label:promoData.l1,size:"33"},{icon:"T",label:promoData.l2,size:"33"},{icon:"T",label:"Ctrl: "+promoData.eanCtrl,size:"22"},{icon:"|",label:"Bar: "+promoData.eanBar,size:"BC"},{icon:"T",label:promoData.vig,size:"31"},{icon:"R",label:promoData.lat,size:"14"}],d=0;d<o.length;d++){var n=document.createElement("div");n.className="layer-item",n.style.cursor="default",n.innerHTML='<div class="layer-icon">'+o[d].icon+'</div><div class="layer-label">'+escHtml(o[d].label)+'</div><div class="layer-size">'+o[d].size+"</div>",e.appendChild(n)}}else if(0!==elements.length){l&&(l.style.display="none");for(var r=elements.slice().reverse(),s=0;s<r.length;s++){var i=r[s],m=document.createElement("div");m.id="layer-item-"+i.id,m.className="layer-item"+(i.id===selectedId?" active":""),m.innerHTML='<div class="layer-icon">T</div><div class="layer-label">'+escHtml(i.text)+'</div><div class="layer-size">'+i.fontSize+"pt</div>",function(e){m.addEventListener("click",function(){selectElement(e)})}(i.id),e.appendChild(m)}}else l&&(l.style.display="block")}}function adminLogin(){var e,t,a;isAdminMode?showToast("⭐ Painel Admin já está ativo"):(e=document.getElementById("admin-modal-overlay"),t=document.getElementById("modal-senha"),a=document.getElementById("modal-error"),t.value="",a.classList.remove("show"),e.classList.add("open"),setTimeout(function(){t.focus()},60))}function closeAdminModal(){document.getElementById("admin-modal-overlay").classList.remove("open"),document.getElementById("modal-senha").value="",document.getElementById("modal-error").classList.remove("show")}function modalClickOutside(e){"admin-modal-overlay"===e.target.id&&closeAdminModal()}function modalKeydown(e){"Enter"===e.key&&submitAdminModal(),"Escape"===e.key&&closeAdminModal()}function submitAdminModal(){var e,t=document.getElementById("modal-senha").value,a=document.getElementById("modal-error");"cansado"===t?(closeAdminModal(),isAdminMode=!0,document.getElementById("admin-section").style.display="block",document.getElementById("btn-admin").classList.add("unlocked"),document.getElementById("btn-admin").textContent="⭐ Admin",showToast("✅ Acesso liberado! Painel de Promoções disponível.")):(a.classList.add("show"),(a=document.getElementById("modal-senha")).value="",a.focus(),(e=document.getElementById("admin-modal")).style.animation="none",setTimeout(function(){e.style.animation="shake .35s ease"},10))}function loadPromoTemplate(){isAdminMode&&(isPromoMode=!0,elements=[],selectedId=null,promoPos={titulo:{xL:0,xR:330,y:10,gapR:330},l1:{xL:0,xR:330,y:50,gapR:330},l2:{xL:0,xR:330,y:83,gapR:330},eanTxt:{xL:70,xR:410,y:115,gapR:340},barcode:{xL:80,xR:417,y:140,gapR:337},vig:{xL:50,xR:380,y:265,gapR:330},lat:{xL:10,xR:340,y:115,gapR:330}},updateLayerList(),buildDragLayer(),updateZPLPreview(),schedulePreview(300),showPromoEditorPanel(),showToast("⚡ Template Promoção Relâmpago carregado!"))}function syncPromo(e){promoData[e]=document.getElementById({l1:"promo-l1",l2:"promo-l2",eanCtrl:"promo-ean-ctrl",eanBar:"promo-ean-bar",vig:"promo-vig",lat:"promo-lat"}[e]).value,updateLayerList(),buildDragLayer(),updateZPLPreview(),schedulePreview()}function exitPromoMode(){isPromoMode=!1,elements=[],selectedId=null,showEditorIdle(),updateLayerList(),buildDragLayer(),updateZPLPreview(),schedulePreview(300),showToast("Modo Promoção encerrado")}function toZPL(){var e=["^XA","^CI28"];if(isPromoMode){var t=promoData,a=promoPos,l="PROMOCAO RELAMPAGO";e.push("^FO"+a.titulo.xL+","+a.titulo.y+"^A0N,33,25^FD"+zEsc(l)+"^FS"),e.push("^FO"+a.l1.xL+","+a.l1.y+"^A0N,33,25^FD"+zEsc(t.l1)+"^FS"),e.push("^FO"+a.l2.xL+","+a.l2.y+"^A0N,33,25^FD"+zEsc(t.l2)+"^FS"),e.push("^FO"+a.lat.xL+","+a.lat.y+"^AOR,14,10^FD"+zEsc(t.lat)+"^FS"),e.push("^FO"+a.eanTxt.xL+","+a.eanTxt.y+"^A0N,22,21^FD"+zEsc(t.eanCtrl)+"^FS"),e.push("^FO"+a.barcode.xL+","+a.barcode.y+"^BY2^BEN,80,Y,N^FD"+zEsc(t.eanBar)+"^FS"),e.push("^FO"+a.vig.xL+","+a.vig.y+"^A0N,31,15^FD"+zEsc(t.vig)+"^FS"),e.push("^FO"+a.titulo.xR+","+a.titulo.y+"^A0N,33,25^FD"+zEsc(l)+"^FS"),e.push("^FO"+a.l1.xR+","+a.l1.y+"^A0N,33,25^FD"+zEsc(t.l1)+"^FS"),e.push("^FO"+a.l2.xR+","+a.l2.y+"^A0N,33,25^FD"+zEsc(t.l2)+"^FS"),e.push("^FO"+a.lat.xR+","+a.lat.y+"^AOR,14,10^FD"+zEsc(t.lat)+"^FS"),e.push("^FO"+a.eanTxt.xR+","+a.eanTxt.y+"^A0N,22,21^FD"+zEsc(t.eanCtrl)+"^FS"),e.push("^FO"+a.barcode.xR+","+a.barcode.y+"^BY2^BEN,80,Y,N^FD"+zEsc(t.eanBar)+"^FS"),e.push("^FO"+a.vig.xR+","+a.vig.y+"^A0N,31,15^FD"+zEsc(t.vig)+"^FS")}else for(var o=0;o<elements.length;o++){var d=elements[o],n=Math.round(d.x),r=Math.round(d.y),s=Math.round(d.fontSize),i=Math.round(d.fontSize*(d.bold?.65:.55));e.push("^FO"+n+","+r+"^A0N,"+s+","+i+"^FD"+zEsc(d.text)+"^FS")}return e.push(""),e.push("^XZ"),e.join("\n")}function zEsc(e){var t="";e=String(e||"");for(var a=0;a<e.length;a++)"^"===e[a]?t+="^5E":"~"===e[a]?t+="^7E":t+=e[a];return t}function updateZPLPreview(){var e=document.getElementById("zpl-preview");e&&(e.textContent=toZPL())}function exportZPL(){var e,t;isPromoMode||0!==elements.length?(e=["#!/bin/bash","# Gerado pelo ZPL Label Studio","echo 'Digite a quantidade de etiquetas:'","read qtd","zpl='"+toZPL().replace(/'/g,"'\\''")+"'",'zpl_final="${zpl/^XZ/^PQ$qtd^XZ}"','echo "$zpl_final" | lp -d "Zebra-Technologies-ZTC-S4M-200dpi-ZPL" -o raw','rm -- "$0"'].join("\n"),t=new Blob([e],{type:"text/x-shellscript"}),e=URL.createObjectURL(t),(t=document.createElement("a")).href=e,t.download="imprimir_etiqueta.sh",t.click(),URL.revokeObjectURL(e),showToast("✅ Script imprimir_etiqueta.sh exportado!")):showToast("⚠️ Adicione elementos antes de exportar")}function escHtml(e){return String(e).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")}function showToast(e){var t=document.getElementById("toast");t.textContent=e,t.classList.add("show"),clearTimeout(t._t),t._t=setTimeout(function(){t.classList.remove("show")},2800)}document.addEventListener("mousemove",function(e){var t;_drag.active&&_drag.handle&&(t=Math.round((e.clientX-_drag.startMouseX)/currentScale),e=Math.round((e.clientY-_drag.startMouseY)/currentScale),t=Math.max(0,Math.min(ZPL_W-20,_drag.startElX+t)),e=Math.max(0,Math.min(ZPL_H-20,_drag.startElY+e)),_drag.handle.style.left=t+"px",_drag.handle.style.top=e+"px",isPromoMode||(document.getElementById("ep-x").value=t,document.getElementById("ep-y").value=e))}),document.addEventListener("mouseup",function(e){var t,a;_drag.active&&(t=Math.round((e.clientX-_drag.startMouseX)/currentScale),e=Math.round((e.clientY-_drag.startMouseY)/currentScale),t=Math.max(0,Math.min(ZPL_W-20,_drag.startElX+t)),e=Math.max(0,Math.min(ZPL_H-20,_drag.startElY+e)),isPromoMode?(a=promoPos[_drag.key])&&(a.xL=t,a.xR=t+a.gapR,a.y=e):(a=_findEl(parseInt(_drag.handle.dataset.elId,10)))&&(a.x=t,a.y=e,document.getElementById("ep-x").value=t,document.getElementById("ep-y").value=e),_drag.handle&&_drag.handle.classList.remove("dragging"),_drag.active=!1,_drag.handle=null,_drag.key=null,buildDragLayer(),updateZPLPreview(),schedulePreview(0))}),elements.push(newEl("RTX 3060 · Cabo PCIe",40,40,32,!0)),elements.push(newEl("SN: 2024-ZBR-001",40,100,18,!1)),scalePreview(),updateLayerList(),buildDragLayer(),updateZPLPreview(),showEditorIdle(),schedulePreview(900)</script>
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ZPL Label Studio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#0f1117; --surface:#1a1d27; --surface2:#22263a; --border:#2e3250;
+  --accent:#4f7bff; --accent2:#00e5c3; --danger:#ff4f6a;
+  --gold:#f5c518; --gold-dim:rgba(245,197,24,0.12);
+  --text:#e8eaf6; --text-muted:#8891b4; --radius:10px;
+  --mono:'Space Mono',monospace; --sans:'DM Sans',sans-serif;
+  --sidebar-l:240px; --sidebar-r:290px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--sans);background:var(--bg);color:var(--text);height:100vh;display:flex;flex-direction:column;overflow:hidden}
+
+/* HEADER */
+header{display:flex;align-items:center;justify-content:space-between;padding:12px 20px;background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0;z-index:10}
+.logo{display:flex;align-items:center;gap:10px}
+.logo-icon{width:30px;height:30px;background:linear-gradient(135deg,var(--accent),var(--accent2));border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:15px}
+.logo h1{font-family:var(--mono);font-size:14px;font-weight:700;letter-spacing:.04em}
+.logo span{font-size:10px;color:var(--text-muted);font-weight:300;display:block;letter-spacing:.08em;text-transform:uppercase}
+.header-actions{display:flex;align-items:center;gap:8px}
+
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:var(--radius);font-family:var(--sans);font-size:13px;font-weight:500;cursor:pointer;border:none;transition:all .18s ease;white-space:nowrap}
+.btn svg{width:14px;height:14px;flex-shrink:0}
+.btn-ghost{background:transparent;color:var(--text-muted);border:1px solid var(--border)}
+.btn-ghost:hover{background:var(--surface2);color:var(--text);border-color:var(--accent)}
+.btn-primary{background:var(--accent);color:#fff}
+.btn-primary:hover{background:#6b8fff;transform:translateY(-1px);box-shadow:0 4px 20px rgba(79,123,255,.4)}
+.btn-export{background:linear-gradient(135deg,var(--accent2),#00b8a0);color:#0a1a18;font-weight:700;font-family:var(--mono);font-size:11px;letter-spacing:.05em;padding:8px 16px}
+.btn-export:hover{transform:translateY(-1px);box-shadow:0 4px 24px rgba(0,229,195,.45)}
+.btn-danger{width:100%;justify-content:center;background:transparent;color:var(--danger);border:1px solid rgba(255,79,106,.3);padding:8px 12px;font-size:12px;margin-top:4px}
+.btn-danger:hover{background:rgba(255,79,106,.1)}
+.btn-admin{background:transparent;color:var(--gold);border:1px solid rgba(245,197,24,.3);font-size:12px;padding:6px 12px}
+.btn-admin:hover{background:var(--gold-dim);border-color:var(--gold)}
+.btn-admin.unlocked{background:var(--gold-dim);border-color:var(--gold)}
+
+/* Controle de quantidade no header */
+.qty-group {
+  display: flex; align-items: center; gap: 6px;
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 4px 10px;
+}
+.qty-group label {
+  font-size: 11px; color: var(--text-muted); font-weight: 500;
+  white-space: nowrap;
+}
+#print-qty {
+  width: 52px; background: transparent; border: none;
+  color: var(--text); font-family: var(--mono); font-size: 13px;
+  font-weight: 700; text-align: center; outline: none;
+  -moz-appearance: textfield;
+}
+#print-qty::-webkit-inner-spin-button,
+#print-qty::-webkit-outer-spin-button { -webkit-appearance: none; }
+
+/* Checkbox auto-delete */
+.autodel-label {
+  display: flex; align-items: center; gap: 5px;
+  font-size: 11px; color: var(--text-muted); cursor: pointer;
+  white-space: nowrap;
+}
+.autodel-label input[type="checkbox"] {
+  accent-color: var(--accent2); width: 13px; height: 13px; cursor: pointer;
+}
+
+/* ================================================================
+   MODO INVERSÃO (Skeleton View)
+   Ativado adicionando a classe .inversao-ativa no <body>.
+   - Imagem Labelary some
+   - Handles mostram o texto e fundo claro para alinhamento
+================================================================ */
+.inversao-label {
+  display: flex; align-items: center; gap: 5px;
+  font-size: 11px; color: var(--text-muted); cursor: pointer;
+  white-space: nowrap;
+}
+.inversao-label input[type="checkbox"] {
+  accent-color: var(--accent); width: 13px; height: 13px; cursor: pointer;
+}
+
+/* Fundo branco do modo Inversão */
+#inversao-bg {
+  display: none;                    /* oculto por padrão */
+  position: absolute;
+  top: 0; left: 0;
+  width: 800px; height: 400px;
+  background: #ffffff;
+  border-radius: 5px;
+  box-shadow: 0 0 0 1px rgba(0,0,0,.15), 0 16px 52px rgba(0,0,0,.55);
+  transform-origin: top left;       /* mesmo transform da <img> */
+  z-index: 15;                      /* acima da img (z:auto), abaixo do drag-layer (z:20) */
+}
+body.inversao-ativa #inversao-bg { display: block; }
+
+/* Quando inversao está ativa */
+body.inversao-ativa #labelary-img {
+  opacity: 0 !important;
+  pointer-events: none;
+}
+body.inversao-ativa .drag-handle {
+  color: #000000 !important;
+  background: rgba(0,0,0,0.05) !important;
+  border: 1px dashed #555 !important;
+}
+body.inversao-ativa .drag-handle:hover {
+  background: rgba(0,0,0,0.10) !important;
+  border-color: #222 !important;
+}
+body.inversao-ativa .drag-handle.selected {
+  background: rgba(79,123,255,0.12) !important;
+  border: 1px solid #4f7bff !important;
+  color: #000000 !important;
+}
+body.inversao-ativa .drag-handle.barcode-handle {
+  color: #1a6b3c !important; /* verde escuro — legível no branco */
+  letter-spacing: 1px;
+}
+body.inversao-ativa .drag-handle.rotated-handle {
+  color: #8b4500 !important; /* laranja escuro — legível no branco */
+}
+.btn-promo{width:100%;justify-content:center;background:linear-gradient(135deg,rgba(245,197,24,.15),rgba(245,197,24,.05));color:var(--gold);border:1px solid rgba(245,197,24,.4);font-weight:600;font-size:12px;padding:10px;letter-spacing:.03em}
+.btn-promo:hover{background:linear-gradient(135deg,rgba(245,197,24,.25),rgba(245,197,24,.1));transform:translateY(-1px);box-shadow:0 4px 16px rgba(245,197,24,.2)}
+
+/* LAYOUT */
+main{flex:1;display:grid;grid-template-columns:var(--sidebar-l) 1fr var(--sidebar-r);overflow:hidden}
+
+/* SIDEBARS */
+.sidebar{background:var(--surface);display:flex;flex-direction:column;overflow-y:auto;flex-shrink:0}
+.sidebar-left{border-right:1px solid var(--border)}
+.sidebar-right{border-left:1px solid var(--border)}
+.sidebar-section{padding:14px 16px;border-bottom:1px solid var(--border)}
+.sidebar-section h2{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.12em;color:var(--text-muted);margin-bottom:12px}
+.layer-list{display:flex;flex-direction:column;gap:5px;min-height:30px}
+.layer-item{display:flex;align-items:center;gap:7px;padding:7px 9px;border-radius:8px;cursor:pointer;border:1px solid transparent;transition:all .15s;color:var(--text-muted)}
+.layer-item:hover{background:var(--surface2);color:var(--text)}
+.layer-item.active{background:rgba(79,123,255,.12);border-color:rgba(79,123,255,.35);color:var(--text)}
+.layer-icon{width:20px;height:20px;background:var(--surface2);border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;color:var(--text-muted)}
+.layer-item.active .layer-icon{background:rgba(79,123,255,.2);color:var(--accent)}
+.layer-label{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px}
+.layer-size{font-size:10px;color:var(--text-muted);font-family:var(--mono)}
+.empty-hint{font-size:12px;color:var(--text-muted);opacity:.55;text-align:center;padding:10px 0}
+.zpl-box{font-family:var(--mono);font-size:10px;color:var(--accent2);background:var(--bg);border-radius:8px;padding:10px;max-height:160px;overflow-y:auto;line-height:1.8;word-break:break-all;border:1px solid var(--border)}
+.admin-section{display:none;padding:14px 16px;border-bottom:1px solid var(--border);border-top:1px solid rgba(245,197,24,.2);background:linear-gradient(180deg,rgba(245,197,24,.04) 0%,transparent 100%)}
+.admin-section h2{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.12em;color:var(--gold);margin-bottom:12px;display:flex;align-items:center;gap:6px}
+.admin-section h2::before{content:'★';font-size:9px}
+
+/* CANVAS AREA — Labelary preview */
+.canvas-area{display:flex;align-items:center;justify-content:center;background:var(--bg);background-image:linear-gradient(rgba(79,123,255,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(79,123,255,.04) 1px,transparent 1px);background-size:28px 28px;position:relative;overflow:hidden}
+.canvas-wrapper{position:relative}
+
+#labelary-img{display:block;width:800px;height:400px;border-radius:5px;box-shadow:0 0 0 1px rgba(0,0,0,.15),0 16px 52px rgba(0,0,0,.55),0 0 0 5px rgba(255,255,255,.03);background:#fff;object-fit:contain;transform-origin:top left;transition:opacity .2s}
+
+#preview-shimmer{display:none;position:absolute;inset:0;border-radius:5px;pointer-events:none;background:linear-gradient(90deg,rgba(255,255,255,0) 0%,rgba(79,123,255,.12) 50%,rgba(255,255,255,0) 100%);background-size:200% 100%;animation:shimmer 1.1s infinite}
+#preview-shimmer.on{display:block}
+@keyframes shimmer{from{background-position:-200% 0}to{background-position:200% 0}}
+
+#preview-error{display:none;position:absolute;inset:0;border-radius:5px;background:#fff;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:32px;text-align:center}
+#preview-error.on{display:flex}
+#preview-error .err-title{font-size:14px;font-weight:700;color:#c0392b}
+#preview-error p{font-size:12px;color:#555;line-height:1.7}
+#preview-error code{font-family:monospace;font-size:10px;background:#f2f2f2;padding:3px 7px;border-radius:4px;color:#333;word-break:break-all}
+#preview-error a{color:#4f7bff}
+
+#live-badge{position:absolute;top:-11px;left:50%;transform:translateX(-50%);font-family:var(--mono);font-size:9px;font-weight:700;letter-spacing:.07em;color:#0a1a18;background:var(--accent2);padding:2px 12px;border-radius:20px;white-space:nowrap;pointer-events:none;opacity:0;transition:opacity .35s}
+#live-badge.on{opacity:1}
+
+.canvas-ruler{position:absolute;bottom:-28px;right:0;font-family:var(--mono);font-size:10px;color:var(--text-muted);background:rgba(15,17,23,.75);padding:3px 10px;border-radius:20px;border:1px solid var(--border);white-space:nowrap}
+
+/* RIGHT SIDEBAR */
+#editor-idle{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:32px 20px;text-align:center;color:var(--text-muted);flex:1}
+.idle-icon{width:44px;height:44px;border-radius:12px;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:20px;margin-bottom:4px}
+#editor-idle p{font-size:12px;line-height:1.7;opacity:.65}
+#editor-content{display:none}
+#promo-editor{display:none}
+.editor-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.editor-header h3{font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:var(--text-muted);font-weight:600}
+.el-badge{font-family:var(--mono);font-size:10px;color:var(--accent);background:rgba(79,123,255,.12);border:1px solid rgba(79,123,255,.3);border-radius:12px;padding:2px 8px}
+.promo-badge{font-family:var(--mono);font-size:10px;color:var(--gold);background:var(--gold-dim);border:1px solid rgba(245,197,24,.35);border-radius:12px;padding:2px 8px}
+.field-group{margin-bottom:12px}
+.field-group label{display:block;font-size:11px;color:var(--text-muted);margin-bottom:5px;font-weight:500;letter-spacing:.03em}
+.field-group input{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:7px;color:var(--text);font-family:var(--sans);font-size:13px;padding:7px 10px;outline:none;transition:border-color .15s}
+.field-group input:focus{border-color:var(--accent)}
+.field-group input[type="range"]{padding:4px 0;border:none;background:transparent;accent-color:var(--accent);cursor:pointer}
+.range-row{display:flex;align-items:center;gap:8px}
+.range-row input[type="range"]{flex:1}
+.range-val{font-family:var(--mono);font-size:12px;color:var(--accent2);min-width:26px;text-align:right}
+.pos-row{display:flex;gap:8px}
+.pos-row input{width:50%}
+.toggle-row{display:flex;gap:6px}
+.toggle-btn{flex:1;padding:7px;border-radius:7px;border:1px solid var(--border);background:transparent;color:var(--text-muted);font-size:12px;cursor:pointer;transition:all .15s;font-family:var(--sans);text-align:center}
+.toggle-btn.active{background:rgba(79,123,255,.15);border-color:var(--accent);color:var(--text)}
+.editor-divider{height:1px;background:var(--border);margin:12px 0}
+.promo-input:focus{border-color:var(--gold)!important;box-shadow:0 0 0 2px rgba(245,197,24,.1)}
+.mirror-note{font-size:10px;color:var(--gold);opacity:.7;margin-top:3px}
+.coord-hint{font-family:var(--mono);font-size:9px;color:var(--text-muted);opacity:.5;margin-top:2px}
+
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:10px}
+::-webkit-scrollbar-thumb:hover{background:var(--text-muted)}
+
+/* ================================================================
+   MODAL DE AUTENTICAÇÃO
+================================================================ */
+#admin-modal-overlay {
+  display: none;
+  position: fixed; inset: 0; z-index: 500;
+  background: rgba(0,0,0,.55);
+  backdrop-filter: blur(4px);
+  align-items: center;
+  justify-content: center;
+}
+#admin-modal-overlay.open { display: flex; }
+
+#admin-modal {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 28px 28px 22px;
+  width: 320px;
+  box-shadow: 0 24px 64px rgba(0,0,0,.7);
+  animation: modalIn .18s ease;
+}
+@keyframes modalIn {
+  from { opacity:0; transform:scale(.94) translateY(8px); }
+  to   { opacity:1; transform:scale(1)   translateY(0);   }
+}
+@keyframes shake {
+  0%,100% { transform: translateX(0); }
+  20%,60% { transform: translateX(-8px); }
+  40%,80% { transform: translateX(8px); }
+}
+
+#admin-modal .modal-icon {
+  font-size: 28px; text-align: center; margin-bottom: 6px;
+}
+#admin-modal h3 {
+  font-family: var(--mono); font-size: 13px; font-weight: 700;
+  letter-spacing: .04em; color: var(--gold);
+  text-align: center; margin-bottom: 18px;
+}
+#admin-modal .modal-label {
+  font-size: 11px; color: var(--text-muted);
+  font-weight: 500; letter-spacing: .03em; margin-bottom: 6px; display: block;
+}
+#modal-senha {
+  width: 100%; background: var(--bg);
+  border: 1px solid var(--border); border-radius: 8px;
+  color: var(--text); font-family: var(--sans); font-size: 14px;
+  padding: 9px 12px; outline: none;
+  transition: border-color .15s, box-shadow .15s;
+  letter-spacing: .12em;
+}
+#modal-senha:focus {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 3px rgba(245,197,24,.15);
+}
+.modal-error {
+  font-size: 11px; color: var(--danger);
+  min-height: 16px; margin-top: 6px;
+  text-align: center; opacity: 0;
+  transition: opacity .2s;
+}
+.modal-error.show { opacity: 1; }
+
+.modal-btns {
+  display: flex; gap: 8px; margin-top: 20px;
+}
+.modal-btns button {
+  flex: 1; padding: 9px; border-radius: 8px;
+  font-family: var(--sans); font-size: 13px;
+  font-weight: 600; cursor: pointer;
+  border: none; transition: all .16s ease;
+}
+.modal-btn-cancel {
+  background: var(--surface2); color: var(--text-muted);
+  border: 1px solid var(--border) !important;
+}
+.modal-btn-cancel:hover { background: var(--border); color: var(--text); }
+.modal-btn-ok {
+  background: var(--gold); color: #0a0a00;
+}
+#toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(16px);background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:24px;padding:9px 20px;font-size:13px;font-weight:500;opacity:0;transition:all .22s ease;pointer-events:none;z-index:200;white-space:nowrap}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* ================================================================
+   DRAG LAYER — camada transparente sobre a imagem Labelary
+================================================================ */
+#drag-layer {
+  position: absolute;
+  top: 0; left: 0;
+  width: 800px; height: 400px;
+  transform-origin: top left;
+  pointer-events: auto;
+  z-index: 20;
+}
+
+.drag-handle {
+  position: absolute;
+  cursor: grab;
+  border: 1.5px dashed transparent;
+  background: transparent;
+  border-radius: 3px;
+  padding: 2px 5px;
+  font-family: Arial, sans-serif;
+  color: transparent;          /* texto invisível — só a imagem Labelary aparece */
+  white-space: nowrap;
+  user-select: none;
+  box-sizing: border-box;
+  min-width: 16px; min-height: 14px;
+  transition: border-color .12s, background .12s;
+}
+.drag-handle:hover {
+  border-color: rgba(79,123,255,0.5);
+  background: rgba(79,123,255,0.06);
+}
+.drag-handle.selected {
+  border-style: solid;
+  border-color: rgba(79,123,255,0.75);
+  background: rgba(79,123,255,0.06);
+}
+.drag-handle.dragging {
+  cursor: grabbing;
+  border-color: rgba(79,123,255,0.9);
+  background: rgba(79,123,255,0.08);
+  opacity: 1;
+}
+/* Barcode e rotated: mesma regra de invisibilidade */
+.drag-handle.barcode-handle {
+  font-size: 18px;
+  letter-spacing: 1px;
+  color: transparent;
+}
+.drag-handle.rotated-handle {
+  transform-origin: top left;
+  transform: rotate(90deg) translateY(-100%);
+  color: transparent;
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-icon">&#127991;</div>
+    <div>
+      <h1>ZPL Label Studio</h1>
+      <span>Gerador Universal de Etiquetas</span>
+    </div>
+  </div>
+  <div class="header-actions">
+    <button class="btn btn-admin" id="btn-admin" onclick="adminLogin()">&#128274; Admin</button>
+    <button class="btn btn-ghost" onclick="clearCanvas()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.85"/></svg>
+      Limpar
+    </button>
+    <!-- Skeleton View -->
+    <label class="inversao-label" title="Oculta a imagem do Labelary e exibe os textos para alinhamento">
+      <input type="checkbox" id="chk-inversao"> Inversão
+    </label>
+    <button class="btn btn-primary" onclick="addTextElement()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      Adicionar Texto
+    </button>
+    <!-- Quantidade de impressão -->
+    <div class="qty-group">
+      <label for="print-qty">Qtd.</label>
+      <input type="number" id="print-qty" value="1" min="1" max="9999"
+             oninput="updateZPLPreview(); schedulePreview();">
+    </div>
+    <!-- Importar .sh -->
+    <button class="btn btn-ghost" onclick="triggerImport()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+        <polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+      </svg>
+      Importar .sh
+    </button>
+    <input type="file" id="import-file-input" accept=".sh" style="display:none" onchange="importSh(event)">
+    <!-- Auto-delete checkbox -->
+    <label class="autodel-label" title="Incluir 'rm -- $0' no script gerado">
+      <input type="checkbox" id="auto-delete" checked>
+      Auto-apagar .sh
+    </label>
+    <!-- Exportar -->
+    <button class="btn btn-export" onclick="exportZPL()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      BAIXAR SCRIPT .SH
+    </button>
+  </div>
+</header>
+
+<main>
+  <!-- SIDEBAR ESQUERDA -->
+  <aside class="sidebar sidebar-left">
+    <div class="sidebar-section">
+      <h2>Camadas</h2>
+      <div class="layer-list" id="layer-list">
+        <p class="empty-hint" id="empty-hint">Nenhuma camada ainda</p>
+      </div>
+    </div>
+    <div class="sidebar-section">
+      <h2>C&#243;digo ZPL</h2>
+      <div class="zpl-box" id="zpl-preview">^XA
+^XZ</div>
+    </div>
+    <div class="admin-section" id="admin-section">
+      <h2>Painel de Promo&#231;&#245;es</h2>
+      <button class="btn btn-promo" onclick="loadPromoTemplate()">
+        &#9889; Carregar Promo&#231;&#227;o Rel&#226;mpago
+      </button>
+    </div>
+  </aside>
+
+  <!-- CENTRO — Pr&#233;via Labelary -->
+  <section class="canvas-area" id="canvas-area">
+    <div class="canvas-wrapper" id="canvas-wrapper">
+      <div id="live-badge">&#9679; PR&#201;VIA REAL &middot; LABELARY</div>
+      <img id="labelary-img" alt="Pr&#233;via ZPL">
+      <!-- Fundo branco do modo Inversão — fica atrás do drag-layer -->
+      <div id="inversao-bg"></div>
+      <div id="drag-layer"></div>
+      <div id="preview-shimmer"></div>
+      <div id="preview-error">
+        <div class="err-title">&#9888; Prévia indisponível</div>
+        <p>Não foi possível carregar a imagem do Labelary.<br>
+        Verifique sua conexão com a internet.</p>
+        <p style="font-size:11px;color:#888;margin-top:4px">
+          O ZPL gerado está correto.<br>
+          Use <strong>BAIXAR ARQUIVO ZPL</strong> e cole em<br>
+          <a href="https://labelary.com/viewer.html" target="_blank">labelary.com/viewer.html</a>
+        </p>
+      </div>
+      <div class="canvas-ruler">4&#8243; &#215; 2&#8243; &middot; 8 dpmm &middot; Labelary API</div>
+    </div>
+  </section>
+
+  <!-- SIDEBAR DIREITA -->
+  <aside class="sidebar sidebar-right">
+    <div id="editor-idle">
+      <div class="idle-icon">&#9998;&#65039;</div>
+      <p>Clique numa camada<br>para editar o elemento</p>
+    </div>
+
+    <div id="editor-content">
+      <div class="sidebar-section">
+        <div class="editor-header">
+          <h3>Editar Elemento</h3>
+          <span class="el-badge" id="el-badge">#1</span>
+        </div>
+        <div class="field-group">
+          <label>Conte&#250;do</label>
+          <input type="text" id="ep-text" placeholder="Digite o texto..." oninput="updateSelectedElement()">
+        </div>
+        <div class="field-group">
+          <label>Tamanho da fonte</label>
+          <div class="range-row">
+            <input type="range" id="ep-size" min="8" max="96" value="24" oninput="updateSelectedElement()">
+            <span class="range-val" id="ep-size-val">24</span>
+          </div>
+        </div>
+        <div class="field-group">
+          <label>Estilo</label>
+          <div class="toggle-row">
+            <button class="toggle-btn" id="tb-normal" onclick="setFontWeight('normal')">Normal</button>
+            <button class="toggle-btn active" id="tb-bold" onclick="setFontWeight('bold')">Bold</button>
+          </div>
+        </div>
+        <div class="editor-divider"></div>
+        <div class="field-group">
+          <label>Posi&#231;&#227;o &#8212; X &amp; Y (pts ZPL)</label>
+          <div class="pos-row">
+            <input type="number" id="ep-x" placeholder="X" oninput="updatePosFromPanel()">
+            <input type="number" id="ep-y" placeholder="Y" oninput="updatePosFromPanel()">
+          </div>
+        </div>
+        <button class="btn btn-danger" onclick="deleteSelected()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+          Excluir elemento
+        </button>
+      </div>
+    </div>
+
+    <div id="promo-editor">
+      <div class="sidebar-section">
+        <div class="editor-header">
+          <h3>Promo&#231;&#227;o Rel&#226;mpago</h3>
+          <span class="promo-badge">&#9889; Ativo</span>
+        </div>
+        <div class="field-group">
+          <label>Produto &#8212; Linha 1</label>
+          <input type="text" class="promo-input" id="promo-l1" placeholder="Ex: ARROZ TIPO 1" oninput="syncPromo('l1')">
+          <div class="coord-hint">^FO0,50 &middot; ^FO330,50 &middot; ^A0N,33,25</div>
+          <div class="mirror-note">&#8644; espelhado L + R</div>
+        </div>
+        <div class="field-group">
+          <label>Produto &#8212; Linha 2</label>
+          <input type="text" class="promo-input" id="promo-l2" placeholder="Ex: PACOTE 5KG" oninput="syncPromo('l2')">
+          <div class="coord-hint">^FO0,83 &middot; ^FO330,83 &middot; ^A0N,33,25</div>
+          <div class="mirror-note">&#8644; espelhado L + R</div>
+        </div>
+        <div class="field-group">
+          <label>EAN Original (Controle)</label>
+          <input type="text" class="promo-input" id="promo-ean-ctrl"
+                 placeholder="Ex: 7891234567890" maxlength="13"
+                 oninput="syncPromo('eanCtrl')">
+          <div class="coord-hint">^A0N,22,21 · ^FO70,115 · ^FO410,115 — texto topo</div>
+          <div class="mirror-note">&#8644; espelhado L + R</div>
+        </div>
+        <div class="field-group">
+          <label>EAN Promoção (Barras)</label>
+          <input type="text" class="promo-input" id="promo-ean-bar"
+                 placeholder="Ex: 7899999999999" maxlength="13"
+                 oninput="syncPromo('eanBar')">
+          <div class="coord-hint">^BY2^BEN,80,Y,N · ^FO80,140 · ^FO417,140 — barcode</div>
+          <div class="mirror-note">&#8644; espelhado L + R</div>
+        </div>
+        <div class="field-group">
+          <label>Vig&#234;ncia</label>
+          <input type="text" class="promo-input" id="promo-vig" placeholder="01/01 a 07/01/2025" oninput="syncPromo('vig')">
+          <div class="coord-hint">^FO50,265 &middot; ^FO380,265 &middot; ^A0N,31,15</div>
+          <div class="mirror-note">&#8644; espelhado L + R</div>
+        </div>
+        <div class="field-group">
+          <label>C&#243;d. Lateral (rotacionado)</label>
+          <input type="text" class="promo-input" id="promo-lat" placeholder="OFERTA-001" oninput="syncPromo('lat')">
+          <div class="coord-hint">^FO10,115 &middot; ^FO340,115 &middot; ^AOR,14,10</div>
+          <div class="mirror-note">&#8644; espelhado L + R</div>
+        </div>
+        <div class="editor-divider"></div>
+        <button class="btn btn-danger" onclick="exitPromoMode()">Sair do Modo Promo&#231;&#227;o</button>
+      </div>
+    </div>
+  </aside>
+</main>
+
+<!-- ================================================================
+     MODAL DE AUTENTICAÇÃO ADMIN
+================================================================ -->
+<div id="admin-modal-overlay" onclick="modalClickOutside(event)">
+  <div id="admin-modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <div class="modal-icon">🔒</div>
+    <h3 id="modal-title">ACESSO RESTRITO</h3>
+    <label class="modal-label" for="modal-senha">Senha de administrador</label>
+    <input type="password" id="modal-senha"
+           placeholder="••••••••"
+           autocomplete="current-password"
+           onkeydown="modalKeydown(event)">
+    <div class="modal-error" id="modal-error">Senha incorreta. Tente novamente.</div>
+    <div class="modal-btns">
+      <button class="modal-btn-cancel" onclick="closeAdminModal()">Cancelar</button>
+      <button class="modal-btn-ok"     onclick="submitAdminModal()">Entrar</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ================================================================
+//  ESTADO GLOBAL
+// ================================================================
+var elements    = [];
+var selectedId  = null;
+var idCounter   = 0;
+var isPromoMode = false;
+var isAdminMode = false;
+
+// Conteúdo editável do template promoção
+var promoData = {
+  l1:      'PRODUTO EXEMPLO',
+  l2:      'DESCRICAO LINHA 2',
+  eanCtrl: '7891234567890',   // EAN de Controle — texto topo (^FO70,115 / ^FO410,115)
+  eanBar:  '7899999999999',   // EAN da Promoção — barcode (^FO80,140 / ^FO417,140)
+  vig:     '01/01 a 07/01/2025',
+  lat:     'OFERTA-001'
+};
+
+// Posições ZPL draggáveis do template promoção.
+// gapR = diferença fixa entre coluna direita e esquerda.
+// Arrastar a esquerda move a direita mantendo gapR.
+var promoPos = {
+  titulo:  { xL:  0, xR: 330, y:  10, gapR: 330 },
+  l1:      { xL:  0, xR: 330, y:  50, gapR: 330 },
+  l2:      { xL:  0, xR: 330, y:  83, gapR: 330 },
+  eanTxt:  { xL: 70, xR: 410, y: 115, gapR: 340 },
+  barcode: { xL: 80, xR: 417, y: 140, gapR: 337 },
+  vig:     { xL: 50, xR: 380, y: 265, gapR: 330 },
+  lat:     { xL: 10, xR: 340, y: 115, gapR: 330 }
+};
+
+// Tamanho ZPL da etiqueta (4" × 2" @ 8 dpmm)
+var ZPL_W = 800;
+var ZPL_H = 400;
+
+// Escala CSS atual (calculada em scalePreview)
+var currentScale = 1;
+
+// ================================================================
+//  LABELARY API — GET via <img src>  (sem CORS)
+//  O navegador carrega imagens cross-origin sem bloqueio de CORS.
+//  Endpoint: https://api.labelary.com/v1/printers/8dpmm/labels/4x2/0/{zpl}
+// ================================================================
+var LABELARY_BASE = 'https://api.labelary.com/v1/printers/8dpmm/labels/4x2/0/';
+var _debounceId   = null;
+
+function schedulePreview(delay) {
+  clearTimeout(_debounceId);
+  _debounceId = setTimeout(_updatePreview, (delay !== undefined) ? delay : 550);
+}
+
+function _updatePreview() {
+  var img     = document.getElementById('labelary-img');
+  var shimmer = document.getElementById('preview-shimmer');
+  var errEl   = document.getElementById('preview-error');
+  var badge   = document.getElementById('live-badge');
+
+  shimmer.classList.add('on');
+  errEl.classList.remove('on');
+  img.style.opacity = '0.35';
+
+  var url = LABELARY_BASE + encodeURIComponent(toZPL());
+
+  img.onload = function() {
+    shimmer.classList.remove('on');
+    img.style.opacity = '1';
+    badge.classList.add('on');
+    clearTimeout(badge._t);
+    badge._t = setTimeout(function() { badge.classList.remove('on'); }, 3000);
+  };
+
+  img.onerror = function() {
+    shimmer.classList.remove('on');
+    img.style.opacity = '0.1';
+    errEl.classList.add('on');
+  };
+
+  img.src = url;
+}
+
+// ================================================================
+//  ESCALONAMENTO
+// ================================================================
+function scalePreview() {
+  var area    = document.getElementById('canvas-area');
+  var img     = document.getElementById('labelary-img');
+  var layer   = document.getElementById('drag-layer');
+  var bgInv   = document.getElementById('inversao-bg');
+  var wrapper = document.getElementById('canvas-wrapper');
+  var shimmer = document.getElementById('preview-shimmer');
+  var errEl   = document.getElementById('preview-error');
+
+  currentScale = Math.min(
+    (area.clientWidth  - 64) / ZPL_W,
+    (area.clientHeight - 64) / ZPL_H,
+    1
+  );
+  var W = ZPL_W * currentScale;
+  var H = ZPL_H * currentScale;
+
+  // Imagem e drag-layer têm mesma transform
+  var transformStr = 'scale(' + currentScale + ')';
+  img.style.width           = ZPL_W + 'px';
+  img.style.height          = ZPL_H + 'px';
+  img.style.transform       = transformStr;
+  img.style.transformOrigin = 'top left';
+
+  if (layer) {
+    layer.style.transform       = transformStr;
+    layer.style.transformOrigin = 'top left';
+  }
+  if (bgInv) {
+    bgInv.style.transform       = transformStr;
+    bgInv.style.transformOrigin = 'top left';
+  }
+
+  wrapper.style.width  = W + 'px';
+  wrapper.style.height = H + 'px';
+  shimmer.style.width  = W + 'px';
+  shimmer.style.height = H + 'px';
+  errEl.style.width    = W + 'px';
+  errEl.style.height   = H + 'px';
+}
+window.addEventListener('resize', scalePreview);
+
+// ================================================================
+//  DRAG LAYER — camada de interação sobre a prévia Labelary
+// ================================================================
+
+// Estado de drag
+var _drag = {
+  active:      false,
+  key:         null,   // 'el-{id}' ou chave promoPos
+  handle:      null,
+  startMouseX: 0,
+  startMouseY: 0,
+  startElX:    0,
+  startElY:    0
+};
+
+// Reconstrói todos os handles na drag-layer
+function buildDragLayer() {
+  var layer = document.getElementById('drag-layer');
+  if (!layer) return;
+  layer.innerHTML = '';
+
+  if (isPromoMode) {
+    _buildPromoHandles(layer);
+  } else {
+    _buildFreeHandles(layer);
+  }
+}
+
+function _buildPromoHandles(layer) {
+  // Definição de cada campo com sua chave em promoPos e promoData
+  var fields = [
+    { key: 'titulo',  label: 'PROMOCAO RELAMPAGO', fs: 33, bold: true  },
+    { key: 'l1',      label: promoData.l1,          fs: 33, bold: false },
+    { key: 'l2',      label: promoData.l2,          fs: 33, bold: false },
+    { key: 'eanTxt',  label: promoData.eanCtrl,       fs: 22, bold: false },
+    { key: 'barcode', label: promoData.eanBar,         fs: 60, bold: false, isBarcode: true },
+    { key: 'vig',     label: promoData.vig,          fs: 31, bold: false },
+    { key: 'lat',     label: promoData.lat,          fs: 14, bold: false, isRotated: true }
+  ];
+
+  for (var i = 0; i < fields.length; i++) {
+    var f   = fields[i];
+    var pos = promoPos[f.key];
+    var h   = _createHandle(f.key, f.label, pos.xL, pos.y, f.fs, f.bold, f.isBarcode, f.isRotated);
+    layer.appendChild(h);
+  }
+}
+
+function _buildFreeHandles(layer) {
+  for (var i = 0; i < elements.length; i++) {
+    var el  = elements[i];
+    var key = 'el-' + el.id;
+    var h   = _createHandle(key, el.text, el.x, el.y, el.fontSize, el.bold, false, false);
+    h.dataset.elId = el.id;
+    if (el.id === selectedId) h.classList.add('selected');
+    layer.appendChild(h);
+  }
+}
+
+function _createHandle(key, label, x, y, fontSize, bold, isBarcode, isRotated) {
+  var h = document.createElement('div');
+  h.className    = 'drag-handle';
+  h.dataset.key  = key;
+  h.style.left   = x + 'px';
+  h.style.top    = y + 'px';
+  // Escala a fonte para caber visualmente (px no canvas = dots ZPL)
+  h.style.fontSize   = Math.max(8, Math.round(fontSize * 0.82)) + 'px';
+  h.style.fontWeight = bold ? 'bold' : 'normal';
+
+  if (isBarcode) {
+    h.classList.add('barcode-handle');
+    h.textContent = '||| ||| ||| |||';
+    h.style.height = Math.round(fontSize * 0.9) + 'px';
+  } else if (isRotated) {
+    h.classList.add('rotated-handle');
+    h.textContent = label || '';
+  } else {
+    h.textContent = label || '';
+  }
+
+  h.addEventListener('mousedown', function(e) {
+    e.stopPropagation();
+    _startDrag(e, h, key);
+  });
+  return h;
+}
+
+function _startDrag(e, handle, key) {
+  // In free mode: select element too
+  if (!isPromoMode) {
+    var elId = parseInt(handle.dataset.elId, 10);
+    selectElement(elId);
+  }
+
+  var startX, startY;
+  if (isPromoMode && promoPos[key]) {
+    startX = promoPos[key].xL;
+    startY = promoPos[key].y;
+  } else {
+    var el = _findEl(parseInt(handle.dataset.elId, 10));
+    startX = el ? el.x : 0;
+    startY = el ? el.y : 0;
+  }
+
+  _drag.active      = true;
+  _drag.key         = key;
+  _drag.handle      = handle;
+  _drag.startMouseX = e.clientX;
+  _drag.startMouseY = e.clientY;
+  _drag.startElX    = startX;
+  _drag.startElY    = startY;
+
+  handle.classList.add('dragging');
+  e.preventDefault();
+}
+
+document.addEventListener('mousemove', function(e) {
+  if (!_drag.active || !_drag.handle) return;
+
+  // Converte px de tela → dots ZPL dividindo pela escala CSS
+  var dx = Math.round((e.clientX - _drag.startMouseX) / currentScale);
+  var dy = Math.round((e.clientY - _drag.startMouseY) / currentScale);
+
+  var newX = Math.max(0, Math.min(ZPL_W - 20, _drag.startElX + dx));
+  var newY = Math.max(0, Math.min(ZPL_H - 20, _drag.startElY + dy));
+
+  // Feedback visual imediato: move o handle
+  _drag.handle.style.left = newX + 'px';
+  _drag.handle.style.top  = newY + 'px';
+
+  // Atualiza campos X/Y no inspector (modo livre)
+  if (!isPromoMode) {
+    document.getElementById('ep-x').value = newX;
+    document.getElementById('ep-y').value = newY;
+  }
+});
+
+document.addEventListener('mouseup', function(e) {
+  if (!_drag.active) return;
+
+  var dx = Math.round((e.clientX - _drag.startMouseX) / currentScale);
+  var dy = Math.round((e.clientY - _drag.startMouseY) / currentScale);
+
+  var newX = Math.max(0, Math.min(ZPL_W - 20, _drag.startElX + dx));
+  var newY = Math.max(0, Math.min(ZPL_H - 20, _drag.startElY + dy));
+
+  if (isPromoMode) {
+    // Modo Promoção: move L e espelha R mantendo gapR fixo
+    var pos = promoPos[_drag.key];
+    if (pos) {
+      pos.xL = newX;
+      pos.xR = newX + pos.gapR;
+      pos.y  = newY;
+    }
+  } else {
+    // Modo livre: atualiza elemento
+    var el = _findEl(parseInt(_drag.handle.dataset.elId, 10));
+    if (el) {
+      el.x = newX;
+      el.y = newY;
+      document.getElementById('ep-x').value = newX;
+      document.getElementById('ep-y').value = newY;
+    }
+  }
+
+  if (_drag.handle) _drag.handle.classList.remove('dragging');
+  _drag.active = false;
+  _drag.handle = null;
+  _drag.key    = null;
+
+  // Reconstrói handles com posições finais e recarrega prévia
+  buildDragLayer();
+  updateZPLPreview();
+  schedulePreview(0);  // imediato após soltar
+});
+
+// ================================================================
+//  ELEMENTO LIVRE
+// ================================================================
+function _findEl(id) {
+  for (var i = 0; i < elements.length; i++) {
+    if (elements[i].id === id) return elements[i];
+  }
+  return null;
+}
+
+function newEl(text, x, y, fontSize, bold) {
+  idCounter++;
+  return { id: idCounter, text: text, x: x, y: y, fontSize: fontSize, bold: bold };
+}
+
+function addTextElement() {
+  if (isPromoMode) { showToast('Saia do modo Promoção antes de adicionar texto livre'); return; }
+  var offset = (elements.length % 8) * 24;
+  var el = newEl('Texto ' + (idCounter + 1), 40 + offset, 40 + offset, 28, true);
+  elements.push(el);
+  updateLayerList();
+  buildDragLayer();
+  updateZPLPreview();
+  schedulePreview(300);
+  selectElement(el.id);
+  showToast('Texto adicionado 🎉');
+}
+
+// ================================================================
+//  SELECT / DESELECT
+// ================================================================
+function selectElement(id) {
+  if (isPromoMode) return;
+
+  if (selectedId !== null) {
+    var prevLi = document.getElementById('layer-item-' + selectedId);
+    if (prevLi) prevLi.classList.remove('active');
+    var prevHandle = document.querySelector('#drag-layer .drag-handle[data-el-id="' + selectedId + '"]');
+    if (!prevHandle) {
+      // fallback: find by elId dataset
+      var handles = document.querySelectorAll('#drag-layer .drag-handle');
+      for (var i = 0; i < handles.length; i++) {
+        if (parseInt(handles[i].dataset.elId, 10) === selectedId) {
+          handles[i].classList.remove('selected');
+        }
+      }
+    } else {
+      prevHandle.classList.remove('selected');
+    }
+  }
+
+  selectedId = id;
+
+  var li = document.getElementById('layer-item-' + id);
+  if (li) li.classList.add('active');
+
+  // Highlight handle
+  var handles = document.querySelectorAll('#drag-layer .drag-handle');
+  for (var j = 0; j < handles.length; j++) {
+    if (parseInt(handles[j].dataset.elId, 10) === id) {
+      handles[j].classList.add('selected');
+    }
+  }
+
+  populateEditorPanel(id);
+}
+
+function deselectAll() {
+  if (selectedId !== null) {
+    var prev = document.getElementById('layer-item-' + selectedId);
+    if (prev) prev.classList.remove('active');
+  }
+  selectedId = null;
+  if (!isPromoMode) showEditorIdle();
+}
+
+// ================================================================
+//  ESTADOS DO INSPECTOR
+// ================================================================
+function showEditorIdle() {
+  document.getElementById('editor-idle').style.display    = 'flex';
+  document.getElementById('editor-content').style.display = 'none';
+  document.getElementById('promo-editor').style.display   = 'none';
+}
+function showEditorContent() {
+  document.getElementById('editor-idle').style.display    = 'none';
+  document.getElementById('editor-content').style.display = 'block';
+  document.getElementById('promo-editor').style.display   = 'none';
+}
+function showPromoEditorPanel() {
+  document.getElementById('editor-idle').style.display    = 'none';
+  document.getElementById('editor-content').style.display = 'none';
+  document.getElementById('promo-editor').style.display   = 'block';
+  document.getElementById('promo-l1').value       = promoData.l1;
+  document.getElementById('promo-l2').value       = promoData.l2;
+  document.getElementById('promo-ean-ctrl').value = promoData.eanCtrl;
+  document.getElementById('promo-ean-bar').value  = promoData.eanBar;
+  document.getElementById('promo-vig').value      = promoData.vig;
+  document.getElementById('promo-lat').value      = promoData.lat;
+}
+function populateEditorPanel(id) {
+  var el = _findEl(id);
+  if (!el) { showEditorIdle(); return; }
+  showEditorContent();
+  document.getElementById('el-badge').textContent    = '#' + el.id;
+  document.getElementById('ep-text').value           = el.text;
+  document.getElementById('ep-size').value           = el.fontSize;
+  document.getElementById('ep-size-val').textContent = el.fontSize;
+  document.getElementById('ep-x').value              = el.x;
+  document.getElementById('ep-y').value              = el.y;
+  document.getElementById('tb-normal').classList.toggle('active', !el.bold);
+  document.getElementById('tb-bold').classList.toggle('active',    el.bold);
+}
+
+// ================================================================
+//  ATUALIZAR ELEMENTO LIVRE VIA INSPECTOR
+// ================================================================
+function updateSelectedElement() {
+  if (!selectedId) return;
+  var el = _findEl(selectedId);
+  if (!el) return;
+  el.text     = document.getElementById('ep-text').value || ' ';
+  el.fontSize = parseInt(document.getElementById('ep-size').value, 10);
+  document.getElementById('ep-size-val').textContent = el.fontSize;
+
+  var li = document.getElementById('layer-item-' + selectedId);
+  if (li) {
+    var lbl  = li.querySelector('.layer-label');
+    var size = li.querySelector('.layer-size');
+    if (lbl)  lbl.textContent  = el.text;
+    if (size) size.textContent = el.fontSize + 'pt';
+  }
+  buildDragLayer();
+  updateZPLPreview();
+  schedulePreview();
+}
+
+function updatePosFromPanel() {
+  if (!selectedId) return;
+  var el = _findEl(selectedId);
+  if (!el) return;
+  var nx = parseInt(document.getElementById('ep-x').value, 10);
+  var ny = parseInt(document.getElementById('ep-y').value, 10);
+  if (!isNaN(nx)) el.x = Math.max(0, Math.min(ZPL_W, nx));
+  if (!isNaN(ny)) el.y = Math.max(0, Math.min(ZPL_H, ny));
+  buildDragLayer();
+  updateZPLPreview();
+  schedulePreview();
+}
+
+function setFontWeight(w) {
+  if (!selectedId) return;
+  var el = _findEl(selectedId);
+  if (!el) return;
+  el.bold = (w === 'bold');
+  document.getElementById('tb-normal').classList.toggle('active', !el.bold);
+  document.getElementById('tb-bold').classList.toggle('active',    el.bold);
+  buildDragLayer();
+  updateZPLPreview();
+  schedulePreview();
+}
+
+// ================================================================
+//  DELETAR / LIMPAR
+// ================================================================
+function deleteSelected() {
+  if (!selectedId) return;
+  var newArr = [];
+  for (var i = 0; i < elements.length; i++) {
+    if (elements[i].id !== selectedId) newArr.push(elements[i]);
+  }
+  elements   = newArr;
+  selectedId = null;
+  showEditorIdle();
+  updateLayerList();
+  buildDragLayer();
+  updateZPLPreview();
+  schedulePreview(300);
+  showToast('Elemento removido');
+}
+
+function clearCanvas() {
+  if (elements.length === 0 && !isPromoMode) return;
+  if (!confirm('Limpar todos os elementos?')) return;
+  isPromoMode = false;
+  elements    = [];
+  selectedId  = null;
+  idCounter   = 0;
+  showEditorIdle();
+  updateLayerList();
+  buildDragLayer();
+  updateZPLPreview();
+  schedulePreview(300);
+  showToast('Canvas limpo');
+}
+
+// ================================================================
+//  LISTA DE CAMADAS
+// ================================================================
+function updateLayerList() {
+  var list = document.getElementById('layer-list');
+  if (!list) return;
+  var items = list.querySelectorAll('.layer-item');
+  for (var i = 0; i < items.length; i++) items[i].remove();
+  var hint = document.getElementById('empty-hint');
+
+  if (isPromoMode) {
+    if (hint) hint.style.display = 'none';
+    var rows = [
+      { icon: 'T', label: 'PROMOCAO RELAMPAGO', size: '33' },
+      { icon: 'T', label: promoData.l1,                    size: '33' },
+      { icon: 'T', label: promoData.l2,                    size: '33' },
+      { icon: 'T', label: 'Ctrl: ' + promoData.eanCtrl,    size: '22' },
+      { icon: '|', label: 'Bar: '  + promoData.eanBar,     size: 'BC' },
+      { icon: 'T', label: promoData.vig,                   size: '31' },
+      { icon: 'R', label: promoData.lat,                   size: '14' }
+    ];
+    for (var j = 0; j < rows.length; j++) {
+      var item = document.createElement('div');
+      item.className   = 'layer-item';
+      item.style.cursor = 'default';
+      item.innerHTML   = '<div class="layer-icon">' + rows[j].icon + '</div>'
+                       + '<div class="layer-label">' + escHtml(rows[j].label) + '</div>'
+                       + '<div class="layer-size">'  + rows[j].size + '</div>';
+      list.appendChild(item);
+    }
+    return;
+  }
+
+  if (elements.length === 0) { if (hint) hint.style.display = 'block'; return; }
+  if (hint) hint.style.display = 'none';
+
+  var rev = elements.slice().reverse();
+  for (var k = 0; k < rev.length; k++) {
+    var el  = rev[k];
+    var itm = document.createElement('div');
+    itm.id        = 'layer-item-' + el.id;
+    itm.className = 'layer-item' + (el.id === selectedId ? ' active' : '');
+    itm.innerHTML = '<div class="layer-icon">T</div>'
+                  + '<div class="layer-label">' + escHtml(el.text) + '</div>'
+                  + '<div class="layer-size">'  + el.fontSize + 'pt</div>';
+    (function(eid){ itm.addEventListener('click', function(){ selectElement(eid); }); })(el.id);
+    list.appendChild(itm);
+  }
+}
+
+// ================================================================
+//  MODAL DE AUTENTICAÇÃO ADMIN  (senha: cansado)
+// ================================================================
+
+// Abre o modal e foca o campo de senha
+function adminLogin() {
+  if (isAdminMode) { showToast('⭐ Painel Admin já está ativo'); return; }
+  var overlay = document.getElementById('admin-modal-overlay');
+  var input   = document.getElementById('modal-senha');
+  var errEl   = document.getElementById('modal-error');
+  input.value = '';
+  errEl.classList.remove('show');
+  overlay.classList.add('open');
+  setTimeout(function() { input.focus(); }, 60);
+}
+
+// Fecha e limpa o modal (botão Cancelar ou clique fora)
+function closeAdminModal() {
+  document.getElementById('admin-modal-overlay').classList.remove('open');
+  document.getElementById('modal-senha').value = '';
+  document.getElementById('modal-error').classList.remove('show');
+}
+
+// Clique fora da caixa fecha o modal
+function modalClickOutside(e) {
+  if (e.target.id === 'admin-modal-overlay') closeAdminModal();
+}
+
+// Enter no campo dispara o botão OK
+function modalKeydown(e) {
+  if (e.key === 'Enter')  submitAdminModal();
+  if (e.key === 'Escape') closeAdminModal();
+}
+
+// Verifica a senha e age
+function submitAdminModal() {
+  var senha = document.getElementById('modal-senha').value;
+  var errEl = document.getElementById('modal-error');
+
+  if (senha === 'cansado') {
+    closeAdminModal();
+    isAdminMode = true;
+    document.getElementById('admin-section').style.display = 'block';
+    document.getElementById('btn-admin').classList.add('unlocked');
+    document.getElementById('btn-admin').textContent = '⭐ Admin';
+    showToast('✅ Acesso liberado! Painel de Promoções disponível.');
+  } else {
+    // Mostra erro inline, limpa campo e mantém modal aberto
+    errEl.classList.add('show');
+    var input = document.getElementById('modal-senha');
+    input.value = '';
+    input.focus();
+    // Shake animation no modal
+    var modal = document.getElementById('admin-modal');
+    modal.style.animation = 'none';
+    setTimeout(function() {
+      modal.style.animation = 'shake .35s ease';
+    }, 10);
+  }
+}
+
+// ================================================================
+//  PROMOÇÃO RELÂMPAGO
+// ================================================================
+function loadPromoTemplate() {
+  if (!isAdminMode) return;
+  isPromoMode = true;
+  elements    = [];
+  selectedId  = null;
+  // Reset posições para os valores originais do template
+  promoPos = {
+    titulo:  { xL:  0, xR: 330, y:  10, gapR: 330 },
+    l1:      { xL:  0, xR: 330, y:  50, gapR: 330 },
+    l2:      { xL:  0, xR: 330, y:  83, gapR: 330 },
+    eanTxt:  { xL: 70, xR: 410, y: 115, gapR: 340 },
+    barcode: { xL: 80, xR: 417, y: 140, gapR: 337 },
+    vig:     { xL: 50, xR: 380, y: 265, gapR: 330 },
+    lat:     { xL: 10, xR: 340, y: 115, gapR: 330 }
+  };
+  updateLayerList();
+  buildDragLayer();
+  updateZPLPreview();
+  schedulePreview(300);
+  showPromoEditorPanel();
+  showToast('⚡ Template Promoção Relâmpago carregado!');
+}
+
+function syncPromo(field) {
+  var map = {
+    l1:      'promo-l1',
+    l2:      'promo-l2',
+    eanCtrl: 'promo-ean-ctrl',
+    eanBar:  'promo-ean-bar',
+    vig:     'promo-vig',
+    lat:     'promo-lat'
+  };
+  promoData[field] = document.getElementById(map[field]).value;
+  updateLayerList();
+  buildDragLayer();   // atualiza label nos handles
+  updateZPLPreview();
+  schedulePreview();
+}
+
+function exitPromoMode() {
+  isPromoMode = false;
+  elements    = [];
+  selectedId  = null;
+  showEditorIdle();
+  updateLayerList();
+  buildDragLayer();
+  updateZPLPreview();
+  schedulePreview(300);
+  showToast('Modo Promoção encerrado');
+}
+
+// ================================================================
+//  GERAÇÃO ZPL — usa promoPos para coordenadas draggáveis
+// ================================================================
+function toZPL() {
+  var L = ['^XA', '^CI28'];
+
+  if (isPromoMode) {
+    var D = promoData;
+    var P = promoPos;
+    var T = 'PROMOCAO RELAMPAGO';
+
+    // Coluna Esquerda
+    L.push('^FO' + P.titulo.xL  + ',' + P.titulo.y  + '^A0N,33,25^FD' + zEsc(T)    + '^FS');
+    L.push('^FO' + P.l1.xL      + ',' + P.l1.y      + '^A0N,33,25^FD' + zEsc(D.l1) + '^FS');
+    L.push('^FO' + P.l2.xL      + ',' + P.l2.y      + '^A0N,33,25^FD' + zEsc(D.l2) + '^FS');
+    L.push('^FO' + P.lat.xL     + ',' + P.lat.y     + '^AOR,14,10^FD' + zEsc(D.lat) + '^FS');
+    L.push('^FO' + P.eanTxt.xL  + ',' + P.eanTxt.y  + '^A0N,22,21^FD' + zEsc(D.eanCtrl) + '^FS');
+    L.push('^FO' + P.barcode.xL + ',' + P.barcode.y + '^BY2^BEN,80,Y,N^FD' + zEsc(D.eanBar) + '^FS');
+    L.push('^FO' + P.vig.xL     + ',' + P.vig.y     + '^A0N,31,15^FD' + zEsc(D.vig) + '^FS');
+
+    // Coluna Direita (espelhada)
+    L.push('^FO' + P.titulo.xR  + ',' + P.titulo.y  + '^A0N,33,25^FD' + zEsc(T)    + '^FS');
+    L.push('^FO' + P.l1.xR      + ',' + P.l1.y      + '^A0N,33,25^FD' + zEsc(D.l1) + '^FS');
+    L.push('^FO' + P.l2.xR      + ',' + P.l2.y      + '^A0N,33,25^FD' + zEsc(D.l2) + '^FS');
+    L.push('^FO' + P.lat.xR     + ',' + P.lat.y     + '^AOR,14,10^FD' + zEsc(D.lat) + '^FS');
+    L.push('^FO' + P.eanTxt.xR  + ',' + P.eanTxt.y  + '^A0N,22,21^FD' + zEsc(D.eanCtrl) + '^FS');
+    L.push('^FO' + P.barcode.xR + ',' + P.barcode.y + '^BY2^BEN,80,Y,N^FD' + zEsc(D.eanBar) + '^FS');
+    L.push('^FO' + P.vig.xR     + ',' + P.vig.y     + '^A0N,31,15^FD' + zEsc(D.vig) + '^FS');
+
+  } else {
+    for (var i = 0; i < elements.length; i++) {
+      var el = elements[i];
+      var x  = Math.round(el.x);
+      var y  = Math.round(el.y);
+      var fh = Math.round(el.fontSize);
+      var fw = Math.round(el.fontSize * (el.bold ? 0.65 : 0.55));
+      L.push('^FO' + x + ',' + y + '^A0N,' + fh + ',' + fw + '^FD' + zEsc(el.text) + '^FS');
+    }
+  }
+
+  L.push('');
+  // ^PQ — quantidade de cópias (lido do campo na interface)
+  var qtyEl = document.getElementById('print-qty');
+  var qty   = qtyEl ? (parseInt(qtyEl.value, 10) || 1) : 1;
+  if (qty > 1) L.push('^PQ' + qty);
+  L.push('^XZ');
+  return L.join('\n');
+}
+
+function zEsc(s) {
+  var out = '';
+  s = String(s || '');
+  for (var i = 0; i < s.length; i++) {
+    if      (s[i] === '^') out += '^5E';
+    else if (s[i] === '~') out += '^7E';
+    else                   out += s[i];
+  }
+  return out;
+}
+
+function updateZPLPreview() {
+  var box = document.getElementById('zpl-preview');
+  if (box) box.textContent = toZPL();
+}
+
+// ================================================================
+//  EXPORTAR SCRIPT BASH (.sh)
+//  O ZPL já contém ^PQ (quantidade) gerado pela interface.
+//  O script apenas envia via lp para a Zebra S4M.
+//  Um comentário # ZPL_STATE='{...}' permite reimportar o estado.
+// ================================================================
+function exportZPL() {
+  if (!isPromoMode && elements.length === 0) {
+    showToast('⚠️ Adicione elementos antes de exportar');
+    return;
+  }
+
+  var zplCode   = toZPL();
+  var autoDelete = document.getElementById('auto-delete') &&
+                   document.getElementById('auto-delete').checked;
+
+  // Serializa estado atual para reimportação
+  var state = {
+    isPromoMode: isPromoMode,
+    elements:    elements,
+    promoData:   promoData,
+    promoPos:    promoPos,
+    printQty:    parseInt((document.getElementById('print-qty') || {}).value, 10) || 1
+  };
+  var stateJson = JSON.stringify(state);
+
+  // Monta o script bash
+  var lines = [
+    '#!/bin/bash',
+    '# Gerado pelo ZPL Label Studio',
+    "# ZPL_STATE='" + stateJson.replace(/'/g, "'\\''") + "'",
+    '',
+    "# ZPL já inclui ^PQ (quantidade definida na interface)",
+    "zpl='" + zplCode.replace(/'/g, "'\\''") + "'",
+    'echo "$zpl" | lp -d "Zebra-Technologies-ZTC-S4M-200dpi-ZPL" -o raw'
+  ];
+  if (autoDelete) lines.push('rm -- "$0"');
+
+  var script = lines.join('\n');
+  var blob   = new Blob([script], { type: 'text/x-shellscript' });
+  var url    = URL.createObjectURL(blob);
+  var a      = document.createElement('a');
+  a.href     = url;
+  a.download = 'imprimir_etiqueta.sh';
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('✅ Script imprimir_etiqueta.sh exportado!');
+}
+
+// ================================================================
+//  IMPORTAR .sh — lê ZPL_STATE do comentário e restaura estado
+// ================================================================
+function triggerImport() {
+  document.getElementById('import-file-input').click();
+}
+
+function importSh(event) {
+  var file = event.target.files && event.target.files[0];
+  if (!file) return;
+
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var text  = e.target.result;
+    var match = text.match(/^# ZPL_STATE='(.+)'$/m);
+
+    if (!match) {
+      showToast('❌ ZPL_STATE não encontrado no arquivo .sh');
+      event.target.value = '';
+      return;
+    }
+
+    try {
+      // Desfaz escape de aspas simples usado na exportação
+      var raw   = match[1].replace(/'\\''/g, "'");
+      var state = JSON.parse(raw);
+
+      // ── Restaura estado ────────────────────────────────────
+      isPromoMode = !!state.isPromoMode;
+
+      // Elementos livres
+      elements   = state.elements   || [];
+      idCounter  = 0;
+      for (var i = 0; i < elements.length; i++) {
+        if (elements[i].id > idCounter) idCounter = elements[i].id;
+      }
+      selectedId = null;
+
+      // Dados e posições de promoção
+      if (state.promoData) {
+        for (var k in state.promoData) {
+          if (Object.prototype.hasOwnProperty.call(state.promoData, k)) {
+            promoData[k] = state.promoData[k];
+          }
+        }
+      }
+      if (state.promoPos) {
+        for (var p in state.promoPos) {
+          if (Object.prototype.hasOwnProperty.call(state.promoPos, p)) {
+            promoPos[p] = state.promoPos[p];
+          }
+        }
+      }
+
+      // Quantidade
+      if (state.printQty) {
+        var qEl = document.getElementById('print-qty');
+        if (qEl) qEl.value = state.printQty;
+      }
+
+      // ── Atualiza UI ────────────────────────────────────────
+      if (isPromoMode) {
+        showPromoEditorPanel();
+      } else {
+        showEditorIdle();
+      }
+      updateLayerList();
+      buildDragLayer();
+      updateZPLPreview();
+      schedulePreview(300);
+      showToast('✅ Estado restaurado com sucesso!');
+
+    } catch (err) {
+      showToast('❌ Erro ao ler ZPL_STATE: ' + err.message);
+    }
+
+    event.target.value = ''; // reset input para permitir reimportar o mesmo arquivo
+  };
+  reader.readAsText(file);
+}
+
+// ================================================================
+//  UTILS
+// ================================================================
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function showToast(msg) {
+  var t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._t);
+  t._t = setTimeout(function() { t.classList.remove('show'); }, 2800);
+}
+
+// ================================================================
+//  INICIALIZAÇÃO
+// ================================================================
+(function init() {
+  elements.push(newEl('RTX 3060 · Cabo PCIe', 40,  40, 32, true));
+  elements.push(newEl('SN: 2024-ZBR-001',     40, 100, 18, false));
+
+  scalePreview();
+  updateLayerList();
+  buildDragLayer();
+  updateZPLPreview();
+  showEditorIdle();
+  schedulePreview(900);
+
+  // Listener do modo Inversão (Skeleton View)
+  var chkInv = document.getElementById('chk-inversao');
+  if (chkInv) {
+    chkInv.addEventListener('change', function() {
+      document.body.classList.toggle('inversao-ativa', chkInv.checked);
+    });
+  }
+})();
+</script>
+</body>
+</html>
