@@ -262,12 +262,17 @@ button.btn-danger:hover { border-color: var(--danger); background: rgba(248,81,7
 }
 
 #progress-pill {
-  background: rgba(63,185,80,.1); border: 1px solid rgba(63,185,80,.25);
-  border-radius: 6px; padding: 3px 10px;
+  background: rgba(63,185,80,.12); border: 1px solid rgba(63,185,80,.30);
+  border-radius: 20px; padding: 3px 12px;
   font-family: 'IBM Plex Mono', monospace; font-size: 11px;
   color: var(--ok); display: none; white-space: nowrap;
+  align-items: center; gap: 5px;
+  transition: opacity .2s;
 }
-#progress-pill strong { font-weight: 700; }
+#progress-pill strong { font-weight: 700; font-size: 12px; }
+#progress-pill.all-done {
+  background: rgba(63,185,80,.22); border-color: rgba(63,185,80,.55);
+}
 
 .filter-actions { margin-left: auto; display: flex; gap: 8px; align-items: flex-end; flex-wrap: wrap; }
 
@@ -716,6 +721,13 @@ tr.row-done .badge, tr.row-done .giro { opacity: .45; }
         Aut. Conclusão
       </label>
     </div>
+    <div class="filter-group" style="justify-content:flex-end">
+      <label style="opacity:0;pointer-events:none;font-size:10px">_</label>
+      <label class="check-label" title="Mostra apenas itens onde a Profundidade é diferente da Embalagem">
+        <input type="checkbox" id="prof-emb-cb">
+        Prof. ≠ Emb.
+      </label>
+    </div>
 
     <div class="filter-actions">
       <button class="btn-outline" id="clear-btn">Limpar filtros</button>
@@ -1001,6 +1013,7 @@ const colToggleAll    = $('col-toggle-all');
 const progressPill    = $('progress-pill');
 const hideInvalidCobCb = $('hide-invalid-cob-cb');
 const autoDoneCb       = $('auto-done-cb');
+const profEmbCb        = $('prof-emb-cb');
 const toastEl          = $('toast');
 const toastMsg         = $('toast-msg');
 const emptyState      = $('empty-state');
@@ -1177,11 +1190,58 @@ function updateResetBtn() {
   resetProgressBtn.style.display = doneSet.size > 0 ? 'inline-flex' : 'none';
 }
 function updateProgressPill() {
-  const total = allRecords.length;
-  const done  = allRecords.filter(r=>doneSet.has(r.automacao)).length;
-  if (done===0) { progressPill.textContent=''; progressPill.style.display='none'; return; }
+  // Build a base that applies every active filter EXCEPT the done-visibility
+  // toggle. This way the pill always shows "X done out of all items matching
+  // your current search / category / giro / stock / cob / prof-emb filters",
+  // regardless of whether done rows are hidden or visible in the table.
+  const q            = searchBox.value.toLowerCase();
+  const cat          = catFilter.value;
+  const st           = stFilter.value;
+  const giro         = giroFilter.value;
+  const stock        = stockFilter.value;
+  const hideInvCob   = hideInvalidCobCb.checked;
+  const filterPE     = profEmbCb.checked;
+
+  const base = allRecords.filter(r => {
+    if (cat  && r.categoria !== cat)           return false;
+    if (st   && r.st !== st)                   return false;
+    if (giro && (r.giro||'').trim() !== giro)  return false;
+    if (stock) {
+      const v = parseFloat((r.qtdestoque||'0').replace(/\./g,'').replace(',','.'));
+      if (stock==='neg'  && v>=0)  return false;
+      if (stock==='zero' && v!==0) return false;
+      if (stock==='pos'  && v<=0)  return false;
+    }
+    if (hideInvCob) {
+      const cob = (r.cobplan||'').replace(/[_\-—]/g,'').trim();
+      const cv  = parseFloat(cob);
+      if (!cob || isNaN(cv) || cv <= 0) return false;
+    }
+    if (filterPE) {
+      const profN = parseFloat((r.prof||'').replace(/[^0-9.]/g,''));
+      const embN  = parseFloat((r.emb||'').replace(/[^0-9.]/g,''));
+      if (!isNaN(profN) && !isNaN(embN) && profN === embN) return false;
+    }
+    if (q) {
+      const hay = [r.descricao,r.automacao,r.produto,r.nome,r.referencia,r.fornec]
+                    .join(' ').toLowerCase();
+      if (!hay.includes(q)) return false;
+    }
+    return true;
+  });
+
+  const total    = base.length;
+  const done     = base.filter(r => doneSet.has(r.automacao)).length;
+  const allDone  = done > 0 && done === total;
+
+  if (done === 0 || total === 0) {
+    progressPill.style.display = 'none';
+    return;
+  }
+
   progressPill.innerHTML = `✓ <strong>${done}</strong> / ${total} feitos`;
-  progressPill.style.display = 'inline-block';
+  progressPill.classList.toggle('all-done', allDone);
+  progressPill.style.display = 'inline-flex';
 }
 
 /* ────────────────────────────────────────────────────────
@@ -1249,8 +1309,9 @@ function applyFilters() {
   const st       = stFilter.value;
   const giro     = giroFilter.value;
   const stock    = stockFilter.value;
-  const showDone = showDoneCb.checked;
+  const showDone       = showDoneCb.checked;
   const hideInvalidCob = hideInvalidCobCb.checked;
+  const filterProfEmb  = profEmbCb.checked;
 
   // ① Filter the COMPLETE dataset
   filtered = allRecords.filter(r => {
@@ -1269,6 +1330,12 @@ function applyFilters() {
       const cob = (r.cobplan||'').replace(/[_\-—]/g,'').trim();
       const cv  = parseFloat(cob);
       if (!cob || isNaN(cv) || cv <= 0) return false;
+    }
+    // Prof. ≠ Emb.: compare numeric values (strips leading zeros)
+    if (filterProfEmb) {
+      const profN = parseFloat((r.prof||'').replace(/[^0-9.]/g,''));
+      const embN  = parseFloat((r.emb||'').replace(/[^0-9.]/g,''));
+      if (!isNaN(profN) && !isNaN(embN) && profN === embN) return false;
     }
     if (q) {
       const hay = [r.descricao,r.automacao,r.produto,r.nome,r.referencia,r.fornec]
@@ -1504,6 +1571,7 @@ giroFilter.addEventListener('change',applyFilters);
 stockFilter.addEventListener('change',applyFilters);
 showDoneCb.addEventListener('change', applyFilters);
 hideInvalidCobCb.addEventListener('change', applyFilters);
+profEmbCb.addEventListener('change', applyFilters);
 
 /* Aut. Conclusão — toggle class on table; the click handler
    lives inside appendRows on each td.td-produto */
@@ -1515,7 +1583,7 @@ autoDoneCb.addEventListener('change', () => {
 clearBtn.addEventListener('click',()=>{
   searchBox.value=''; catFilter.value=''; stFilter.value='';
   giroFilter.value=''; stockFilter.value=''; showDoneCb.checked=false;
-  hideInvalidCobCb.checked=false; autoDoneCb.checked=false;
+  hideInvalidCobCb.checked=false; autoDoneCb.checked=false; profEmbCb.checked=false;
   document.getElementById('main-table').classList.remove('auto-done-active');
   sortCol=null; sortDir=1;
   document.querySelectorAll('#thead-row th').forEach(h=>h.classList.remove('sort-asc','sort-desc'));
