@@ -582,6 +582,25 @@ tr.row-done .badge, tr.row-done .giro { opacity: .45; }
   }
   tr.flash-copy td { animation: flash-copy .55s ease-out forwards; }
 
+
+  /* ─── COLUMN DRAG & DROP ─── */
+  thead th[data-col] { cursor: grab; }
+  thead th[data-col]:active { cursor: grabbing; }
+
+  /* Column being dragged: ghost */
+  thead th.col-dragging {
+    opacity: .35;
+    background: rgba(240,165,0,.12) !important;
+  }
+
+  /* Drop target indicator: left edge highlight */
+  thead th.col-drag-over {
+    box-shadow: -3px 0 0 0 var(--accent);
+  }
+  thead th.col-drag-over-right {
+    box-shadow: 3px 0 0 0 var(--accent);
+  }
+
 </style>
 </head>
 <body>
@@ -723,9 +742,9 @@ tr.row-done .badge, tr.row-done .giro { opacity: .45; }
     </div>
     <div class="filter-group" style="justify-content:flex-end">
       <label style="opacity:0;pointer-events:none;font-size:10px">_</label>
-      <label class="check-label" title="Mostra apenas itens onde a Profundidade é diferente da Embalagem">
+      <label class="check-label" title="Mostra apenas itens onde o Total é diferente da Embalagem">
         <input type="checkbox" id="prof-emb-cb">
-        Prof. ≠ Emb.
+        Total ≠ Emb.
       </label>
     </div>
 
@@ -842,6 +861,43 @@ const COL_LABELS = {
 };
 
 const visibleCols = new Set(COLS.map(c => c.key));
+
+/* ── Column order — persists in localStorage ── */
+const LS_COL_ORDER = 'planograma_col_order';
+
+// The canonical sequence of data-col keys (excludes the check col)
+let colOrder = COLS.map(c => c.key);  // default: same as COLS
+
+function colOrderLoad() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(LS_COL_ORDER) || 'null');
+    if (Array.isArray(saved) && saved.length === COLS.length &&
+        saved.every(k => COLS.some(c => c.key === k))) {
+      colOrder = saved;
+    }
+  } catch {}
+}
+
+function colOrderSave() {
+  try { localStorage.setItem(LS_COL_ORDER, JSON.stringify(colOrder)); } catch {}
+}
+
+/* Reorder <th> elements in thead-row to match colOrder.
+   #th-check is always slot 0 and is never touched. */
+function applyColOrderToThead() {
+  const theadRow = document.getElementById('thead-row');
+  const checkTh  = document.getElementById('th-check');
+  // detach all data-col th
+  const ths = {};
+  theadRow.querySelectorAll('th[data-col]').forEach(th => {
+    ths[th.dataset.col] = th;
+    th.remove();
+  });
+  // re-append in colOrder
+  colOrder.forEach(key => {
+    if (ths[key]) theadRow.appendChild(ths[key]);
+  });
+}
 
 /* ────────────────────────────────────────────────────────
    INDEXEDDB  — stores the raw .txt file content
@@ -1137,7 +1193,9 @@ async function processText(text, filename, persist=true) {
     }).catch(()=>{});
   }
 
+  colOrderLoad();          // restore saved column sequence
   buildDashboard(meta);
+  applyColOrderToThead();   // reorder <th> elements
   showScreen('dash');
   reloadBtn.style.display = 'inline-flex';
   printBtn.style.display  = 'inline-flex';
@@ -1218,9 +1276,9 @@ function updateProgressPill() {
       if (!cob || isNaN(cv) || cv <= 0) return false;
     }
     if (filterPE) {
-      const profN = parseFloat((r.prof||'').replace(/[^0-9.]/g,''));
-      const embN  = parseFloat((r.emb||'').replace(/[^0-9.]/g,''));
-      if (!isNaN(profN) && !isNaN(embN) && profN === embN) return false;
+      const totalN = parseFloat((r.total||'').replace(/[^0-9.]/g,''));
+      const embN   = parseFloat((r.emb||'').replace(/[^0-9.]/g,''));
+      if (!isNaN(totalN) && !isNaN(embN) && totalN === embN) return false;
     }
     if (q) {
       const hay = [r.descricao,r.automacao,r.produto,r.nome,r.referencia,r.fornec]
@@ -1331,11 +1389,11 @@ function applyFilters() {
       const cv  = parseFloat(cob);
       if (!cob || isNaN(cv) || cv <= 0) return false;
     }
-    // Prof. ≠ Emb.: compare numeric values (strips leading zeros)
+    // Total ≠ Emb.: compare numeric values (strips leading zeros)
     if (filterProfEmb) {
-      const profN = parseFloat((r.prof||'').replace(/[^0-9.]/g,''));
-      const embN  = parseFloat((r.emb||'').replace(/[^0-9.]/g,''));
-      if (!isNaN(profN) && !isNaN(embN) && profN === embN) return false;
+      const totalN = parseFloat((r.total||'').replace(/[^0-9.]/g,''));
+      const embN   = parseFloat((r.emb||'').replace(/[^0-9.]/g,''));
+      if (!isNaN(totalN) && !isNaN(embN) && totalN === embN) return false;
     }
     if (q) {
       const hay = [r.descricao,r.automacao,r.produto,r.nome,r.referencia,r.fornec]
@@ -1421,55 +1479,64 @@ function appendRows(from, to) {
     btn.addEventListener('click', e=>{ e.stopPropagation(); toggleDone(r.automacao); });
     checkTd.appendChild(btn); tr.appendChild(checkTd);
 
-    appendTd(badgeCell(r.st),             'st');
-    appendTd(monoCell(r.automacao),       'automacao');
-    /* Produto cell — supports Aut. Conclusão click-to-copy-and-done */
-    const prodTd = monoCell(r.produto, 'muted');
-    prodTd.classList.add('td-produto');
-    prodTd.addEventListener('click', async () => {
-      if (!autoDoneCb.checked) return;
-      const code = r.produto.trim();
-      if (!code || code==='—') return;
-      // ① Copy to clipboard
-      try {
-        await navigator.clipboard.writeText(code);
-      } catch {
-        // fallback for browsers that require user-gesture on non-https
-        const ta = document.createElement('textarea');
-        ta.value = code; ta.style.position='fixed'; ta.style.opacity='0';
-        document.body.appendChild(ta); ta.select();
-        document.execCommand('copy'); document.body.removeChild(ta);
-      }
-      // ② Mark as done
-      const alreadyDone = doneSet.has(r.automacao);
-      if (!alreadyDone) toggleDone(r.automacao);  // triggers re-render
-      // ③ Flash the row briefly (find by EAN since toggleDone re-renders)
-      requestAnimationFrame(()=>{
-        const row = tbody.querySelector(`tr[data-ean="${r.automacao}"]`);
-        if (row) {
-          row.classList.remove('flash-copy');
-          void row.offsetWidth;
-          row.classList.add('flash-copy');
-          setTimeout(()=>row.classList.remove('flash-copy'), 600);
+    /* ── Cell builder map — colOrder drives the sequence ── */
+    const makeProdTd = () => {
+      const td = monoCell(r.produto, 'muted');
+      td.classList.add('td-produto');
+      td.addEventListener('click', async () => {
+        if (!autoDoneCb.checked) return;
+        const code = r.produto.trim();
+        if (!code || code==='—') return;
+        try { await navigator.clipboard.writeText(code); }
+        catch {
+          const ta=document.createElement('textarea'); ta.value=code;
+          ta.style.position='fixed'; ta.style.opacity='0';
+          document.body.appendChild(ta); ta.select();
+          document.execCommand('copy'); document.body.removeChild(ta);
         }
+        if (!doneSet.has(r.automacao)) toggleDone(r.automacao);
+        requestAnimationFrame(()=>{
+          const row=tbody.querySelector(`tr[data-ean="${r.automacao}"]`);
+          if(row){ row.classList.remove('flash-copy'); void row.offsetWidth;
+            row.classList.add('flash-copy');
+            setTimeout(()=>row.classList.remove('flash-copy'),600); }
+        });
+        showToast(`Copiado: ${code}  ✓ Baixa dada`, 'copy');
       });
-      // ④ Toast
-      showToast(`Copiado: ${code}  ✓ Baixa dada`, 'copy');
-    });
-    appendTd(prodTd, 'produto');
-    const dTd=document.createElement('td'); dTd.className='desc-cell'; dTd.textContent=r.descricao||'—'; dTd.title=r.descricao||'';
-    appendTd(dTd,'descricao');
-    appendTd(monoCell(r.emb,'muted'),        'emb');
-    appendTd(monoCell(r.referencia,'muted'), 'referencia');
-    appendTd(monoCell(r.fornec,'muted'),     'fornec');
-    const nTd=document.createElement('td'); nTd.className='nome-cell'; nTd.textContent=r.nome||'—'; nTd.title=r.nome||'';
-    appendTd(nTd,'nome');
-    appendTd(monoCell(r.sist,'muted'),      'sist');
-    appendTd(giroCell((r.giro||'').trim()), 'giro');
-    ['corredor','altura','largura','prof','total'].forEach(k=>appendTd(numCell(r[k]),k));
-    appendTd(cobCell(r.cobplan),    'cobplan');
-    appendTd(estCell(r.qtdestoque),'qtdestoque');
-    appendTd(monoCell(r.pbl,'muted'),'pbl');
+      return td;
+    };
+    const makeDescTd = () => {
+      const td=document.createElement('td'); td.className='desc-cell';
+      td.textContent=r.descricao||'—'; td.title=r.descricao||''; return td;
+    };
+    const makeNomeTd = () => {
+      const td=document.createElement('td'); td.className='nome-cell';
+      td.textContent=r.nome||'—'; td.title=r.nome||''; return td;
+    };
+    const cellBuilders = {
+      st:          () => badgeCell(r.st),
+      automacao:   () => monoCell(r.automacao),
+      produto:     makeProdTd,
+      descricao:   makeDescTd,
+      emb:         () => monoCell(r.emb,'muted'),
+      referencia:  () => monoCell(r.referencia,'muted'),
+      fornec:      () => monoCell(r.fornec,'muted'),
+      nome:        makeNomeTd,
+      sist:        () => monoCell(r.sist,'muted'),
+      giro:        () => giroCell((r.giro||'').trim()),
+      corredor:    () => numCell(r.corredor),
+      altura:      () => numCell(r.altura),
+      largura:     () => numCell(r.largura),
+      prof:        () => numCell(r.prof),
+      total:       () => numCell(r.total),
+      cobplan:     () => cobCell(r.cobplan),
+      qtdestoque:  () => estCell(r.qtdestoque),
+      pbl:         () => monoCell(r.pbl,'muted'),
+    };
+    // Render cells in the current colOrder
+    for (const key of colOrder) {
+      if (cellBuilders[key]) appendTd(cellBuilders[key](), key);
+    }
 
     frag.appendChild(tr);
   }
@@ -1549,17 +1616,110 @@ function estCell(val){
 }
 
 /* ────────────────────────────────────────────────────────
-   SORTING
+   SORTING — delegated on thead-row so it survives reorder
 ──────────────────────────────────────────────────────── */
-document.querySelectorAll('#thead-row th[data-col]').forEach(th=>{
-  th.addEventListener('click',()=>{
-    const col=th.dataset.col;
-    if(sortCol===col) sortDir*=-1; else{sortCol=col;sortDir=1;}
-    document.querySelectorAll('#thead-row th').forEach(h=>h.classList.remove('sort-asc','sort-desc'));
-    th.classList.add(sortDir===1?'sort-asc':'sort-desc');
-    applyFilters();
-  });
+document.getElementById('thead-row').addEventListener('click', e => {
+  const th = e.target.closest('th[data-col]');
+  if (!th) return;
+  const col = th.dataset.col;
+  if (sortCol===col) sortDir*=-1; else { sortCol=col; sortDir=1; }
+  document.querySelectorAll('#thead-row th').forEach(h=>h.classList.remove('sort-asc','sort-desc'));
+  th.classList.add(sortDir===1?'sort-asc':'sort-desc');
+  applyFilters();
 });
+
+/* ────────────────────────────────────────────────────────
+   COLUMN DRAG & DROP
+   Strategy:
+   • dragstart  — record dragged col key; add ghost class
+   • dragover   — add drop-indicator class to target th
+   • dragleave  — remove indicator
+   • drop       — splice colOrder, reorder DOM th elements,
+                  re-render tbody, save to localStorage
+   The check column (#th-check) is excluded (no draggable attr).
+──────────────────────────────────────────────────────── */
+(function initColDrag() {
+  let dragKey   = null;   // key of the column being dragged
+  let dropSide  = null;   // 'left' | 'right' — which side of target
+
+  const theadRow = document.getElementById('thead-row');
+
+  function draggableThs() {
+    return Array.from(theadRow.querySelectorAll('th[data-col]'));
+  }
+
+  function clearDragClasses() {
+    theadRow.querySelectorAll('th').forEach(th => {
+      th.classList.remove('col-dragging','col-drag-over','col-drag-over-right');
+    });
+  }
+
+  // Attach drag listeners — called once, and again after reorder
+  function bindDragListeners() {
+    draggableThs().forEach(th => {
+      th.draggable = true;
+
+      th.addEventListener('dragstart', e => {
+        dragKey = th.dataset.col;
+        th.classList.add('col-dragging');
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/plain', dragKey);
+      });
+
+      th.addEventListener('dragend', () => {
+        clearDragClasses();
+        dragKey = null;
+      });
+
+      th.addEventListener('dragover', e => {
+        e.preventDefault();
+        if (!dragKey || th.dataset.col === dragKey) return;
+        clearDragClasses();
+        th.classList.add('col-dragging');    // keep ghost on source
+        // determine drop side by cursor position within target
+        const rect = th.getBoundingClientRect();
+        dropSide = (e.clientX - rect.left) < rect.width / 2 ? 'left' : 'right';
+        th.classList.add(dropSide==='left' ? 'col-drag-over' : 'col-drag-over-right');
+        // restore ghost on dragged col
+        const draggedTh = theadRow.querySelector(`th[data-col="${dragKey}"]`);
+        if (draggedTh) draggedTh.classList.add('col-dragging');
+      });
+
+      th.addEventListener('dragleave', () => {
+        th.classList.remove('col-drag-over','col-drag-over-right');
+      });
+
+      th.addEventListener('drop', e => {
+        e.preventDefault();
+        const targetKey = th.dataset.col;
+        if (!dragKey || dragKey === targetKey) { clearDragClasses(); return; }
+
+        // Update colOrder
+        const fromIdx = colOrder.indexOf(dragKey);
+        let   toIdx   = colOrder.indexOf(targetKey);
+        if (fromIdx === -1 || toIdx === -1) { clearDragClasses(); return; }
+        colOrder.splice(fromIdx, 1);
+        // recalculate toIdx after removal
+        toIdx = colOrder.indexOf(targetKey);
+        const insertAt = dropSide === 'right' ? toIdx + 1 : toIdx;
+        colOrder.splice(insertAt, 0, dragKey);
+
+        // Reorder <th> elements
+        applyColOrderToThead();
+
+        // Persist + re-render tbody to match new order
+        colOrderSave();
+        clearDragClasses();
+        renderTable();
+
+        // Re-bind listeners on the now-reordered ths
+        bindDragListeners();
+      });
+    });
+  }
+
+  bindDragListeners();
+})();
 
 /* ────────────────────────────────────────────────────────
    FILTER EVENTS
