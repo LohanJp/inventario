@@ -281,13 +281,13 @@ button.btn-danger:hover { border-color: var(--danger); background: rgba(248,81,7
 ═══════════════════════════════════════════════════════ */
 .col-picker-wrap { position: relative; }
 
-#col-dropdown {
+#col-dropdown, #toggles-dropdown {
   display: none; position: absolute; top: calc(100% + 6px); right: 0;
   background: var(--surface); border: 1px solid var(--border);
   border-radius: 8px; padding: 8px 0; z-index: 300;
-  min-width: 210px; box-shadow: 0 8px 24px rgba(0,0,0,.6);
+  min-width: 230px; box-shadow: 0 8px 24px rgba(0,0,0,.6);
 }
-#col-dropdown.open { display: block; }
+#col-dropdown.open, #toggles-dropdown.open { display: block; }
 
 .col-dropdown-header {
   display: flex; justify-content: space-between; align-items: center;
@@ -315,6 +315,7 @@ button.btn-danger:hover { border-color: var(--danger); background: rgba(248,81,7
   cursor: pointer; flex-shrink: 0;
 }
 .col-item span { font-size: 12px; color: var(--text); font-family: 'IBM Plex Mono', monospace; }
+  #toggles-dropdown .col-item span { font-family: 'IBM Plex Sans', sans-serif; }
 
 /* ═══════════════════════════════════════════════════════
    TABLE WRAPPER
@@ -429,12 +430,13 @@ tr.cat-row td {
 td {
   padding: 7px 10px; white-space: nowrap;
   color: var(--text); vertical-align: middle;
+  text-align: left;
   background: transparent; /* needed for hover override above */
 }
 td.muted     { color: var(--muted); }
-td.num       { text-align: right; color: var(--info); }
-td.num-neg   { text-align: right; color: var(--danger); }
-td.num-ok    { text-align: right; color: var(--ok); }
+td.num       { text-align: left; color: var(--info); }
+td.num-neg   { text-align: left; color: var(--danger); }
+td.num-ok    { text-align: left; color: var(--ok); }
 
 /* ─── DONE ROW ─── */
 tr.row-done td { background: var(--done-bg); }
@@ -718,37 +720,53 @@ tr.row-done .badge, tr.row-done .giro { opacity: .45; }
         <option value="pos">Positivo</option>
       </select>
     </div>
-    <!-- toggles row ─────────────────────────────── -->
-    <div class="filter-group" style="justify-content:flex-end">
-      <label style="opacity:0;pointer-events:none;font-size:10px">_</label>
-      <label class="check-label">
-        <input type="checkbox" id="show-done-cb">
-        Mostrar concluídos
-      </label>
-    </div>
-    <div class="filter-group" style="justify-content:flex-end">
-      <label style="opacity:0;pointer-events:none;font-size:10px">_</label>
-      <label class="check-label" title="Oculta itens com Cob.Plan ≤ 0 ou inválida">
-        <input type="checkbox" id="hide-invalid-cob-cb">
-        Ocultar Cob. Inválida
-      </label>
-    </div>
-    <div class="filter-group" style="justify-content:flex-end">
-      <label style="opacity:0;pointer-events:none;font-size:10px">_</label>
-      <label class="check-label" title="Clique no código Produto para copiar e dar baixa automaticamente">
-        <input type="checkbox" id="auto-done-cb">
-        Aut. Conclusão
-      </label>
-    </div>
-    <div class="filter-group" style="justify-content:flex-end">
-      <label style="opacity:0;pointer-events:none;font-size:10px">_</label>
-      <label class="check-label" title="Mostra apenas itens onde o Total é diferente da Embalagem">
-        <input type="checkbox" id="prof-emb-cb">
-        Total ≠ Emb.
-      </label>
-    </div>
-
     <div class="filter-actions">
+      <!-- ── Toggles dropdown: all checkboxes consolidated ── -->
+      <div class="col-picker-wrap">
+        <button class="btn-outline" id="toggles-btn">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M4 6h16M4 12h10M4 18h6"/>
+          </svg>
+          Filtros
+        </button>
+        <div id="toggles-dropdown">
+          <div class="col-dropdown-header">
+            <span>Opções rápidas</span>
+          </div>
+          <label class="col-item">
+            <input type="checkbox" id="show-done-cb">
+            <span>Mostrar concluídos</span>
+          </label>
+          <label class="col-item" title="Oculta itens com Cob.Plan ≤ 0 ou inválida">
+            <input type="checkbox" id="hide-invalid-cob-cb">
+            <span>Ocultar Cob. Inválida</span>
+          </label>
+          <label class="col-item" title="Mostra apenas itens onde o Total é diferente da Embalagem">
+            <input type="checkbox" id="prof-emb-cb">
+            <span>Total ≠ Emb.</span>
+          </label>
+          <div class="col-dropdown-header" style="margin-top:4px;border-top:1px solid var(--border);">
+            <span>Automação (clique no Produto) — escolha 1</span>
+          </div>
+          <label class="col-item" title="Desativa o clique automático na coluna Produto">
+            <input type="radio" name="auto-mode" id="auto-none-cb" value="none" checked>
+            <span>Nenhum</span>
+          </label>
+          <label class="col-item" title="Clique no código Produto para copiar e dar baixa automaticamente">
+            <input type="radio" name="auto-mode" id="auto-done-cb" value="done">
+            <span>Aut. Conclusão</span>
+          </label>
+          <label class="col-item" title="Clique no código Produto para copiar 'produto;emb' e dar baixa automaticamente">
+            <input type="radio" name="auto-mode" id="auto-qty-cb" value="qty">
+            <span>Aut. Produto x QTD</span>
+          </label>
+          <label class="col-item" title="Clique no código Produto para copiar 'produto;emb;qtd que falta' (conforme filtro atual) e dar baixa automaticamente">
+            <input type="radio" name="auto-mode" id="auto-qty-v2-cb" value="qtyv2">
+            <span>Aut. Produto x QTD V2</span>
+          </label>
+        </div>
+      </div>
+
       <button class="btn-outline" id="clear-btn">Limpar filtros</button>
       <button class="btn-danger" id="reset-progress-btn" style="display:none">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
@@ -860,7 +878,11 @@ const COL_LABELS = {
   cobplan:'Cob.Plan', qtdestoque:'Qtd.Estoque', pbl:'PBL',
 };
 
-const visibleCols = new Set(COLS.map(c => c.key));
+const DEFAULT_VISIBLE_COLS = [
+  'produto','descricao','emb','total','giro',
+  'corredor','altura','largura','prof','cobplan','qtdestoque'
+];
+const visibleCols = new Set(DEFAULT_VISIBLE_COLS);
 
 /* ── Column order — persists in localStorage ── */
 const LS_COL_ORDER = 'planograma_col_order';
@@ -1070,6 +1092,12 @@ const progressPill    = $('progress-pill');
 const hideInvalidCobCb = $('hide-invalid-cob-cb');
 const autoDoneCb       = $('auto-done-cb');
 const profEmbCb        = $('prof-emb-cb');
+const autoQtyCb        = $('auto-qty-cb');
+const autoQtyV2Cb      = $('auto-qty-v2-cb');
+const autoNoneCb       = $('auto-none-cb');
+const autoModeRadios   = document.querySelectorAll('input[name="auto-mode"]');
+const togglesBtn       = $('toggles-btn');
+const togglesDropdown  = $('toggles-dropdown');
 const toastEl          = $('toast');
 const toastMsg         = $('toast-msg');
 const emptyState      = $('empty-state');
@@ -1234,6 +1262,7 @@ function buildDashboard(meta) {
   giros.forEach(g => { const o=document.createElement('option'); o.value=g; o.textContent=g; giroFilter.appendChild(o); });
 
   buildColDropdown();
+  applyColVisibility();  // sync th/td visibility on first load
   applyFilters();
 }
 
@@ -1247,18 +1276,18 @@ function toggleDone(ean) {
 function updateResetBtn() {
   resetProgressBtn.style.display = doneSet.size > 0 ? 'inline-flex' : 'none';
 }
-function updateProgressPill() {
-  // Build a base that applies every active filter EXCEPT the done-visibility
-  // toggle. This way the pill always shows "X done out of all items matching
-  // your current search / category / giro / stock / cob / prof-emb filters",
-  // regardless of whether done rows are hidden or visible in the table.
-  const q            = searchBox.value.toLowerCase();
-  const cat          = catFilter.value;
-  const st           = stFilter.value;
-  const giro         = giroFilter.value;
-  const stock        = stockFilter.value;
-  const hideInvCob   = hideInvalidCobCb.checked;
-  const filterPE     = profEmbCb.checked;
+/* Build the "current filter" base — every active filter EXCEPT the
+   done-visibility toggle. Shared by the progress pill and by
+   "Aut. Produto x QTD V2" so both report the same X/Y numbers,
+   regardless of whether done rows are hidden or visible. */
+function getFilterStats() {
+  const q          = searchBox.value.toLowerCase();
+  const cat        = catFilter.value;
+  const st         = stFilter.value;
+  const giro       = giroFilter.value;
+  const stock      = stockFilter.value;
+  const hideInvCob = hideInvalidCobCb.checked;
+  const filterPE   = profEmbCb.checked;
 
   const base = allRecords.filter(r => {
     if (cat  && r.categoria !== cat)           return false;
@@ -1288,16 +1317,24 @@ function updateProgressPill() {
     return true;
   });
 
-  const total    = base.length;
-  const done     = base.filter(r => doneSet.has(r.automacao)).length;
-  const allDone  = done > 0 && done === total;
+  const total = base.length;
+  const done  = base.filter(r => doneSet.has(r.automacao)).length;
+  const falta = total - done;
+  return { total, done, falta };
+}
 
-  if (done === 0 || total === 0) {
+function updateProgressPill() {
+  const { total, done, falta } = getFilterStats();
+  const allDone = done > 0 && done === total;
+
+  if (total === 0) {
     progressPill.style.display = 'none';
     return;
   }
 
-  progressPill.innerHTML = `✓ <strong>${done}</strong> / ${total} feitos`;
+  progressPill.innerHTML =
+    `✓ <strong>${done}</strong> / ${total} feitos` +
+    (falta > 0 ? ` · faltam <strong>${falta}</strong>` : '');
   progressPill.classList.toggle('all-done', allDone);
   progressPill.style.display = 'inline-flex';
 }
@@ -1344,6 +1381,18 @@ colBtn.addEventListener('click', e=>{
 document.addEventListener('click', e=>{
   if(!colDropdown.contains(e.target)&&e.target!==colBtn){
     colDropdown.classList.remove('open'); colBtn.classList.remove('active');
+  }
+});
+
+/* Filtros dropdown (consolidated checkboxes) */
+togglesBtn.addEventListener('click', e=>{
+  e.stopPropagation();
+  togglesDropdown.classList.toggle('open');
+  togglesBtn.classList.toggle('active', togglesDropdown.classList.contains('open'));
+});
+document.addEventListener('click', e=>{
+  if(!togglesDropdown.contains(e.target) && e.target!==togglesBtn){
+    togglesDropdown.classList.remove('open'); togglesBtn.classList.remove('active');
   }
 });
 colToggleAll.addEventListener('click', ()=>{
@@ -1484,9 +1533,30 @@ function appendRows(from, to) {
       const td = monoCell(r.produto, 'muted');
       td.classList.add('td-produto');
       td.addEventListener('click', async () => {
-        if (!autoDoneCb.checked) return;
-        const code = r.produto.trim();
-        if (!code || code==='—') return;
+        // Three mutually-exclusive auto modes:
+        //  • Aut. Conclusão        → copies "produto"
+        //  • Aut. Produto x QTD    → copies "produto;emb"
+        //  • Aut. Produto x QTD V2 → copies "qtd feita;produto;emb;qtd que falta"
+        //    (counts are relative to the CURRENT filter, after this click)
+        if (!autoDoneCb.checked && !autoQtyCb.checked && !autoQtyV2Cb.checked) return;
+        const prodCode = r.produto.trim();
+        if (!prodCode || prodCode==='—') return;
+        const embCode = (r.emb||'').trim();
+
+        // Mark as done BEFORE building the V2 string, so the counters
+        // already reflect this item as completed.
+        if (!doneSet.has(r.automacao)) toggleDone(r.automacao);
+
+        let code;
+        if (autoQtyV2Cb.checked) {
+          const { falta } = getFilterStats();
+          code = `${prodCode};${embCode};${falta}`;
+        } else if (autoQtyCb.checked) {
+          code = `${prodCode};${embCode}`;
+        } else {
+          code = prodCode;
+        }
+
         try { await navigator.clipboard.writeText(code); }
         catch {
           const ta=document.createElement('textarea'); ta.value=code;
@@ -1494,7 +1564,6 @@ function appendRows(from, to) {
           document.body.appendChild(ta); ta.select();
           document.execCommand('copy'); document.body.removeChild(ta);
         }
-        if (!doneSet.has(r.automacao)) toggleDone(r.automacao);
         requestAnimationFrame(()=>{
           const row=tbody.querySelector(`tr[data-ean="${r.automacao}"]`);
           if(row){ row.classList.remove('flash-copy'); void row.offsetWidth;
@@ -1722,6 +1791,23 @@ document.getElementById('thead-row').addEventListener('click', e => {
 })();
 
 /* ────────────────────────────────────────────────────────
+   F4 SHORTCUT — Aut. Produto x QTD V2 (and other auto modes)
+   Simulates a click on the FIRST visible Produto cell in the
+   table — i.e. the next pending item — letting the user run
+   the whole "copy + dar baixa" flow without touching the mouse.
+──────────────────────────────────────────────────────── */
+document.addEventListener('keydown', e => {
+  if (e.key !== 'F4') return;
+  if (!autoDoneCb.checked && !autoQtyCb.checked && !autoQtyV2Cb.checked) return;
+
+  e.preventDefault(); // F4 has no default browser action, but just in case
+
+  const firstProdTd = tbody.querySelector('td.td-produto');
+  if (firstProdTd) firstProdTd.click();
+  else showToast('Nenhum item pendente', 'ok');
+});
+
+/* ────────────────────────────────────────────────────────
    FILTER EVENTS
 ──────────────────────────────────────────────────────── */
 searchBox.addEventListener('input',  applyFilters);
@@ -1735,15 +1821,19 @@ profEmbCb.addEventListener('change', applyFilters);
 
 /* Aut. Conclusão — toggle class on table; the click handler
    lives inside appendRows on each td.td-produto */
-autoDoneCb.addEventListener('change', () => {
-  document.getElementById('main-table')
-    .classList.toggle('auto-done-active', autoDoneCb.checked);
-});
+function syncAutoModeClass() {
+  // Radio group guarantees only one of these is ever true at a time.
+  const active = autoDoneCb.checked || autoQtyCb.checked || autoQtyV2Cb.checked;
+  document.getElementById('main-table').classList.toggle('auto-done-active', active);
+}
+
+autoModeRadios.forEach(r => r.addEventListener('change', syncAutoModeClass));
 
 clearBtn.addEventListener('click',()=>{
   searchBox.value=''; catFilter.value=''; stFilter.value='';
   giroFilter.value=''; stockFilter.value=''; showDoneCb.checked=false;
-  hideInvalidCobCb.checked=false; autoDoneCb.checked=false; profEmbCb.checked=false;
+  hideInvalidCobCb.checked=false; autoNoneCb.checked=true;
+  profEmbCb.checked=false;
   document.getElementById('main-table').classList.remove('auto-done-active');
   sortCol=null; sortDir=1;
   document.querySelectorAll('#thead-row th').forEach(h=>h.classList.remove('sort-asc','sort-desc'));
