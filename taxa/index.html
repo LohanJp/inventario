@@ -218,11 +218,12 @@
   .status-badge.atrasado{color:var(--danger); border:1px solid var(--danger); background:rgba(214,92,79,.12);}
   .status-badge.finalizado{color:var(--success); border:1px solid var(--success); background:rgba(76,154,106,.12);}
 
-  .filters{display:flex; gap:10px; margin-bottom:14px; flex-wrap:wrap; align-items:end;}
-  .filters select, .filters input{width:auto; min-width:130px;}
-  .date-field{display:flex; flex-direction:column; gap:5px;}
+  .filters{display:flex; gap:10px; margin-bottom:14px; flex-wrap:wrap; align-items:flex-end;}
+  .filters > select{width:auto; min-width:160px;}
+  .date-range-group{display:flex; gap:10px; flex-wrap:wrap;}
+  .date-field{display:flex; flex-direction:column; gap:5px; flex:1; min-width:150px;}
   .date-field label{margin:0;}
-  .date-field input[type="date"]{min-width:150px; color-scheme:dark;}
+  .date-field input[type="date"]{width:100%; color-scheme:dark;}
 
   .quick-filters{display:flex; gap:6px; flex-wrap:wrap; margin-bottom:14px;}
   .quick-filters button{
@@ -241,6 +242,27 @@
     transition:all .25s ease; z-index:999;
   }
   #toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
+
+  /* ---------- Confirm modal ---------- */
+  #confirmOverlay{
+    position:fixed; inset:0; background:rgba(0,0,0,.55); display:none;
+    align-items:center; justify-content:center; z-index:1000; padding:20px;
+  }
+  #confirmOverlay.open{display:flex;}
+  #confirmModal{
+    background:var(--surface); border:1px solid var(--border); border-radius:var(--radius);
+    padding:22px; max-width:380px; width:100%; box-shadow:0 10px 40px rgba(0,0,0,.4);
+    animation:confirmIn .15s ease;
+  }
+  @keyframes confirmIn{from{opacity:0; transform:translateY(8px) scale(.98);} to{opacity:1; transform:translateY(0) scale(1);}}
+  #confirmModal h3{margin:0 0 10px; font-size:16px; color:var(--text); font-family:'Inter'; font-weight:700;}
+  #confirmModal p{margin:0 0 20px; font-size:13.5px; color:var(--text-dim); line-height:1.5;}
+  #confirmActions{display:flex; gap:10px; justify-content:flex-end;}
+  #confirmActions button{flex:0 0 auto;}
+  @media (max-width: 480px){
+    #confirmActions{flex-direction:column-reverse;}
+    #confirmActions button{width:100%;}
+  }
 
   /* ---------- Install banner ---------- */
   #installBanner{
@@ -292,8 +314,10 @@
     button.btn{width:100%;}
     .form-grid > div:has(button.btn){grid-column:1 / -1;}
 
-    .filters{flex-direction:column;}
-    .filters select, .filters input{width:100%; min-width:0;}
+    .filters{flex-direction:column; align-items:stretch;}
+    .date-range-group{flex-direction:column;}
+    .date-field{width:100%; min-width:0;}
+    .filters > select{width:100%; min-width:0;}
 
     #installBanner{flex-direction:column; align-items:stretch; text-align:center;}
     #installBanner button{width:100%;}
@@ -427,6 +451,7 @@
       </div>
       <div class="gauge-track"><div class="gauge-fill" id="simFill" style="width:0%; background:var(--accent);"></div></div>
       <div class="gauge-note" id="simNote"></div>
+      <div class="capacity-row" id="simCapacity"></div>
     </div>
   </section>
 
@@ -501,13 +526,15 @@
         <button data-quick="todos">Todos</button>
       </div>
       <div class="filters">
-        <div class="date-field">
-          <label>De</label>
-          <input type="date" id="filtroDataInicio">
-        </div>
-        <div class="date-field">
-          <label>Até</label>
-          <input type="date" id="filtroDataFim">
+        <div class="date-range-group">
+          <div class="date-field">
+            <label>De</label>
+            <input type="date" id="filtroDataInicio">
+          </div>
+          <div class="date-field">
+            <label>Até</label>
+            <input type="date" id="filtroDataFim">
+          </div>
         </div>
         <select id="filtroSetorEscala"><option value="">Todos os setores</option></select>
       </div>
@@ -693,6 +720,17 @@
 
 <div id="toast"></div>
 
+<div id="confirmOverlay">
+  <div id="confirmModal">
+    <h3 id="confirmTitle">Confirmar ação</h3>
+    <p id="confirmMessage"></p>
+    <div id="confirmActions">
+      <button class="btn secondary" id="confirmCancelBtn">Cancelar</button>
+      <button class="btn danger-btn" id="confirmOkBtn">Confirmar</button>
+    </div>
+  </div>
+</div>
+
 <script>
 /* ---------------- Estado / Persistência ---------------- */
 const STORAGE_KEY = "taxasControlApp_v1";
@@ -796,6 +834,30 @@ function toast(msg){
   clearTimeout(toast._t);
   toast._t = setTimeout(()=>t.classList.remove('show'), 2200);
 }
+function showConfirm(message, opts={}){
+  return new Promise(resolve=>{
+    const overlay = document.getElementById('confirmOverlay');
+    document.getElementById('confirmTitle').textContent = opts.title || 'Confirmar ação';
+    document.getElementById('confirmMessage').textContent = message;
+    const okBtn = document.getElementById('confirmOkBtn');
+    const cancelBtn = document.getElementById('confirmCancelBtn');
+    okBtn.textContent = opts.okText || 'Confirmar';
+    overlay.classList.add('open');
+    function cleanup(result){
+      overlay.classList.remove('open');
+      okBtn.removeEventListener('click', onOk);
+      cancelBtn.removeEventListener('click', onCancel);
+      overlay.removeEventListener('click', onOverlay);
+      resolve(result);
+    }
+    function onOk(){ cleanup(true); }
+    function onCancel(){ cleanup(false); }
+    function onOverlay(e){ if(e.target === overlay) cleanup(false); }
+    okBtn.addEventListener('click', onOk);
+    cancelBtn.addEventListener('click', onCancel);
+    overlay.addEventListener('click', onOverlay);
+  });
+}
 function todayISO(){
   const d = new Date();
   return d.toISOString().slice(0,10);
@@ -884,6 +946,20 @@ function renderSimulacao(){
   } else {
     note.textContent = `Sobrariam ${brl(saldoSim)} no teto após essas ${totalTaxas} taxa${totalTaxas===1?'':'s'}.`;
     note.className = 'gauge-note';
+  }
+
+  const capacityEl = document.getElementById('simCapacity');
+  if(teto <= 0 || (!valor4h && !valor6h) || saldoSim <= 0){
+    capacityEl.innerHTML = '';
+  } else {
+    let html = '';
+    if(valor4h > 0){
+      html += `<div class="capacity-item"><div class="num">${Math.floor(saldoSim/valor4h)}</div><div class="lbl">taxas de 4h</div></div>`;
+    }
+    if(valor6h > 0){
+      html += `<div class="capacity-item"><div class="num">${Math.floor(saldoSim/valor6h)}</div><div class="lbl">taxas de 6h</div></div>`;
+    }
+    capacityEl.innerHTML = html;
   }
 }
 
@@ -1147,10 +1223,11 @@ function renderTabelaEscala(){
     tbody.appendChild(tr);
   });
   tbody.querySelectorAll('[data-finalizar]').forEach(b=>{
-    b.addEventListener('click', ()=>{
+    b.addEventListener('click', async ()=>{
       const reg = state.registros.find(r=>r.id === b.dataset.finalizar);
       if(!reg) return;
-      if(!confirm(`Confirmar que o turno de ${taxaNome(reg.taxaId)} (${setorNome(reg.setorId)}) foi finalizado?`)) return;
+      const ok = await showConfirm(`Confirmar que o turno de ${taxaNome(reg.taxaId)} (${setorNome(reg.setorId)}) foi finalizado?`, {okText:'Finalizar'});
+      if(!ok) return;
       reg.finalizado = true;
       saveState();
       renderTabelaEscala();
@@ -1168,11 +1245,12 @@ function renderTabelaEscala(){
     });
   });
   tbody.querySelectorAll('[data-del]').forEach(b=>{
-    b.addEventListener('click', ()=>{
+    b.addEventListener('click', async ()=>{
       const reg = state.registros.find(r=>r.id === b.dataset.del);
       if(!reg) return;
       const msg = `Excluir o lançamento de ${taxaNome(reg.taxaId)} (${setorNome(reg.setorId)}) em ${formatData(reg.data)}, valor ${brl(reg.valor)}?`;
-      if(!confirm(msg)) return;
+      const ok = await showConfirm(msg, {okText:'Excluir'});
+      if(!ok) return;
       state.registros = state.registros.filter(r=>r.id !== b.dataset.del);
       saveState();
       renderTabelaEscala();
@@ -1399,14 +1477,15 @@ function renderTabelaCartoes(){
     tbody.appendChild(tr);
   });
   tbody.querySelectorAll('[data-del]').forEach(b=>{
-    b.addEventListener('click', ()=>{
+    b.addEventListener('click', async ()=>{
       const lote = state.cartoes.find(c=>c.id===b.dataset.del);
       if(!lote) return;
       const disponivel = cartaoEstoqueDisponivel();
       const msg = disponivel < lote.quantidade
         ? `Remover este lote de ${lote.quantidade} cartões pode deixar o estoque negativo (só há ${disponivel} disponíveis agora). Excluir mesmo assim?`
         : `Excluir este lote de ${lote.quantidade} cartões?`;
-      if(!confirm(msg)) return;
+      const ok = await showConfirm(msg, {okText:'Excluir'});
+      if(!ok) return;
       state.cartoes = state.cartoes.filter(c=>c.id !== b.dataset.del);
       saveState();
       renderCartoesView();
@@ -1476,8 +1555,9 @@ document.getElementById('importFile').addEventListener('change', (e)=>{
   reader.readAsText(file);
   e.target.value = '';
 });
-document.getElementById('btnReset').addEventListener('click', ()=>{
-  if(confirm('Isso vai apagar todos os setores, taxas, cartões e lançamentos deste dispositivo. Continuar?')){
+document.getElementById('btnReset').addEventListener('click', async ()=>{
+  const ok = await showConfirm('Isso vai apagar todos os setores, taxas, cartões e lançamentos — inclusive para as outras pessoas que usam este app sincronizado. Continuar?', {okText:'Apagar tudo'});
+  if(ok){
     state = defaultState();
     saveState();
     renderDashboard();
