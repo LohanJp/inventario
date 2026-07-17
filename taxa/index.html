@@ -11,6 +11,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Zilla+Slab:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <style>
   :root{
     --bg:#10151C;
@@ -63,6 +65,9 @@
   }
   .brand h1{font-size:16px;margin:0;line-height:1.3;color:var(--text);}
   .brand p{font-size:11.5px;color:var(--text-dim);margin:4px 0 0;}
+  .brand p.sync-ok{color:var(--success);}
+  .brand p.sync-off{color:var(--danger);}
+  .brand p.sync-local{color:var(--warn);}
 
   nav{display:flex;flex-direction:column;gap:2px;padding:0 10px;}
   nav button{
@@ -213,8 +218,20 @@
   .status-badge.atrasado{color:var(--danger); border:1px solid var(--danger); background:rgba(214,92,79,.12);}
   .status-badge.finalizado{color:var(--success); border:1px solid var(--success); background:rgba(76,154,106,.12);}
 
-  .filters{display:flex; gap:10px; margin-bottom:14px; flex-wrap:wrap;}
+  .filters{display:flex; gap:10px; margin-bottom:14px; flex-wrap:wrap; align-items:end;}
   .filters select, .filters input{width:auto; min-width:130px;}
+  .date-field{display:flex; flex-direction:column; gap:5px;}
+  .date-field label{margin:0;}
+  .date-field input[type="date"]{min-width:150px; color-scheme:dark;}
+
+  .quick-filters{display:flex; gap:6px; flex-wrap:wrap; margin-bottom:14px;}
+  .quick-filters button{
+    all:unset; cursor:pointer; padding:6px 13px; border-radius:99px; font-size:12px;
+    color:var(--text-dim); border:1px solid var(--border); font-family:'Inter'; font-weight:600;
+    transition:background .15s, color .15s, border-color .15s;
+  }
+  .quick-filters button:hover{color:var(--text); border-color:var(--accent);}
+  .quick-filters button.active{background:var(--accent); color:#10151C; border-color:var(--accent);}
 
   /* ---------- Toast ---------- */
   #toast{
@@ -304,7 +321,7 @@
       <div class="stamp">T</div>
       <div style="flex:1;">
         <h1>Controle de Taxas</h1>
-        <p>Escala &amp; gastos por setor</p>
+        <p id="syncStatus">Iniciando…</p>
       </div>
       <button id="menuToggle" aria-label="Abrir menu">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
@@ -316,6 +333,7 @@
     <button data-view="escala">🗓️ &nbsp;Escala</button>
     <button data-view="taxas">🏷️ &nbsp;Taxas</button>
     <button data-view="setores">🏢 &nbsp;Setores</button>
+    <button data-view="cartoes">💳 &nbsp;Cartões</button>
     <button data-view="config">⚙️ &nbsp;Configurações</button>
   </nav>
 </div>
@@ -367,6 +385,16 @@
       <div class="gauge-track"><div class="gauge-fill" id="gaugeFill" style="width:0%; background:var(--accent);"></div></div>
       <div class="gauge-note" id="gaugeNote"></div>
       <div class="capacity-row" id="gaugeCapacity"></div>
+    </div>
+
+    <div class="gauge-wrap">
+      <div class="gauge-top">
+        <span class="title">Consumo dos cartões presente</span>
+        <span class="amounts"><span id="cartaoAtual">0</span> / <span id="cartaoTotal" style="color:var(--text-dim);">0 cartões</span></span>
+      </div>
+      <div class="gauge-track"><div class="gauge-fill" id="cartaoFill" style="width:0%; background:var(--accent);"></div></div>
+      <div class="gauge-note" id="cartaoNote"></div>
+      <div class="capacity-row" id="cartaoBreakdown"></div>
     </div>
 
     <div class="box">
@@ -447,6 +475,17 @@
           <input type="hidden" id="escValor">
         </div>
         <div>
+          <label>Forma de pagamento</label>
+          <select id="escPagamento">
+            <option value="dinheiro">Dinheiro</option>
+            <option value="cartao">Cartão presente</option>
+          </select>
+        </div>
+        <div id="escCartaoWrap" style="display:none;">
+          <label>Estoque de cartões</label>
+          <div class="valor-display" id="escCartaoInfo" style="color:var(--warn);">—</div>
+        </div>
+        <div>
           <button type="submit" class="btn">Adicionar à escala</button>
         </div>
       </form>
@@ -454,21 +493,28 @@
 
     <div class="box">
       <h3>Lançamentos</h3>
+      <div class="quick-filters" id="quickFilters">
+        <button data-quick="hoje">Hoje</button>
+        <button data-quick="amanha">Amanhã</button>
+        <button data-quick="semana">Esta semana</button>
+        <button data-quick="mes">Este mês</button>
+        <button data-quick="todos">Todos</button>
+      </div>
       <div class="filters">
-        <select id="filtroMes"></select>
-        <select id="filtroQuando">
-          <option value="">Todos os dias</option>
-          <option value="hoje">Hoje</option>
-          <option value="amanha">Amanhã</option>
-          <option value="futuro">Depois de amanhã em diante</option>
-          <option value="passado">Dias anteriores</option>
-        </select>
+        <div class="date-field">
+          <label>De</label>
+          <input type="date" id="filtroDataInicio">
+        </div>
+        <div class="date-field">
+          <label>Até</label>
+          <input type="date" id="filtroDataFim">
+        </div>
         <select id="filtroSetorEscala"><option value="">Todos os setores</option></select>
       </div>
       <div style="overflow-x:auto;">
         <table id="tabelaEscala">
           <thead>
-            <tr><th>Data</th><th>Setor</th><th>Taxa</th><th>Turno</th><th>Entrada</th><th>Saída</th><th style="text-align:right;">Valor</th><th></th></tr>
+            <tr><th>Data</th><th>Setor</th><th>Taxa</th><th>Turno</th><th>Pagamento</th><th>Entrada</th><th>Saída</th><th style="text-align:right;">Valor</th><th></th></tr>
           </thead>
           <tbody></tbody>
         </table>
@@ -545,6 +591,60 @@
     </div>
   </section>
 
+  <!-- CARTÕES -->
+  <section class="view" id="view-cartoes">
+    <div class="view-header">
+      <div>
+        <h2>Cartões Presente</h2>
+        <p>Controle por unidade — cada taxa paga com cartão consome 1 do estoque, independente do turno.</p>
+      </div>
+    </div>
+
+    <div class="cards" style="margin-bottom:20px;">
+      <div class="card">
+        <div class="label">Total cadastrado</div>
+        <div class="value mono" id="cartaoStockTotal">0</div>
+        <div class="sub">cartões</div>
+      </div>
+      <div class="card">
+        <div class="label">Usados</div>
+        <div class="value mono" id="cartaoStockUsado">0</div>
+        <div class="sub">cartões</div>
+      </div>
+      <div class="card">
+        <div class="label">Disponíveis</div>
+        <div class="value mono" id="cartaoStockDisponivel">0</div>
+        <div class="sub">cartões</div>
+      </div>
+    </div>
+
+    <div class="box">
+      <h3>Adicionar cartões ao estoque</h3>
+      <form id="formCartao" class="form-grid">
+        <div>
+          <label>Quantidade de cartões</label>
+          <input type="number" step="1" min="1" id="cartaoQuantidade" class="mono" required>
+        </div>
+        <div>
+          <label>Observação (opcional)</label>
+          <input type="text" id="cartaoObs" placeholder="Ex: Lote de novembro">
+        </div>
+        <div>
+          <button type="submit" class="btn">Adicionar ao estoque</button>
+        </div>
+      </form>
+    </div>
+
+    <div class="box">
+      <h3>Histórico de lotes adicionados</h3>
+      <table id="tabelaCartoes">
+        <thead><tr><th>Data</th><th>Observação</th><th style="text-align:right;">Quantidade</th><th></th></tr></thead>
+        <tbody></tbody>
+      </table>
+      <div class="empty" id="cartoesEmpty" style="display:none;">Nenhum cartão cadastrado ainda.</div>
+    </div>
+  </section>
+
   <!-- CONFIG -->
   <section class="view" id="view-config">
     <div class="view-header">
@@ -598,7 +698,7 @@
 const STORAGE_KEY = "taxasControlApp_v1";
 
 function defaultState(){
-  return { setores: [], taxas: [], registros: [], config: { tetoMensal: 0, valor4h: 0, valor6h: 0 } };
+  return { setores: [], taxas: [], registros: [], cartoes: [], config: { tetoMensal: 0, valor4h: 0, valor6h: 0 } };
 }
 function loadState(){
   try{
@@ -610,8 +710,80 @@ function loadState(){
 }
 function saveState(){
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  if(stateDocRef){
+    isSavingRemote = true;
+    stateDocRef.set(state)
+      .catch(()=>{ setSyncStatus('off'); toast('Falha ao sincronizar — verifique a internet.'); })
+      .finally(()=>{ isSavingRemote = false; });
+  }
 }
 let state = loadState();
+
+/* ---------------- Firebase (sincronização entre dispositivos) ---------------- */
+// Cole aqui o objeto firebaseConfig que o Firebase te deu ao registrar o app web.
+const firebaseConfig = {
+  apiKey: "AIzaSyDhNk41m_EWUUqOsW1zrC5ORxgeWpZnAc0",
+  authDomain: "teste-20fcf.firebaseapp.com",
+  projectId: "teste-20fcf",
+  storageBucket: "teste-20fcf.firebasestorage.app",
+  messagingSenderId: "107570463610",
+  appId: "1:107570463610:web:fc07837b5c301a31214cc3"
+};
+
+let stateDocRef = null;
+let isSavingRemote = false;
+
+function setSyncStatus(status){
+  const el = document.getElementById('syncStatus');
+  if(!el) return;
+  el.className = 'sync-' + status;
+  if(status === 'ok') el.textContent = 'Sincronizado';
+  else if(status === 'off') el.textContent = 'Sem conexão — dados locais';
+  else if(status === 'local') el.textContent = 'Somente neste dispositivo';
+  else el.textContent = 'Conectando…';
+}
+
+function initFirebase(){
+  if(!firebaseConfig.apiKey || firebaseConfig.apiKey.startsWith('COLE_AQUI')){
+    setSyncStatus('local');
+    return;
+  }
+  try{
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+    db.enablePersistence().catch(()=>{});
+    stateDocRef = db.collection('taxasApp').doc('state');
+    stateDocRef.onSnapshot(docSnap=>{
+      if(docSnap.exists){
+        state = Object.assign(defaultState(), docSnap.data());
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      } else {
+        stateDocRef.set(state);
+      }
+      setSyncStatus('ok');
+      refreshAllViews();
+    }, ()=>{
+      setSyncStatus('off');
+    });
+  }catch(err){
+    console.error(err);
+    setSyncStatus('off');
+  }
+}
+
+function refreshAllViews(){
+  fillSetorSelects();
+  fillTaxaSelect();
+  fillEscCartaoSelect();
+  renderDashboard();
+  const activeBtn = document.querySelector('#nav button.active');
+  const v = activeBtn ? activeBtn.dataset.view : null;
+  if(v === 'escala') renderEscalaView();
+  if(v === 'taxas') renderTaxasView();
+  if(v === 'setores') renderSetoresView();
+  if(v === 'cartoes') renderCartoesView();
+  if(v === 'config') renderConfigView();
+}
 
 function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
 function brl(v){
@@ -659,6 +831,7 @@ navButtons.forEach(btn=>{
     if(btn.dataset.view === 'escala') renderEscalaView();
     if(btn.dataset.view === 'taxas') renderTaxasView();
     if(btn.dataset.view === 'setores') renderSetoresView();
+    if(btn.dataset.view === 'cartoes') renderCartoesView();
     if(btn.dataset.view === 'config') renderConfigView();
   });
 });
@@ -679,7 +852,7 @@ document.getElementById('simQtd6h').addEventListener('input', renderSimulacao);
 function renderSimulacao(){
   const month = currentMonthKey();
   const gastoMes = state.registros
-    .filter(r=>r.data && r.data.slice(0,7)===month)
+    .filter(r=>r.data && r.data.slice(0,7)===month && isPagamentoDinheiro(r))
     .reduce((a,r)=>a+Number(r.valor||0),0);
   const teto = Number(state.config.tetoMensal||0);
   const valor4h = Number(state.config.valor4h||0);
@@ -745,6 +918,13 @@ function fillTaxaSelect(){
   });
   if(current) sel.value = current;
 }
+function fillEscCartaoSelect(){
+  const info = document.getElementById('escCartaoInfo');
+  if(!info) return;
+  const disponivel = cartaoEstoqueDisponivel();
+  info.textContent = disponivel + ' cartão' + (disponivel===1?'':'ões') + ' disponível' + (disponivel===1?'':'eis');
+  info.style.color = disponivel <= 0 ? 'var(--danger)' : 'var(--warn)';
+}
 function setorNome(id){
   const s = state.setores.find(s=>s.id===id);
   return s ? s.nome : '—';
@@ -752,6 +932,18 @@ function setorNome(id){
 function taxaNome(id){
   const t = state.taxas.find(t=>t.id===id);
   return t ? t.nome : '—';
+}
+function cartaoEstoqueTotal(){
+  return state.cartoes.reduce((a,c)=>a+Number(c.quantidade||0),0);
+}
+function cartaoEstoqueUsado(){
+  return state.registros.filter(r=>r.formaPagamento==='cartao').length;
+}
+function cartaoEstoqueDisponivel(){
+  return cartaoEstoqueTotal() - cartaoEstoqueUsado();
+}
+function isPagamentoDinheiro(r){
+  return r.formaPagamento !== 'cartao';
 }
 
 /* ---------------- DASHBOARD ---------------- */
@@ -762,8 +954,8 @@ function renderDashboard(){
   document.getElementById('dashDateLabel').textContent =
     new Date().toLocaleDateString('pt-BR', {weekday:'long', day:'2-digit', month:'long', year:'numeric'});
 
-  const regsHoje = state.registros.filter(r=>r.data === today);
-  const regsMes = state.registros.filter(r=>r.data && r.data.slice(0,7) === month);
+  const regsHoje = state.registros.filter(r=>r.data === today && isPagamentoDinheiro(r));
+  const regsMes = state.registros.filter(r=>r.data && r.data.slice(0,7) === month && isPagamentoDinheiro(r));
 
   const gastoHoje = regsHoje.reduce((a,r)=>a+Number(r.valor||0),0);
   const gastoMes = regsMes.reduce((a,r)=>a+Number(r.valor||0),0);
@@ -823,7 +1015,7 @@ function renderDashboard(){
     regsPeriodo = regsHoje;
   } else if(sectorPeriod === 'semana'){
     const { start, end } = currentWeekRange();
-    regsPeriodo = state.registros.filter(r=> r.data && r.data >= start && r.data <= end);
+    regsPeriodo = state.registros.filter(r=> r.data && r.data >= start && r.data <= end && isPagamentoDinheiro(r));
   } else {
     regsPeriodo = regsMes;
   }
@@ -850,49 +1042,80 @@ function renderDashboard(){
   }
 
   renderSimulacao();
+  renderCartaoConsumo();
+}
+
+function renderCartaoConsumo(){
+  const total = cartaoEstoqueTotal();
+  const usado = cartaoEstoqueUsado();
+  const disponivel = total - usado;
+
+  document.getElementById('cartaoAtual').textContent = usado;
+  document.getElementById('cartaoTotal').textContent = total + ' cartões';
+  const pct = total > 0 ? Math.min(150, (usado/total)*100) : 0;
+  const fill = document.getElementById('cartaoFill');
+  fill.style.width = Math.min(100,pct) + '%';
+  fill.style.background = pct >= 100 ? 'var(--danger)' : (pct >= 80 ? 'var(--warn)' : 'var(--accent)');
+
+  const note = document.getElementById('cartaoNote');
+  if(total === 0){
+    note.textContent = 'Nenhum cartão presente cadastrado ainda.';
+    note.className = 'gauge-note';
+  } else if(disponivel <= 0){
+    note.textContent = 'Todos os cartões foram utilizados.';
+    note.className = 'gauge-note warn';
+  } else {
+    note.textContent = pct.toFixed(1) + '% já utilizado.';
+    note.className = 'gauge-note';
+  }
+
+  const wrap = document.getElementById('cartaoBreakdown');
+  if(total === 0){
+    wrap.innerHTML = '';
+  } else {
+    wrap.innerHTML = `
+      <div class="capacity-item"><div class="num">${usado}</div><div class="lbl">usados</div></div>
+      <div class="capacity-item"><div class="num">${disponivel}</div><div class="lbl">disponíveis</div></div>`;
+  }
 }
 
 /* ---------------- ESCALA ---------------- */
-function fillFiltroMes(){
-  const sel = document.getElementById('filtroMes');
-  const months = Array.from(new Set(state.registros.map(r=>r.data && r.data.slice(0,7)).filter(Boolean)));
-  const current = currentMonthKey();
-  if(!months.includes(current)) months.push(current);
-  months.sort().reverse();
-  const prev = sel.value;
-  sel.innerHTML = '';
-  months.forEach(m=>{
-    const opt = document.createElement('option');
-    opt.value = m;
-    const [y,mo] = m.split('-');
-    opt.textContent = new Date(y, mo-1, 1).toLocaleDateString('pt-BR', {month:'long', year:'numeric'});
-    sel.appendChild(opt);
-  });
-  sel.value = months.includes(prev) ? prev : current;
+function monthRange(monthKey){
+  const [y, m] = monthKey.split('-').map(Number);
+  const start = `${monthKey}-01`;
+  const lastDay = new Date(y, m, 0).getDate();
+  const end = `${monthKey}-${String(lastDay).padStart(2,'0')}`;
+  return { start, end };
 }
+function setDateRange(start, end){
+  document.getElementById('filtroDataInicio').value = start;
+  document.getElementById('filtroDataFim').value = end;
+}
+let escalaFiltroIniciado = false;
 
 function renderEscalaView(){
   fillSetorSelects();
   fillTaxaSelect();
-  fillFiltroMes();
+  fillEscCartaoSelect();
   if(!document.getElementById('escData').value) document.getElementById('escData').value = todayISO();
+  if(!escalaFiltroIniciado){
+    const { start, end } = monthRange(currentMonthKey());
+    setDateRange(start, end);
+    document.querySelectorAll('#quickFilters button').forEach(b=>b.classList.toggle('active', b.dataset.quick==='mes'));
+    escalaFiltroIniciado = true;
+  }
   autoFillValor();
   renderTabelaEscala();
 }
 
 function renderTabelaEscala(){
-  const mes = document.getElementById('filtroMes').value;
+  const dataInicio = document.getElementById('filtroDataInicio').value;
+  const dataFim = document.getElementById('filtroDataFim').value;
   const setorFiltro = document.getElementById('filtroSetorEscala').value;
-  const quando = document.getElementById('filtroQuando').value;
-  const hoje = todayISO();
-  const amanha = tomorrowISO();
   let regs = state.registros.filter(r=>{
-    if(mes && !(r.data && r.data.slice(0,7)===mes)) return false;
     if(setorFiltro && r.setorId !== setorFiltro) return false;
-    if(quando === 'hoje' && r.data !== hoje) return false;
-    if(quando === 'amanha' && r.data !== amanha) return false;
-    if(quando === 'futuro' && !(r.data > amanha)) return false;
-    if(quando === 'passado' && !(r.data < hoje)) return false;
+    if(dataInicio && (!r.data || r.data < dataInicio)) return false;
+    if(dataFim && (!r.data || r.data > dataFim)) return false;
     return true;
   });
   regs = regs.slice().sort((a,b)=> (b.data||'').localeCompare(a.data||''));
@@ -908,11 +1131,15 @@ function renderTabelaEscala(){
     const finalizarBtn = (!r.finalizado && r.data === todayISO())
       ? `<button class="icon-btn finalizar" data-finalizar="${r.id}">Finalizar</button>`
       : (r.finalizado ? `<button class="icon-btn" data-reverter="${r.id}">Reverter</button>` : '');
+    const pagamentoTxt = r.formaPagamento === 'cartao'
+      ? `<span class="tag" style="border-color:var(--warn); color:var(--warn); background:rgba(224,178,79,.08);">💳 Cartão presente</span>`
+      : `<span class="tag">💵 Dinheiro</span>`;
     tr.innerHTML = `
       <td>${formatData(r.data)}</td>
       <td><span class="tag">${setorNome(r.setorId)}</span></td>
       <td>${taxaNome(r.taxaId)}${badge}</td>
       <td>${r.turno}</td>
+      <td>${pagamentoTxt}</td>
       <td>${r.entrada||'—'}</td>
       <td>${r.saida||'—'}</td>
       <td class="amt">${brl(r.valor)}</td>
@@ -948,7 +1175,6 @@ function renderTabelaEscala(){
       if(!confirm(msg)) return;
       state.registros = state.registros.filter(r=>r.id !== b.dataset.del);
       saveState();
-      fillFiltroMes();
       renderTabelaEscala();
       renderDashboard();
       toast('Lançamento removido.');
@@ -998,11 +1224,23 @@ function autoFillValor(){
   }
 }
 
+document.getElementById('escPagamento').addEventListener('change', ()=>{
+  const isCartao = document.getElementById('escPagamento').value === 'cartao';
+  document.getElementById('escCartaoWrap').style.display = isCartao ? 'block' : 'none';
+  if(isCartao) fillEscCartaoSelect();
+});
+
 document.getElementById('formEscala').addEventListener('submit', e=>{
   e.preventDefault();
   if(state.taxas.length === 0){ toast('Cadastre uma taxa primeiro.'); return; }
   if(state.setores.length === 0){ toast('Cadastre um setor primeiro.'); return; }
   if(!state.config.valor4h && !state.config.valor6h){ toast('Defina os valores de turno em Configurações primeiro.'); return; }
+  const formaPagamento = document.getElementById('escPagamento').value;
+  const valor = Number(document.getElementById('escValor').value || 0);
+  if(formaPagamento === 'cartao' && cartaoEstoqueDisponivel() <= 0){
+    toast('Não há cartões disponíveis no estoque.');
+    return;
+  }
   const reg = {
     id: uid(),
     data: document.getElementById('escData').value,
@@ -1011,21 +1249,50 @@ document.getElementById('formEscala').addEventListener('submit', e=>{
     turno: document.getElementById('escTurno').value,
     entrada: document.getElementById('escEntrada').value,
     saida: document.getElementById('escSaida').value,
-    valor: Number(document.getElementById('escValor').value || 0)
+    valor: valor,
+    formaPagamento: formaPagamento
   };
   state.registros.push(reg);
   saveState();
   e.target.reset();
   document.getElementById('escData').value = todayISO();
-  fillFiltroMes();
+  document.getElementById('escCartaoWrap').style.display = 'none';
   renderTabelaEscala();
   renderDashboard();
   toast('Lançamento adicionado à escala.');
 });
 
-document.getElementById('filtroMes').addEventListener('change', renderTabelaEscala);
-document.getElementById('filtroQuando').addEventListener('change', renderTabelaEscala);
+document.getElementById('filtroDataInicio').addEventListener('change', ()=>{
+  document.querySelectorAll('#quickFilters button').forEach(b=>b.classList.remove('active'));
+  renderTabelaEscala();
+});
+document.getElementById('filtroDataFim').addEventListener('change', ()=>{
+  document.querySelectorAll('#quickFilters button').forEach(b=>b.classList.remove('active'));
+  renderTabelaEscala();
+});
 document.getElementById('filtroSetorEscala').addEventListener('change', renderTabelaEscala);
+
+document.getElementById('quickFilters').addEventListener('click', (e)=>{
+  const btn = e.target.closest('button[data-quick]');
+  if(!btn) return;
+  const hoje = todayISO();
+  if(btn.dataset.quick === 'hoje'){
+    setDateRange(hoje, hoje);
+  } else if(btn.dataset.quick === 'amanha'){
+    const a = tomorrowISO();
+    setDateRange(a, a);
+  } else if(btn.dataset.quick === 'semana'){
+    const { start, end } = currentWeekRange();
+    setDateRange(start, end);
+  } else if(btn.dataset.quick === 'mes'){
+    const { start, end } = monthRange(currentMonthKey());
+    setDateRange(start, end);
+  } else if(btn.dataset.quick === 'todos'){
+    setDateRange('', '');
+  }
+  document.querySelectorAll('#quickFilters button').forEach(b=>b.classList.toggle('active', b===btn));
+  renderTabelaEscala();
+});
 
 /* ---------------- TAXAS ---------------- */
 function renderTaxasView(){
@@ -1108,6 +1375,63 @@ document.getElementById('formSetor').addEventListener('submit', e=>{
   toast('Setor cadastrado.');
 });
 
+/* ---------------- CARTÕES ---------------- */
+function renderCartoesView(){
+  renderTabelaCartoes();
+  const total = cartaoEstoqueTotal();
+  const usado = cartaoEstoqueUsado();
+  document.getElementById('cartaoStockTotal').textContent = total;
+  document.getElementById('cartaoStockUsado').textContent = usado;
+  document.getElementById('cartaoStockDisponivel').textContent = total - usado;
+}
+function renderTabelaCartoes(){
+  const tbody = document.querySelector('#tabelaCartoes tbody');
+  tbody.innerHTML = '';
+  document.getElementById('cartoesEmpty').style.display = state.cartoes.length ? 'none' : 'block';
+  const lotes = state.cartoes.slice().sort((a,b)=> (b.data||'').localeCompare(a.data||''));
+  lotes.forEach(c=>{
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${formatData(c.data)}</td>
+      <td>${c.obs || '—'}</td>
+      <td class="amt">${c.quantidade}</td>
+      <td><div class="row-actions"><button class="icon-btn" data-del="${c.id}">Excluir</button></div></td>`;
+    tbody.appendChild(tr);
+  });
+  tbody.querySelectorAll('[data-del]').forEach(b=>{
+    b.addEventListener('click', ()=>{
+      const lote = state.cartoes.find(c=>c.id===b.dataset.del);
+      if(!lote) return;
+      const disponivel = cartaoEstoqueDisponivel();
+      const msg = disponivel < lote.quantidade
+        ? `Remover este lote de ${lote.quantidade} cartões pode deixar o estoque negativo (só há ${disponivel} disponíveis agora). Excluir mesmo assim?`
+        : `Excluir este lote de ${lote.quantidade} cartões?`;
+      if(!confirm(msg)) return;
+      state.cartoes = state.cartoes.filter(c=>c.id !== b.dataset.del);
+      saveState();
+      renderCartoesView();
+      fillEscCartaoSelect();
+      renderDashboard();
+      toast('Lote removido.');
+    });
+  });
+}
+document.getElementById('formCartao').addEventListener('submit', e=>{
+  e.preventDefault();
+  state.cartoes.push({
+    id: uid(),
+    quantidade: Number(document.getElementById('cartaoQuantidade').value||0),
+    obs: document.getElementById('cartaoObs').value.trim(),
+    data: todayISO()
+  });
+  saveState();
+  e.target.reset();
+  renderCartoesView();
+  fillEscCartaoSelect();
+  renderDashboard();
+  toast('Cartões adicionados ao estoque.');
+});
+
 /* ---------------- CONFIG ---------------- */
 function renderConfigView(){
   document.getElementById('configTeto').value = state.config.tetoMensal || '';
@@ -1141,6 +1465,9 @@ document.getElementById('importFile').addEventListener('change', (e)=>{
       state = Object.assign(defaultState(), imported);
       saveState();
       toast('Backup importado com sucesso.');
+      fillSetorSelects();
+      fillTaxaSelect();
+      fillEscCartaoSelect();
       renderDashboard();
     }catch(err){
       toast('Arquivo inválido.');
@@ -1150,14 +1477,16 @@ document.getElementById('importFile').addEventListener('change', (e)=>{
   e.target.value = '';
 });
 document.getElementById('btnReset').addEventListener('click', ()=>{
-  if(confirm('Isso vai apagar todos os setores, taxas e lançamentos deste dispositivo. Continuar?')){
+  if(confirm('Isso vai apagar todos os setores, taxas, cartões e lançamentos deste dispositivo. Continuar?')){
     state = defaultState();
     saveState();
     renderDashboard();
     fillSetorSelects();
     fillTaxaSelect();
+    fillEscCartaoSelect();
     renderTabelaSetores();
     renderTabelaTaxas();
+    renderTabelaCartoes();
     toast('Todos os dados foram apagados.');
   }
 });
@@ -1185,7 +1514,9 @@ if('serviceWorker' in navigator){
 /* ---------------- Inicialização ---------------- */
 fillSetorSelects();
 fillTaxaSelect();
+fillEscCartaoSelect();
 renderDashboard();
+initFirebase();
 
 setInterval(()=>{
   const view = document.getElementById('view-escala');
