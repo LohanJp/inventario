@@ -25,6 +25,11 @@ self.addEventListener("activate", (event) => {
 });
 
 self.addEventListener("fetch", (event) => {
+  // Não intercepta requisições de outra origem (Firebase/Firestore, Google Fonts, etc.)
+  // para não atrapalhar a conexão em tempo real do banco de dados compartilhado.
+  if (new URL(event.request.url).origin !== self.location.origin) {
+    return;
+  }
   event.respondWith(
     caches.match(event.request).then((cached) => {
       if (cached) return cached;
