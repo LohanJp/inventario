@@ -1,0 +1,1272 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Inventário Scanner</title>
+
+  <!-- PWA -->
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#0f0f0f" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Inventário" />
+  <link rel="apple-touch-icon" href="icon-192.png" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --gold:       #f0b429;
+      --gold-dim:   rgba(240,180,41,0.15);
+      --green:      #2a9d8f;
+      --green-dim:  rgba(42,157,143,0.15);
+      --bg:         #0f0f0f;
+      --surface:    #1a1a1a;
+      --border:     #222;
+      --border-lit: #333;
+      --text:       #e8e3d8;
+      --text-muted: #888;
+      --text-dim:   #444;
+      --red:        #ff6b6b;
+      --red-dim:    #3a2020;
+    }
+
+    html, body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'IBM Plex Mono', monospace;
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── Header ── */
+    #header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 20px 12px;
+      border-bottom: 1px solid var(--border);
+      gap: 10px;
+    }
+    #header-left { flex: 1; min-width: 0; }
+    #header .label {
+      font-size: 0.6rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      margin-bottom: 3px;
+    }
+    #header h1 { font-size: 1.25rem; font-weight: 700; letter-spacing: 0.02em; }
+    #lock-badge {
+      display: none;
+      align-items: center;
+      gap: 6px;
+      background: rgba(42,157,143,0.12);
+      border: 1px solid rgba(42,157,143,0.35);
+      border-radius: 6px;
+      padding: 5px 10px;
+      white-space: nowrap;
+    }
+    #lock-badge .lock-icon { font-size: 0.9rem; }
+    #lock-badge .lock-text {
+      font-size: 0.58rem;
+      color: var(--green);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      line-height: 1.2;
+    }
+    #lock-badge .lock-count {
+      font-size: 0.65rem;
+      color: var(--green);
+      font-weight: 700;
+    }
+    #header-right {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 2px;
+      flex-shrink: 0;
+    }
+    #counter-label {
+      font-size: 0.58rem;
+      color: var(--text-dim);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+    #counter {
+      font-size: 1.9rem;
+      font-weight: 700;
+      color: var(--text-dim);
+      line-height: 1;
+      transition: color 0.3s;
+    }
+    #counter.active { color: var(--gold); }
+
+    .section-label {
+      font-size: 0.6rem;
+      color: var(--text-dim);
+      letter-spacing: 0.13em;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+
+    /* ── Carga banner ── */
+    #carga-bar {
+      display: none;
+      margin: 12px 20px 0;
+      padding: 10px 14px;
+      background: rgba(42,157,143,0.08);
+      border: 1px solid rgba(42,157,143,0.25);
+      border-radius: 8px;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    #carga-bar-info { flex: 1; min-width: 0; }
+    #carga-bar-title {
+      font-size: 0.6rem;
+      color: var(--green);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      margin-bottom: 2px;
+    }
+    #carga-bar-name {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    #btn-carga-clear {
+      background: none;
+      border: 1px solid var(--red-dim);
+      color: var(--red);
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.65rem;
+      padding: 5px 9px;
+      border-radius: 5px;
+      cursor: pointer;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    #btn-carga-clear:hover { border-color: var(--red); }
+
+    /* ── Camera ── */
+    #camera-section { padding: 16px 20px 0; }
+
+    #camera-shell {
+      position: relative;
+      background: #000;
+      border-radius: 10px;
+      overflow: hidden;
+      border: 2px solid var(--border);
+      transition: border-color 0.3s;
+    }
+    #camera-shell.active { border-color: var(--gold); }
+
+    #qr-reader { width: 100%; }
+    #qr-reader__dashboard,
+    #qr-reader__status_span,
+    #qr-reader__camera_permission_button,
+    #qr-reader__filescan_input { display: none !important; }
+    #qr-reader video { border-radius: 8px; display: block; }
+
+    #cam-badge-top {
+      display: none;
+      position: absolute;
+      top: 8px; left: 0; right: 0;
+      justify-content: center;
+      pointer-events: none;
+      z-index: 10;
+    }
+    #cam-badge-top span {
+      background: rgba(0,0,0,0.65);
+      color: var(--gold);
+      font-size: 0.58rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      padding: 4px 12px;
+      border-radius: 20px;
+    }
+    #cam-badge-bottom {
+      display: none;
+      position: absolute;
+      bottom: 8px; left: 0; right: 0;
+      justify-content: center;
+      pointer-events: none;
+      z-index: 10;
+    }
+    #cam-badge-bottom span {
+      background: rgba(240,180,41,0.18);
+      color: var(--gold);
+      border: 1px solid rgba(240,180,41,0.4);
+      font-size: 0.7rem;
+      letter-spacing: 0.05em;
+      padding: 4px 14px;
+      border-radius: 20px;
+      max-width: 90%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    #cam-spinner {
+      display: none;
+      position: absolute;
+      inset: 0;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: #0a0a0a;
+      gap: 12px;
+      z-index: 20;
+    }
+    .spinner-ring {
+      width: 28px; height: 28px;
+      border: 3px solid #222;
+      border-top-color: var(--gold);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    #cam-spinner span {
+      color: var(--text-dim);
+      font-size: 0.7rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+    #cam-error {
+      display: none;
+      margin: 8px 0 0;
+      padding: 12px 14px;
+      background: #1e0f0f;
+      border: 1px solid #3a1515;
+      border-radius: 6px;
+      color: var(--red);
+      font-size: 0.78rem;
+      line-height: 1.5;
+    }
+    #btn-camera {
+      margin-top: 10px;
+      width: 100%;
+      background: var(--surface);
+      color: var(--gold);
+      border: 2px solid #3a2e00;
+      font-family: 'IBM Plex Mono', monospace;
+      font-weight: 600;
+      font-size: 0.88rem;
+      letter-spacing: 0.08em;
+      padding: 13px 20px;
+      border-radius: 6px;
+      cursor: pointer;
+      text-transform: uppercase;
+      transition: border-color 0.2s, color 0.2s;
+    }
+    #btn-camera.stop { color: var(--red); border-color: var(--red-dim); }
+    #btn-camera:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    /* ── Divider ── */
+    #divider {
+      margin: 14px 20px;
+      border-top: 1px dashed var(--border);
+      position: relative;
+    }
+    #divider span {
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%,-50%);
+      background: var(--bg);
+      padding: 0 10px;
+      font-size: 0.58rem;
+      color: var(--text-dim);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    /* ── Inputs ── */
+    #input-section { padding: 0 20px 14px; }
+    .input-row {
+      display: grid;
+      grid-template-columns: 1fr 110px;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    .field-label {
+      font-size: 0.6rem;
+      color: var(--text-dim);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      margin-bottom: 5px;
+    }
+    .scanner-input {
+      background: var(--surface);
+      border: 2px solid var(--border-lit);
+      color: var(--text);
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 1.05rem;
+      padding: 13px 14px;
+      border-radius: 6px;
+      outline: none;
+      width: 100%;
+      transition: border-color 0.15s;
+      letter-spacing: 0.05em;
+      -webkit-appearance: none;
+    }
+    .scanner-input:focus { border-color: var(--gold); }
+    .scanner-input::placeholder { color: #444; }
+    #qty-input { text-align: right; }
+
+    /* ── Product info box (shown after scan/lookup) ── */
+    #product-info {
+      display: none;
+      margin-bottom: 10px;
+      padding: 10px 13px;
+      background: rgba(42,157,143,0.07);
+      border: 1px solid rgba(42,157,143,0.22);
+      border-radius: 6px;
+    }
+    #product-name {
+      font-size: 0.8rem;
+      color: var(--green);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-bottom: 2px;
+    }
+    #product-price {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      letter-spacing: 0.04em;
+    }
+
+    /* ── Buttons ── */
+    .btn-primary {
+      background: var(--gold);
+      color: #0f0f0f;
+      font-family: 'IBM Plex Mono', monospace;
+      font-weight: 700;
+      font-size: 1rem;
+      padding: 17px 24px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      width: 100%;
+      min-height: 54px;
+      transition: background 0.15s, transform 0.1s;
+    }
+    .btn-primary:hover { background: #ffc53d; }
+    .btn-primary:active { transform: scale(0.97); }
+
+    /* ── Carga button row ── */
+    #carga-row {
+      padding: 0 20px 14px;
+    }
+    #btn-carga {
+      width: 100%;
+      background: transparent;
+      color: var(--green);
+      border: 2px solid rgba(42,157,143,0.3);
+      font-family: 'IBM Plex Mono', monospace;
+      font-weight: 600;
+      font-size: 0.88rem;
+      letter-spacing: 0.08em;
+      padding: 13px 20px;
+      border-radius: 6px;
+      cursor: pointer;
+      text-transform: uppercase;
+      transition: border-color 0.2s;
+    }
+    #btn-carga:hover { border-color: var(--green); }
+
+    /* ── Action rows ── */
+    #action-row {
+      padding: 0 20px 14px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    #action-row2 {
+      padding: 0 20px 14px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    .btn-secondary {
+      background: transparent;
+      color: var(--text);
+      font-family: 'IBM Plex Mono', monospace;
+      font-weight: 600;
+      font-size: 0.82rem;
+      padding: 13px 10px;
+      border: 2px solid var(--border-lit);
+      border-radius: 6px;
+      cursor: pointer;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      min-height: 52px;
+      transition: border-color 0.15s;
+      line-height: 1.2;
+    }
+    .btn-secondary:hover { border-color: var(--text); }
+    .btn-secondary:disabled { opacity: 0.3; cursor: not-allowed; }
+
+    .btn-danger {
+      background: transparent;
+      color: var(--red);
+      font-family: 'IBM Plex Mono', monospace;
+      font-weight: 600;
+      font-size: 0.82rem;
+      padding: 13px 10px;
+      border: 2px solid var(--red-dim);
+      border-radius: 6px;
+      cursor: pointer;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      min-height: 52px;
+      transition: border-color 0.15s;
+      line-height: 1.2;
+    }
+    .btn-danger:hover { border-color: var(--red); }
+    .btn-danger:disabled { opacity: 0.3; cursor: not-allowed; }
+
+    .btn-teal {
+      background: transparent;
+      color: var(--green);
+      font-family: 'IBM Plex Mono', monospace;
+      font-weight: 600;
+      font-size: 0.82rem;
+      padding: 13px 10px;
+      border: 2px solid rgba(42,157,143,0.3);
+      border-radius: 6px;
+      cursor: pointer;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      min-height: 52px;
+      transition: border-color 0.15s;
+      line-height: 1.2;
+    }
+    .btn-teal:hover { border-color: var(--green); }
+    .btn-teal:disabled { opacity: 0.3; cursor: not-allowed; }
+
+    /* ── Table ── */
+    #list-section { padding: 0 20px 32px; }
+    #list-box { border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+
+    /* ── Pagination tabs ── */
+    #page-tabs {
+      display: none;
+      overflow-x: auto;
+      white-space: nowrap;
+      padding: 0 20px 10px;
+      gap: 6px;
+      scrollbar-width: none;
+    }
+    #page-tabs::-webkit-scrollbar { display: none; }
+    .page-tab {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      background: var(--surface);
+      border: 2px solid var(--border-lit);
+      color: var(--text-muted);
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      padding: 6px 13px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: border-color 0.15s, color 0.15s;
+      white-space: nowrap;
+    }
+    .page-tab:hover { border-color: var(--text-muted); color: var(--text); }
+    .page-tab.active { border-color: var(--gold); color: var(--gold); background: rgba(240,180,41,0.08); }
+    .page-tab .tab-count {
+      font-size: 0.6rem;
+      background: var(--border-lit);
+      color: var(--text-dim);
+      padding: 1px 5px;
+      border-radius: 10px;
+    }
+    .page-tab.active .tab-count { background: rgba(240,180,41,0.2); color: var(--gold); }
+
+    #list-header {
+      display: grid;
+      grid-template-columns: 110px 1fr 62px 58px 30px;
+      padding: 9px 14px;
+      background: #141414;
+      border-bottom: 1px solid var(--border);
+      gap: 5px;
+    }
+    #list-header span {
+      font-size: 0.58rem;
+      color: var(--text-dim);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+    #list-header span:nth-child(3),
+    #list-header span:nth-child(4) { text-align: right; }
+
+    #list-body { max-height: 360px; overflow-y: auto; }
+
+    #list-empty {
+      padding: 36px 14px;
+      text-align: center;
+      color: #2a2a2a;
+      font-size: 0.8rem;
+      letter-spacing: 0.05em;
+    }
+
+    .list-row {
+      display: grid;
+      grid-template-columns: 110px 1fr 62px 58px 30px;
+      padding: 9px 14px;
+      border-bottom: 1px solid #181818;
+      align-items: center;
+      gap: 5px;
+      transition: background 0.15s;
+    }
+    .list-row:nth-child(even) { background: rgba(255,255,255,0.025); }
+    .list-row:hover { background: rgba(240,180,41,0.06); }
+
+    .row-code {
+      font-size: 0.8rem;
+      letter-spacing: 0.03em;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      color: var(--text-muted);
+    }
+    .list-row.new .row-code { color: var(--gold); }
+    .list-row.updated .row-code { color: var(--green); }
+
+    .row-name {
+      font-size: 0.75rem;
+      color: var(--text-dim);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      letter-spacing: 0.02em;
+    }
+    .list-row.new .row-name,
+    .list-row.updated .row-name { color: var(--text-muted); }
+
+    .row-price {
+      font-size: 0.75rem;
+      text-align: right;
+      color: var(--text-dim);
+      letter-spacing: 0.02em;
+      white-space: nowrap;
+    }
+    .list-row.new .row-price,
+    .list-row.updated .row-price { color: var(--text-muted); }
+
+    .row-qty {
+      font-size: 0.82rem;
+      text-align: right;
+      color: var(--text);
+      letter-spacing: 0.03em;
+    }
+
+    .btn-del {
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: #3a2020;
+      font-size: 0.9rem;
+      line-height: 1;
+      padding: 4px;
+      border-radius: 4px;
+      transition: color 0.15s, background 0.15s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+      font-family: 'IBM Plex Mono', monospace;
+    }
+    .btn-del:hover { color: var(--red); background: rgba(255,107,107,0.12); }
+
+    /* ── Badges ── */
+    .badge {
+      display: inline-block;
+      background: var(--gold);
+      color: #0f0f0f;
+      font-size: 0.55rem;
+      font-weight: 700;
+      padding: 2px 5px;
+      border-radius: 20px;
+      letter-spacing: 0.04em;
+      margin-left: 5px;
+      vertical-align: middle;
+    }
+    .badge-sum { background: var(--green); color: #fff; }
+
+    /* ── Animations ── */
+    @keyframes flashRow {
+      0%   { background: rgba(240,180,41,0.22); }
+      100% { background: transparent; }
+    }
+    @keyframes flashGreen {
+      0%   { background: rgba(42,157,143,0.25); }
+      100% { background: transparent; }
+    }
+    .flash-anim      { animation: flashRow   0.5s ease forwards; }
+    .flash-anim-sum  { animation: flashGreen 0.5s ease forwards; }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    ::-webkit-scrollbar { width: 5px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: #2a2a2a; border-radius: 3px; }
+
+    /* hidden file input */
+    #file-input { display: none; }
+  </style>
+</head>
+<body>
+
+  <input type="file" id="file-input" accept=".txt,.TXT" onchange="handleFileLoad(event)" />
+
+  <!-- Header -->
+  <div id="header">
+    <div id="header-left">
+      <div class="label" id="header-label" style="color: var(--gold)">▸ Scanner Ativo</div>
+      <h1>INVENTÁRIO</h1>
+    </div>
+    <div id="lock-badge">
+      <span class="lock-icon">🔒</span>
+      <div>
+        <div class="lock-text">Carga ativa</div>
+        <div class="lock-count" id="lock-count">0 produtos</div>
+      </div>
+    </div>
+    <div id="header-right">
+      <div id="counter-label">Capturados</div>
+      <div id="counter">000</div>
+    </div>
+  </div>
+
+  <!-- Carga active banner -->
+  <div id="carga-bar">
+    <div id="carga-bar-info">
+      <div id="carga-bar-title">📦 Carga carregada</div>
+      <div id="carga-bar-name">—</div>
+    </div>
+    <button id="btn-carga-clear" onclick="clearMasterData()">✕ Remover</button>
+  </div>
+
+  <!-- Camera -->
+  <div id="camera-section">
+    <div class="section-label">Leitor de câmera</div>
+    <div id="camera-shell">
+      <div id="qr-reader"></div>
+      <div id="cam-badge-top"><span>● CÂMERA ATIVA</span></div>
+      <div id="cam-badge-bottom"><span id="last-code-label"></span></div>
+      <div id="cam-spinner">
+        <div class="spinner-ring"></div>
+        <span>Iniciando câmera…</span>
+      </div>
+    </div>
+    <div id="cam-error"></div>
+    <button id="btn-camera" onclick="toggleCamera()">◉ Ativar Câmera</button>
+  </div>
+
+  <!-- Divider -->
+  <div id="divider"><span>ou digitar</span></div>
+
+  <!-- Inputs -->
+  <div id="input-section">
+    <!-- Product info (appears when master data match found) -->
+    <div id="product-info">
+      <div id="product-name">—</div>
+      <div id="product-price">—</div>
+    </div>
+
+    <div class="input-row">
+      <div>
+        <div class="field-label">Código de barras</div>
+        <input id="barcode-input" class="scanner-input"
+          placeholder="Escanear ou digitar…"
+          autocomplete="off" autocorrect="off" spellcheck="false"
+          onkeydown="handleBarcodeKey(event)"
+          oninput="handleBarcodeInput()" />
+      </div>
+      <div>
+        <div class="field-label">Qtd.</div>
+        <input id="qty-input" class="scanner-input"
+          placeholder="1" type="number" step="any" min="0"
+          onkeydown="handleQtyKey(event)" />
+      </div>
+    </div>
+    <button class="btn-primary" onclick="addItem()">+ Adicionar Item</button>
+  </div>
+
+  <!-- Carga button -->
+  <div id="carga-row">
+    <button id="btn-carga" onclick="document.getElementById('file-input').click()">
+      📦 Carga — Carregar PRODUTO.TXT
+    </button>
+  </div>
+
+  <!-- Actions row 1: exports -->
+  <div id="action-row">
+    <button id="btn-coleta" class="btn-secondary" onclick="generateColetaCega()" disabled>↓ Coleta Cega</button>
+    <button id="btn-inv"    class="btn-teal"      onclick="generateInventario()"  disabled>↓ Inventário</button>
+  </div>
+
+  <!-- Actions row 2: clear -->
+  <div id="action-row2">
+    <button id="btn-clear" class="btn-danger" onclick="clearList()" disabled style="grid-column: 1 / -1;">✕ Limpar Tudo</button>
+  </div>
+
+  <!-- Pagination tabs -->
+  <div id="page-tabs"></div>
+
+  <!-- List -->
+  <div id="list-section">
+    <div id="list-box">
+      <div id="list-header">
+        <span>Código</span>
+        <span>Produto</span>
+        <span>Valor</span>
+        <span>Qtd.</span>
+        <span></span>
+      </div>
+      <div id="list-body">
+        <div id="list-empty">— nenhum item capturado —</div>
+      </div>
+    </div>
+  </div>
+
+<script>
+  /* ═══════════════════════════════════════
+     STORAGE KEYS
+  ═══════════════════════════════════════ */
+  const SK_ITEMS  = 'inventario_items_v1';
+  const SK_MASTER = 'inventario_master_v1';
+  const SK_MNAME  = 'inventario_master_name_v1';
+
+  /* ═══════════════════════════════════════
+     STATE
+  ═══════════════════════════════════════ */
+  let items = [];
+  try { const s = localStorage.getItem(SK_ITEMS);  if (s) items = JSON.parse(s); } catch(_) {}
+
+  // masterData: Map<code(string) → { name, price }>
+  let masterData = new Map();
+  let masterFileName = '';
+  try {
+    const s = localStorage.getItem(SK_MASTER);
+    if (s) masterData = new Map(JSON.parse(s));
+    masterFileName = localStorage.getItem(SK_MNAME) || '';
+  } catch(_) {}
+
+  let scannerInstance = null;
+  let cameraState = 'idle';
+  let cooldown = false;
+
+  /* ═══════════════════════════════════════
+     PERSISTENCE
+  ═══════════════════════════════════════ */
+  function saveItems()  { try { localStorage.setItem(SK_ITEMS, JSON.stringify(items)); } catch(_) {} }
+  function saveMaster() {
+    try {
+      localStorage.setItem(SK_MASTER, JSON.stringify([...masterData]));
+      localStorage.setItem(SK_MNAME, masterFileName);
+    } catch(_) {}
+  }
+
+  /* ═══════════════════════════════════════
+     HELPERS
+  ═══════════════════════════════════════ */
+  function formatQty(value) {
+    const n = parseFloat(value);
+    return (isNaN(n) || value === '' || value === null) ? (1).toFixed(3) : n.toFixed(3);
+  }
+  function vibrate() { try { navigator.vibrate && navigator.vibrate(120); } catch(_) {} }
+  function escHtml(s) {
+    return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+  function focusBarcode() { document.getElementById('barcode-input').focus(); }
+  function focusQty() { const q = document.getElementById('qty-input'); q.focus(); q.select(); }
+
+  function today() { return new Date().toISOString().slice(0,10); }
+
+  /* ═══════════════════════════════════════
+     MASTER DATA LOAD — parse PRODUTO.TXT
+     Layout: [0-13]  code  (13 chars)
+             [13-33] name  (20 chars, trimmed)
+             [33-]   price (remainder, trimmed)
+  ═══════════════════════════════════════ */
+  function parseProdutoTxt(text, fileName) {
+    const lines = text.split(/\r?\n/);
+    const map = new Map();
+    let ok = 0;
+
+    for (const raw of lines) {
+      if (raw.length < 14) continue; // too short to hold code + anything
+
+      const code  = raw.substring(0, 13).trim();
+      const name  = raw.length > 13 ? raw.substring(13, 33).trim() : '';
+      const price = raw.length > 33 ? raw.substring(33).trim()     : '';
+
+      if (!code) continue;
+      map.set(code, { name: name || '—', price: price || '' });
+      ok++;
+    }
+
+    if (ok === 0) {
+      alert('Nenhum produto válido encontrado no arquivo.\n\nVerifique o formato: 13 chars código | 20 chars nome | restante preço.');
+      return;
+    }
+
+    masterData = map;
+    masterFileName = fileName;
+    saveMaster();
+    updateMasterUI();
+    alert('✅ Carga carregada com sucesso!\n' + ok + ' produto(s) importado(s).');
+  }
+
+  function handleFileLoad(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    event.target.value = ''; // reset so same file can be reloaded
+    const reader = new FileReader();
+    reader.onload = function(e) { parseProdutoTxt(e.target.result, file.name); };
+    reader.readAsText(file, 'latin1'); // common encoding for Brazilian ERP exports
+  }
+
+  function clearMasterData() {
+    if (!confirm('Remover a carga atual?\n\nO modo blindado será desativado.')) return;
+    masterData = new Map();
+    masterFileName = '';
+    try { localStorage.removeItem(SK_MASTER); localStorage.removeItem(SK_MNAME); } catch(_) {}
+    updateMasterUI();
+    hideProductInfo();
+  }
+
+  /* Pad a raw code to 13 digits with leading zeros */
+  function padCode(raw) {
+    const s = String(raw || '').trim();
+    return s.length < 13 ? s.padStart(13, '0') : s;
+  }
+
+  /* look up a code (auto-pads to 13 digits); returns { name, price } or null */
+  function lookupCode(rawCode) {
+    if (masterData.size === 0) return null;
+    const code = padCode(rawCode);
+    return masterData.get(code) || null;
+  }
+
+  /* ═══════════════════════════════════════
+     UI UPDATES
+  ═══════════════════════════════════════ */
+  function updateMasterUI() {
+    const hasMaster = masterData.size > 0;
+    const lockBadge = document.getElementById('lock-badge');
+    const cargaBar  = document.getElementById('carga-bar');
+
+    lockBadge.style.display = hasMaster ? 'flex' : 'none';
+    document.getElementById('lock-count').textContent = masterData.size + ' produtos';
+
+    cargaBar.style.display = hasMaster ? 'flex' : 'none';
+    document.getElementById('carga-bar-name').textContent = masterFileName || 'PRODUTO.TXT';
+
+    // Update header label color
+    const label = document.getElementById('header-label');
+    label.style.color = hasMaster ? 'var(--green)' : 'var(--gold)';
+    label.textContent = hasMaster ? '🔒 Modo Blindado' : '▸ Scanner Ativo';
+  }
+
+  function updateUI() {
+    const counter = document.getElementById('counter');
+    counter.textContent = String(items.length).padStart(3, '0');
+    counter.classList.toggle('active', items.length > 0);
+    const dis = items.length === 0;
+    document.getElementById('btn-coleta').disabled = dis;
+    document.getElementById('btn-inv').disabled    = dis;
+    document.getElementById('btn-clear').disabled  = dis;
+  }
+
+  function showProductInfo(name, price) {
+    const box = document.getElementById('product-info');
+    document.getElementById('product-name').textContent  = name  || '—';
+    document.getElementById('product-price').textContent = price ? 'R$ ' + price : '';
+    box.style.display = 'block';
+  }
+
+  function hideProductInfo() {
+    document.getElementById('product-info').style.display = 'none';
+    document.getElementById('product-name').textContent   = '—';
+    document.getElementById('product-price').textContent  = '—';
+  }
+
+  /* Called when barcode field changes (typed or auto-filled) */
+  function handleBarcodeInput() {
+    const raw = document.getElementById('barcode-input').value.trim();
+    if (!raw) { hideProductInfo(); return; }
+    if (masterData.size > 0) {
+      const found = lookupCode(raw); // pads automatically
+      if (found) showProductInfo(found.name, found.price);
+      else hideProductInfo();
+    }
+  }
+
+  /* ═══════════════════════════════════════
+     FLASH
+  ═══════════════════════════════════════ */
+  function flashRow(el, type) {
+    const cls = type === 'sum' ? 'flash-anim-sum' : 'flash-anim';
+    el.classList.remove('flash-anim', 'flash-anim-sum');
+    void el.offsetWidth;
+    el.classList.add(cls);
+    setTimeout(() => el.classList.remove(cls), 500);
+  }
+
+  /* ═══════════════════════════════════════
+     PAGINATION
+  ═══════════════════════════════════════ */
+  const PAGE_SIZE = 50;
+  let currentPage = 0; // 0-based index
+
+  function totalPages() { return Math.max(1, Math.ceil(items.length / PAGE_SIZE)); }
+
+  function renderTabs() {
+    const tabsEl = document.getElementById('page-tabs');
+    const pages  = totalPages();
+
+    if (pages <= 1) { tabsEl.style.display = 'none'; return; }
+
+    tabsEl.style.display = 'flex';
+    tabsEl.innerHTML = '';
+
+    // Clamp currentPage
+    if (currentPage >= pages) currentPage = pages - 1;
+
+    for (let p = 0; p < pages; p++) {
+      const start = p * PAGE_SIZE;
+      const end   = Math.min(start + PAGE_SIZE, items.length);
+      const count = end - start;
+
+      const btn = document.createElement('button');
+      btn.className = 'page-tab' + (p === currentPage ? ' active' : '');
+      btn.innerHTML = 'Aba ' + (p + 1) + ' <span class="tab-count">' + count + '</span>';
+      btn.onclick = (function(pg) { return function() { currentPage = pg; renderList(-1); }; })(p);
+      tabsEl.appendChild(btn);
+    }
+
+    // Scroll active tab into view
+    const activeBtn = tabsEl.querySelector('.page-tab.active');
+    if (activeBtn) activeBtn.scrollIntoView({ inline: 'nearest', block: 'nearest' });
+  }
+
+  /* ═══════════════════════════════════════
+     LIST RENDER  (paginated)
+  ═══════════════════════════════════════ */
+  function renderList(highlightIndex, highlightMode) {
+    const body = document.getElementById('list-body');
+    const mode = highlightMode || 'new';
+
+    renderTabs();
+
+    if (items.length === 0) {
+      body.innerHTML = '<div id="list-empty">— nenhum item capturado —</div>';
+      return;
+    }
+    body.innerHTML = '';
+
+    // Items newest-first, then slice for current page
+    const reversed = [];
+    for (let i = items.length - 1; i >= 0; i--) reversed.push({ item: items[i], origIdx: i });
+
+    const start    = currentPage * PAGE_SIZE;
+    const pageRows = reversed.slice(start, start + PAGE_SIZE);
+
+    for (const { item, origIdx } of pageRows) {
+      const isHit     = (origIdx === highlightIndex);
+      const isUpdated = isHit && mode === 'updated';
+      const isNew     = isHit && mode === 'new';
+
+      const row = document.createElement('div');
+      row.className = 'list-row' + (isNew ? ' new' : '') + (isUpdated ? ' updated' : '');
+
+      let badge = '';
+      if (isNew)     badge = '<span class="badge">novo</span>';
+      if (isUpdated) badge = '<span class="badge badge-sum">+soma</span>';
+
+      row.innerHTML =
+        '<span class="row-code">'  + escHtml(item.code)        + badge + '</span>' +
+        '<span class="row-name">'  + escHtml(item.name  || '—') + '</span>' +
+        '<span class="row-price">' + escHtml(item.price || '')  + '</span>' +
+        '<span class="row-qty">'   + escHtml(item.qty)          + '</span>' +
+        '<button class="btn-del" title="Excluir" onclick="deleteItem(' + origIdx + ')">✕</button>';
+
+      body.appendChild(row);
+      if (isHit) {
+        flashRow(row, isUpdated ? 'sum' : 'new');
+        // If the highlighted item is on a different page, switch to it
+        const itemPageInReversed = Math.floor(reversed.findIndex(r => r.origIdx === highlightIndex) / PAGE_SIZE);
+        if (itemPageInReversed !== currentPage) {
+          currentPage = itemPageInReversed;
+          renderList(highlightIndex, highlightMode); // re-render on correct page
+          return;
+        }
+      }
+    }
+  }
+
+  /* ═══════════════════════════════════════
+     ADD ITEM  (with master validation + sum)
+  ═══════════════════════════════════════ */
+  function addItem() {
+    const barcodeEl = document.getElementById('barcode-input');
+    const qtyEl     = document.getElementById('qty-input');
+    const rawCode   = barcodeEl.value.trim();
+    if (!rawCode) { barcodeEl.focus(); return; }
+
+    // Always normalise to 13-digit padded code
+    const code = padCode(rawCode);
+
+    // ── Modo Blindado: validate against master ──
+    let productName  = '';
+    let productPrice = '';
+    if (masterData.size > 0) {
+      const found = lookupCode(code); // lookupCode already pads, but code is already padded here
+      if (!found) {
+        alert('⚠️ Produto não cadastrado!\n\nCódigo: ' + code + '\n\nEste código não existe na carga carregada.');
+        barcodeEl.select();
+        return;
+      }
+      productName  = found.name;
+      productPrice = found.price;
+    }
+
+    const incomingQty = parseFloat(qtyEl.value) || 1;
+    barcodeEl.value = '';
+    qtyEl.value     = '';
+    hideProductInfo();
+
+    // Dedup using the padded code
+    // New item always lands on page 0 (newest first = first tab)
+    if (existingIndex !== -1) {
+      const current = parseFloat(items[existingIndex].qty) || 0;
+      items[existingIndex].qty = (current + incomingQty).toFixed(3);
+      if (productName) {
+        items[existingIndex].name  = productName;
+        items[existingIndex].price = productPrice;
+      }
+      saveItems();
+      // Switch to the tab that contains the updated item
+      const reversedIdx = items.length - 1 - existingIndex;
+      currentPage = Math.floor(reversedIdx / PAGE_SIZE);
+      renderList(existingIndex, 'updated');
+    } else {
+      items.push({ code, qty: incomingQty.toFixed(3), name: productName, price: productPrice });
+      saveItems();
+      currentPage = 0; // newest item is always on page 0
+      renderList(items.length - 1, 'new');
+    }
+
+    updateUI();
+    focusBarcode();
+  }
+
+  function handleBarcodeKey(e) { if (e.key === 'Enter') addItem(); }
+  function handleQtyKey(e)     { if (e.key === 'Enter') addItem(); }
+
+  /* ═══════════════════════════════════════
+     DELETE
+  ═══════════════════════════════════════ */
+  function deleteItem(index) {
+    items.splice(index, 1);
+    saveItems();
+    renderList(-1);
+    updateUI();
+  }
+
+  /* ═══════════════════════════════════════
+     EXPORTS
+  ═══════════════════════════════════════ */
+  function downloadTxt(content, filename) {
+    const blob = new Blob([content], { type: 'text/plain' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  // Coleta cega: código[espaço]quantidade
+  function generateColetaCega() {
+    if (!items.length) return;
+    downloadTxt(
+      items.map(i => i.code + ' ' + i.qty).join('\n'),
+      'coleta_cega_' + today() + '.txt'
+    );
+  }
+
+  // Inventário: inventario código quantidade
+  function generateInventario() {
+    if (!items.length) return;
+    downloadTxt(
+      items.map(i => 'inventario ' + i.code + ' ' + i.qty).join('\n'),
+      'inventario_' + today() + '.txt'
+    );
+  }
+
+  /* ═══════════════════════════════════════
+     CLEAR LIST
+  ═══════════════════════════════════════ */
+  function clearList() {
+    if (!items.length) return;
+    if (!confirm('Apagar toda a lista de captura?\n\nEsta ação não pode ser desfeita.')) return;
+    items = [];
+    saveItems();
+    renderList(-1);
+    updateUI();
+    focusBarcode();
+  }
+
+  /* ═══════════════════════════════════════
+     CAMERA
+  ═══════════════════════════════════════ */
+  function setCameraState(state) {
+    cameraState = state;
+    const shell    = document.getElementById('camera-shell');
+    const spinner  = document.getElementById('cam-spinner');
+    const topBadge = document.getElementById('cam-badge-top');
+    const botBadge = document.getElementById('cam-badge-bottom');
+    const btn      = document.getElementById('btn-camera');
+    const errBox   = document.getElementById('cam-error');
+
+    shell.classList.remove('active');
+    spinner.style.display  = 'none';
+    topBadge.style.display = 'none';
+    botBadge.style.display = 'none';
+    btn.disabled = false;
+    btn.classList.remove('stop');
+
+    if (state === 'starting') {
+      spinner.style.display = 'flex';
+      btn.disabled = true;
+      btn.textContent = 'Aguarde…';
+      errBox.style.display = 'none';
+    } else if (state === 'active') {
+      shell.classList.add('active');
+      topBadge.style.display = 'flex';
+      btn.classList.add('stop');
+      btn.textContent = '◼ Desligar Câmera';
+      errBox.style.display = 'none';
+    } else if (state === 'error') {
+      btn.textContent = '◉ Ativar Câmera';
+    } else {
+      btn.textContent = '◉ Ativar Câmera';
+      errBox.style.display = 'none';
+    }
+  }
+
+  function showCamError(msg) {
+    const box = document.getElementById('cam-error');
+    box.textContent = '⚠ ' + msg;
+    box.style.display = 'block';
+  }
+
+  async function onCodeDetected(code) {
+    if (cooldown) return;
+    cooldown = true;
+    setTimeout(() => { cooldown = false; }, 1500);
+
+    await stopCamera();
+
+    // Show bottom badge
+    const botBadge = document.getElementById('cam-badge-bottom');
+    document.getElementById('last-code-label').textContent = '✓ ' + code;
+    botBadge.style.display = 'flex';
+    setTimeout(() => { botBadge.style.display = 'none'; }, 2500);
+
+    document.getElementById('barcode-input').value = code;
+    vibrate();
+    handleBarcodeInput(); // trigger master lookup display
+    setTimeout(focusQty, 80);
+  }
+
+  async function startCamera() {
+    setCameraState('starting');
+    try {
+      const instance = new Html5Qrcode('qr-reader');
+      scannerInstance = instance;
+
+      const formats = [];
+      const SF = Html5QrcodeSupportedFormats;
+      if (SF) {
+        [SF.EAN_13, SF.EAN_8, SF.CODE_128, SF.CODE_39, SF.UPC_A, SF.UPC_E, SF.QR_CODE]
+          .forEach(f => { if (f !== undefined) formats.push(f); });
+      }
+
+      await instance.start(
+        { facingMode: 'environment' },
+        { fps: 8, qrbox: { width: 260, height: 120 }, aspectRatio: 1.777,
+          ...(formats.length ? { formatsToSupport: formats } : {}) },
+        onCodeDetected,
+        () => {}
+      );
+      setCameraState('active');
+    } catch (err) {
+      scannerInstance = null;
+      const msg = (err && (err.message || String(err))) || '';
+      let friendly;
+      if (/NotAllowed|Permission/i.test(msg))      friendly = 'Permissão de câmera negada. Habilite nas configurações do navegador.';
+      else if (/NotFound|device not found/i.test(msg)) friendly = 'Nenhuma câmera encontrada neste dispositivo.';
+      else                                          friendly = 'Erro ao acessar câmera: ' + (msg || 'desconhecido');
+      setCameraState('error');
+      showCamError(friendly);
+    }
+  }
+
+  async function stopCamera() {
+    if (scannerInstance) {
+      try { await scannerInstance.stop(); } catch(_) {}
+      scannerInstance = null;
+    }
+    setCameraState('idle');
+  }
+
+  function toggleCamera() {
+    if (cameraState === 'active')                     stopCamera();
+    else if (cameraState === 'idle' || cameraState === 'error') startCamera();
+  }
+
+  /* ═══════════════════════════════════════
+     INIT
+  ═══════════════════════════════════════ */
+  window.addEventListener('DOMContentLoaded', () => {
+    updateMasterUI();
+    renderList(-1);
+    updateUI();
+    setTimeout(focusBarcode, 100);
+
+    // ── Economia de bateria: pausa câmera quando tela apaga ou app vai para fundo ──
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden && cameraState === 'active') {
+        stopCamera();
+      }
+    });
+
+    // ── Registra Service Worker (PWA) ──
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js').catch(function() {});
+    }
+  });
+</script>
+</body>
+</html>
