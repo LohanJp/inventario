@@ -1,0 +1,1923 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Controle de Taxas e Escala</title>
+<meta name="theme-color" content="#10151C">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zilla+Slab:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<style>
+  :root{
+    --bg:#10151C;
+    --surface:#1B2330;
+    --surface-2:#232D3D;
+    --border:#2B3648;
+    --accent:#D4A24C;
+    --accent-dim:#8A6A32;
+    --success:#4C9A6A;
+    --warn:#E0B24F;
+    --danger:#D65C4F;
+    --text:#E8E6E1;
+    --text-dim:#8B93A3;
+    --radius:10px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:'Inter',system-ui,sans-serif;
+    min-height:100vh;
+    -webkit-font-smoothing:antialiased;
+  }
+  .mono{font-family:'JetBrains Mono',monospace; font-variant-numeric:tabular-nums;}
+  h1,h2,h3,.display{font-family:'Zilla Slab',serif;}
+
+  /* ---------- App shell / Login / Admin ---------- */
+  #appShell{display:none; width:100%;}
+  #loginScreen{
+    display:none; min-height:100vh; width:100%; align-items:center; justify-content:center;
+    padding:20px;
+  }
+  .login-card{
+    background:var(--surface); border:1px solid var(--border); border-radius:var(--radius);
+    padding:32px; width:100%; max-width:360px;
+  }
+  .login-logo{text-align:center; margin-bottom:22px;}
+  .login-logo .stamp{
+    width:44px; height:44px; border-radius:50%; border:2px solid var(--accent);
+    display:flex; align-items:center; justify-content:center; font-family:'Zilla Slab',serif;
+    font-weight:700; color:var(--accent); margin:0 auto 12px;
+  }
+  .login-logo h1{font-size:18px; margin:0; color:var(--text);}
+  .login-tabs{display:flex; gap:4px; background:var(--surface-2); border:1px solid var(--border); border-radius:8px; padding:3px; margin-bottom:20px;}
+  .login-tab{
+    all:unset; flex:1; text-align:center; cursor:pointer; padding:7px 10px; border-radius:6px;
+    font-size:12.5px; color:var(--text-dim); font-family:'Inter'; font-weight:600;
+  }
+  .login-tab.active{background:var(--accent); color:#10151C;}
+  #loginForm > div{margin-bottom:14px;}
+  #loginError{color:var(--danger); font-size:12.5px; margin:10px 0 0; min-height:14px;}
+
+  #btnVoltarAdmin{
+    all:unset; display:block; cursor:pointer; margin:0 10px 10px; padding:9px 12px;
+    border-radius:8px; font-size:12.5px; color:var(--warn); border:1px solid var(--accent-dim);
+    background:rgba(224,178,79,.08); text-align:center;
+  }
+  #btnVoltarAdmin:hover{background:rgba(224,178,79,.16);}
+
+  #adminHome{display:none; width:100%; min-height:100vh;}
+  .admin-topbar{
+    display:flex; align-items:center; gap:12px; padding:16px 24px; border-bottom:1px solid var(--border);
+    background:var(--surface);
+  }
+  .admin-topbar .stamp{
+    width:34px; height:34px; border-radius:50%; border:2px solid var(--accent);
+    display:flex; align-items:center; justify-content:center; font-family:'Zilla Slab',serif;
+    font-weight:700; color:var(--accent);
+  }
+  .admin-topbar h1{font-size:17px; margin:0; color:var(--text);}
+  .admin-content{max-width:760px; margin:0 auto; padding:24px;}
+  .admin-lojas-list{display:flex; flex-direction:column; gap:12px;}
+  .admin-loja-item{
+    display:flex; align-items:center; justify-content:space-between; gap:14px;
+    background:var(--surface-2); border:1px solid var(--border); border-radius:8px; padding:14px 16px;
+    flex-wrap:wrap;
+  }
+  .admin-loja-info{flex:1; min-width:180px;}
+  .admin-loja-nome{font-weight:700; font-size:14px; color:var(--text); margin-bottom:3px;}
+  .admin-loja-sub{font-size:12px; color:var(--text-dim); font-family:'JetBrains Mono',monospace;}
+  .admin-loja-item .bar-track{height:6px; background:var(--surface); border-radius:99px; overflow:hidden; max-width:220px;}
+  .admin-loja-item .bar-fill{height:100%; background:var(--accent); border-radius:99px;}
+
+  /* ---------- Sidebar ---------- */
+  #sidebar{
+    width:220px;
+    background:var(--surface);
+    border-right:1px solid var(--border);
+    display:flex;
+    flex-direction:column;
+    padding:20px 0;
+    flex-shrink:0;
+  }
+  .brand{
+    padding:0 20px 20px 20px;
+    border-bottom:1px solid var(--border);
+    margin-bottom:14px;
+  }
+  .brand .stamp{
+    width:38px;height:38px;border-radius:50%;
+    border:2px solid var(--accent);
+    display:flex;align-items:center;justify-content:center;
+    font-family:'Zilla Slab',serif;font-weight:700;color:var(--accent);
+    margin-bottom:10px;
+  }
+  .brand h1{font-size:16px;margin:0;line-height:1.3;color:var(--text);}
+  .brand p{font-size:11.5px;color:var(--text-dim);margin:4px 0 0;}
+  .brand p.sync-ok{color:var(--success);}
+  .brand p.sync-off{color:var(--danger);}
+  .brand p.sync-local{color:var(--warn);}
+
+  nav{display:flex;flex-direction:column;gap:2px;padding:0 10px;}
+  nav button{
+    all:unset;
+    padding:10px 12px;
+    border-radius:8px;
+    font-size:13.5px;
+    color:var(--text-dim);
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    gap:10px;
+    transition:background .15s, color .15s;
+  }
+  nav button:hover{background:var(--surface-2); color:var(--text);}
+  nav button.active{background:var(--surface-2); color:var(--accent); font-weight:600;}
+  nav button svg{flex-shrink:0; opacity:.85;}
+
+  /* ---------- Main ---------- */
+  #main{flex:1; padding:28px 34px; overflow-y:auto; max-width:1180px;}
+  .view{display:none;}
+  .view.active{display:block; animation:fadein .18s ease;}
+  @keyframes fadein{from{opacity:0; transform:translateY(4px);} to{opacity:1; transform:translateY(0);}}
+
+  .view-header{display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:22px; flex-wrap:wrap; gap:12px;}
+  .view-header h2{font-size:24px; margin:0; color:var(--text);}
+  .view-header p{color:var(--text-dim); font-size:13px; margin:4px 0 0;}
+
+  /* ---------- Cards ---------- */
+  .cards{display:grid; grid-template-columns:repeat(auto-fit, minmax(220px,1fr)); gap:14px; margin-bottom:24px;}
+  .card{
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    padding:18px 20px;
+  }
+  .card .label{font-size:11.5px; text-transform:uppercase; letter-spacing:.06em; color:var(--text-dim); margin-bottom:8px;}
+  .card .value{font-size:26px; font-weight:600; font-family:'JetBrains Mono',monospace;}
+  .card .value.success{color:var(--success);}
+  .card .value.danger{color:var(--danger);}
+  .card .sub{font-size:12px; color:var(--text-dim); margin-top:6px;}
+
+  /* ---------- Progress / gauge ---------- */
+  .gauge-wrap{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:20px; margin-bottom:24px;}
+  .gauge-top{display:flex; justify-content:space-between; align-items:baseline; margin-bottom:10px; flex-wrap:wrap; gap:6px;}
+  .gauge-top .title{font-size:13px; color:var(--text-dim);}
+  .gauge-top .amounts{font-family:'JetBrains Mono',monospace; font-size:14px;}
+  .gauge-track{height:14px; background:var(--surface-2); border-radius:99px; overflow:hidden; border:1px solid var(--border);}
+  .gauge-fill{height:100%; border-radius:99px; transition:width .3s ease;}
+  .gauge-note{font-size:12px; margin-top:8px; color:var(--text-dim);}
+  .gauge-note.warn{color:var(--danger); font-weight:600;}
+
+  .capacity-row{display:flex; gap:10px; margin-top:14px; flex-wrap:wrap;}
+  .capacity-row:empty{margin-top:0;}
+  .capacity-item{
+    flex:1; min-width:130px; background:var(--surface-2); border:1px solid var(--border);
+    border-radius:8px; padding:12px 14px; text-align:center;
+  }
+  .capacity-item .num{font-family:'JetBrains Mono',monospace; font-size:24px; font-weight:700; color:var(--accent); line-height:1.1;}
+  .capacity-item .lbl{font-size:11px; color:var(--text-dim); text-transform:uppercase; letter-spacing:.04em; margin-top:4px;}
+  .capacity-empty{font-size:12px; color:var(--text-dim); margin-top:12px;}
+
+  /* ---------- Sector breakdown ---------- */
+  .sector-list{display:flex; flex-direction:column; gap:10px;}
+  .sector-row{display:grid; grid-template-columns:120px 1fr 90px; align-items:center; gap:12px; font-size:13px;}
+  .sector-row .bar-track{height:8px; background:var(--surface-2); border-radius:99px; overflow:hidden;}
+  .sector-row .bar-fill{height:100%; background:var(--accent); border-radius:99px;}
+  .sector-row .amt{text-align:right; font-family:'JetBrains Mono',monospace; color:var(--text-dim);}
+
+  /* ---------- Section box ---------- */
+  .box{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:20px; margin-bottom:20px;}
+  .box h3{margin:0 0 16px; font-size:15px; color:var(--text); font-weight:600; font-family:'Inter';}
+
+  /* ---------- Forms ---------- */
+  .form-grid{display:grid; grid-template-columns:repeat(auto-fit, minmax(150px,1fr)); gap:12px; align-items:end;}
+  label{display:block; font-size:11.5px; color:var(--text-dim); margin-bottom:5px; text-transform:uppercase; letter-spacing:.04em;}
+  input, select{
+    width:100%;
+    background:var(--surface-2);
+    border:1px solid var(--border);
+    color:var(--text);
+    padding:9px 10px;
+    border-radius:7px;
+    font-size:13.5px;
+    font-family:'Inter';
+  }
+  input.mono, .valor-display{font-family:'JetBrains Mono',monospace;}
+  input:focus, select:focus{outline:2px solid var(--accent); outline-offset:1px; border-color:var(--accent);}
+  button.btn{
+    background:var(--accent);
+    color:#10151C;
+    border:none;
+    font-weight:700;
+    padding:9px 16px;
+    border-radius:7px;
+    cursor:pointer;
+    font-size:13px;
+    font-family:'Inter';
+    transition:filter .15s;
+  }
+  button.btn:hover{filter:brightness(1.08);}
+  button.btn.secondary{background:transparent; border:1px solid var(--border); color:var(--text-dim);}
+  button.btn.secondary:hover{color:var(--text); border-color:var(--accent);}
+  button.btn.danger-btn{background:var(--danger); color:#fff;}
+  .valor-display{color:var(--accent); font-weight:700; font-size:14px; padding-top:9px;}
+
+  .period-toggle{display:flex; gap:4px; background:var(--surface-2); border:1px solid var(--border); border-radius:8px; padding:3px;}
+  .period-toggle button{
+    all:unset; cursor:pointer; padding:5px 12px; border-radius:6px; font-size:12px;
+    color:var(--text-dim); font-family:'Inter'; font-weight:600;
+  }
+  .period-toggle button.active{background:var(--accent); color:#10151C;}
+  .period-toggle button:hover:not(.active){color:var(--text);}
+
+  /* ---------- Table ---------- */
+  table{width:100%; border-collapse:collapse; font-size:13px;}
+  thead th{
+    text-align:left; font-size:11px; text-transform:uppercase; letter-spacing:.05em;
+    color:var(--text-dim); padding:8px 10px; border-bottom:1px solid var(--border);
+  }
+  tbody td{padding:10px 10px; border-bottom:1px solid var(--border); vertical-align:middle;}
+  tbody tr:last-child td{border-bottom:none;}
+  tbody tr:hover{background:var(--surface-2);}
+  td.amt{font-family:'JetBrains Mono',monospace; text-align:right;}
+  .tag{
+    display:inline-block; padding:2px 9px; border:1px solid var(--accent-dim);
+    border-radius:99px; font-size:11px; color:var(--accent); background:rgba(212,162,76,.08);
+  }
+  .row-actions{display:flex; gap:6px;}
+  .icon-btn{
+    all:unset; cursor:pointer; padding:5px 8px; border-radius:6px; font-size:12px;
+    color:var(--text-dim); border:1px solid var(--border);
+  }
+  .icon-btn:hover{color:var(--text); border-color:var(--accent);}
+  .icon-btn.finalizar{color:var(--success); border-color:var(--success);}
+  .empty{color:var(--text-dim); font-size:13px; padding:24px 0; text-align:center;}
+
+  tr.status-proximo{background:rgba(224,178,79,.10);}
+  tr.status-proximo:hover{background:rgba(224,178,79,.18);}
+  tr.status-atrasado{background:rgba(214,92,79,.12);}
+  tr.status-atrasado:hover{background:rgba(214,92,79,.20);}
+
+  .status-badge{
+    display:inline-block; font-size:10px; padding:2px 8px; border-radius:99px;
+    margin-left:6px; font-weight:600; vertical-align:middle;
+  }
+  .status-badge.proximo{color:var(--warn); border:1px solid var(--warn); background:rgba(224,178,79,.12);}
+  .status-badge.atrasado{color:var(--danger); border:1px solid var(--danger); background:rgba(214,92,79,.12);}
+  .status-badge.finalizado{color:var(--success); border:1px solid var(--success); background:rgba(76,154,106,.12);}
+
+  .filters{display:flex; gap:10px; margin-bottom:14px; flex-wrap:wrap; align-items:flex-end;}
+  .filters > select{width:auto; min-width:160px;}
+  .date-range-group{display:flex; gap:10px; flex-wrap:wrap;}
+  .date-field{display:flex; flex-direction:column; gap:5px; flex:1; min-width:150px;}
+  .date-field label{margin:0;}
+  .date-field input[type="date"]{width:100%; color-scheme:dark;}
+
+  .quick-filters{display:flex; gap:6px; flex-wrap:wrap; margin-bottom:14px;}
+  .quick-filters button{
+    all:unset; cursor:pointer; padding:6px 13px; border-radius:99px; font-size:12px;
+    color:var(--text-dim); border:1px solid var(--border); font-family:'Inter'; font-weight:600;
+    transition:background .15s, color .15s, border-color .15s;
+  }
+  .quick-filters button:hover{color:var(--text); border-color:var(--accent);}
+  .quick-filters button.active{background:var(--accent); color:#10151C; border-color:var(--accent);}
+
+  /* ---------- Toast ---------- */
+  #toast{
+    position:fixed; bottom:20px; left:50%; transform:translateX(-50%) translateY(20px);
+    background:var(--surface-2); border:1px solid var(--accent); color:var(--text);
+    padding:10px 18px; border-radius:8px; font-size:13px; opacity:0; pointer-events:none;
+    transition:all .25s ease; z-index:999;
+  }
+  #toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
+
+  /* ---------- Confirm modal ---------- */
+  #confirmOverlay{
+    position:fixed; inset:0; background:rgba(0,0,0,.55); display:none;
+    align-items:center; justify-content:center; z-index:1000; padding:20px;
+  }
+  #confirmOverlay.open{display:flex;}
+  #confirmModal{
+    background:var(--surface); border:1px solid var(--border); border-radius:var(--radius);
+    padding:22px; max-width:380px; width:100%; box-shadow:0 10px 40px rgba(0,0,0,.4);
+    animation:confirmIn .15s ease;
+  }
+  @keyframes confirmIn{from{opacity:0; transform:translateY(8px) scale(.98);} to{opacity:1; transform:translateY(0) scale(1);}}
+  #confirmModal h3{margin:0 0 10px; font-size:16px; color:var(--text); font-family:'Inter'; font-weight:700;}
+  #confirmModal p{margin:0 0 20px; font-size:13.5px; color:var(--text-dim); line-height:1.5;}
+  #confirmActions{display:flex; gap:10px; justify-content:flex-end;}
+  #confirmActions button{flex:0 0 auto;}
+  @media (max-width: 480px){
+    #confirmActions{flex-direction:column-reverse;}
+    #confirmActions button{width:100%;}
+  }
+
+  /* ---------- Install banner ---------- */
+  #installBanner{
+    display:none; align-items:center; justify-content:space-between; gap:10px;
+    background:var(--surface-2); border:1px solid var(--accent-dim); border-radius:var(--radius);
+    padding:12px 16px; margin-bottom:20px; font-size:13px;
+  }
+
+  /* ---------- Mobile ---------- */
+  #menuToggle{display:none;}
+  @media (max-width: 820px){
+    #appShell{flex-direction:column;}
+    #sidebar{
+      width:100%; flex-direction:row; align-items:center; padding:10px 14px;
+      border-right:none; border-bottom:1px solid var(--border); justify-content:space-between;
+      position:sticky; top:0; z-index:60;
+    }
+    .brand{border-bottom:none; padding:0; margin-bottom:0; display:flex; align-items:center; gap:10px;}
+    .brand .stamp{margin-bottom:0; width:30px; height:30px; font-size:13px;}
+    .brand p{display:none;}
+    nav{
+      position:fixed; top:56px; left:0; right:0; bottom:0; background:var(--bg);
+      flex-direction:column; padding:16px; transform:translateY(-110%); transition:transform .2s ease;
+      z-index:50; overflow-y:auto;
+    }
+    nav.open{transform:translateY(0);}
+    nav button{font-size:16px; padding:14px 12px;}
+    #menuToggle{
+      display:flex; all:unset; cursor:pointer; color:var(--text); padding:6px;
+    }
+    #main{padding:16px;}
+    .view-header h2{font-size:20px;}
+
+    .cards{grid-template-columns:1fr 1fr; gap:10px;}
+    .card{padding:14px;}
+    .card .label{font-size:10.5px;}
+    .card .value{font-size:19px; word-break:break-word;}
+
+    .gauge-wrap{padding:16px;}
+    .gauge-top{flex-direction:column; align-items:flex-start; gap:4px;}
+
+    .box{padding:16px;}
+    .box > div[style*="justify-content:space-between"]{flex-direction:row; flex-wrap:wrap;}
+
+    .sector-row{grid-template-columns:76px 1fr 66px; gap:8px; font-size:12px;}
+    .sector-row span:first-child{overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+
+    .form-grid{grid-template-columns:1fr 1fr;}
+    button.btn{width:100%;}
+    .form-grid > div:has(button.btn){grid-column:1 / -1;}
+
+    .filters{flex-direction:column; align-items:stretch;}
+    .date-range-group{flex-direction:column;}
+    .date-field{width:100%; min-width:0;}
+    .filters > select{width:100%; min-width:0;}
+
+    #installBanner{flex-direction:column; align-items:stretch; text-align:center;}
+    #installBanner button{width:100%;}
+
+    table{font-size:12px;}
+    thead th, tbody td{padding:8px 6px;}
+
+    .period-toggle{width:100%; justify-content:space-between;}
+    .period-toggle button{flex:1; text-align:center;}
+  }
+  @media (max-width: 480px){
+    .form-grid{grid-template-columns:1fr;}
+    .cards{grid-template-columns:1fr 1fr; gap:8px;}
+    .card .value{font-size:17px;}
+    .sector-row{grid-template-columns:64px 1fr 58px; font-size:11.5px;}
+    table{display:block; overflow-x:auto; white-space:nowrap;}
+  }
+</style>
+</head>
+<body>
+
+<div id="loginScreen">
+  <div class="login-card">
+    <div class="login-logo">
+      <div class="stamp">T</div>
+      <h1>Controle de Taxas</h1>
+    </div>
+    <div class="login-tabs" id="loginTabs">
+      <button type="button" class="login-tab active" data-mode="loja">Entrar como loja</button>
+      <button type="button" class="login-tab" data-mode="admin">Administrador</button>
+    </div>
+    <form id="loginForm">
+      <div id="loginLojaField">
+        <label>Loja</label>
+        <select id="loginLoja"></select>
+      </div>
+      <div>
+        <label>Senha</label>
+        <input type="password" id="loginSenha" required>
+      </div>
+      <button type="submit" class="btn" style="width:100%; margin-top:8px;">Entrar</button>
+      <p id="loginError"></p>
+    </form>
+  </div>
+</div>
+
+<div id="adminHome">
+  <div class="admin-topbar">
+    <div class="stamp">T</div>
+    <h1 style="flex:1;">Painel Admin</h1>
+    <button class="btn secondary" id="btnLogoutAdmin">Sair</button>
+  </div>
+  <div class="admin-content">
+    <div class="box">
+      <h3>Lojas</h3>
+      <div id="adminLojasList" class="admin-lojas-list"></div>
+    </div>
+    <div class="box">
+      <h3>Criar nova loja</h3>
+      <form id="formNovaLoja" class="form-grid">
+        <div>
+          <label>Nome da loja</label>
+          <input type="text" id="novaLojaNome" required>
+        </div>
+        <div>
+          <label>Senha</label>
+          <input type="password" id="novaLojaSenha" required>
+        </div>
+        <div>
+          <button type="submit" class="btn">Criar loja</button>
+        </div>
+      </form>
+    </div>
+    <div class="box" style="max-width:420px;">
+      <h3>Trocar senha do administrador</h3>
+      <form id="formTrocarSenhaAdmin" class="form-grid">
+        <div>
+          <label>Nova senha</label>
+          <input type="password" id="novaSenhaAdmin" required>
+        </div>
+        <div>
+          <button type="submit" class="btn">Salvar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<div id="appShell">
+<div id="sidebar">
+  <div class="brand">
+    <div style="display:flex; align-items:center; gap:10px; width:100%;">
+      <div class="stamp">T</div>
+      <div style="flex:1;">
+        <h1 id="brandTitle">Controle de Taxas</h1>
+        <p id="syncStatus">Iniciando…</p>
+      </div>
+      <button id="menuToggle" aria-label="Abrir menu">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
+    </div>
+  </div>
+  <button id="btnVoltarAdmin" style="display:none;">← Voltar ao painel admin</button>
+  <nav id="nav">
+    <button data-view="dashboard" class="active">📊 &nbsp;Dashboard</button>
+    <button data-view="escala">🗓️ &nbsp;Escala</button>
+    <button data-view="taxas">🏷️ &nbsp;Taxas</button>
+    <button data-view="setores">🏢 &nbsp;Setores</button>
+    <button data-view="cartoes">💳 &nbsp;Cartões</button>
+    <button data-view="config">⚙️ &nbsp;Configurações</button>
+  </nav>
+  <div style="flex:1;"></div>
+  <div style="padding:10px;">
+    <button class="btn secondary" id="btnLogout" style="width:100%;">Sair</button>
+  </div>
+</div>
+
+<div id="main">
+
+  <!-- DASHBOARD -->
+  <section class="view active" id="view-dashboard">
+    <div class="view-header">
+      <div>
+        <h2>Dashboard</h2>
+        <p id="dashDateLabel"></p>
+      </div>
+    </div>
+
+    <div id="installBanner">
+      <span>Instale este app no seu celular ou PC para acesso rápido, mesmo offline.</span>
+      <button class="btn" id="installBtn">Instalar</button>
+    </div>
+
+    <div class="cards">
+      <div class="card">
+        <div class="label">Gasto hoje</div>
+        <div class="value mono" id="cardHoje">R$ 0,00</div>
+        <div class="sub" id="cardHojeCount">0 lançamentos</div>
+      </div>
+      <div class="card">
+        <div class="label">Gasto no mês</div>
+        <div class="value mono" id="cardMes">R$ 0,00</div>
+        <div class="sub" id="cardMesCount">0 lançamentos</div>
+      </div>
+      <div class="card">
+        <div class="label">Teto mensal</div>
+        <div class="value mono" id="cardTeto">R$ 0,00</div>
+        <div class="sub">Defina em Configurações</div>
+      </div>
+      <div class="card">
+        <div class="label">Saldo disponível</div>
+        <div class="value mono" id="cardSaldo">R$ 0,00</div>
+        <div class="sub" id="cardSaldoSub">—</div>
+      </div>
+    </div>
+
+    <div class="gauge-wrap">
+      <div class="gauge-top">
+        <span class="title">Consumo do teto mensal</span>
+        <span class="amounts"><span id="gaugeAtual">R$ 0,00</span> / <span id="gaugeTeto" style="color:var(--text-dim);">R$ 0,00</span></span>
+      </div>
+      <div class="gauge-track"><div class="gauge-fill" id="gaugeFill" style="width:0%; background:var(--accent);"></div></div>
+      <div class="gauge-note" id="gaugeNote"></div>
+      <div class="capacity-row" id="gaugeCapacity"></div>
+    </div>
+
+    <div class="gauge-wrap">
+      <div class="gauge-top">
+        <span class="title">Consumo dos cartões presente</span>
+        <span class="amounts"><span id="cartaoAtual">0</span> / <span id="cartaoTotal" style="color:var(--text-dim);">0 cartões</span></span>
+      </div>
+      <div class="gauge-track"><div class="gauge-fill" id="cartaoFill" style="width:0%; background:var(--accent);"></div></div>
+      <div class="gauge-note" id="cartaoNote"></div>
+      <div class="capacity-row" id="cartaoBreakdown"></div>
+    </div>
+
+    <div class="box">
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:16px;">
+        <h3 style="margin:0;">Gasto por setor</h3>
+        <div class="period-toggle" id="periodToggle">
+          <button data-period="dia">Dia</button>
+          <button data-period="semana">Semana</button>
+          <button data-period="mes" class="active">Mês</button>
+        </div>
+      </div>
+      <div class="sector-list" id="sectorBreakdown"></div>
+    </div>
+
+    <div class="box">
+      <h3>Simular gasto de taxas</h3>
+      <div class="form-grid" style="margin-bottom:18px;">
+        <div>
+          <label>Quantidade de taxas 4h</label>
+          <input type="number" min="0" step="1" id="simQtd4h" class="mono" value="0">
+        </div>
+        <div>
+          <label>Quantidade de taxas 6h</label>
+          <input type="number" min="0" step="1" id="simQtd6h" class="mono" value="0">
+        </div>
+      </div>
+      <div class="gauge-top">
+        <span class="title">Projeção do mês com a simulação</span>
+        <span class="amounts"><span id="simAtual">R$ 0,00</span> / <span id="simTeto" style="color:var(--text-dim);">R$ 0,00</span></span>
+      </div>
+      <div class="gauge-track"><div class="gauge-fill" id="simFill" style="width:0%; background:var(--accent);"></div></div>
+      <div class="gauge-note" id="simNote"></div>
+      <div class="capacity-row" id="simCapacity"></div>
+    </div>
+  </section>
+
+  <!-- ESCALA -->
+  <section class="view" id="view-escala">
+    <div class="view-header">
+      <div>
+        <h2>Escala</h2>
+        <p>Lance entradas e saídas — o valor da taxa é somado automaticamente.</p>
+      </div>
+    </div>
+
+    <div class="box">
+      <h3>Novo lançamento</h3>
+      <form id="formEscala" class="form-grid">
+        <div>
+          <label>Data</label>
+          <input type="date" id="escData" required>
+        </div>
+        <div>
+          <label>Setor</label>
+          <select id="escSetor" required></select>
+        </div>
+        <div>
+          <label>Taxa (pessoa)</label>
+          <select id="escTaxa" required></select>
+        </div>
+        <div>
+          <label>Turno</label>
+          <select id="escTurno" required>
+            <option value="4h">4 horas</option>
+            <option value="6h">6 horas</option>
+          </select>
+        </div>
+        <div>
+          <label>Entrada</label>
+          <input type="time" id="escEntrada">
+        </div>
+        <div>
+          <label>Saída</label>
+          <input type="time" id="escSaida">
+        </div>
+        <div>
+          <label>Valor (automático)</label>
+          <div class="valor-display" id="escValorDisplay">R$ 0,00</div>
+          <input type="hidden" id="escValor">
+        </div>
+        <div>
+          <label>Forma de pagamento</label>
+          <select id="escPagamento">
+            <option value="dinheiro">Dinheiro</option>
+            <option value="cartao">Cartão presente</option>
+          </select>
+        </div>
+        <div id="escCartaoWrap" style="display:none;">
+          <label>Estoque de cartões</label>
+          <div class="valor-display" id="escCartaoInfo" style="color:var(--warn);">—</div>
+        </div>
+        <div>
+          <button type="submit" class="btn">Adicionar à escala</button>
+        </div>
+      </form>
+    </div>
+
+    <div class="box">
+      <h3>Lançamentos</h3>
+      <div class="quick-filters" id="quickFilters">
+        <button data-quick="hoje">Hoje</button>
+        <button data-quick="amanha">Amanhã</button>
+        <button data-quick="semana">Esta semana</button>
+        <button data-quick="mes">Este mês</button>
+        <button data-quick="todos">Todos</button>
+      </div>
+      <div class="filters">
+        <div class="date-range-group">
+          <div class="date-field">
+            <label>De</label>
+            <input type="date" id="filtroDataInicio">
+          </div>
+          <div class="date-field">
+            <label>Até</label>
+            <input type="date" id="filtroDataFim">
+          </div>
+        </div>
+        <select id="filtroSetorEscala"><option value="">Todos os setores</option></select>
+      </div>
+      <div style="overflow-x:auto;">
+        <table id="tabelaEscala">
+          <thead>
+            <tr><th>Data</th><th>Setor</th><th>Taxa</th><th>Turno</th><th>Pagamento</th><th>Entrada</th><th>Saída</th><th style="text-align:right;">Valor</th><th></th></tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div class="empty" id="escalaEmpty" style="display:none;">Nenhum lançamento neste filtro.</div>
+    </div>
+  </section>
+
+  <!-- TAXAS -->
+  <section class="view" id="view-taxas">
+    <div class="view-header">
+      <div>
+        <h2>Taxas</h2>
+        <p>Cadastre as pessoas e o valor padrão de cada turno.</p>
+      </div>
+    </div>
+
+    <div class="box">
+      <h3>Nova taxa</h3>
+      <form id="formTaxa" class="form-grid">
+        <div>
+          <label>Nome</label>
+          <input type="text" id="taxaNome" required>
+        </div>
+        <div>
+          <label>Setor padrão</label>
+          <select id="taxaSetor" required></select>
+        </div>
+        <div>
+          <button type="submit" class="btn">Adicionar taxa</button>
+        </div>
+      </form>
+    </div>
+
+    <div class="box">
+      <h3>Cadastradas</h3>
+      <table id="tabelaTaxas">
+        <thead><tr><th>Nome</th><th>Setor</th><th></th></tr></thead>
+        <tbody></tbody>
+      </table>
+      <div class="empty" id="taxasEmpty" style="display:none;">Nenhuma taxa cadastrada ainda.</div>
+    </div>
+  </section>
+
+  <!-- SETORES -->
+  <section class="view" id="view-setores">
+    <div class="view-header">
+      <div>
+        <h2>Setores</h2>
+        <p>Organize os setores da empresa.</p>
+      </div>
+    </div>
+
+    <div class="box">
+      <h3>Novo setor</h3>
+      <form id="formSetor" class="form-grid">
+        <div>
+          <label>Nome do setor</label>
+          <input type="text" id="setorNome" required>
+        </div>
+        <div>
+          <button type="submit" class="btn">Adicionar setor</button>
+        </div>
+      </form>
+    </div>
+
+    <div class="box">
+      <h3>Cadastrados</h3>
+      <table id="tabelaSetores">
+        <thead><tr><th>Nome</th><th>Taxas vinculadas</th><th></th></tr></thead>
+        <tbody></tbody>
+      </table>
+      <div class="empty" id="setoresEmpty" style="display:none;">Nenhum setor cadastrado ainda.</div>
+    </div>
+  </section>
+
+  <!-- CARTÕES -->
+  <section class="view" id="view-cartoes">
+    <div class="view-header">
+      <div>
+        <h2>Cartões Presente</h2>
+        <p>Controle por unidade — cada taxa paga com cartão consome 1 do estoque, independente do turno.</p>
+      </div>
+    </div>
+
+    <div class="cards" style="margin-bottom:20px;">
+      <div class="card">
+        <div class="label">Total cadastrado</div>
+        <div class="value mono" id="cartaoStockTotal">0</div>
+        <div class="sub">cartões</div>
+      </div>
+      <div class="card">
+        <div class="label">Usados</div>
+        <div class="value mono" id="cartaoStockUsado">0</div>
+        <div class="sub">cartões</div>
+      </div>
+      <div class="card">
+        <div class="label">Disponíveis</div>
+        <div class="value mono" id="cartaoStockDisponivel">0</div>
+        <div class="sub">cartões</div>
+      </div>
+    </div>
+
+    <div class="box">
+      <h3>Adicionar cartões ao estoque</h3>
+      <form id="formCartao" class="form-grid">
+        <div>
+          <label>Quantidade de cartões</label>
+          <input type="number" step="1" min="1" id="cartaoQuantidade" class="mono" required>
+        </div>
+        <div>
+          <label>Observação (opcional)</label>
+          <input type="text" id="cartaoObs" placeholder="Ex: Lote de novembro">
+        </div>
+        <div>
+          <button type="submit" class="btn">Adicionar ao estoque</button>
+        </div>
+      </form>
+    </div>
+
+    <div class="box">
+      <h3>Histórico de lotes adicionados</h3>
+      <table id="tabelaCartoes">
+        <thead><tr><th>Data</th><th>Observação</th><th style="text-align:right;">Quantidade</th><th></th></tr></thead>
+        <tbody></tbody>
+      </table>
+      <div class="empty" id="cartoesEmpty" style="display:none;">Nenhum cartão cadastrado ainda.</div>
+    </div>
+  </section>
+
+  <!-- CONFIG -->
+  <section class="view" id="view-config">
+    <div class="view-header">
+      <div>
+        <h2>Configurações</h2>
+        <p>Defina o teto de gastos mensal e gerencie seus dados.</p>
+      </div>
+    </div>
+
+    <div class="box" style="max-width:420px;">
+      <h3>Teto e valores das taxas</h3>
+      <form id="formConfig" class="form-grid">
+        <div>
+          <label>Teto mensal (R$)</label>
+          <input type="number" step="0.01" id="configTeto" class="mono" required>
+        </div>
+        <div>
+          <label>Valor turno 4h (R$)</label>
+          <input type="number" step="0.01" id="configValor4h" class="mono" required>
+        </div>
+        <div>
+          <label>Valor turno 6h (R$)</label>
+          <input type="number" step="0.01" id="configValor6h" class="mono" required>
+        </div>
+        <div>
+          <button type="submit" class="btn">Salvar</button>
+        </div>
+      </form>
+    </div>
+
+    <div class="box" style="max-width:420px;">
+      <h3>Dados</h3>
+      <p style="font-size:13px; color:var(--text-dim); margin-top:0;">Os dados desta loja ficam sincronizados entre todos que acessam ela.</p>
+      <div style="display:flex; gap:10px; flex-wrap:wrap;">
+        <button class="btn secondary" id="btnExport">Exportar backup (.json)</button>
+        <label class="btn secondary" style="cursor:pointer;">
+          Importar backup
+          <input type="file" id="importFile" accept="application/json" style="display:none;">
+        </label>
+        <button class="btn danger-btn" id="btnReset">Apagar tudo</button>
+      </div>
+    </div>
+  </section>
+
+</div>
+</div>
+
+<div id="toast"></div>
+
+<div id="confirmOverlay">
+  <div id="confirmModal">
+    <h3 id="confirmTitle">Confirmar ação</h3>
+    <p id="confirmMessage"></p>
+    <div id="confirmActions">
+      <button class="btn secondary" id="confirmCancelBtn">Cancelar</button>
+      <button class="btn danger-btn" id="confirmOkBtn">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ---------------- Estado local (populado via Firestore) ---------------- */
+function defaultState(){
+  return { setores: [], taxas: [], registros: [], cartoes: [], config: { tetoMensal: 0, valor4h: 0, valor6h: 0 } };
+}
+let state = defaultState();
+
+/* ---------------- Firebase ---------------- */
+const firebaseConfig = {
+  apiKey: "AIzaSyDhNk41m_EWUUqOsW1zrC5ORxgeWpZnAc0",
+  authDomain: "teste-20fcf.firebaseapp.com",
+  projectId: "teste-20fcf",
+  storageBucket: "teste-20fcf.firebasestorage.app",
+  messagingSenderId: "107570463610",
+  appId: "1:107570463610:web:fc07837b5c301a31214cc3"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+db.enablePersistence().catch(()=>{});
+const lojasCol = db.collection('lojas');
+const setoresCol = db.collection('setores');
+const taxasCol = db.collection('taxas');
+const registrosCol = db.collection('registros');
+const cartoesCol = db.collection('cartoes');
+const adminDocRef = db.collection('sistema').doc('admin');
+
+function setSyncStatus(status){
+  const el = document.getElementById('syncStatus');
+  if(!el) return;
+  el.className = 'sync-' + status;
+  if(status === 'ok') el.textContent = 'Sincronizado';
+  else if(status === 'off') el.textContent = 'Sem conexão';
+  else el.textContent = 'Conectando…';
+}
+
+/* ---------------- Sessão / Login / Lojas ---------------- */
+const AUTH_KEY = 'taxasAuthSession';
+let currentLoja = null;       // {id, nome, tetoMensal, valor4h, valor6h}
+let isAdmin = false;
+let adminBrowsingLoja = false;
+let lojaListeners = [];
+
+function detachLojaListeners(){
+  lojaListeners.forEach(unsub=>unsub());
+  lojaListeners = [];
+}
+
+function ensureAdminDoc(){
+  adminDocRef.get().then(snap=>{
+    if(!snap.exists) adminDocRef.set({ senha: 'admin123' });
+  }).catch(()=>{});
+}
+
+function restoreSession(){
+  let saved = null;
+  try{ saved = JSON.parse(localStorage.getItem(AUTH_KEY) || 'null'); }catch(e){}
+  if(!saved){ showLogin(); return; }
+  if(saved.type === 'admin'){
+    isAdmin = true;
+    setSyncStatus('ok');
+    showAdminHome();
+  } else if(saved.type === 'loja'){
+    lojasCol.doc(saved.lojaId).get().then(snap=>{
+      if(snap.exists){
+        enterLoja(saved.lojaId, snap.data());
+      } else {
+        localStorage.removeItem(AUTH_KEY);
+        showLogin();
+      }
+    }).catch(()=>showLogin());
+  } else {
+    showLogin();
+  }
+}
+
+function enterLoja(lojaId, lojaData){
+  detachLojaListeners();
+  currentLoja = { id: lojaId, nome: lojaData.nome || 'Loja', tetoMensal: lojaData.tetoMensal||0, valor4h: lojaData.valor4h||0, valor6h: lojaData.valor6h||0 };
+  state.config = { tetoMensal: currentLoja.tetoMensal, valor4h: currentLoja.valor4h, valor6h: currentLoja.valor6h };
+  showMainApp();
+  updateBrand();
+  setSyncStatus('ok');
+
+  lojaListeners.push(lojasCol.doc(lojaId).onSnapshot(snap=>{
+    if(!snap.exists) return;
+    const d = snap.data();
+    currentLoja.nome = d.nome || 'Loja';
+    currentLoja.tetoMensal = d.tetoMensal||0;
+    currentLoja.valor4h = d.valor4h||0;
+    currentLoja.valor6h = d.valor6h||0;
+    state.config = { tetoMensal: currentLoja.tetoMensal, valor4h: currentLoja.valor4h, valor6h: currentLoja.valor6h };
+    updateBrand();
+    refreshAllViews();
+  }, ()=> setSyncStatus('off')));
+
+  lojaListeners.push(setoresCol.where('lojaId','==',lojaId).onSnapshot(snap=>{
+    state.setores = snap.docs.map(d=>({id:d.id, ...d.data()}));
+    refreshAllViews();
+  }, ()=> setSyncStatus('off')));
+
+  lojaListeners.push(taxasCol.where('lojaId','==',lojaId).onSnapshot(snap=>{
+    state.taxas = snap.docs.map(d=>({id:d.id, ...d.data()}));
+    refreshAllViews();
+  }, ()=> setSyncStatus('off')));
+
+  lojaListeners.push(registrosCol.where('lojaId','==',lojaId).onSnapshot(snap=>{
+    state.registros = snap.docs.map(d=>({id:d.id, ...d.data()}));
+    refreshAllViews();
+  }, ()=> setSyncStatus('off')));
+
+  lojaListeners.push(cartoesCol.where('lojaId','==',lojaId).onSnapshot(snap=>{
+    state.cartoes = snap.docs.map(d=>({id:d.id, ...d.data()}));
+    refreshAllViews();
+  }, ()=> setSyncStatus('off')));
+}
+
+async function limparDadosDaLoja(){
+  const cols = [setoresCol, taxasCol, registrosCol, cartoesCol];
+  for(const col of cols){
+    const snap = await col.where('lojaId','==',currentLoja.id).get();
+    const batch = db.batch();
+    snap.docs.forEach(d=>batch.delete(d.ref));
+    await batch.commit();
+  }
+}
+
+function updateBrand(){
+  document.getElementById('brandTitle').textContent = currentLoja ? currentLoja.nome : 'Controle de Taxas';
+}
+
+/* ---------------- Telas (login / admin / app) ---------------- */
+function showLogin(){
+  document.getElementById('loginScreen').style.display = 'flex';
+  document.getElementById('adminHome').style.display = 'none';
+  document.getElementById('appShell').style.display = 'none';
+  document.getElementById('loginError').textContent = '';
+  populateLoginLojas();
+}
+function hideLogin(){
+  document.getElementById('loginScreen').style.display = 'none';
+}
+function showAdminHome(){
+  currentLoja = null;
+  adminBrowsingLoja = false;
+  detachLojaListeners();
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('appShell').style.display = 'none';
+  document.getElementById('adminHome').style.display = 'block';
+  renderAdminHome();
+}
+function showMainApp(){
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('adminHome').style.display = 'none';
+  document.getElementById('appShell').style.display = 'flex';
+  document.getElementById('btnVoltarAdmin').style.display = (isAdmin && adminBrowsingLoja) ? 'block' : 'none';
+}
+
+function populateLoginLojas(){
+  const sel = document.getElementById('loginLoja');
+  sel.innerHTML = '<option value="">Carregando…</option>';
+  lojasCol.get().then(snap=>{
+    sel.innerHTML = '';
+    if(snap.empty){
+      sel.innerHTML = '<option value="">Nenhuma loja cadastrada</option>';
+      return;
+    }
+    snap.docs.forEach(doc=>{
+      const opt = document.createElement('option');
+      opt.value = doc.id;
+      opt.textContent = doc.data().nome;
+      sel.appendChild(opt);
+    });
+  }).catch(()=>{ sel.innerHTML = '<option value="">Erro ao carregar lojas</option>'; });
+}
+
+document.querySelectorAll('.login-tab').forEach(tab=>{
+  tab.addEventListener('click', ()=>{
+    document.querySelectorAll('.login-tab').forEach(t=>t.classList.remove('active'));
+    tab.classList.add('active');
+    const isAdminMode = tab.dataset.mode === 'admin';
+    document.getElementById('loginLojaField').style.display = isAdminMode ? 'none' : 'block';
+    document.getElementById('loginError').textContent = '';
+  });
+});
+
+document.getElementById('loginForm').addEventListener('submit', async e=>{
+  e.preventDefault();
+  const senha = document.getElementById('loginSenha').value;
+  const errEl = document.getElementById('loginError');
+  errEl.textContent = '';
+  const modo = document.querySelector('.login-tab.active').dataset.mode;
+  try{
+    if(modo === 'admin'){
+      const snap = await adminDocRef.get();
+      if(snap.exists && snap.data().senha === senha){
+        isAdmin = true;
+        localStorage.setItem(AUTH_KEY, JSON.stringify({type:'admin'}));
+        showAdminHome();
+      } else {
+        errEl.textContent = 'Senha de administrador incorreta.';
+      }
+    } else {
+      const lojaId = document.getElementById('loginLoja').value;
+      if(!lojaId){ errEl.textContent = 'Selecione uma loja.'; return; }
+      const snap = await lojasCol.doc(lojaId).get();
+      if(snap.exists && snap.data().senha === senha){
+        localStorage.setItem(AUTH_KEY, JSON.stringify({type:'loja', lojaId}));
+        enterLoja(lojaId, snap.data());
+      } else {
+        errEl.textContent = 'Loja ou senha incorretos.';
+      }
+    }
+  }catch(err){
+    errEl.textContent = 'Erro ao conectar. Verifique a internet.';
+  }
+});
+
+async function fazerLogout(){
+  const ok = await showConfirm('Deseja realmente sair?', {okText:'Sair'});
+  if(!ok) return;
+  localStorage.removeItem(AUTH_KEY);
+  isAdmin = false;
+  adminBrowsingLoja = false;
+  currentLoja = null;
+  detachLojaListeners();
+  showLogin();
+}
+document.getElementById('btnLogout').addEventListener('click', fazerLogout);
+document.getElementById('btnLogoutAdmin').addEventListener('click', fazerLogout);
+document.getElementById('btnVoltarAdmin').addEventListener('click', ()=>{ showAdminHome(); });
+
+/* ---------------- Painel Admin ---------------- */
+async function renderAdminHome(){
+  const wrap = document.getElementById('adminLojasList');
+  wrap.innerHTML = '<div class="empty">Carregando…</div>';
+  const lojasSnap = await lojasCol.get();
+  if(lojasSnap.empty){
+    wrap.innerHTML = '<div class="empty">Nenhuma loja cadastrada ainda.</div>';
+    return;
+  }
+  const month = currentMonthKey();
+  const rows = await Promise.all(lojasSnap.docs.map(async doc=>{
+    const d = doc.data();
+    const regsSnap = await registrosCol.where('lojaId','==',doc.id).get();
+    const gastoMes = regsSnap.docs
+      .map(r=>r.data())
+      .filter(r=> r.data && r.data.slice(0,7)===month && r.formaPagamento!=='cartao')
+      .reduce((a,r)=>a+Number(r.valor||0),0);
+    return { id: doc.id, nome: d.nome, tetoMensal: Number(d.tetoMensal||0), gastoMes };
+  }));
+  wrap.innerHTML = '';
+  rows.forEach(row=>{
+    const pct = row.tetoMensal>0 ? Math.min(100, (row.gastoMes/row.tetoMensal)*100) : 0;
+    const div = document.createElement('div');
+    div.className = 'admin-loja-item';
+    div.innerHTML = `
+      <div class="admin-loja-info">
+        <div class="admin-loja-nome">${row.nome}</div>
+        <div class="admin-loja-sub">${brl(row.gastoMes)} de ${brl(row.tetoMensal)} no mês</div>
+        <div class="bar-track" style="margin-top:6px;"><div class="bar-fill" style="width:${pct.toFixed(1)}%"></div></div>
+      </div>
+      <button class="btn secondary" data-acessar="${row.id}">Acessar dados</button>`;
+    wrap.appendChild(div);
+  });
+  wrap.querySelectorAll('[data-acessar]').forEach(b=>{
+    b.addEventListener('click', async ()=>{
+      const snap = await lojasCol.doc(b.dataset.acessar).get();
+      if(snap.exists){
+        adminBrowsingLoja = true;
+        enterLoja(b.dataset.acessar, snap.data());
+      }
+    });
+  });
+}
+
+document.getElementById('formNovaLoja').addEventListener('submit', async e=>{
+  e.preventDefault();
+  const nome = document.getElementById('novaLojaNome').value.trim();
+  const senha = document.getElementById('novaLojaSenha').value;
+  await lojasCol.add({ nome, senha, tetoMensal:0, valor4h:0, valor6h:0, criadoEm: todayISO() });
+  e.target.reset();
+  toast('Loja criada.');
+  renderAdminHome();
+});
+
+document.getElementById('formTrocarSenhaAdmin').addEventListener('submit', async e=>{
+  e.preventDefault();
+  const nova = document.getElementById('novaSenhaAdmin').value;
+  await adminDocRef.set({ senha: nova }, {merge:true});
+  e.target.reset();
+  toast('Senha do administrador atualizada.');
+});
+
+function refreshAllViews(){
+  fillSetorSelects();
+  fillTaxaSelect();
+  fillEscCartaoSelect();
+  renderDashboard();
+  const activeBtn = document.querySelector('#nav button.active');
+  const v = activeBtn ? activeBtn.dataset.view : null;
+  if(v === 'escala') renderEscalaView();
+  if(v === 'taxas') renderTaxasView();
+  if(v === 'setores') renderSetoresView();
+  if(v === 'cartoes') renderCartoesView();
+  if(v === 'config') renderConfigView();
+}
+
+function brl(v){
+  return (Number(v)||0).toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
+}
+function toast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toast._t);
+  toast._t = setTimeout(()=>t.classList.remove('show'), 2200);
+}
+function showConfirm(message, opts={}){
+  return new Promise(resolve=>{
+    const overlay = document.getElementById('confirmOverlay');
+    document.getElementById('confirmTitle').textContent = opts.title || 'Confirmar ação';
+    document.getElementById('confirmMessage').textContent = message;
+    const okBtn = document.getElementById('confirmOkBtn');
+    const cancelBtn = document.getElementById('confirmCancelBtn');
+    okBtn.textContent = opts.okText || 'Confirmar';
+    overlay.classList.add('open');
+    function cleanup(result){
+      overlay.classList.remove('open');
+      okBtn.removeEventListener('click', onOk);
+      cancelBtn.removeEventListener('click', onCancel);
+      overlay.removeEventListener('click', onOverlay);
+      resolve(result);
+    }
+    function onOk(){ cleanup(true); }
+    function onCancel(){ cleanup(false); }
+    function onOverlay(e){ if(e.target === overlay) cleanup(false); }
+    okBtn.addEventListener('click', onOk);
+    cancelBtn.addEventListener('click', onCancel);
+    overlay.addEventListener('click', onOverlay);
+  });
+}
+function todayISO(){
+  const d = new Date();
+  return d.toISOString().slice(0,10);
+}
+function tomorrowISO(){
+  const d = new Date();
+  d.setDate(d.getDate() + 1);
+  return d.toISOString().slice(0,10);
+}
+function currentMonthKey(){ return todayISO().slice(0,7); }
+function currentWeekRange(){
+  const now = new Date();
+  const day = (now.getDay() + 6) % 7; // 0 = segunda
+  const monday = new Date(now);
+  monday.setDate(now.getDate() - day);
+  const sunday = new Date(monday);
+  sunday.setDate(monday.getDate() + 6);
+  const toISO = (d)=> d.toISOString().slice(0,10);
+  return { start: toISO(monday), end: toISO(sunday) };
+}
+let sectorPeriod = 'mes';
+
+/* ---------------- Navegação ---------------- */
+const navButtons = document.querySelectorAll('#nav button');
+navButtons.forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    navButtons.forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+    document.getElementById('view-'+btn.dataset.view).classList.add('active');
+    document.getElementById('nav').classList.remove('open');
+    if(btn.dataset.view === 'dashboard') renderDashboard();
+    if(btn.dataset.view === 'escala') renderEscalaView();
+    if(btn.dataset.view === 'taxas') renderTaxasView();
+    if(btn.dataset.view === 'setores') renderSetoresView();
+    if(btn.dataset.view === 'cartoes') renderCartoesView();
+    if(btn.dataset.view === 'config') renderConfigView();
+  });
+});
+document.getElementById('menuToggle').addEventListener('click', ()=>{
+  document.getElementById('nav').classList.toggle('open');
+});
+
+document.getElementById('periodToggle').addEventListener('click', (e)=>{
+  const btn = e.target.closest('button[data-period]');
+  if(!btn) return;
+  sectorPeriod = btn.dataset.period;
+  document.querySelectorAll('#periodToggle button').forEach(b=>b.classList.toggle('active', b===btn));
+  renderDashboard();
+});
+
+document.getElementById('simQtd4h').addEventListener('input', renderSimulacao);
+document.getElementById('simQtd6h').addEventListener('input', renderSimulacao);
+function renderSimulacao(){
+  const month = currentMonthKey();
+  const gastoMes = state.registros
+    .filter(r=>r.data && r.data.slice(0,7)===month && isPagamentoDinheiro(r))
+    .reduce((a,r)=>a+Number(r.valor||0),0);
+  const teto = Number(state.config.tetoMensal||0);
+  const valor4h = Number(state.config.valor4h||0);
+  const valor6h = Number(state.config.valor6h||0);
+  const qtd4h = Number(document.getElementById('simQtd4h').value||0);
+  const qtd6h = Number(document.getElementById('simQtd6h').value||0);
+  const custoSim = qtd4h*valor4h + qtd6h*valor6h;
+  const totalSim = gastoMes + custoSim;
+  const saldoSim = teto - totalSim;
+
+  document.getElementById('simAtual').textContent = brl(totalSim);
+  document.getElementById('simTeto').textContent = brl(teto);
+  const pct = teto > 0 ? Math.min(150, (totalSim/teto)*100) : 0;
+  const fill = document.getElementById('simFill');
+  fill.style.width = Math.min(100,pct) + '%';
+  fill.style.background = pct >= 100 ? 'var(--danger)' : (pct >= 80 ? 'var(--warn)' : 'var(--accent)');
+
+  const note = document.getElementById('simNote');
+  const totalTaxas = qtd4h + qtd6h;
+  if(teto <= 0 || (!valor4h && !valor6h)){
+    note.textContent = 'Defina o teto e os valores de turno em Configurações para simular.';
+    note.className = 'gauge-note';
+  } else if(totalTaxas === 0){
+    note.textContent = 'Informe a quantidade de taxas de 4h e/ou 6h para simular.';
+    note.className = 'gauge-note';
+  } else if(saldoSim < 0){
+    note.textContent = `Estouraria o teto em ${brl(-saldoSim)} com essas ${totalTaxas} taxa${totalTaxas===1?'':'s'}.`;
+    note.className = 'gauge-note warn';
+  } else {
+    note.textContent = `Sobrariam ${brl(saldoSim)} no teto após essas ${totalTaxas} taxa${totalTaxas===1?'':'s'}.`;
+    note.className = 'gauge-note';
+  }
+
+  const capacityEl = document.getElementById('simCapacity');
+  if(teto <= 0 || (!valor4h && !valor6h) || saldoSim <= 0){
+    capacityEl.innerHTML = '';
+  } else {
+    let html = '';
+    if(valor4h > 0){
+      html += `<div class="capacity-item"><div class="num">${Math.floor(saldoSim/valor4h)}</div><div class="lbl">taxas de 4h</div></div>`;
+    }
+    if(valor6h > 0){
+      html += `<div class="capacity-item"><div class="num">${Math.floor(saldoSim/valor6h)}</div><div class="lbl">taxas de 6h</div></div>`;
+    }
+    capacityEl.innerHTML = html;
+  }
+}
+
+/* ---------------- Helpers de selects ---------------- */
+function fillSetorSelects(){
+  const selects = [
+    document.getElementById('escSetor'),
+    document.getElementById('taxaSetor'),
+    document.getElementById('filtroSetorEscala')
+  ];
+  selects.forEach(sel=>{
+    if(!sel) return;
+    const isFilter = sel.id === 'filtroSetorEscala';
+    const current = sel.value;
+    sel.innerHTML = isFilter ? '<option value="">Todos os setores</option>' : '';
+    state.setores.forEach(s=>{
+      const opt = document.createElement('option');
+      opt.value = s.id; opt.textContent = s.nome;
+      sel.appendChild(opt);
+    });
+    if(current) sel.value = current;
+  });
+}
+function fillTaxaSelect(){
+  const sel = document.getElementById('escTaxa');
+  const current = sel.value;
+  sel.innerHTML = '';
+  state.taxas.forEach(t=>{
+    const opt = document.createElement('option');
+    opt.value = t.id; opt.textContent = t.nome;
+    sel.appendChild(opt);
+  });
+  if(current) sel.value = current;
+}
+function fillEscCartaoSelect(){
+  const info = document.getElementById('escCartaoInfo');
+  if(!info) return;
+  const disponivel = cartaoEstoqueDisponivel();
+  info.textContent = disponivel + ' cartão' + (disponivel===1?'':'ões') + ' disponível' + (disponivel===1?'':'eis');
+  info.style.color = disponivel <= 0 ? 'var(--danger)' : 'var(--warn)';
+}
+function setorNome(id){
+  const s = state.setores.find(s=>s.id===id);
+  return s ? s.nome : '—';
+}
+function taxaNome(id){
+  const t = state.taxas.find(t=>t.id===id);
+  return t ? t.nome : '—';
+}
+function cartaoEstoqueTotal(){
+  return state.cartoes.reduce((a,c)=>a+Number(c.quantidade||0),0);
+}
+function cartaoEstoqueUsado(){
+  return state.registros.filter(r=>r.formaPagamento==='cartao').length;
+}
+function cartaoEstoqueDisponivel(){
+  return cartaoEstoqueTotal() - cartaoEstoqueUsado();
+}
+function isPagamentoDinheiro(r){
+  return r.formaPagamento !== 'cartao';
+}
+
+/* ---------------- DASHBOARD ---------------- */
+function renderDashboard(){
+  const today = todayISO();
+  const month = currentMonthKey();
+
+  document.getElementById('dashDateLabel').textContent =
+    new Date().toLocaleDateString('pt-BR', {weekday:'long', day:'2-digit', month:'long', year:'numeric'});
+
+  const regsHoje = state.registros.filter(r=>r.data === today && isPagamentoDinheiro(r));
+  const regsMes = state.registros.filter(r=>r.data && r.data.slice(0,7) === month && isPagamentoDinheiro(r));
+
+  const gastoHoje = regsHoje.reduce((a,r)=>a+Number(r.valor||0),0);
+  const gastoMes = regsMes.reduce((a,r)=>a+Number(r.valor||0),0);
+  const teto = Number(state.config.tetoMensal||0);
+  const saldo = teto - gastoMes;
+
+  document.getElementById('cardHoje').textContent = brl(gastoHoje);
+  document.getElementById('cardHojeCount').textContent = regsHoje.length + ' lançamento' + (regsHoje.length===1?'':'s');
+  document.getElementById('cardMes').textContent = brl(gastoMes);
+  document.getElementById('cardMesCount').textContent = regsMes.length + ' lançamento' + (regsMes.length===1?'':'s');
+  document.getElementById('cardTeto').textContent = brl(teto);
+
+  const saldoEl = document.getElementById('cardSaldo');
+  saldoEl.textContent = brl(saldo);
+  saldoEl.className = 'value mono ' + (saldo < 0 ? 'danger' : 'success');
+  document.getElementById('cardSaldoSub').textContent = teto > 0 ? (saldo < 0 ? 'Teto ultrapassado' : 'Dentro do teto') : 'Configure o teto mensal';
+
+  document.getElementById('gaugeAtual').textContent = brl(gastoMes);
+  document.getElementById('gaugeTeto').textContent = brl(teto);
+  const pct = teto > 0 ? Math.min(150, (gastoMes/teto)*100) : 0;
+  const fill = document.getElementById('gaugeFill');
+  fill.style.width = Math.min(100,pct) + '%';
+  fill.style.background = pct >= 100 ? 'var(--danger)' : (pct >= 80 ? '#E0B24F' : 'var(--accent)');
+  const note = document.getElementById('gaugeNote');
+  if(teto <= 0){
+    note.textContent = 'Defina um teto mensal em Configurações para acompanhar o consumo.';
+    note.className = 'gauge-note';
+  } else if(pct >= 100){
+    note.textContent = 'Teto mensal ultrapassado em ' + brl(gastoMes-teto) + '.';
+    note.className = 'gauge-note warn';
+  } else {
+    note.textContent = pct.toFixed(1) + '% do teto utilizado — restam ' + brl(teto-gastoMes) + '.';
+    note.className = 'gauge-note';
+  }
+
+  const capacityEl = document.getElementById('gaugeCapacity');
+  const valor4h = Number(state.config.valor4h||0);
+  const valor6h = Number(state.config.valor6h||0);
+  if(teto <= 0 || (!valor4h && !valor6h)){
+    capacityEl.innerHTML = '';
+  } else if(saldo <= 0){
+    capacityEl.innerHTML = '<div class="capacity-empty">Sem saldo disponível para novas taxas dentro do teto.</div>';
+  } else {
+    let html = '';
+    if(valor4h > 0){
+      html += `<div class="capacity-item"><div class="num">${Math.floor(saldo/valor4h)}</div><div class="lbl">taxas de 4h</div></div>`;
+    }
+    if(valor6h > 0){
+      html += `<div class="capacity-item"><div class="num">${Math.floor(saldo/valor6h)}</div><div class="lbl">taxas de 6h</div></div>`;
+    }
+    capacityEl.innerHTML = html;
+  }
+
+  const bySetor = {};
+  let regsPeriodo;
+  if(sectorPeriod === 'dia'){
+    regsPeriodo = regsHoje;
+  } else if(sectorPeriod === 'semana'){
+    const { start, end } = currentWeekRange();
+    regsPeriodo = state.registros.filter(r=> r.data && r.data >= start && r.data <= end && isPagamentoDinheiro(r));
+  } else {
+    regsPeriodo = regsMes;
+  }
+  regsPeriodo.forEach(r=>{
+    bySetor[r.setorId] = (bySetor[r.setorId]||0) + Number(r.valor||0);
+  });
+  const maxSetor = Math.max(1, ...Object.values(bySetor));
+  const wrap = document.getElementById('sectorBreakdown');
+  wrap.innerHTML = '';
+  const entries = Object.entries(bySetor).sort((a,b)=>b[1]-a[1]);
+  if(entries.length === 0){
+    const label = sectorPeriod === 'dia' ? 'hoje' : sectorPeriod === 'semana' ? 'nesta semana' : 'neste mês';
+    wrap.innerHTML = `<div class="empty">Nenhum gasto lançado ${label} ainda.</div>`;
+  } else {
+    entries.forEach(([setorId, valor])=>{
+      const row = document.createElement('div');
+      row.className = 'sector-row';
+      row.innerHTML = `
+        <span>${setorNome(setorId)}</span>
+        <div class="bar-track"><div class="bar-fill" style="width:${(valor/maxSetor*100).toFixed(1)}%"></div></div>
+        <span class="amt">${brl(valor)}</span>`;
+      wrap.appendChild(row);
+    });
+  }
+
+  renderSimulacao();
+  renderCartaoConsumo();
+}
+
+function renderCartaoConsumo(){
+  const total = cartaoEstoqueTotal();
+  const usado = cartaoEstoqueUsado();
+  const disponivel = total - usado;
+
+  document.getElementById('cartaoAtual').textContent = usado;
+  document.getElementById('cartaoTotal').textContent = total + ' cartões';
+  const pct = total > 0 ? Math.min(150, (usado/total)*100) : 0;
+  const fill = document.getElementById('cartaoFill');
+  fill.style.width = Math.min(100,pct) + '%';
+  fill.style.background = pct >= 100 ? 'var(--danger)' : (pct >= 80 ? 'var(--warn)' : 'var(--accent)');
+
+  const note = document.getElementById('cartaoNote');
+  if(total === 0){
+    note.textContent = 'Nenhum cartão presente cadastrado ainda.';
+    note.className = 'gauge-note';
+  } else if(disponivel <= 0){
+    note.textContent = 'Todos os cartões foram utilizados.';
+    note.className = 'gauge-note warn';
+  } else {
+    note.textContent = pct.toFixed(1) + '% já utilizado.';
+    note.className = 'gauge-note';
+  }
+
+  const wrap = document.getElementById('cartaoBreakdown');
+  if(total === 0){
+    wrap.innerHTML = '';
+  } else {
+    wrap.innerHTML = `
+      <div class="capacity-item"><div class="num">${usado}</div><div class="lbl">usados</div></div>
+      <div class="capacity-item"><div class="num">${disponivel}</div><div class="lbl">disponíveis</div></div>`;
+  }
+}
+
+/* ---------------- ESCALA ---------------- */
+function monthRange(monthKey){
+  const [y, m] = monthKey.split('-').map(Number);
+  const start = `${monthKey}-01`;
+  const lastDay = new Date(y, m, 0).getDate();
+  const end = `${monthKey}-${String(lastDay).padStart(2,'0')}`;
+  return { start, end };
+}
+function setDateRange(start, end){
+  document.getElementById('filtroDataInicio').value = start;
+  document.getElementById('filtroDataFim').value = end;
+}
+let escalaFiltroIniciado = false;
+
+function renderEscalaView(){
+  fillSetorSelects();
+  fillTaxaSelect();
+  fillEscCartaoSelect();
+  if(!document.getElementById('escData').value) document.getElementById('escData').value = todayISO();
+  if(!escalaFiltroIniciado){
+    const { start, end } = monthRange(currentMonthKey());
+    setDateRange(start, end);
+    document.querySelectorAll('#quickFilters button').forEach(b=>b.classList.toggle('active', b.dataset.quick==='mes'));
+    escalaFiltroIniciado = true;
+  }
+  autoFillValor();
+  renderTabelaEscala();
+}
+
+function renderTabelaEscala(){
+  const dataInicio = document.getElementById('filtroDataInicio').value;
+  const dataFim = document.getElementById('filtroDataFim').value;
+  const setorFiltro = document.getElementById('filtroSetorEscala').value;
+  let regs = state.registros.filter(r=>{
+    if(setorFiltro && r.setorId !== setorFiltro) return false;
+    if(dataInicio && (!r.data || r.data < dataInicio)) return false;
+    if(dataFim && (!r.data || r.data > dataFim)) return false;
+    return true;
+  });
+  regs = regs.slice().sort((a,b)=> (b.data||'').localeCompare(a.data||''));
+  const tbody = document.querySelector('#tabelaEscala tbody');
+  tbody.innerHTML = '';
+  document.getElementById('escalaEmpty').style.display = regs.length ? 'none' : 'block';
+  regs.forEach(r=>{
+    const tr = document.createElement('tr');
+    const status = registroStatus(r);
+    if(status) tr.classList.add('status-' + status);
+    const badges = { proximo: 'Perto do fim', atrasado: 'Atrasado', finalizado: 'Finalizado' };
+    const badge = status ? `<span class="status-badge ${status}">${badges[status]}</span>` : '';
+    const finalizarBtn = (!r.finalizado && r.data === todayISO())
+      ? `<button class="icon-btn finalizar" data-finalizar="${r.id}">Finalizar</button>`
+      : (r.finalizado ? `<button class="icon-btn" data-reverter="${r.id}">Reverter</button>` : '');
+    const pagamentoTxt = r.formaPagamento === 'cartao'
+      ? `<span class="tag" style="border-color:var(--warn); color:var(--warn); background:rgba(224,178,79,.08);">💳 Cartão presente</span>`
+      : `<span class="tag">💵 Dinheiro</span>`;
+    tr.innerHTML = `
+      <td>${formatData(r.data)}</td>
+      <td><span class="tag">${setorNome(r.setorId)}</span></td>
+      <td>${taxaNome(r.taxaId)}${badge}</td>
+      <td>${r.turno}</td>
+      <td>${pagamentoTxt}</td>
+      <td>${r.entrada||'—'}</td>
+      <td>${r.saida||'—'}</td>
+      <td class="amt">${brl(r.valor)}</td>
+      <td><div class="row-actions">${finalizarBtn}<button class="icon-btn" data-del="${r.id}">Excluir</button></div></td>`;
+    tbody.appendChild(tr);
+  });
+  tbody.querySelectorAll('[data-finalizar]').forEach(b=>{
+    b.addEventListener('click', async ()=>{
+      const reg = state.registros.find(r=>r.id === b.dataset.finalizar);
+      if(!reg) return;
+      const ok = await showConfirm(`Confirmar que o turno de ${taxaNome(reg.taxaId)} (${setorNome(reg.setorId)}) foi finalizado?`, {okText:'Finalizar'});
+      if(!ok) return;
+      await registrosCol.doc(reg.id).update({ finalizado: true });
+      toast('Turno marcado como finalizado.');
+    });
+  });
+  tbody.querySelectorAll('[data-reverter]').forEach(b=>{
+    b.addEventListener('click', async ()=>{
+      const reg = state.registros.find(r=>r.id === b.dataset.reverter);
+      if(!reg) return;
+      await registrosCol.doc(reg.id).update({ finalizado: false });
+      toast('Finalização desfeita.');
+    });
+  });
+  tbody.querySelectorAll('[data-del]').forEach(b=>{
+    b.addEventListener('click', async ()=>{
+      const reg = state.registros.find(r=>r.id === b.dataset.del);
+      if(!reg) return;
+      const msg = `Excluir o lançamento de ${taxaNome(reg.taxaId)} (${setorNome(reg.setorId)}) em ${formatData(reg.data)}, valor ${brl(reg.valor)}?`;
+      const ok = await showConfirm(msg, {okText:'Excluir'});
+      if(!ok) return;
+      await registrosCol.doc(reg.id).delete();
+      toast('Lançamento removido.');
+    });
+  });
+}
+function formatData(iso){
+  if(!iso) return '—';
+  const [y,m,d] = iso.split('-');
+  return `${d}/${m}/${y}`;
+}
+function registroStatus(r){
+  if(r.finalizado) return 'finalizado';
+  if(r.data !== todayISO() || !r.saida) return null;
+  const [h, m] = r.saida.split(':').map(Number);
+  const saidaDate = new Date();
+  saidaDate.setHours(h, m, 0, 0);
+  const diffMin = (saidaDate - new Date()) / 60000;
+  if(diffMin <= 0) return 'atrasado';
+  if(diffMin <= 30) return 'proximo';
+  return null;
+}
+
+document.getElementById('escTaxa').addEventListener('change', autoFillValor);
+document.getElementById('escTurno').addEventListener('change', ()=>{ autoFillValor(); calcSaida(); });
+document.getElementById('escEntrada').addEventListener('change', calcSaida);
+function calcSaida(){
+  const entrada = document.getElementById('escEntrada').value;
+  if(!entrada) return;
+  const turno = document.getElementById('escTurno').value;
+  const horas = turno === '4h' ? 4 : 6;
+  const [h, m] = entrada.split(':').map(Number);
+  const total = (h * 60 + m + horas * 60) % (24 * 60);
+  const hh = String(Math.floor(total / 60)).padStart(2, '0');
+  const mm = String(total % 60).padStart(2, '0');
+  document.getElementById('escSaida').value = `${hh}:${mm}`;
+}
+function autoFillValor(){
+  const taxaId = document.getElementById('escTaxa').value;
+  const turno = document.getElementById('escTurno').value;
+  const valor = turno === '4h' ? Number(state.config.valor4h||0) : Number(state.config.valor6h||0);
+  document.getElementById('escValor').value = valor;
+  document.getElementById('escValorDisplay').textContent = brl(valor);
+  const t = state.taxas.find(t=>t.id===taxaId);
+  if(t){
+    document.getElementById('escSetor').value = t.setorId;
+  }
+}
+
+document.getElementById('escPagamento').addEventListener('change', ()=>{
+  const isCartao = document.getElementById('escPagamento').value === 'cartao';
+  document.getElementById('escCartaoWrap').style.display = isCartao ? 'block' : 'none';
+  if(isCartao) fillEscCartaoSelect();
+});
+
+document.getElementById('formEscala').addEventListener('submit', async e=>{
+  e.preventDefault();
+  if(state.taxas.length === 0){ toast('Cadastre uma taxa primeiro.'); return; }
+  if(state.setores.length === 0){ toast('Cadastre um setor primeiro.'); return; }
+  if(!state.config.valor4h && !state.config.valor6h){ toast('Defina os valores de turno em Configurações primeiro.'); return; }
+  const formaPagamento = document.getElementById('escPagamento').value;
+  const valor = Number(document.getElementById('escValor').value || 0);
+  if(formaPagamento === 'cartao' && cartaoEstoqueDisponivel() <= 0){
+    toast('Não há cartões disponíveis no estoque.');
+    return;
+  }
+  const reg = {
+    lojaId: currentLoja.id,
+    data: document.getElementById('escData').value,
+    setorId: document.getElementById('escSetor').value,
+    taxaId: document.getElementById('escTaxa').value,
+    turno: document.getElementById('escTurno').value,
+    entrada: document.getElementById('escEntrada').value,
+    saida: document.getElementById('escSaida').value,
+    valor: valor,
+    formaPagamento: formaPagamento
+  };
+  await registrosCol.add(reg);
+  e.target.reset();
+  document.getElementById('escData').value = todayISO();
+  document.getElementById('escCartaoWrap').style.display = 'none';
+  toast('Lançamento adicionado à escala.');
+});
+
+document.getElementById('filtroDataInicio').addEventListener('change', ()=>{
+  document.querySelectorAll('#quickFilters button').forEach(b=>b.classList.remove('active'));
+  renderTabelaEscala();
+});
+document.getElementById('filtroDataFim').addEventListener('change', ()=>{
+  document.querySelectorAll('#quickFilters button').forEach(b=>b.classList.remove('active'));
+  renderTabelaEscala();
+});
+document.getElementById('filtroSetorEscala').addEventListener('change', renderTabelaEscala);
+
+document.getElementById('quickFilters').addEventListener('click', (e)=>{
+  const btn = e.target.closest('button[data-quick]');
+  if(!btn) return;
+  const hoje = todayISO();
+  if(btn.dataset.quick === 'hoje'){
+    setDateRange(hoje, hoje);
+  } else if(btn.dataset.quick === 'amanha'){
+    const a = tomorrowISO();
+    setDateRange(a, a);
+  } else if(btn.dataset.quick === 'semana'){
+    const { start, end } = currentWeekRange();
+    setDateRange(start, end);
+  } else if(btn.dataset.quick === 'mes'){
+    const { start, end } = monthRange(currentMonthKey());
+    setDateRange(start, end);
+  } else if(btn.dataset.quick === 'todos'){
+    setDateRange('', '');
+  }
+  document.querySelectorAll('#quickFilters button').forEach(b=>b.classList.toggle('active', b===btn));
+  renderTabelaEscala();
+});
+
+/* ---------------- TAXAS ---------------- */
+function renderTaxasView(){
+  fillSetorSelects();
+  renderTabelaTaxas();
+}
+function renderTabelaTaxas(){
+  const tbody = document.querySelector('#tabelaTaxas tbody');
+  tbody.innerHTML = '';
+  document.getElementById('taxasEmpty').style.display = state.taxas.length ? 'none' : 'block';
+  state.taxas.forEach(t=>{
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${t.nome}</td>
+      <td><span class="tag">${setorNome(t.setorId)}</span></td>
+      <td><div class="row-actions"><button class="icon-btn" data-del="${t.id}">Excluir</button></div></td>`;
+    tbody.appendChild(tr);
+  });
+  tbody.querySelectorAll('[data-del]').forEach(b=>{
+    b.addEventListener('click', async ()=>{
+      await taxasCol.doc(b.dataset.del).delete();
+      toast('Taxa removida.');
+    });
+  });
+}
+document.getElementById('formTaxa').addEventListener('submit', async e=>{
+  e.preventDefault();
+  if(state.setores.length === 0){ toast('Cadastre um setor primeiro.'); return; }
+  await taxasCol.add({
+    lojaId: currentLoja.id,
+    nome: document.getElementById('taxaNome').value.trim(),
+    setorId: document.getElementById('taxaSetor').value
+  });
+  e.target.reset();
+  toast('Taxa cadastrada.');
+});
+
+/* ---------------- SETORES ---------------- */
+function renderSetoresView(){
+  renderTabelaSetores();
+}
+function renderTabelaSetores(){
+  const tbody = document.querySelector('#tabelaSetores tbody');
+  tbody.innerHTML = '';
+  document.getElementById('setoresEmpty').style.display = state.setores.length ? 'none' : 'block';
+  state.setores.forEach(s=>{
+    const vinculadas = state.taxas.filter(t=>t.setorId===s.id).length;
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${s.nome}</td>
+      <td>${vinculadas}</td>
+      <td><div class="row-actions"><button class="icon-btn" data-del="${s.id}">Excluir</button></div></td>`;
+    tbody.appendChild(tr);
+  });
+  tbody.querySelectorAll('[data-del]').forEach(b=>{
+    b.addEventListener('click', async ()=>{
+      const emUso = state.taxas.some(t=>t.setorId===b.dataset.del);
+      if(emUso){ toast('Este setor tem taxas vinculadas — remova-as primeiro.'); return; }
+      await setoresCol.doc(b.dataset.del).delete();
+      toast('Setor removido.');
+    });
+  });
+}
+document.getElementById('formSetor').addEventListener('submit', async e=>{
+  e.preventDefault();
+  await setoresCol.add({ lojaId: currentLoja.id, nome: document.getElementById('setorNome').value.trim() });
+  e.target.reset();
+  toast('Setor cadastrado.');
+});
+
+/* ---------------- CARTÕES ---------------- */
+function renderCartoesView(){
+  renderTabelaCartoes();
+  const total = cartaoEstoqueTotal();
+  const usado = cartaoEstoqueUsado();
+  document.getElementById('cartaoStockTotal').textContent = total;
+  document.getElementById('cartaoStockUsado').textContent = usado;
+  document.getElementById('cartaoStockDisponivel').textContent = total - usado;
+}
+function renderTabelaCartoes(){
+  const tbody = document.querySelector('#tabelaCartoes tbody');
+  tbody.innerHTML = '';
+  document.getElementById('cartoesEmpty').style.display = state.cartoes.length ? 'none' : 'block';
+  const lotes = state.cartoes.slice().sort((a,b)=> (b.data||'').localeCompare(a.data||''));
+  lotes.forEach(c=>{
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${formatData(c.data)}</td>
+      <td>${c.obs || '—'}</td>
+      <td class="amt">${c.quantidade}</td>
+      <td><div class="row-actions"><button class="icon-btn" data-del="${c.id}">Excluir</button></div></td>`;
+    tbody.appendChild(tr);
+  });
+  tbody.querySelectorAll('[data-del]').forEach(b=>{
+    b.addEventListener('click', async ()=>{
+      const lote = state.cartoes.find(c=>c.id===b.dataset.del);
+      if(!lote) return;
+      const disponivel = cartaoEstoqueDisponivel();
+      const msg = disponivel < lote.quantidade
+        ? `Remover este lote de ${lote.quantidade} cartões pode deixar o estoque negativo (só há ${disponivel} disponíveis agora). Excluir mesmo assim?`
+        : `Excluir este lote de ${lote.quantidade} cartões?`;
+      const ok = await showConfirm(msg, {okText:'Excluir'});
+      if(!ok) return;
+      await cartoesCol.doc(b.dataset.del).delete();
+      toast('Lote removido.');
+    });
+  });
+}
+document.getElementById('formCartao').addEventListener('submit', async e=>{
+  e.preventDefault();
+  await cartoesCol.add({
+    lojaId: currentLoja.id,
+    quantidade: Number(document.getElementById('cartaoQuantidade').value||0),
+    obs: document.getElementById('cartaoObs').value.trim(),
+    data: todayISO()
+  });
+  e.target.reset();
+  toast('Cartões adicionados ao estoque.');
+});
+
+/* ---------------- CONFIG ---------------- */
+function renderConfigView(){
+  document.getElementById('configTeto').value = state.config.tetoMensal || '';
+  document.getElementById('configValor4h').value = state.config.valor4h || '';
+  document.getElementById('configValor6h').value = state.config.valor6h || '';
+}
+document.getElementById('formConfig').addEventListener('submit', async e=>{
+  e.preventDefault();
+  await lojasCol.doc(currentLoja.id).update({
+    tetoMensal: Number(document.getElementById('configTeto').value||0),
+    valor4h: Number(document.getElementById('configValor4h').value||0),
+    valor6h: Number(document.getElementById('configValor6h').value||0)
+  });
+  toast('Configurações atualizadas.');
+});
+
+document.getElementById('btnExport').addEventListener('click', ()=>{
+  const blob = new Blob([JSON.stringify(state, null, 2)], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'backup-' + (currentLoja.nome||'loja').toLowerCase().replace(/\s+/g,'-') + '-' + todayISO() + '.json';
+  a.click();
+});
+document.getElementById('importFile').addEventListener('change', (e)=>{
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = async () => {
+    try{
+      const imported = JSON.parse(reader.result);
+      const ok = await showConfirm('Isso vai substituir todos os dados desta loja pelos do backup importado. Continuar?', {okText:'Importar'});
+      if(!ok){ e.target.value=''; return; }
+      await limparDadosDaLoja();
+      const batch = db.batch();
+      (imported.setores||[]).forEach(s=> batch.set(setoresCol.doc(s.id), { lojaId: currentLoja.id, nome: s.nome }));
+      (imported.taxas||[]).forEach(t=> batch.set(taxasCol.doc(t.id), { lojaId: currentLoja.id, nome: t.nome, setorId: t.setorId }));
+      (imported.registros||[]).forEach(r=>{
+        const { id, ...rest } = r;
+        batch.set(registrosCol.doc(id), { lojaId: currentLoja.id, ...rest });
+      });
+      (imported.cartoes||[]).forEach(c=> batch.set(cartoesCol.doc(c.id), { lojaId: currentLoja.id, quantidade: c.quantidade, obs: c.obs, data: c.data }));
+      await batch.commit();
+      if(imported.config){
+        await lojasCol.doc(currentLoja.id).update({
+          tetoMensal: Number(imported.config.tetoMensal||0),
+          valor4h: Number(imported.config.valor4h||0),
+          valor6h: Number(imported.config.valor6h||0)
+        });
+      }
+      toast('Backup importado com sucesso.');
+    }catch(err){
+      toast('Arquivo inválido.');
+    }
+    e.target.value = '';
+  };
+  reader.readAsText(file);
+});
+document.getElementById('btnReset').addEventListener('click', async ()=>{
+  const ok = await showConfirm(`Isso vai apagar todos os setores, taxas, cartões e lançamentos da loja "${currentLoja.nome}" — inclusive para as outras pessoas que acessam essa loja. Continuar?`, {okText:'Apagar tudo'});
+  if(!ok) return;
+  await limparDadosDaLoja();
+  await lojasCol.doc(currentLoja.id).update({ tetoMensal: 0, valor4h: 0, valor6h: 0 });
+  toast('Todos os dados desta loja foram apagados.');
+});
+
+/* ---------------- PWA: instalação e service worker ---------------- */
+let deferredPrompt;
+window.addEventListener('beforeinstallprompt', (e)=>{
+  e.preventDefault();
+  deferredPrompt = e;
+  document.getElementById('installBanner').style.display = 'flex';
+});
+document.getElementById('installBtn').addEventListener('click', async ()=>{
+  if(!deferredPrompt) return;
+  deferredPrompt.prompt();
+  await deferredPrompt.userChoice;
+  deferredPrompt = null;
+  document.getElementById('installBanner').style.display = 'none';
+});
+if('serviceWorker' in navigator){
+  window.addEventListener('load', ()=>{
+    navigator.serviceWorker.register('sw.js').catch(()=>{});
+  });
+}
+
+/* ---------------- Inicialização ---------------- */
+ensureAdminDoc();
+restoreSession();
+
+setInterval(()=>{
+  const view = document.getElementById('view-escala');
+  if(view && view.classList.contains('active')) renderTabelaEscala();
+}, 30000);
+</script>
+</body>
+</html>
