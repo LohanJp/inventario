@@ -432,6 +432,17 @@
       <div id="adminLojasList" class="admin-lojas-list"></div>
     </div>
     <div class="box">
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:16px;">
+        <h3 style="margin:0;">Gasto por loja</h3>
+        <div class="period-toggle" id="adminPeriodToggle">
+          <button data-period="dia">Dia</button>
+          <button data-period="semana">Semana</button>
+          <button data-period="mes" class="active">Mês</button>
+        </div>
+      </div>
+      <div class="sector-list" id="adminChartList"></div>
+    </div>
+    <div class="box">
       <h3>Criar nova loja</h3>
       <form id="formNovaLoja" class="form-grid">
         <div>
@@ -1106,24 +1117,32 @@ document.getElementById('btnLogoutAdmin').addEventListener('click', fazerLogout)
 document.getElementById('btnVoltarAdmin').addEventListener('click', ()=>{ showAdminHome(); });
 
 /* ---------------- Painel Admin ---------------- */
+let adminLojasResumo = [];
+let adminPeriod = 'mes';
+
 async function renderAdminHome(){
   const wrap = document.getElementById('adminLojasList');
   wrap.innerHTML = '<div class="empty">Carregando…</div>';
+  document.getElementById('adminChartList').innerHTML = '';
   const lojasSnap = await lojasCol.get();
   if(lojasSnap.empty){
     wrap.innerHTML = '<div class="empty">Nenhuma loja cadastrada ainda.</div>';
+    adminLojasResumo = [];
     return;
   }
+  const hoje = todayISO();
   const month = currentMonthKey();
+  const { start: semanaInicio, end: semanaFim } = currentWeekRange();
   const rows = await Promise.all(lojasSnap.docs.map(async doc=>{
     const d = doc.data();
     const regsSnap = await registrosCol.where('lojaId','==',doc.id).get();
-    const gastoMes = regsSnap.docs
-      .map(r=>r.data())
-      .filter(r=> r.data && r.data.slice(0,7)===month && r.formaPagamento!=='cartao')
-      .reduce((a,r)=>a+Number(r.valor||0),0);
-    return { id: doc.id, nome: d.nome, tetoMensal: Number(d.tetoMensal||0), gastoMes };
+    const regsDinheiro = regsSnap.docs.map(r=>r.data()).filter(r=> r.formaPagamento !== 'cartao' && r.data);
+    const gastoDia = regsDinheiro.filter(r=> r.data === hoje).reduce((a,r)=>a+Number(r.valor||0),0);
+    const gastoSemana = regsDinheiro.filter(r=> r.data >= semanaInicio && r.data <= semanaFim).reduce((a,r)=>a+Number(r.valor||0),0);
+    const gastoMes = regsDinheiro.filter(r=> r.data.slice(0,7)===month).reduce((a,r)=>a+Number(r.valor||0),0);
+    return { id: doc.id, nome: d.nome, tetoMensal: Number(d.tetoMensal||0), gastoDia, gastoSemana, gastoMes };
   }));
+  adminLojasResumo = rows;
   wrap.innerHTML = '';
   rows.forEach(row=>{
     const pct = row.tetoMensal>0 ? Math.min(100, (row.gastoMes/row.tetoMensal)*100) : 0;
@@ -1159,7 +1178,41 @@ async function renderAdminHome(){
       toast('Senha da loja atualizada.');
     });
   });
+  renderAdminChart();
 }
+
+function renderAdminChart(){
+  const wrap = document.getElementById('adminChartList');
+  if(!adminLojasResumo.length){
+    wrap.innerHTML = '<div class="empty">Nenhuma loja cadastrada ainda.</div>';
+    return;
+  }
+  const key = adminPeriod === 'dia' ? 'gastoDia' : adminPeriod === 'semana' ? 'gastoSemana' : 'gastoMes';
+  const sorted = [...adminLojasResumo].sort((a,b)=> b[key]-a[key]);
+  const max = Math.max(1, ...sorted.map(r=>r[key]));
+  wrap.innerHTML = '';
+  if(sorted.every(r=>r[key]===0)){
+    const label = adminPeriod === 'dia' ? 'hoje' : adminPeriod === 'semana' ? 'nesta semana' : 'neste mês';
+    wrap.innerHTML = `<div class="empty">Nenhum gasto registrado ${label} ainda.</div>`;
+    return;
+  }
+  sorted.forEach(row=>{
+    const div = document.createElement('div');
+    div.className = 'sector-row';
+    div.innerHTML = `
+      <span>${row.nome}</span>
+      <div class="bar-track"><div class="bar-fill" style="width:${(row[key]/max*100).toFixed(1)}%"></div></div>
+      <span class="amt">${brl(row[key])}</span>`;
+    wrap.appendChild(div);
+  });
+}
+document.getElementById('adminPeriodToggle').addEventListener('click', (e)=>{
+  const btn = e.target.closest('button[data-period]');
+  if(!btn) return;
+  adminPeriod = btn.dataset.period;
+  document.querySelectorAll('#adminPeriodToggle button').forEach(b=>b.classList.toggle('active', b===btn));
+  renderAdminChart();
+});
 
 document.getElementById('formNovaLoja').addEventListener('submit', async e=>{
   e.preventDefault();
