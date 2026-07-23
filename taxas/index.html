@@ -300,11 +300,11 @@
   #toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
 
   /* ---------- Confirm modal ---------- */
-  #confirmOverlay{
+  #confirmOverlay, #promptOverlay{
     position:fixed; inset:0; background:rgba(0,0,0,.55); display:none;
     align-items:center; justify-content:center; z-index:1000; padding:20px;
   }
-  #confirmOverlay.open{display:flex;}
+  #confirmOverlay.open, #promptOverlay.open{display:flex;}
   #confirmModal{
     background:var(--surface); border:1px solid var(--border); border-radius:var(--radius);
     padding:22px; max-width:380px; width:100%; box-shadow:0 10px 40px rgba(0,0,0,.4);
@@ -861,6 +861,19 @@
   </div>
 </div>
 
+<div id="promptOverlay">
+  <div id="confirmModal">
+    <h3 id="promptTitle">Trocar senha</h3>
+    <form id="promptForm">
+      <input type="password" id="promptInput" placeholder="Nova senha" required style="margin-bottom:18px;">
+      <div id="confirmActions">
+        <button type="button" class="btn secondary" id="promptCancelBtn">Cancelar</button>
+        <button type="submit" class="btn">Salvar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
 <script>
 /* ---------------- Estado local (populado via Firestore) ---------------- */
 function defaultState(){
@@ -1122,7 +1135,10 @@ async function renderAdminHome(){
         <div class="admin-loja-sub">${brl(row.gastoMes)} de ${brl(row.tetoMensal)} no mês</div>
         <div class="bar-track" style="margin-top:6px;"><div class="bar-fill" style="width:${pct.toFixed(1)}%"></div></div>
       </div>
-      <button class="btn secondary" data-acessar="${row.id}">Acessar dados</button>`;
+      <div style="display:flex; gap:8px; flex-wrap:wrap;">
+        <button class="btn secondary" data-acessar="${row.id}">Acessar dados</button>
+        <button class="btn secondary" data-trocasenha="${row.id}" data-nome="${row.nome}">Trocar senha</button>
+      </div>`;
     wrap.appendChild(div);
   });
   wrap.querySelectorAll('[data-acessar]').forEach(b=>{
@@ -1132,6 +1148,15 @@ async function renderAdminHome(){
         adminBrowsingLoja = true;
         enterLoja(b.dataset.acessar, snap.data());
       }
+    });
+  });
+  wrap.querySelectorAll('[data-trocasenha]').forEach(b=>{
+    b.addEventListener('click', async ()=>{
+      const novaSenha = await showPasswordPrompt(`Nova senha para "${b.dataset.nome}"`);
+      if(novaSenha === null) return;
+      if(!novaSenha.trim()){ toast('A senha não pode ficar em branco.'); return; }
+      await lojasCol.doc(b.dataset.trocasenha).update({ senha: novaSenha });
+      toast('Senha da loja atualizada.');
     });
   });
 }
@@ -1198,6 +1223,31 @@ function showConfirm(message, opts={}){
     function onCancel(){ cleanup(false); }
     function onOverlay(e){ if(e.target === overlay) cleanup(false); }
     okBtn.addEventListener('click', onOk);
+    cancelBtn.addEventListener('click', onCancel);
+    overlay.addEventListener('click', onOverlay);
+  });
+}
+function showPasswordPrompt(title){
+  return new Promise(resolve=>{
+    const overlay = document.getElementById('promptOverlay');
+    const form = document.getElementById('promptForm');
+    const input = document.getElementById('promptInput');
+    document.getElementById('promptTitle').textContent = title || 'Trocar senha';
+    input.value = '';
+    overlay.classList.add('open');
+    setTimeout(()=>input.focus(), 50);
+    function cleanup(result){
+      overlay.classList.remove('open');
+      form.removeEventListener('submit', onSubmit);
+      cancelBtn.removeEventListener('click', onCancel);
+      overlay.removeEventListener('click', onOverlay);
+      resolve(result);
+    }
+    const cancelBtn = document.getElementById('promptCancelBtn');
+    function onSubmit(e){ e.preventDefault(); cleanup(input.value); }
+    function onCancel(){ cleanup(null); }
+    function onOverlay(e){ if(e.target === overlay) cleanup(null); }
+    form.addEventListener('submit', onSubmit);
     cancelBtn.addEventListener('click', onCancel);
     overlay.addEventListener('click', onOverlay);
   });
