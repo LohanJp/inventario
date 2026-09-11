@@ -1,0 +1,783 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
+<title>Escala de Promotores</title>
+<meta name="theme-color" content="#16a34a" />
+<link rel="manifest" href="manifest.json" />
+<link rel="icon" href="icon-192.png" />
+<link rel="apple-touch-icon" href="icon-192.png" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+<meta name="apple-mobile-web-app-title" content="Escala" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --green:#16a34a; --green-dark:#0f7a37; --green-soft:#e7f7ee;
+    --amber:#d97706; --amber-soft:#fef3e2;
+    --bg:#f0f2f5; --card:#ffffff; --ink:#0f1115; --muted:#6b7280;
+    --danger:#e5484d; --danger-soft:#fdeaea; --line:#e9eaee;
+    --radius-lg:22px; --radius-md:16px; --radius-sm:12px;
+    --shadow: 0 1px 2px rgba(15,17,21,0.04), 0 8px 20px -12px rgba(15,17,21,0.12);
+    --font-display:'Manrope', system-ui, sans-serif;
+    --font-body:'Inter', system-ui, sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html,body{height:100%;}
+  body{ margin:0; background:var(--bg); font-family:var(--font-body); color:var(--ink); -webkit-font-smoothing:antialiased; overscroll-behavior:none; }
+  #app{ max-width:460px; margin:0 auto; min-height:100vh; position:relative; display:flex; flex-direction:column; background:var(--bg); }
+  .status-spacer{ height: env(safe-area-inset-top, 0px); }
+  .page{ flex:1; padding:20px 18px 100px; animation:fadein .18s ease; }
+  @keyframes fadein{from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:translateY(0);}}
+  h1.page-title{ font-family:var(--font-display); font-weight:800; font-size:32px; letter-spacing:-0.02em; margin:6px 0 20px; }
+  .title-row{ display:flex; align-items:center; justify-content:space-between; }
+  .fab{ width:44px; height:44px; border-radius:14px; background:var(--green); color:#fff; border:none;
+    display:flex; align-items:center; justify-content:center; font-size:24px; box-shadow:var(--shadow); cursor:pointer; transition: transform .12s ease; }
+  .fab:active{ transform:scale(0.92); }
+
+  .card{ background:var(--card); border-radius:var(--radius-lg); padding:18px; box-shadow:var(--shadow); margin-bottom:12px; }
+
+  .setor-row{ display:flex; align-items:center; justify-content:space-between; padding:16px 4px; cursor:pointer; }
+  .setor-block{ border-bottom:1px solid var(--line); }
+  .setor-block:last-child{ border-bottom:none; }
+  .setor-name{ font-weight:700; font-size:16px; }
+  .setor-sub{ color:var(--muted); font-size:13px; margin-top:2px; }
+  .dot{ width:11px; height:11px; border-radius:50%; display:inline-block; margin-right:8px; vertical-align:middle; }
+  .dot.ok{ background:var(--green); }
+  .dot.atencao{ background:var(--amber); }
+  .dot.critico{ background:var(--danger); }
+  .count-badge{ padding:7px 14px; border-radius:999px; font-size:14px; font-weight:800; font-family:var(--font-display); white-space:nowrap; }
+  .count-badge.ok{ background:var(--green-soft); color:var(--green-dark); }
+  .count-badge.atencao{ background:var(--amber-soft); color:var(--amber); }
+  .count-badge.critico{ background:var(--danger-soft); color:var(--danger); }
+  .setor-people{ padding:0 4px 16px; }
+  .setor-people .empty-mini{ color:var(--muted); font-size:13px; padding:4px 0 6px; }
+  .person-chip{ display:flex; align-items:center; justify-content:space-between; padding:9px 12px; background:var(--bg); border-radius:12px; margin-bottom:6px; font-size:14px; font-weight:600; }
+  .person-chip:last-child{ margin-bottom:0; }
+  .edit-hint{ text-align:center; color:var(--muted); font-size:12px; margin-top:2px; }
+
+  .list-item{ display:flex; align-items:center; justify-content:space-between; padding:16px 4px; border-bottom:1px solid var(--line); cursor:pointer; }
+  .list-item:last-child{ border-bottom:none; }
+  .li-name{ font-weight:700; font-size:16px; }
+  .li-sub{ color:var(--muted); font-size:13.5px; margin-top:2px; }
+  .wa-btn{ width:38px; height:38px; border-radius:50%; background:#e9f9ee; border:none; display:flex; align-items:center; justify-content:center; font-size:17px; cursor:pointer; flex-shrink:0; }
+  .wa-btn:active{ background:#d7f2e0; }
+
+  .empty-state{ text-align:center; color:var(--muted); padding:60px 20px; font-size:15px; }
+  .empty-state .em-icon{ font-size:38px; margin-bottom:10px; display:block; }
+
+  .search{ width:100%; padding:14px 16px; border-radius:999px; border:none; background:#e6e8ec; font-size:15px; font-family:var(--font-body); margin-bottom:14px; }
+  .search:focus{ outline:2px solid var(--green); }
+
+  .field{ margin-bottom:16px; }
+  .field label{ display:block; font-weight:700; font-size:14px; margin-bottom:8px; }
+  .field input[type=text], .field input[type=tel], .field input[type=number], .field textarea, .field select{
+    width:100%; padding:14px 16px; border-radius:16px; border:1.5px solid var(--line);
+    font-size:15px; font-family:var(--font-body); background:#fff; color:var(--ink);
+  }
+  .field textarea{ resize:vertical; min-height:70px; line-height:1.4; }
+  .field input:focus, .field textarea:focus, .field select:focus{ outline:none; border-color:var(--green); }
+  .hint{ color:var(--muted); font-size:12.5px; margin-top:6px; }
+  .field-row{ display:flex; gap:12px; }
+  .field-row .field{ flex:1; }
+
+  .day-chips{ display:flex; gap:6px; flex-wrap:wrap; }
+  .day-chip{ padding:10px 0; width:44px; text-align:center; border-radius:12px; border:1.5px solid var(--line); background:#fff; font-weight:700; font-size:13px; color:var(--muted); cursor:pointer; }
+  .day-chip.active{ background:var(--green); border-color:var(--green); color:#fff; }
+
+  .btn-block{ width:100%; padding:16px; border:none; border-radius:16px; background:var(--green); color:#fff; font-weight:700; font-size:16px; cursor:pointer; margin-top:6px; }
+  .btn-block:active{ background:var(--green-dark); }
+  .btn-block.wa{ background:#25D366; }
+  .btn-block.secondary{ background:var(--bg); color:var(--ink); }
+  .btn-block.danger-outline{ background:var(--danger-soft); color:var(--danger); margin-top:10px; }
+
+  .sheet-backdrop{ position:fixed; inset:0; background:rgba(15,17,21,.45); z-index:50; display:flex; align-items:flex-end; justify-content:center; animation:fadein2 .15s ease; }
+  @keyframes fadein2{ from{opacity:0;} to{opacity:1;} }
+  .sheet{ width:100%; max-width:460px; background:#fff; border-radius:24px 24px 0 0; padding:22px 18px calc(22px + env(safe-area-inset-bottom,0px));
+    max-height:88vh; overflow-y:auto; animation:slideup .22s cubic-bezier(.2,.8,.2,1); position:relative; }
+  @keyframes slideup{ from{ transform:translateY(30px); opacity:.4; } to{ transform:translateY(0); opacity:1; } }
+  .sheet-handle{ width:40px; height:5px; background:var(--line); border-radius:99px; margin:0 auto 16px; }
+  .sheet-title{ font-family:var(--font-display); font-weight:800; font-size:22px; margin-bottom:18px; }
+  .sheet-close{ position:absolute; top:18px; right:18px; background:#f0f2f5; border:none; width:34px; height:34px; border-radius:50%; font-size:16px; color:var(--muted); cursor:pointer; }
+
+  .toast{ position:fixed; left:50%; bottom:100px; transform:translateX(-50%); background:#1c1f26; color:#fff; padding:12px 20px; border-radius:14px;
+    font-size:14px; font-weight:600; z-index:100; box-shadow:0 8px 24px rgba(0,0,0,.3); max-width:90%; text-align:center; animation:toastin .18s ease; }
+  @keyframes toastin{ from{opacity:0; transform:translate(-50%,10px);} to{opacity:1; transform:translate(-50%,0);} }
+
+  nav.tabbar{ position:sticky; bottom:0; left:0; right:0; background:#fff; border-top:1px solid var(--line); display:flex;
+    padding:8px 6px calc(8px + env(safe-area-inset-bottom, 0px)); box-shadow: 0 -6px 18px -14px rgba(0,0,0,.25); z-index:20; }
+  .tab{ flex:1; display:flex; flex-direction:column; align-items:center; gap:3px; background:none; border:none; padding:8px 2px; border-radius:14px;
+    color:#8a8f98; font-size:11px; font-family:var(--font-body); font-weight:600; cursor:pointer; }
+  .tab.active{ color:var(--green); background:var(--green-soft); }
+  .tab.disabled{ opacity:.4; }
+
+  .dev-note{ background:var(--amber-soft); color:var(--amber); border-radius:16px; padding:12px 14px; font-size:12.5px; line-height:1.5; margin-bottom:14px; }
+
+  /* Missão */
+  .mission-card{ padding:16px; margin-bottom:12px; }
+  .mission-top{ display:flex; justify-content:space-between; align-items:flex-start; gap:10px; }
+  .mission-title{ font-weight:800; font-family:var(--font-display); font-size:16px; }
+  .mission-setor{ color:var(--muted); font-size:12.5px; margin-top:2px; }
+  .mission-obs{ font-size:14px; color:var(--ink); margin-top:8px; line-height:1.4; }
+  .mission-photo{ width:100%; border-radius:14px; margin-top:10px; display:block; max-height:220px; object-fit:cover; }
+  .mission-meta{ display:flex; justify-content:space-between; align-items:center; margin-top:12px; }
+  .time-left{ font-size:12.5px; font-weight:700; color:var(--amber); }
+  .time-left.urgent{ color:var(--danger); }
+  .badge-done{ background:var(--green-soft); color:var(--green-dark); padding:5px 12px; border-radius:999px; font-size:12px; font-weight:800; }
+  .photo-preview{ width:100%; border-radius:16px; margin-top:8px; max-height:220px; object-fit:cover; display:block; }
+  .photo-input-btn{ width:100%; padding:14px; border-radius:16px; border:1.5px dashed var(--line); background:#fff; color:var(--muted); font-weight:600; font-size:14px; cursor:pointer; text-align:center; }
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+/* =========================================================
+   STORAGE
+   ========================================================= */
+const STORAGE_KEY = "setores_teste_data_v1";
+
+function safeLocalStorage(){
+  try{ const t="__t__"; window.localStorage.setItem(t,"1"); window.localStorage.removeItem(t); return window.localStorage; }
+  catch(e){ return null; }
+}
+const LS = safeLocalStorage();
+let memoryFallback = null;
+
+function loadData(){
+  const raw = LS ? LS.getItem(STORAGE_KEY) : memoryFallback;
+  let data = { setores: [], promotores: [], missoes: [] };
+  if(raw){ try{ data = Object.assign(data, JSON.parse(raw)); }catch(e){} }
+  if(!data.promotores) data.promotores = [];
+  if(!data.missoes) data.missoes = [];
+  data.setores.forEach(s=> delete s._testCount);
+  return data;
+}
+function saveData(){
+  const raw = JSON.stringify(state);
+  if(LS){ try{ LS.setItem(STORAGE_KEY, raw); }catch(e){ memoryFallback = raw; } }
+  else{ memoryFallback = raw; }
+}
+
+let state = loadData();
+let ui = { page:"home", sheet:null, sheetData:null, promotorSearch:"", expandedSetorId:null, escalaDia:null };
+
+function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+
+let toastTimer=null, toastEl=null;
+function toast(msg){
+  if(toastEl) toastEl.remove();
+  if(toastTimer) clearTimeout(toastTimer);
+  const el = document.createElement("div"); el.className="toast"; el.textContent=msg;
+  document.body.appendChild(el); toastEl=el;
+  toastTimer = setTimeout(()=>{ el.remove(); if(toastEl===el) toastEl=null; }, 2200);
+}
+
+/* =========================================================
+   DIAS / WHATSAPP
+   ========================================================= */
+const DIAS = [
+  {id:"dom", label:"D"}, {id:"seg", label:"S"}, {id:"ter", label:"T"}, {id:"qua", label:"Q"},
+  {id:"qui", label:"Q"}, {id:"sex", label:"S"}, {id:"sab", label:"S"}
+];
+const DIAS_FULL = {dom:"Dom", seg:"Seg", ter:"Ter", qua:"Qua", qui:"Qui", sex:"Sex", sab:"Sáb"};
+function todayDiaId(){ return DIAS[new Date().getDay()].id; }
+
+function digitsOnly(s){ return (s||"").replace(/\D/g,""); }
+function formatPhoneDisplay(digits){
+  const d = digitsOnly(digits);
+  if(d.length <= 2) return d;
+  if(d.length <= 6) return "("+d.slice(0,2)+") "+d.slice(2);
+  if(d.length <= 10) return "("+d.slice(0,2)+") "+d.slice(2,6)+"-"+d.slice(6);
+  return "("+d.slice(0,2)+") "+d.slice(2,7)+"-"+d.slice(7,11);
+}
+function waLink(phoneDigits){
+  let p = digitsOnly(phoneDigits);
+  if(p.length <= 11) p = "55" + p;
+  return "https://wa.me/"+p;
+}
+
+/* =========================================================
+   SETORES — contagem e lista de quem está lá hoje
+   ========================================================= */
+function promotoresHojePorSetor(setorId){
+  const hoje = todayDiaId();
+  return state.promotores.filter(p => p.setorId===setorId && (p.dias||[]).includes(hoje));
+}
+function statusForSetor(setor){
+  const count = promotoresHojePorSetor(setor.id).length;
+  if(count < setor.minAtencao) return "critico";
+  if(count < setor.minOk) return "atencao";
+  return "ok";
+}
+
+/* =========================================================
+   MISSÕES — expira sozinha depois de 24h
+   ========================================================= */
+function limparMissoesExpiradas(){
+  const agora = Date.now();
+  const antes = state.missoes.length;
+  state.missoes = state.missoes.filter(m => (agora - m.criadoEm) < 24*60*60*1000);
+  if(state.missoes.length !== antes) saveData();
+}
+function tempoRestante(m){
+  const restanteMs = (m.criadoEm + 24*60*60*1000) - Date.now();
+  if(restanteMs <= 0) return {texto:"Expirando…", urgente:true};
+  const h = Math.floor(restanteMs/3600000);
+  const min = Math.floor((restanteMs%3600000)/60000);
+  return { texto: h>0 ? `${h}h ${min}min restantes` : `${min}min restantes`, urgente: h<2 };
+}
+
+/* =========================================================
+   RENDER ROOT
+   ========================================================= */
+function render(){
+  limparMissoesExpiradas();
+  const app = document.getElementById("app");
+  app.innerHTML = `
+    <div class="status-spacer"></div>
+    <div class="page">${renderPage()}</div>
+    ${renderTabbar()}
+    ${ui.sheet ? renderSheet() : ""}
+  `;
+  bindEvents();
+}
+
+function renderTabbar(){
+  const tabs = [
+    {id:"home", label:"Início"},
+    {id:"setores", label:"Setores"},
+    {id:"promotores", label:"Promotores"},
+    {id:"missoes", label:"Missão"},
+    {id:"escala", label:"Escala"},
+  ];
+  return `<nav class="tabbar">
+    ${tabs.map(t => `
+      <button class="tab ${ui.page===t.id?'active':''}" data-nav="${t.id}">
+        <span>${t.label}</span>
+      </button>
+    `).join("")}
+  </nav>`;
+}
+
+function renderPage(){
+  switch(ui.page){
+    case "home": return renderHome();
+    case "setores": return renderSetores();
+    case "promotores": return renderPromotores();
+    case "missoes": return renderMissoes();
+    case "escala": return renderEscala();
+    default: return "";
+  }
+}
+
+/* =========================================================
+   HOME — resumo do dia
+   ========================================================= */
+function renderHome(){
+  const totalHoje = state.promotores.filter(p => (p.dias||[]).includes(todayDiaId())).length;
+  const contagemStatus = { ok:0, atencao:0, critico:0 };
+  state.setores.forEach(s => { contagemStatus[statusForSetor(s)]++; });
+  const missoesAbertas = state.missoes.filter(m=>!m.concluida).length;
+  const diaLabel = DIAS_FULL[todayDiaId()];
+
+  return `
+    <h1 class="page-title">Hoje · ${diaLabel}</h1>
+    <div class="card">
+      <div class="setor-sub" style="margin-bottom:4px;">Promotores trabalhando hoje</div>
+      <div style="font-family:var(--font-display); font-weight:800; font-size:36px;">${totalHoje}</div>
+    </div>
+    <div class="card">
+      <div class="setor-sub" style="margin-bottom:12px;">Setores por status</div>
+      <div class="setor-row" style="padding:8px 0;"><div class="setor-name"><span class="dot ok"></span>Ok</div><div class="count-badge ok">${contagemStatus.ok}</div></div>
+      <div class="setor-row" style="padding:8px 0;"><div class="setor-name"><span class="dot atencao"></span>Atenção</div><div class="count-badge atencao">${contagemStatus.atencao}</div></div>
+      <div class="setor-row" style="padding:8px 0;"><div class="setor-name"><span class="dot critico"></span>Crítico</div><div class="count-badge critico">${contagemStatus.critico}</div></div>
+    </div>
+    ${missoesAbertas>0 ? `
+      <div class="card" data-action="ir-missoes" style="cursor:pointer;">
+        <div class="setor-row" style="padding:0;">
+          <div><div class="setor-name">📦 Missões abertas</div><div class="setor-sub">Toque para ver</div></div>
+          <div class="count-badge atencao">${missoesAbertas}</div>
+        </div>
+      </div>
+    ` : ""}
+  `;
+}
+
+/* =========================================================
+   ESCALA — visão por dia da semana
+   ========================================================= */
+function renderEscala(){
+  const diaAtivo = ui.escalaDia || todayDiaId();
+  const doDia = state.promotores.filter(p => (p.dias||[]).includes(diaAtivo)).sort((a,b)=>a.nome.localeCompare(b.nome,'pt-BR'));
+
+  const grupos = {};
+  doDia.forEach(p=>{
+    const chave = p.setorId ? (state.setores.find(s=>s.id===p.setorId)?.nome || "Sem setor") : "Sem setor";
+    if(!grupos[chave]) grupos[chave] = [];
+    grupos[chave].push(p);
+  });
+  const setoresOrdenados = Object.keys(grupos).sort((a,b)=> a==="Sem setor" ? 1 : b==="Sem setor" ? -1 : a.localeCompare(b,'pt-BR'));
+
+  return `
+    <h1 class="page-title">Escala</h1>
+    <div class="day-chips" style="margin-bottom:16px;">
+      ${DIAS.map(d => `<button type="button" class="day-chip ${diaAtivo===d.id?'active':''}" data-escala-dia="${d.id}">${d.label}</button>`).join("")}
+    </div>
+    ${doDia.length===0 ? `
+      <div class="card"><div class="empty-state"><span class="em-icon">🗓️</span>Ninguém escalado em ${DIAS_FULL[diaAtivo]}.</div></div>
+    ` : setoresOrdenados.map(nomeSetor => `
+      <div class="card">
+        <div class="setor-sub" style="margin-bottom:10px; font-weight:700; color:var(--ink);">${escapeHtml(nomeSetor)}</div>
+        ${grupos[nomeSetor].map(p=>`<div class="person-chip">${escapeHtml(p.nome)}</div>`).join("")}
+      </div>
+    `).join("")}
+  `;
+}
+
+/* =========================================================
+   SETORES
+   ========================================================= */
+function renderSetores(){
+  const list = [...state.setores].sort((a,b)=> a.nome.localeCompare(b.nome, 'pt-BR'));
+  return `
+    <div class="title-row">
+      <h1 class="page-title">Setores</h1>
+      <button class="fab" data-action="novo-setor">+</button>
+    </div>
+    ${list.length===0 ? `
+      <div class="card"><div class="empty-state"><span class="em-icon">🏷️</span>Nenhum setor cadastrado ainda.<br/>Toque no + para criar o primeiro.</div></div>
+    ` : `
+      <div class="card">
+        ${list.map(s => {
+          const status = statusForSetor(s);
+          const pessoas = promotoresHojePorSetor(s.id);
+          const expanded = ui.expandedSetorId === s.id;
+          return `
+            <div class="setor-block">
+              <div class="setor-row" data-action="toggle-setor" data-id="${s.id}">
+                <div>
+                  <div class="setor-name"><span class="dot ${status}"></span>${escapeHtml(s.nome)}</div>
+                  <div class="setor-sub">Atenção abaixo de ${s.minAtencao} · Ok a partir de ${s.minOk}</div>
+                </div>
+                <div class="count-badge ${status}">${pessoas.length} hoje</div>
+              </div>
+              ${expanded ? `
+                <div class="setor-people">
+                  ${pessoas.length===0 ? `<div class="empty-mini">Ninguém escalado aqui hoje.</div>` :
+                    pessoas.map(p=>`<div class="person-chip">${escapeHtml(p.nome)}</div>`).join("")}
+                  <div class="edit-hint" data-action="editar-setor" data-id="${s.id}">Editar setor ✏️</div>
+                </div>
+              ` : ""}
+            </div>
+          `;
+        }).join("")}
+      </div>
+    `}
+  `;
+}
+
+/* =========================================================
+   PROMOTORES
+   ========================================================= */
+function renderPromotores(){
+  let list = state.promotores.slice();
+  if(ui.promotorSearch.trim()){
+    const q = ui.promotorSearch.trim().toLowerCase();
+    list = list.filter(p => (p.nome||"").toLowerCase().includes(q) || digitsOnly(p.telefone).includes(digitsOnly(q)));
+  }
+  list.sort((a,b)=> a.nome.localeCompare(b.nome,'pt-BR'));
+
+  return `
+    <div class="title-row">
+      <h1 class="page-title">Promotores</h1>
+      <button class="fab" data-action="novo-promotor">+</button>
+    </div>
+    ${state.setores.length===0 ? `<div class="dev-note">⚠️ Cadastre pelo menos um setor antes de adicionar promotores.</div>` : ""}
+    <input class="search" id="promotor-search" placeholder="Buscar por nome ou telefone" value="${escapeHtml(ui.promotorSearch)}" />
+    <div class="card">
+      ${list.length===0 ? `<div class="empty-state"><span class="em-icon">🧑‍💼</span>Nenhum promotor encontrado.</div>` :
+        list.map(p => {
+          const setor = state.setores.find(s=>s.id===p.setorId);
+          const diasTxt = (p.dias||[]).length ? p.dias.map(d=>DIAS_FULL[d]).join(", ") : "Sem dias definidos";
+          return `
+            <div class="list-item" data-action="editar-promotor" data-id="${p.id}">
+              <div style="flex:1;">
+                <div class="li-name">${escapeHtml(p.nome)}</div>
+                <div class="li-sub">${setor ? escapeHtml(setor.nome) : "Sem setor"} · ${diasTxt}</div>
+              </div>
+              ${p.telefone ? `<button class="wa-btn" data-action="wa-promotor" data-id="${p.id}" onclick="event.stopPropagation()">💬</button>` : ""}
+            </div>
+          `;
+        }).join("")}
+    </div>
+  `;
+}
+
+/* =========================================================
+   MISSÕES
+   ========================================================= */
+function renderMissoes(){
+  const abertas = state.missoes.filter(m=>!m.concluida).sort((a,b)=>a.criadoEm-b.criadoEm);
+  const concluidas = state.missoes.filter(m=>m.concluida).sort((a,b)=>b.criadoEm-a.criadoEm);
+  return `
+    <div class="title-row">
+      <h1 class="page-title">Missão</h1>
+      <button class="fab" data-action="nova-missao">+</button>
+    </div>
+    ${abertas.length===0 && concluidas.length===0 ? `
+      <div class="card"><div class="empty-state"><span class="em-icon">📦</span>Nenhuma missão ativa.<br/>Toque no + para criar uma missão de abastecimento.</div></div>
+    ` : ""}
+    ${abertas.map(m=>renderMissionCard(m)).join("")}
+    ${concluidas.length>0 ? `<div class="setor-sub" style="margin:16px 4px 8px;">Concluídas</div>${concluidas.map(m=>renderMissionCard(m)).join("")}` : ""}
+  `;
+}
+
+function renderMissionCard(m){
+  const setor = m.setorId ? state.setores.find(s=>s.id===m.setorId) : null;
+  const tr = tempoRestante(m);
+  return `
+    <div class="card mission-card" data-action="ver-missao" data-id="${m.id}">
+      <div class="mission-top">
+        <div>
+          <div class="mission-title">${escapeHtml(m.titulo || "Abastecimento")}</div>
+          ${setor ? `<div class="mission-setor">${escapeHtml(setor.nome)}</div>` : ""}
+        </div>
+        ${m.concluida ? `<span class="badge-done">Concluída ✓</span>` : ""}
+      </div>
+      ${m.observacao ? `<div class="mission-obs">${escapeHtml(m.observacao)}</div>` : ""}
+      ${m.foto ? `<img class="mission-photo" src="${m.foto}" />` : ""}
+      <div class="mission-meta">
+        ${!m.concluida ? `<span class="time-left ${tr.urgente?'urgent':''}">${tr.texto}</span>` : `<span class="setor-sub">Concluída</span>`}
+        <div style="display:flex; gap:8px;">
+          ${!m.concluida ? `<button class="wa-btn" style="width:auto; padding:0 14px; border-radius:999px; font-size:13px; font-weight:700; background:var(--green-soft); color:var(--green-dark);" data-action="concluir-missao" data-id="${m.id}" onclick="event.stopPropagation()">Concluir</button>` : ""}
+          <button class="wa-btn" style="width:auto; padding:0 14px; border-radius:999px; font-size:13px; font-weight:700; background:var(--danger-soft); color:var(--danger);" data-action="excluir-missao" data-id="${m.id}" onclick="event.stopPropagation()">Excluir</button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+/* =========================================================
+   SHEETS
+   ========================================================= */
+function renderSheet(){
+  if(ui.sheet==="setor") return renderSheetSetor();
+  if(ui.sheet==="promotor") return renderSheetPromotor();
+  if(ui.sheet==="missao") return renderSheetMissao();
+  if(ui.sheet==="missao-detalhe") return renderSheetMissaoDetalhe();
+  return "";
+}
+
+function renderSheetMissaoDetalhe(){
+  const m = state.missoes.find(x=>x.id===ui.sheetData);
+  if(!m) return "";
+  const setor = m.setorId ? state.setores.find(s=>s.id===m.setorId) : null;
+  const tr = tempoRestante(m);
+  return `
+    <div class="sheet-backdrop" data-action="close-sheet">
+      <div class="sheet" onclick="event.stopPropagation()">
+        <button class="sheet-close" data-action="close-sheet">✕</button>
+        <div class="sheet-handle"></div>
+        <div class="sheet-title">${escapeHtml(m.titulo || "Abastecimento")}</div>
+        ${setor ? `<div class="mission-setor" style="margin-bottom:14px;">${escapeHtml(setor.nome)}</div>` : ""}
+        ${m.foto ? `<img class="mission-photo" style="max-height:none;" src="${m.foto}" />` : ""}
+        ${m.observacao ? `<div class="mission-obs" style="margin-top:14px;">${escapeHtml(m.observacao)}</div>` : `<div class="hint" style="margin-top:14px;">Sem observação.</div>`}
+        <div class="mission-meta" style="margin-top:16px;">
+          ${!m.concluida ? `<span class="time-left ${tr.urgente?'urgent':''}">${tr.texto}</span>` : `<span class="badge-done">Concluída ✓</span>`}
+        </div>
+        ${!m.concluida ? `<button class="btn-block" data-action="concluir-missao" data-id="${m.id}">Marcar como concluída</button>` : ""}
+        <button class="btn-block danger-outline" data-action="excluir-missao" data-id="${m.id}">Excluir missão</button>
+      </div>
+    </div>
+  `;
+}
+
+function renderSheetSetor(){
+  const editing = !!ui.sheetData;
+  const s = editing ? state.setores.find(x=>x.id===ui.sheetData) : null;
+  return `
+    <div class="sheet-backdrop" data-action="close-sheet">
+      <div class="sheet" onclick="event.stopPropagation()">
+        <button class="sheet-close" data-action="close-sheet">✕</button>
+        <div class="sheet-handle"></div>
+        <div class="sheet-title">${editing ? "Editar setor" : "Novo setor"}</div>
+        <div class="field">
+          <label>Nome do setor</label>
+          <input type="text" id="f-nome" value="${s ? escapeAttr(s.nome) : ""}" placeholder="Ex: Hortifruti" />
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label>Mín. p/ Atenção</label>
+            <input type="number" id="f-atencao" value="${s ? s.minAtencao : 3}" min="0" />
+            <div class="hint">Abaixo disso = Crítico</div>
+          </div>
+          <div class="field">
+            <label>Mín. p/ Ok</label>
+            <input type="number" id="f-ok" value="${s ? s.minOk : 6}" min="0" />
+            <div class="hint">A partir disso = Ok</div>
+          </div>
+        </div>
+        <button class="btn-block" data-action="save-setor" data-id="${editing ? s.id : ''}">Salvar</button>
+        ${editing ? `<button class="btn-block danger-outline" data-action="delete-setor" data-id="${s.id}">Excluir setor</button>` : ""}
+      </div>
+    </div>
+  `;
+}
+
+function renderSheetPromotor(){
+  const editing = !!ui.sheetData;
+  const p = editing ? state.promotores.find(x=>x.id===ui.sheetData) : null;
+  const dias = p ? (p.dias||[]) : [];
+  const setores = [...state.setores].sort((a,b)=>a.nome.localeCompare(b.nome,'pt-BR'));
+  return `
+    <div class="sheet-backdrop" data-action="close-sheet">
+      <div class="sheet" onclick="event.stopPropagation()">
+        <button class="sheet-close" data-action="close-sheet">✕</button>
+        <div class="sheet-handle"></div>
+        <div class="sheet-title">${editing ? "Editar promotor" : "Novo promotor"}</div>
+
+        <div class="field">
+          <label>Nome</label>
+          <input type="text" id="f-pnome" value="${p ? escapeAttr(p.nome) : ""}" placeholder="Nome do promotor" />
+        </div>
+
+        <div class="field">
+          <label>Telefone</label>
+          <input type="tel" id="f-ptel" value="${p ? escapeAttr(p.telefone) : ""}" placeholder="(00) 00000-0000" />
+        </div>
+
+        <div class="field">
+          <label>Setor (opcional)</label>
+          <select id="f-psetor">
+            <option value="">Sem setor</option>
+            ${setores.map(s => `<option value="${s.id}" ${p && p.setorId===s.id ? "selected":""}>${escapeHtml(s.nome)}</option>`).join("")}
+          </select>
+        </div>
+
+        <div class="field">
+          <label>Dias da semana (opcional)</label>
+          <div class="day-chips" id="day-chips">
+            ${DIAS.map(d => `<button type="button" class="day-chip ${dias.includes(d.id)?'active':''}" data-day="${d.id}">${d.label}</button>`).join("")}
+          </div>
+          <div class="hint">Toque para marcar os dias que ele trabalha</div>
+        </div>
+
+        <div class="field">
+          <label>Observação (opcional)</label>
+          <textarea id="f-pobs" placeholder="Qualquer detalhe extra">${p ? escapeHtml(p.observacao||"") : ""}</textarea>
+        </div>
+
+        <button class="btn-block" data-action="save-promotor" data-id="${editing ? p.id : ''}">Salvar</button>
+        ${editing ? `<button class="btn-block danger-outline" data-action="delete-promotor" data-id="${p.id}">Excluir promotor</button>` : ""}
+      </div>
+    </div>
+  `;
+}
+
+function renderSheetMissao(){
+  const setores = [...state.setores].sort((a,b)=>a.nome.localeCompare(b.nome,'pt-BR'));
+  return `
+    <div class="sheet-backdrop" data-action="close-sheet">
+      <div class="sheet" onclick="event.stopPropagation()">
+        <button class="sheet-close" data-action="close-sheet">✕</button>
+        <div class="sheet-handle"></div>
+        <div class="sheet-title">Nova missão de abastecimento</div>
+
+        <div class="field">
+          <label>Título (opcional)</label>
+          <input type="text" id="f-mtitulo" placeholder="Ex: Repor bebidas geladeira 3" />
+        </div>
+
+        <div class="field">
+          <label>Setor (opcional)</label>
+          <select id="f-msetor">
+            <option value="">Sem setor</option>
+            ${setores.map(s => `<option value="${s.id}">${escapeHtml(s.nome)}</option>`).join("")}
+          </select>
+        </div>
+
+        <div class="field">
+          <label>Observação (opcional)</label>
+          <textarea id="f-mobs" placeholder="Detalhes da missão"></textarea>
+        </div>
+
+        <div class="field">
+          <label>Foto (opcional)</label>
+          <input type="file" id="f-mfoto" accept="image/*" capture="environment" style="display:none;" />
+          <button type="button" class="photo-input-btn" id="f-mfoto-btn">📷 Tirar ou escolher foto</button>
+          <img id="f-mfoto-preview" class="photo-preview" style="display:none;" />
+        </div>
+
+        <div class="hint" style="margin-top:-6px;">Essa missão expira sozinha 24h depois de criada.</div>
+        <button class="btn-block" data-action="save-missao">Criar missão</button>
+      </div>
+    </div>
+  `;
+}
+
+function escapeHtml(str){ return (str||"").replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function escapeAttr(str){ return escapeHtml(str); }
+
+function openSheet(name, data){ ui.sheet = name; ui.sheetData = data; render(); }
+function closeSheet(){ ui.sheet = null; ui.sheetData = null; render(); }
+
+let selectedDays = [];
+let missaoFotoData = "";
+
+function bindEvents(){
+  document.querySelectorAll("[data-action]").forEach(el=>{
+    el.addEventListener("click", (e)=>{ handleAction(el.dataset.action, el.dataset.id, e); });
+  });
+  document.querySelectorAll("[data-nav]").forEach(el=>{
+    if(!el.dataset.nav) return;
+    el.addEventListener("click", ()=>{ ui.page = el.dataset.nav; render(); });
+  });
+  document.querySelectorAll("[data-escala-dia]").forEach(el=>{
+    el.addEventListener("click", ()=>{ ui.escalaDia = el.dataset.escalaDia; render(); });
+  });
+  const searchEl = document.getElementById("promotor-search");
+  if(searchEl){
+    searchEl.addEventListener("input", (e)=>{ ui.promotorSearch = e.target.value; render(); setTimeout(()=>{ const el=document.getElementById("promotor-search"); if(el){ el.focus(); el.selectionStart = el.selectionEnd = el.value.length; } },0); });
+  }
+  const chips = document.getElementById("day-chips");
+  if(chips){
+    const p = ui.sheet==="promotor" && ui.sheetData ? state.promotores.find(x=>x.id===ui.sheetData) : null;
+    selectedDays = p ? [...(p.dias||[])] : (ui.sheetData===null ? selectedDays : []);
+    chips.querySelectorAll(".day-chip").forEach(btn=>{
+      btn.addEventListener("click", ()=>{
+        const d = btn.dataset.day;
+        const idx = selectedDays.indexOf(d);
+        if(idx>=0) selectedDays.splice(idx,1); else selectedDays.push(d);
+        btn.classList.toggle("active");
+      });
+    });
+  }
+  const fotoInput = document.getElementById("f-mfoto");
+  const fotoBtn = document.getElementById("f-mfoto-btn");
+  if(fotoInput && fotoBtn){
+    fotoBtn.addEventListener("click", ()=> fotoInput.click());
+    fotoInput.addEventListener("change", (e)=>{
+      const file = e.target.files[0];
+      if(!file) return;
+      const reader = new FileReader();
+      reader.onload = (ev)=>{
+        missaoFotoData = ev.target.result;
+        const preview = document.getElementById("f-mfoto-preview");
+        preview.src = missaoFotoData;
+        preview.style.display = "block";
+        fotoBtn.textContent = "📷 Trocar foto";
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+}
+
+function handleAction(action, id){
+  if(action==="novo-setor"){ openSheet("setor", null); }
+  else if(action==="editar-setor"){ openSheet("setor", id); }
+  else if(action==="toggle-setor"){ ui.expandedSetorId = ui.expandedSetorId===id ? null : id; render(); }
+  else if(action==="close-sheet"){ closeSheet(); }
+  else if(action==="save-setor"){
+    const nome = document.getElementById("f-nome").value.trim();
+    const minAtencao = parseInt(document.getElementById("f-atencao").value) || 0;
+    const minOk = parseInt(document.getElementById("f-ok").value) || 0;
+    if(!nome){ toast("Informe o nome do setor."); return; }
+    if(minOk < minAtencao){ toast("O mínimo para Ok deve ser maior ou igual ao de Atenção."); return; }
+    if(id){
+      const s = state.setores.find(x=>x.id===id);
+      s.nome = nome; s.minAtencao = minAtencao; s.minOk = minOk;
+    } else {
+      state.setores.push({ id: uid(), nome, minAtencao, minOk });
+    }
+    saveData(); closeSheet(); toast("Setor salvo.");
+  }
+  else if(action==="delete-setor"){
+    if(confirm("Excluir este setor? Promotores ligados a ele ficarão sem setor.")){
+      state.setores = state.setores.filter(s=>s.id!==id);
+      state.promotores.forEach(p=>{ if(p.setorId===id) p.setorId=""; });
+      saveData(); closeSheet(); toast("Setor excluído.");
+    }
+  }
+  else if(action==="novo-promotor"){
+    if(state.setores.length===0){ toast("Cadastre um setor primeiro."); return; }
+    selectedDays = [];
+    openSheet("promotor", null);
+  }
+  else if(action==="editar-promotor"){
+    const p = state.promotores.find(x=>x.id===id);
+    selectedDays = p ? [...(p.dias||[])] : [];
+    openSheet("promotor", id);
+  }
+  else if(action==="save-promotor"){
+    const nome = document.getElementById("f-pnome").value.trim();
+    const telefone = document.getElementById("f-ptel").value.trim();
+    const setorId = document.getElementById("f-psetor").value;
+    const observacao = document.getElementById("f-pobs").value.trim();
+    if(!nome){ toast("Informe o nome."); return; }
+    if(id){
+      const p = state.promotores.find(x=>x.id===id);
+      p.nome=nome; p.telefone=telefone; p.setorId=setorId; p.observacao=observacao; p.dias=[...selectedDays];
+    } else {
+      state.promotores.push({ id: uid(), nome, telefone, setorId, observacao, dias:[...selectedDays] });
+    }
+    saveData(); closeSheet(); toast("Promotor salvo.");
+  }
+  else if(action==="delete-promotor"){
+    if(confirm("Excluir este promotor?")){
+      state.promotores = state.promotores.filter(p=>p.id!==id);
+      saveData(); closeSheet(); toast("Promotor excluído.");
+    }
+  }
+  else if(action==="wa-promotor"){
+    const p = state.promotores.find(x=>x.id===id);
+    if(p && p.telefone) window.open(waLink(p.telefone), "_blank");
+  }
+  else if(action==="nova-missao"){
+    missaoFotoData = "";
+    openSheet("missao", null);
+  }
+  else if(action==="save-missao"){
+    const titulo = document.getElementById("f-mtitulo").value.trim();
+    const setorId = document.getElementById("f-msetor").value;
+    const observacao = document.getElementById("f-mobs").value.trim();
+    state.missoes.push({
+      id: uid(), titulo, setorId, observacao, foto: missaoFotoData,
+      criadoEm: Date.now(), concluida: false
+    });
+    saveData(); closeSheet(); toast("Missão criada.");
+    ui.page = "missoes"; render();
+  }
+  else if(action==="concluir-missao"){
+    const m = state.missoes.find(x=>x.id===id);
+    if(m){ m.concluida = true; m.foto = ""; saveData(); render(); toast("Missão concluída."); }
+  }
+  else if(action==="excluir-missao"){
+    if(confirm("Excluir esta missão?")){
+      state.missoes = state.missoes.filter(m=>m.id!==id);
+      saveData();
+      if(ui.sheet==="missao-detalhe") closeSheet(); else render();
+    }
+  }
+  else if(action==="ver-missao"){
+    openSheet("missao-detalhe", id);
+  }
+  else if(action==="ir-missoes"){
+    ui.page = "missoes"; render();
+  }
+}
+
+render();
+setInterval(()=>{ if((ui.page==="missoes"||ui.page==="home") && !ui.sheet) render(); }, 60000);
+
+if("serviceWorker" in navigator){
+  window.addEventListener("load", ()=>{
+    navigator.serviceWorker.register("sw.js").catch(()=>{});
+  });
+}
+</script>
+</body>
+</html>
