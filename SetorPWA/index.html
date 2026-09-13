@@ -9,6 +9,7 @@
 <link rel="icon" href="icon-192.png" />
 <link rel="apple-touch-icon" href="icon-192.png" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="default" />
 <meta name="apple-mobile-web-app-title" content="Escala" />
 <style>
@@ -204,10 +205,17 @@ function waLink(phoneDigits){
   return "https://wa.me/"+p;
 }
 
-const GEMINI_API_KEY = "AQ.Ab8RN6JZ2ByLjnKjoUf0ynSAad55WgEUYJJXajIH9qW2kfbUFQ";
+/* =========================================================
+   IDENTIFICAÇÃO DE PRODUTO NA FOTO (Google Gemini)
+   ⚠️ IMPORTANTE: troque o valor abaixo pela SUA chave, criada em
+   https://aistudio.google.com/apikey — e restrinja essa chave
+   (no Google Cloud Console) para funcionar somente no domínio:
+   https://lohanjp.github.io/inventario/SetorPWA/
+   ========================================================= */
+const GEMINI_API_KEY = "COLOQUE_SUA_CHAVE_AQUI";
 
 async function identificarProdutoNaFoto(dataUrlJpeg){
-  if(!GEMINI_API_KEY || GEMINI_API_KEY === "AQ.Ab8RN6JZ2ByLjnKjoUf0ynSAad55WgEUYJJXajIH9qW2kfbUFQ") return "";
+  if(!GEMINI_API_KEY || GEMINI_API_KEY === "COLOQUE_SUA_CHAVE_AQUI") return "";
   try{
     const base64 = dataUrlJpeg.split(",")[1];
     const resp = await fetch(
