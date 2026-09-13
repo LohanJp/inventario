@@ -212,10 +212,13 @@ function waLink(phoneDigits){
    (no Google Cloud Console) para funcionar somente no domínio:
    https://lohanjp.github.io/inventario/SetorPWA/
    ========================================================= */
-const GEMINI_API_KEY = "COLOQUE_SUA_CHAVE_AQUI";
+const GEMINI_API_KEY = "AQ.Ab8RN6JZ2ByLjnKjoUf0ynSAad55WgEUYJJXajIH9qW2kfbUFQ";
 
 async function identificarProdutoNaFoto(dataUrlJpeg){
-  if(!GEMINI_API_KEY || GEMINI_API_KEY === "COLOQUE_SUA_CHAVE_AQUI") return "";
+  if(!GEMINI_API_KEY || GEMINI_API_KEY === "AQ.Ab8RN6JZ2ByLjnKjoUf0ynSAad55WgEUYJJXajIH9qW2kfbUFQ"){
+    console.warn("[identificar produto] GEMINI_API_KEY não configurada — pulei a identificação automática.");
+    return "";
+  }
   try{
     const base64 = dataUrlJpeg.split(",")[1];
     const resp = await fetch(
@@ -233,11 +236,17 @@ async function identificarProdutoNaFoto(dataUrlJpeg){
         })
       }
     );
-    if(!resp.ok) return "";
+    if(!resp.ok){
+      const errBody = await resp.text().catch(()=> "");
+      console.error("[identificar produto] Gemini respondeu com erro:", resp.status, errBody);
+      return "";
+    }
     const json = await resp.json();
     const texto = json?.candidates?.[0]?.content?.parts?.[0]?.text || "";
+    if(!texto) console.warn("[identificar produto] Gemini respondeu sem texto:", json);
     return texto.trim().replace(/^["']|["']$/g, "");
   }catch(e){
+    console.error("[identificar produto] Falha na chamada:", e);
     return "";
   }
 }
