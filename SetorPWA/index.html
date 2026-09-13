@@ -11,9 +11,6 @@
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="default" />
 <meta name="apple-mobile-web-app-title" content="Escala" />
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root{
     --green:#16a34a; --green-dark:#0f7a37; --green-soft:#e7f7ee;
@@ -22,8 +19,8 @@
     --danger:#e5484d; --danger-soft:#fdeaea; --line:#e9eaee;
     --radius-lg:22px; --radius-md:16px; --radius-sm:12px;
     --shadow: 0 1px 2px rgba(15,17,21,0.04), 0 8px 20px -12px rgba(15,17,21,0.12);
-    --font-display:'Manrope', system-ui, sans-serif;
-    --font-body:'Inter', system-ui, sans-serif;
+    --font-display:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;
+    --font-body:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;
   }
   *{box-sizing:border-box;}
   html,body{height:100%;}
@@ -129,6 +126,12 @@
   .badge-done{ background:var(--green-soft); color:var(--green-dark); padding:5px 12px; border-radius:999px; font-size:12px; font-weight:800; }
   .photo-preview{ width:100%; border-radius:16px; margin-top:8px; max-height:220px; object-fit:cover; display:block; }
   .photo-input-btn{ width:100%; padding:14px; border-radius:16px; border:1.5px dashed var(--line); background:#fff; color:var(--muted); font-weight:600; font-size:14px; cursor:pointer; text-align:center; }
+
+  .lightbox{ position:fixed; inset:0; background:#000; z-index:200; display:flex; align-items:center; justify-content:center; overflow:hidden; touch-action:none; }
+  .lightbox img{ width:100%; height:100%; object-fit:contain; will-change:transform; user-select:none; -webkit-user-drag:none; transform-origin:center center; }
+  .lightbox-close{ position:fixed; top:calc(18px + env(safe-area-inset-top,0px)); right:18px; width:40px; height:40px; border-radius:50%;
+    background:rgba(255,255,255,0.15); border:none; color:#fff; font-size:18px; z-index:201; }
+  .lightbox-hint{ position:fixed; bottom:calc(24px + env(safe-area-inset-bottom,0px)); left:0; right:0; text-align:center; color:rgba(255,255,255,0.6); font-size:12.5px; z-index:201; }
 </style>
 </head>
 <body>
@@ -149,10 +152,11 @@ let memoryFallback = null;
 
 function loadData(){
   const raw = LS ? LS.getItem(STORAGE_KEY) : memoryFallback;
-  let data = { setores: [], promotores: [], missoes: [] };
+  let data = { setores: [], promotores: [], missoes: [], pedidos: [] };
   if(raw){ try{ data = Object.assign(data, JSON.parse(raw)); }catch(e){} }
   if(!data.promotores) data.promotores = [];
   if(!data.missoes) data.missoes = [];
+  if(!data.pedidos) data.pedidos = [];
   data.setores.forEach(s=> delete s._testCount);
   return data;
 }
@@ -163,7 +167,7 @@ function saveData(){
 }
 
 let state = loadData();
-let ui = { page:"home", sheet:null, sheetData:null, promotorSearch:"", expandedSetorId:null, escalaDia:null };
+let ui = { page:"home", sheet:null, sheetData:null, promotorSearch:"", expandedSetorId:null, escalaDia:null, lightbox:null };
 
 function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
 
@@ -198,6 +202,56 @@ function waLink(phoneDigits){
   let p = digitsOnly(phoneDigits);
   if(p.length <= 11) p = "55" + p;
   return "https://wa.me/"+p;
+}
+
+const GEMINI_API_KEY = "AQ.Ab8RN6JZ2ByLjnKjoUf0ynSAad55WgEUYJJXajIH9qW2kfbUFQ";
+
+async function identificarProdutoNaFoto(dataUrlJpeg){
+  if(!GEMINI_API_KEY || GEMINI_API_KEY === "AQ.Ab8RN6JZ2ByLjnKjoUf0ynSAad55WgEUYJJXajIH9qW2kfbUFQ") return "";
+  try{
+    const base64 = dataUrlJpeg.split(",")[1];
+    const resp = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [{
+            parts: [
+              { text: "Essa é uma foto de um produto de supermercado que precisa ser reposto ou pedido. Responda em português, em poucas palavras, no formato 'Reposição de <produto>' incluindo marca e tamanho/quantidade se der pra ver na embalagem. Se não conseguir identificar o produto, responda apenas 'Reposição de item'. Não escreva mais nada além dessa frase." },
+              { inline_data: { mime_type: "image/jpeg", data: base64 } }
+            ]
+          }]
+        })
+      }
+    );
+    if(!resp.ok) return "";
+    const json = await resp.json();
+    const texto = json?.candidates?.[0]?.content?.parts?.[0]?.text || "";
+    return texto.trim().replace(/^["']|["']$/g, "");
+  }catch(e){
+    return "";
+  }
+}
+function compressImage(file, maxWidth=1280, quality=0.72){
+  return new Promise((resolve, reject)=>{
+    const reader = new FileReader();
+    reader.onload = (e)=>{
+      const img = new Image();
+      img.onload = ()=>{
+        let w = img.width, h = img.height;
+        if(w > maxWidth){ h = Math.round(h * (maxWidth / w)); w = maxWidth; }
+        const canvas = document.createElement("canvas");
+        canvas.width = w; canvas.height = h;
+        canvas.getContext("2d").drawImage(img, 0, 0, w, h);
+        resolve(canvas.toDataURL("image/jpeg", quality));
+      };
+      img.onerror = reject;
+      img.src = e.target.result;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
 }
 
 /* =========================================================
@@ -242,8 +296,86 @@ function render(){
     <div class="page">${renderPage()}</div>
     ${renderTabbar()}
     ${ui.sheet ? renderSheet() : ""}
+    ${ui.lightbox ? renderLightbox() : ""}
   `;
   bindEvents();
+  if(ui.lightbox) setupLightboxGestures();
+}
+
+function renderLightbox(){
+  const [tipo, itemId] = ui.lightbox.split(":");
+  const colecao = tipo==="pedido" ? state.pedidos : state.missoes;
+  const m = colecao.find(x=>x.id===itemId);
+  if(!m || !m.foto) return "";
+  return `
+    <div class="lightbox" id="lightbox">
+      <button class="lightbox-close" data-action="fechar-foto">✕</button>
+      <img id="lightbox-img" src="${m.foto}" />
+      <div class="lightbox-hint">Beliscar para dar zoom · toque duas vezes</div>
+    </div>
+  `;
+}
+
+function setupLightboxGestures(){
+  const box = document.getElementById("lightbox");
+  const img = document.getElementById("lightbox-img");
+  if(!box || !img) return;
+
+  let scale = 1, tx = 0, ty = 0;
+  let startDist = 0, startScale = 1;
+  let startX = 0, startY = 0, startTx = 0, startTy = 0;
+  let lastTap = 0;
+  let panning = false;
+
+  function apply(){
+    img.style.transform = `translate(${tx}px, ${ty}px) scale(${scale})`;
+  }
+
+  function dist(touches){
+    const dx = touches[0].clientX - touches[1].clientX;
+    const dy = touches[0].clientY - touches[1].clientY;
+    return Math.hypot(dx,dy);
+  }
+
+  box.addEventListener("touchstart", (e)=>{
+    if(e.touches.length===2){
+      startDist = dist(e.touches);
+      startScale = scale;
+      panning = false;
+    } else if(e.touches.length===1){
+      const now = Date.now();
+      if(now - lastTap < 300){
+        // double tap: toggle zoom
+        if(scale > 1){ scale = 1; tx = 0; ty = 0; } else { scale = 2.5; }
+        apply();
+        lastTap = 0;
+        return;
+      }
+      lastTap = now;
+      panning = scale > 1;
+      startX = e.touches[0].clientX; startY = e.touches[0].clientY;
+      startTx = tx; startTy = ty;
+    }
+  }, {passive:true});
+
+  box.addEventListener("touchmove", (e)=>{
+    if(e.touches.length===2){
+      e.preventDefault();
+      const d = dist(e.touches);
+      scale = Math.min(4, Math.max(1, startScale * (d/startDist)));
+      apply();
+    } else if(e.touches.length===1 && panning){
+      e.preventDefault();
+      tx = startTx + (e.touches[0].clientX - startX);
+      ty = startTy + (e.touches[0].clientY - startY);
+      apply();
+    }
+  }, {passive:false});
+
+  box.addEventListener("touchend", (e)=>{
+    if(scale <= 1){ scale = 1; tx = 0; ty = 0; apply(); }
+    panning = false;
+  });
 }
 
 function renderTabbar(){
@@ -251,6 +383,7 @@ function renderTabbar(){
     {id:"home", label:"Início"},
     {id:"setores", label:"Setores"},
     {id:"promotores", label:"Promotores"},
+    {id:"pedidos", label:"Pedidos"},
     {id:"missoes", label:"Missão"},
     {id:"escala", label:"Escala"},
   ];
@@ -269,6 +402,7 @@ function renderPage(){
     case "setores": return renderSetores();
     case "promotores": return renderPromotores();
     case "missoes": return renderMissoes();
+    case "pedidos": return renderPedidos();
     case "escala": return renderEscala();
     default: return "";
   }
@@ -409,7 +543,7 @@ function renderPromotores(){
                 <div class="li-name">${escapeHtml(p.nome)}</div>
                 <div class="li-sub">${setor ? escapeHtml(setor.nome) : "Sem setor"} · ${diasTxt}</div>
               </div>
-              ${p.telefone ? `<button class="wa-btn" data-action="wa-promotor" data-id="${p.id}" onclick="event.stopPropagation()">💬</button>` : ""}
+              ${p.telefone ? `<button class="wa-btn" data-action="wa-promotor" data-id="${p.id}">💬</button>` : ""}
             </div>
           `;
         }).join("")}
@@ -453,8 +587,8 @@ function renderMissionCard(m){
       <div class="mission-meta">
         ${!m.concluida ? `<span class="time-left ${tr.urgente?'urgent':''}">${tr.texto}</span>` : `<span class="setor-sub">Concluída</span>`}
         <div style="display:flex; gap:8px;">
-          ${!m.concluida ? `<button class="wa-btn" style="width:auto; padding:0 14px; border-radius:999px; font-size:13px; font-weight:700; background:var(--green-soft); color:var(--green-dark);" data-action="concluir-missao" data-id="${m.id}" onclick="event.stopPropagation()">Concluir</button>` : ""}
-          <button class="wa-btn" style="width:auto; padding:0 14px; border-radius:999px; font-size:13px; font-weight:700; background:var(--danger-soft); color:var(--danger);" data-action="excluir-missao" data-id="${m.id}" onclick="event.stopPropagation()">Excluir</button>
+          ${!m.concluida ? `<button class="wa-btn" style="width:auto; padding:0 14px; border-radius:999px; font-size:13px; font-weight:700; background:var(--green-soft); color:var(--green-dark);" data-action="concluir-missao" data-id="${m.id}">Concluir</button>` : ""}
+          <button class="wa-btn" style="width:auto; padding:0 14px; border-radius:999px; font-size:13px; font-weight:700; background:var(--danger-soft); color:var(--danger);" data-action="excluir-missao" data-id="${m.id}">Excluir</button>
         </div>
       </div>
     </div>
@@ -462,14 +596,99 @@ function renderMissionCard(m){
 }
 
 /* =========================================================
-   SHEETS
+   PEDIDOS — fotos de itens a pedir depois; não expira sozinho
    ========================================================= */
+function renderPedidos(){
+  const lista = [...state.pedidos].sort((a,b)=>a.criadoEm-b.criadoEm);
+  return `
+    <div class="title-row">
+      <h1 class="page-title">Pedidos</h1>
+      <button class="fab" data-action="novo-pedido">+</button>
+    </div>
+    ${lista.length===0 ? `
+      <div class="card"><div class="empty-state"><span class="em-icon">🛒</span>Nenhum pedido pendente.<br/>Toque no + para fotografar um item.</div></div>
+    ` : lista.map(p=>renderPedidoCard(p)).join("")}
+  `;
+}
+
+function renderPedidoCard(p){
+  return `
+    <div class="card mission-card" data-action="ver-pedido" data-id="${p.id}">
+      <div class="mission-top">
+        <div class="mission-title">${escapeHtml(p.titulo || "Item para pedir")}</div>
+      </div>
+      ${p.observacao ? `<div class="mission-obs">${escapeHtml(p.observacao)}</div>` : ""}
+      ${p.foto ? `<img class="mission-photo" src="${p.foto}" />` : ""}
+      <div class="mission-meta">
+        <span class="setor-sub">Sem prazo — fica até você concluir ou cancelar</span>
+        <div style="display:flex; gap:8px;">
+          <button class="wa-btn" style="width:auto; padding:0 14px; border-radius:999px; font-size:13px; font-weight:700; background:var(--green-soft); color:var(--green-dark);" data-action="concluir-pedido" data-id="${p.id}">Feito</button>
+          <button class="wa-btn" style="width:auto; padding:0 14px; border-radius:999px; font-size:13px; font-weight:700; background:var(--danger-soft); color:var(--danger);" data-action="cancelar-pedido" data-id="${p.id}">Cancelar</button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+
 function renderSheet(){
   if(ui.sheet==="setor") return renderSheetSetor();
   if(ui.sheet==="promotor") return renderSheetPromotor();
   if(ui.sheet==="missao") return renderSheetMissao();
   if(ui.sheet==="missao-detalhe") return renderSheetMissaoDetalhe();
+  if(ui.sheet==="pedido") return renderSheetPedido();
+  if(ui.sheet==="pedido-detalhe") return renderSheetPedidoDetalhe();
   return "";
+}
+
+function renderSheetPedido(){
+  return `
+    <div class="sheet-backdrop" data-action="close-sheet">
+      <div class="sheet">
+        <button class="sheet-close" data-action="close-sheet">✕</button>
+        <div class="sheet-handle"></div>
+        <div class="sheet-title">Novo pedido</div>
+
+        <div class="field">
+          <label>Título (opcional)</label>
+          <input type="text" id="f-ptitulo" placeholder="Ex: Faltam sacolas plásticas" />
+        </div>
+
+        <div class="field">
+          <label>Observação (opcional)</label>
+          <textarea id="f-pobs2" placeholder="Detalhes do item"></textarea>
+        </div>
+
+        <div class="field">
+          <label>Foto (opcional)</label>
+          <input type="file" id="f-pfoto" accept="image/*" capture="environment" style="display:none;" />
+          <button type="button" class="photo-input-btn" id="f-pfoto-btn">📷 Tirar ou escolher foto</button>
+          <img id="f-pfoto-preview" class="photo-preview" style="display:none;" />
+        </div>
+
+        <div class="hint" style="margin-top:-6px;">Fica na lista até você marcar como feito ou cancelar.</div>
+        <button class="btn-block" data-action="save-pedido">Salvar pedido</button>
+      </div>
+    </div>
+  `;
+}
+
+function renderSheetPedidoDetalhe(){
+  const p = state.pedidos.find(x=>x.id===ui.sheetData);
+  if(!p) return "";
+  return `
+    <div class="sheet-backdrop" data-action="close-sheet">
+      <div class="sheet">
+        <button class="sheet-close" data-action="close-sheet">✕</button>
+        <div class="sheet-handle"></div>
+        <div class="sheet-title">${escapeHtml(p.titulo || "Item para pedir")}</div>
+        ${p.foto ? `<img class="mission-photo" style="max-height:none; cursor:zoom-in;" src="${p.foto}" data-action="ver-foto-pedido" data-id="${p.id}" />` : ""}
+        ${p.observacao ? `<div class="mission-obs" style="margin-top:14px;">${escapeHtml(p.observacao)}</div>` : `<div class="hint" style="margin-top:14px;">Sem observação.</div>`}
+        <button class="btn-block" data-action="concluir-pedido" data-id="${p.id}">Marcar como feito</button>
+        <button class="btn-block danger-outline" data-action="cancelar-pedido" data-id="${p.id}">Cancelar pedido</button>
+      </div>
+    </div>
+  `;
 }
 
 function renderSheetMissaoDetalhe(){
@@ -479,12 +698,12 @@ function renderSheetMissaoDetalhe(){
   const tr = tempoRestante(m);
   return `
     <div class="sheet-backdrop" data-action="close-sheet">
-      <div class="sheet" onclick="event.stopPropagation()">
+      <div class="sheet">
         <button class="sheet-close" data-action="close-sheet">✕</button>
         <div class="sheet-handle"></div>
         <div class="sheet-title">${escapeHtml(m.titulo || "Abastecimento")}</div>
         ${setor ? `<div class="mission-setor" style="margin-bottom:14px;">${escapeHtml(setor.nome)}</div>` : ""}
-        ${m.foto ? `<img class="mission-photo" style="max-height:none;" src="${m.foto}" />` : ""}
+        ${m.foto ? `<img class="mission-photo" style="max-height:none; cursor:zoom-in;" src="${m.foto}" data-action="ver-foto" data-id="${m.id}" />` : ""}
         ${m.observacao ? `<div class="mission-obs" style="margin-top:14px;">${escapeHtml(m.observacao)}</div>` : `<div class="hint" style="margin-top:14px;">Sem observação.</div>`}
         <div class="mission-meta" style="margin-top:16px;">
           ${!m.concluida ? `<span class="time-left ${tr.urgente?'urgent':''}">${tr.texto}</span>` : `<span class="badge-done">Concluída ✓</span>`}
@@ -501,7 +720,7 @@ function renderSheetSetor(){
   const s = editing ? state.setores.find(x=>x.id===ui.sheetData) : null;
   return `
     <div class="sheet-backdrop" data-action="close-sheet">
-      <div class="sheet" onclick="event.stopPropagation()">
+      <div class="sheet">
         <button class="sheet-close" data-action="close-sheet">✕</button>
         <div class="sheet-handle"></div>
         <div class="sheet-title">${editing ? "Editar setor" : "Novo setor"}</div>
@@ -535,7 +754,7 @@ function renderSheetPromotor(){
   const setores = [...state.setores].sort((a,b)=>a.nome.localeCompare(b.nome,'pt-BR'));
   return `
     <div class="sheet-backdrop" data-action="close-sheet">
-      <div class="sheet" onclick="event.stopPropagation()">
+      <div class="sheet">
         <button class="sheet-close" data-action="close-sheet">✕</button>
         <div class="sheet-handle"></div>
         <div class="sheet-title">${editing ? "Editar promotor" : "Novo promotor"}</div>
@@ -582,7 +801,7 @@ function renderSheetMissao(){
   const setores = [...state.setores].sort((a,b)=>a.nome.localeCompare(b.nome,'pt-BR'));
   return `
     <div class="sheet-backdrop" data-action="close-sheet">
-      <div class="sheet" onclick="event.stopPropagation()">
+      <div class="sheet">
         <button class="sheet-close" data-action="close-sheet">✕</button>
         <div class="sheet-handle"></div>
         <div class="sheet-title">Nova missão de abastecimento</div>
@@ -627,18 +846,9 @@ function closeSheet(){ ui.sheet = null; ui.sheetData = null; render(); }
 
 let selectedDays = [];
 let missaoFotoData = "";
+let pedidoFotoData = "";
 
 function bindEvents(){
-  document.querySelectorAll("[data-action]").forEach(el=>{
-    el.addEventListener("click", (e)=>{ handleAction(el.dataset.action, el.dataset.id, e); });
-  });
-  document.querySelectorAll("[data-nav]").forEach(el=>{
-    if(!el.dataset.nav) return;
-    el.addEventListener("click", ()=>{ ui.page = el.dataset.nav; render(); });
-  });
-  document.querySelectorAll("[data-escala-dia]").forEach(el=>{
-    el.addEventListener("click", ()=>{ ui.escalaDia = el.dataset.escalaDia; render(); });
-  });
   const searchEl = document.getElementById("promotor-search");
   if(searchEl){
     searchEl.addEventListener("input", (e)=>{ ui.promotorSearch = e.target.value; render(); setTimeout(()=>{ const el=document.getElementById("promotor-search"); if(el){ el.focus(); el.selectionStart = el.selectionEnd = el.value.length; } },0); });
@@ -663,15 +873,49 @@ function bindEvents(){
     fotoInput.addEventListener("change", (e)=>{
       const file = e.target.files[0];
       if(!file) return;
-      const reader = new FileReader();
-      reader.onload = (ev)=>{
-        missaoFotoData = ev.target.result;
-        const preview = document.getElementById("f-mfoto-preview");
+      const preview = document.getElementById("f-mfoto-preview");
+      fotoBtn.textContent = "📷 Processando...";
+      compressImage(file).then(async (dataUrl)=>{
+        missaoFotoData = dataUrl;
         preview.src = missaoFotoData;
         preview.style.display = "block";
+        fotoBtn.textContent = "🔎 Identificando produto...";
+        const titulo = await identificarProdutoNaFoto(dataUrl);
         fotoBtn.textContent = "📷 Trocar foto";
-      };
-      reader.readAsDataURL(file);
+        const tituloInput = document.getElementById("f-mtitulo");
+        if(titulo && tituloInput && !tituloInput.value.trim()){
+          tituloInput.value = titulo;
+        }
+      }).catch(()=>{
+        toast("Não foi possível processar a foto.");
+        fotoBtn.textContent = "📷 Tirar ou escolher foto";
+      });
+    });
+  }
+  const pfotoInput = document.getElementById("f-pfoto");
+  const pfotoBtn = document.getElementById("f-pfoto-btn");
+  if(pfotoInput && pfotoBtn){
+    pfotoBtn.addEventListener("click", ()=> pfotoInput.click());
+    pfotoInput.addEventListener("change", (e)=>{
+      const file = e.target.files[0];
+      if(!file) return;
+      const preview = document.getElementById("f-pfoto-preview");
+      pfotoBtn.textContent = "📷 Processando...";
+      compressImage(file).then(async (dataUrl)=>{
+        pedidoFotoData = dataUrl;
+        preview.src = pedidoFotoData;
+        preview.style.display = "block";
+        pfotoBtn.textContent = "🔎 Identificando produto...";
+        const titulo = await identificarProdutoNaFoto(dataUrl);
+        pfotoBtn.textContent = "📷 Trocar foto";
+        const tituloInput = document.getElementById("f-ptitulo");
+        if(titulo && tituloInput && !tituloInput.value.trim()){
+          tituloInput.value = titulo;
+        }
+      }).catch(()=>{
+        toast("Não foi possível processar a foto.");
+        pfotoBtn.textContent = "📷 Tirar ou escolher foto";
+      });
     });
   }
 }
@@ -768,7 +1012,61 @@ function handleAction(action, id){
   else if(action==="ir-missoes"){
     ui.page = "missoes"; render();
   }
+  else if(action==="ver-foto"){
+    ui.lightbox = "missao:"+id; render();
+  }
+  else if(action==="ver-foto-pedido"){
+    ui.lightbox = "pedido:"+id; render();
+  }
+  else if(action==="fechar-foto"){
+    ui.lightbox = null; render();
+  }
+  else if(action==="novo-pedido"){
+    pedidoFotoData = "";
+    openSheet("pedido", null);
+  }
+  else if(action==="ver-pedido"){
+    openSheet("pedido-detalhe", id);
+  }
+  else if(action==="save-pedido"){
+    const titulo = document.getElementById("f-ptitulo").value.trim();
+    const observacao = document.getElementById("f-pobs2").value.trim();
+    state.pedidos.push({ id: uid(), titulo, observacao, foto: pedidoFotoData, criadoEm: Date.now() });
+    saveData(); closeSheet(); toast("Pedido salvo.");
+    ui.page = "pedidos"; render();
+  }
+  else if(action==="concluir-pedido"){
+    state.pedidos = state.pedidos.filter(p=>p.id!==id);
+    saveData();
+    if(ui.sheet==="pedido-detalhe") closeSheet(); else render();
+    toast("Pedido marcado como feito.");
+  }
+  else if(action==="cancelar-pedido"){
+    if(confirm("Cancelar este pedido?")){
+      state.pedidos = state.pedidos.filter(p=>p.id!==id);
+      saveData();
+      if(ui.sheet==="pedido-detalhe") closeSheet(); else render();
+    }
+  }
 }
+
+/* Delegação de eventos: um único listener fixo cuida de todos os cliques,
+   em vez de recriar addEventListener a cada render (mais leve). */
+document.addEventListener("click", (e)=>{
+  const actionEl = e.target.closest("[data-action]");
+  if(actionEl){
+    const isBackdropClose = actionEl.classList.contains("sheet-backdrop");
+    const clickedInsideSheet = !!e.target.closest(".sheet");
+    if(!(isBackdropClose && clickedInsideSheet)){
+      handleAction(actionEl.dataset.action, actionEl.dataset.id, e);
+    }
+    return;
+  }
+  const navEl = e.target.closest("[data-nav]");
+  if(navEl){ ui.page = navEl.dataset.nav; render(); return; }
+  const diaEl = e.target.closest("[data-escala-dia]");
+  if(diaEl){ ui.escalaDia = diaEl.dataset.escalaDia; render(); }
+});
 
 render();
 setInterval(()=>{ if((ui.page==="missoes"||ui.page==="home") && !ui.sheet) render(); }, 60000);

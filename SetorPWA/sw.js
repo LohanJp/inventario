@@ -1,4 +1,4 @@
-const CACHE_NAME = "escala-promotores-v1";
+const CACHE_NAME = "escala-promotores-v2";
 const APP_SHELL = [
   "./index.html",
   "./manifest.json",
