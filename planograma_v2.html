@@ -613,6 +613,17 @@ tr.row-done .badge, tr.row-done .giro { opacity: .45; }
   <div class="spacer"></div>
   <div id="header-meta"></div>
 
+  <!-- Transit report upload (optional, shown after planogram is loaded) -->
+  <label class="btn-outline" id="transit-btn" style="display:none" for="transit-input"
+         title="Carregar relatório de Trânsito para adicionar colunas Qt.Trânsito e Total Geral">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>
+      <circle cx="12" cy="12" r="10"/>
+    </svg>
+    <span id="transit-btn-label">+ Trânsito</span>
+  </label>
+  <input type="file" id="transit-input" accept=".txt" style="display:none">
+
   <button class="btn-outline" id="print-btn" style="display:none" onclick="window.print()">
     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
       <polyline points="6 9 6 2 18 2 18 9"/>
@@ -828,6 +839,8 @@ tr.row-done .badge, tr.row-done .giro { opacity: .45; }
             <th data-col="cobplan">Cob.Plan</th>
             <th data-col="qtdestoque">Qtd.Estoque</th>
             <th data-col="pbl">PBL</th>
+            <th data-col="qt_transito" class="col-hidden">Qt.Trânsito</th>
+            <th data-col="total_geral" class="col-hidden">Total Geral</th>
           </tr>
         </thead>
         <tbody id="tbody"></tbody>
@@ -853,7 +866,7 @@ const COLS = [
   { key:'automacao',  start:3,   end:16  },
   { key:'produto',    start:17,  end:25  },
   { key:'descricao',  start:26,  end:66  },
-  { key:'emb',        start:67,  end:71  },
+  { key:'emb',        start:66,  end:72  },  // widened to catch right-aligned values
   { key:'referencia', start:72,  end:87  },
   { key:'fornec',     start:88,  end:96  },
   { key:'nome',       start:97,  end:119 },
@@ -867,6 +880,9 @@ const COLS = [
   { key:'cobplan',    start:171, end:179 },
   { key:'qtdestoque', start:180, end:191 },
   { key:'pbl',        start:192, end:195 },
+  // Virtual columns — populated from the transit report when loaded
+  { key:'qt_transito',  start:0, end:0, virtual:true },
+  { key:'total_geral',  start:0, end:0, virtual:true },
 ];
 
 const COL_LABELS = {
@@ -878,9 +894,28 @@ const COL_LABELS = {
   cobplan:'Cob.Plan', qtdestoque:'Qtd.Estoque', pbl:'PBL',
 };
 
+/* ── Transit report state ── */
+let transitMap = {};   // { produto_code → { qt_transito, estoque_transito } }
+let transitLoaded = false;
+
+/* Parse the transit .txt report and build a lookup map keyed by produto code */
+function parseTransitFile(text) {
+  const RE_DATA = /^[A-Z] \d{8}/;
+  const map = {};
+  const lines = text.split('\n');
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].replace(/\r$/, '');
+    if (!RE_DATA.test(line)) continue;
+    const produto    = line.substring(2, 10).trim();
+    const qt_transit = parseFloat((line.substring(105, 116) || '0').replace(',', '.')) || 0;
+    map[produto] = { qt_transito: qt_transit };
+  }
+  return map;
+}
+
 const DEFAULT_VISIBLE_COLS = [
   'produto','descricao','emb','total','giro',
-  'corredor','altura','largura','prof','cobplan','qtdestoque'
+  'corredor','altura','largura','prof','cobplan','qtdestoque','qt_transito','total_geral'
 ];
 const visibleCols = new Set(DEFAULT_VISIBLE_COLS);
 
@@ -1101,6 +1136,9 @@ const togglesDropdown  = $('toggles-dropdown');
 const toastEl          = $('toast');
 const toastMsg         = $('toast-msg');
 const emptyState      = $('empty-state');
+const transitBtn      = $('transit-btn');
+const transitInput    = $('transit-input');
+const transitBtnLabel = $('transit-btn-label');
 
 /* ────────────────────────────────────────────────────────
    TOAST
@@ -1225,8 +1263,9 @@ async function processText(text, filename, persist=true) {
   buildDashboard(meta);
   applyColOrderToThead();   // reorder <th> elements
   showScreen('dash');
-  reloadBtn.style.display = 'inline-flex';
-  printBtn.style.display  = 'inline-flex';
+  reloadBtn.style.display  = 'inline-flex';
+  printBtn.style.display   = 'inline-flex';
+  transitBtn.style.display = 'inline-flex';
 }
 
 /* requestAnimationFrame tick so loading message renders */
@@ -1454,12 +1493,27 @@ function applyFilters() {
 
   // ② Sort the COMPLETE filtered array
   if (sortCol) {
-    filtered.sort((a,b) => {
-      let va=a[sortCol]||'', vb=b[sortCol]||'';
-      const na=parseFloat(va.replace(/\./g,'').replace(',','.')),
-            nb=parseFloat(vb.replace(/\./g,'').replace(',','.'));
-      if (!isNaN(na)&&!isNaN(nb)) return (na-nb)*sortDir;
-      return va.localeCompare(vb)*sortDir;
+    // Helper: resolve a row's value for any column, including virtual ones
+    const resolveVal = (r, col) => {
+      if (col === 'qt_transito') {
+        const t = transitMap[r.produto];
+        return t ? t.qt_transito : -Infinity;
+      }
+      if (col === 'total_geral') {
+        const estq = parseFloat((r.qtdestoque||'0').replace(/\./g,'').replace(',','.')) || 0;
+        const t    = transitMap[r.produto];
+        return estq + (t ? t.qt_transito : 0);
+      }
+      const raw = r[col] || '';
+      const n   = parseFloat(raw.replace(/\./g,'').replace(',','.'));
+      return isNaN(n) ? raw : n;
+    };
+
+    filtered.sort((a, b) => {
+      const va = resolveVal(a, sortCol);
+      const vb = resolveVal(b, sortCol);
+      if (typeof va === 'number' && typeof vb === 'number') return (va - vb) * sortDir;
+      return String(va).localeCompare(String(vb)) * sortDir;
     });
   }
 
@@ -1601,6 +1655,28 @@ function appendRows(from, to) {
       cobplan:     () => cobCell(r.cobplan),
       qtdestoque:  () => estCell(r.qtdestoque),
       pbl:         () => monoCell(r.pbl,'muted'),
+
+      // Virtual — data comes from transitMap, not the planogram row
+      qt_transito: () => {
+        if (!transitLoaded) { const td=document.createElement('td'); td.className='muted'; td.textContent='—'; return td; }
+        const transit = transitMap[r.produto] || null;
+        const val = transit ? transit.qt_transito : 0;
+        const td = document.createElement('td');
+        td.textContent = transit ? val.toLocaleString('pt-BR', {minimumFractionDigits:0, maximumFractionDigits:2}) : '—';
+        td.className = val > 0 ? 'num-ok' : 'muted';
+        return td;
+      },
+      total_geral: () => {
+        const td = document.createElement('td');
+        const estq = parseFloat((r.qtdestoque||'0').replace(/\./g,'').replace(',','.')) || 0;
+        if (!transitLoaded) { td.textContent = '—'; td.className = 'muted'; return td; }
+        const transit = transitMap[r.produto] || null;
+        const trans_q = transit ? transit.qt_transito : 0;
+        const total = estq + trans_q;
+        td.textContent = total.toLocaleString('pt-BR', {minimumFractionDigits:0, maximumFractionDigits:2});
+        td.className = total > 0 ? 'num-ok' : total < 0 ? 'num-neg' : 'num';
+        return td;
+      },
     };
     // Render cells in the current colOrder
     for (const key of colOrder) {
@@ -1796,15 +1872,56 @@ document.getElementById('thead-row').addEventListener('click', e => {
    table — i.e. the next pending item — letting the user run
    the whole "copy + dar baixa" flow without touching the mouse.
 ──────────────────────────────────────────────────────── */
-document.addEventListener('keydown', e => {
+document.addEventListener('keydown', async e => {
   if (e.key !== 'F4') return;
   if (!autoDoneCb.checked && !autoQtyCb.checked && !autoQtyV2Cb.checked) return;
 
   e.preventDefault(); // F4 has no default browser action, but just in case
 
   const firstProdTd = tbody.querySelector('td.td-produto');
-  if (firstProdTd) firstProdTd.click();
-  else showToast('Nenhum item pendente', 'ok');
+  if (firstProdTd) {
+    firstProdTd.click();
+  } else {
+    // Sem itens pendentes — copia sentinel 000;000;0 para que a macro
+    // detecte o fim do loop pelo próprio clipboard, sem depender de UI.
+    const sentinel = '000;000;0';
+    try { await navigator.clipboard.writeText(sentinel); }
+    catch {
+      const ta = document.createElement('textarea'); ta.value = sentinel;
+      ta.style.position = 'fixed'; ta.style.opacity = '0';
+      document.body.appendChild(ta); ta.select();
+      document.execCommand('copy'); document.body.removeChild(ta);
+    }
+    showToast('Fim — 000;000;0 copiado', 'ok');
+  }
+});
+
+/* ────────────────────────────────────────────────────────
+   TRANSIT REPORT LOADER
+──────────────────────────────────────────────────────── */
+transitInput.addEventListener('change', e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    transitMap    = parseTransitFile(ev.target.result);
+    transitLoaded = true;
+    transitBtnLabel.textContent = '✓ Trânsito';
+    transitBtn.classList.add('active');
+    // Make virtual columns visible automatically
+    visibleCols.add('qt_transito');
+    visibleCols.add('total_geral');
+    // Sync col picker checkboxes
+    document.querySelectorAll('#col-dropdown input[type=checkbox]').forEach(cb => {
+      if (cb.dataset.colKey === 'qt_transito' || cb.dataset.colKey === 'total_geral')
+        cb.checked = true;
+    });
+    applyColVisibility();
+    renderTable();
+    showToast(`Trânsito carregado — ${Object.keys(transitMap).length} itens`, 'ok');
+  };
+  reader.readAsText(file, 'latin1');
+  e.target.value = '';   // allow re-selecting same file
 });
 
 /* ────────────────────────────────────────────────────────
@@ -1847,7 +1964,7 @@ resetProgressBtn.addEventListener('click',()=>{
 
 reloadBtn.addEventListener('click',()=>{
   showScreen('upload');
-  reloadBtn.style.display='none'; printBtn.style.display='none';
+  reloadBtn.style.display='none'; printBtn.style.display='none'; transitBtn.style.display='none';
   headerMeta.textContent='';
   allRecords=[]; filtered=[]; doneSet.clear();
   fileInput.value='';
