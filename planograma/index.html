@@ -1,0 +1,2460 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Leitor de Planograma — Condor</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#0d1117">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Planograma">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════════════════════
+   VARIABLES
+═══════════════════════════════════════════════════════ */
+:root {
+  --bg:        #0d1117;
+  --surface:   #161b22;
+  --surface2:  #1c2128;
+  --border:    #21262d;
+  --accent:    #f0a500;
+  --accent2:   #e06c00;
+  --text:      #e6edf3;
+  --muted:     #7d8590;
+  --ok:        #3fb950;
+  --danger:    #f85149;
+  --info:      #58a6ff;
+  --done-bg:   rgba(63,185,80,.04);
+  --header-h:  56px;  /* height of the sticky site-header */
+  --thead-h:   38px;  /* approx height of table thead */
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'IBM Plex Sans', sans-serif;
+  font-size: 13px;
+  min-height: 100vh;
+}
+
+/* ═══════════════════════════════════════════════════════
+   SITE HEADER  (z-index 200 — topmost layer)
+═══════════════════════════════════════════════════════ */
+header {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 0 20px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: var(--header-h);
+  position: sticky;
+  top: 0;
+  z-index: 200;
+}
+.logo {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--accent);
+  letter-spacing: .06em;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.logo::before {
+  content: '';
+  display: inline-block;
+  width: 3px; height: 18px;
+  background: var(--accent);
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+.logo span { color: var(--muted); font-weight: 400; }
+
+/* Thin separator between logo group and action buttons */
+.header-sep {
+  width: 1px; height: 20px;
+  background: var(--border);
+  flex-shrink: 0;
+  margin: 0 4px;
+}
+.spacer { flex: 1; }
+#header-meta {
+  font-size: 11px;
+  color: var(--muted);
+  font-family: 'IBM Plex Mono', monospace;
+  white-space: nowrap;
+}
+
+/* ═══════════════════════════════════════════════════════
+   BUTTONS
+═══════════════════════════════════════════════════════ */
+label.btn, button.btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: var(--accent); color: #000;
+  font-family: 'IBM Plex Sans', sans-serif;
+  font-size: 13px; font-weight: 600;
+  padding: 8px 18px; border-radius: 6px;
+  cursor: pointer; border: none;
+  transition: background .15s; white-space: nowrap;
+  text-decoration: none;
+}
+label.btn:hover, button.btn:hover { background: var(--accent2); }
+
+label.btn-outline, button.btn-outline {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 12px; padding: 6px 13px; border-radius: 5px;
+  cursor: pointer; font-family: 'IBM Plex Sans', sans-serif;
+  transition: border-color .15s, color .15s, background .15s;
+  white-space: nowrap; height: 32px;
+}
+label.btn-outline:hover, button.btn-outline:hover  { border-color: var(--accent); color: var(--accent); }
+label.btn-outline.active, button.btn-outline.active { border-color: var(--accent); color: var(--accent); background: rgba(240,165,0,.08); }
+
+
+button.btn-danger {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: transparent; border: 1px solid rgba(248,81,73,.4);
+  color: var(--danger); font-size: 12px; padding: 6px 13px;
+  border-radius: 5px; cursor: pointer;
+  font-family: 'IBM Plex Sans', sans-serif;
+  transition: border-color .15s, background .15s;
+  white-space: nowrap; height: 32px;
+}
+button.btn-danger:hover { border-color: var(--danger); background: rgba(248,81,73,.08); }
+
+#file-input { display: none; }
+
+/* ═══════════════════════════════════════════════════════
+   UPLOAD / START SCREEN
+═══════════════════════════════════════════════════════ */
+#upload-area {
+  display: none;            /* controlled by JS */
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  min-height: calc(100vh - var(--header-h));
+  padding: 40px;
+  text-align: center;
+}
+#upload-area h2 {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 22px; color: var(--text); letter-spacing: .02em;
+}
+#upload-area p { color: var(--muted); max-width: 420px; line-height: 1.7; }
+
+.drop-zone {
+  border: 2px dashed var(--border); border-radius: 12px;
+  padding: 40px 80px; cursor: pointer; max-width: 520px; width: 100%;
+  transition: border-color .2s, background .2s;
+  background: var(--surface);
+  display: flex; flex-direction: column; align-items: center; gap: 12px;
+}
+.drop-zone:hover, .drop-zone.drag-over {
+  border-color: var(--accent); background: rgba(240,165,0,.06);
+}
+.drop-zone svg { color: var(--accent); }
+.dz-label { font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: var(--muted); }
+.dz-label strong { color: var(--accent); }
+
+/* ── Saved file card ── */
+#saved-card, #cloud-card {
+  display: none;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 20px 28px;
+  max-width: 520px;
+  width: 100%;
+  text-align: left;
+}
+#saved-card .sc-title, #cloud-card .sc-title {
+  font-size: 10px; font-weight: 600; color: var(--muted);
+  text-transform: uppercase; letter-spacing: .1em; margin-bottom: 10px;
+}
+#saved-card .sc-name, #cloud-card .sc-name {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 14px; color: var(--accent); font-weight: 600;
+  margin-bottom: 4px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+#saved-card .sc-meta, #cloud-card .sc-meta {
+  font-size: 11px; color: var(--muted);
+  font-family: 'IBM Plex Mono', monospace; margin-bottom: 18px;
+}
+#saved-card .sc-actions, #cloud-card .sc-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+
+.divider {
+  display: flex; align-items: center; gap: 12px;
+  color: var(--muted); font-size: 11px;
+  max-width: 480px; width: 100%;
+}
+.divider::before, .divider::after {
+  content: ''; flex: 1; height: 1px; background: var(--border);
+}
+
+/* ═══════════════════════════════════════════════════════
+   LOADING
+═══════════════════════════════════════════════════════ */
+#loading {
+  display: none; flex-direction: column; align-items: center;
+  justify-content: center; gap: 16px;
+  min-height: calc(100vh - var(--header-h));
+  color: var(--muted); font-family: 'IBM Plex Mono', monospace; font-size: 13px;
+}
+#loading-msg { transition: opacity .2s; }
+.spinner {
+  width: 36px; height: 36px;
+  border: 3px solid var(--border); border-top-color: var(--accent);
+  border-radius: 50%; animation: spin .7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ═══════════════════════════════════════════════════════
+   DASHBOARD
+═══════════════════════════════════════════════════════ */
+#dashboard { display: none; padding: 16px 20px; }
+
+.meta-bar {
+  display: flex; flex-wrap: wrap; gap: 0;
+  align-items: stretch; margin-bottom: 14px;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 8px; overflow: hidden;
+}
+.meta-pill {
+  padding: 8px 16px;
+  font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--muted);
+  border-right: 1px solid var(--border);
+  display: flex; align-items: center; gap: 6px;
+}
+.meta-pill:last-child { border-right: none; margin-left: auto; }
+.meta-pill strong { color: var(--text); font-weight: 600; }
+
+/* ═══════════════════════════════════════════════════════
+   FILTER BAR
+═══════════════════════════════════════════════════════ */
+.filter-bar {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 8px; padding: 12px 16px;
+  display: flex; flex-wrap: wrap; gap: 10px;
+  align-items: flex-end; margin-bottom: 14px;
+}
+.filter-group { display: flex; flex-direction: column; gap: 4px; }
+.filter-group > label {
+  font-size: 10px; font-weight: 600; color: var(--muted);
+  text-transform: uppercase; letter-spacing: .07em;
+  margin-bottom: 2px;
+}
+.filter-group input[type=text],
+.filter-group select {
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: 5px; color: var(--text);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 12px; padding: 6px 10px;
+  outline: none; transition: border-color .15s;
+  min-width: 140px; height: 32px;
+}
+.filter-group input[type=text]:focus,
+.filter-group select:focus { border-color: var(--accent); }
+.filter-group select option { background: var(--surface); }
+#search-box { min-width: 230px; }
+
+.check-label {
+  display: inline-flex; align-items: center; gap: 8px;
+  cursor: pointer; user-select: none;
+  font-size: 12px; color: var(--muted);
+  font-family: 'IBM Plex Sans', sans-serif;
+  height: 32px; white-space: nowrap; transition: color .15s;
+}
+.check-label:hover { color: var(--text); }
+.check-label input[type=checkbox] {
+  accent-color: var(--ok); width: 14px; height: 14px; cursor: pointer;
+}
+
+#progress-pill {
+  background: rgba(63,185,80,.1); border: 1px solid rgba(63,185,80,.25);
+  border-radius: 4px; padding: 2px 10px;
+  font-family: 'IBM Plex Mono', monospace; font-size: 11px;
+  color: var(--ok); display: none; white-space: nowrap;
+  align-items: center; gap: 5px;
+  transition: opacity .2s;
+}
+#progress-pill strong { font-weight: 700; }
+#progress-pill.all-done {
+  background: rgba(63,185,80,.2); border-color: rgba(63,185,80,.5);
+}
+
+.filter-actions { margin-left: auto; display: flex; gap: 8px; align-items: flex-end; flex-wrap: wrap; }
+
+/* ═══════════════════════════════════════════════════════
+   COLUMN PICKER DROPDOWN
+═══════════════════════════════════════════════════════ */
+.col-picker-wrap { position: relative; }
+
+#col-dropdown, #toggles-dropdown, #export-dropdown {
+  display: none; position: absolute; top: calc(100% + 6px); right: 0;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 8px; padding: 8px 0; z-index: 300;
+  min-width: 230px; box-shadow: 0 8px 32px rgba(0,0,0,.7); border-radius: 8px;
+}
+#col-dropdown.open, #toggles-dropdown.open, #export-dropdown.open { display: block; }
+
+.col-dropdown-header {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 8px 14px; border-bottom: 1px solid var(--border); margin-bottom: 2px;
+  background: rgba(255,255,255,.02);
+}
+.col-dropdown-header span {
+  font-size: 10px; font-weight: 600; color: var(--muted);
+  text-transform: uppercase; letter-spacing: .09em;
+}
+.col-dropdown-header button {
+  background: none; border: none; color: var(--accent);
+  font-size: 10px; cursor: pointer;
+  font-family: 'IBM Plex Sans', sans-serif; padding: 0;
+}
+.col-dropdown-header button:hover { text-decoration: underline; }
+
+.col-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 6px 14px; cursor: pointer;
+  transition: background .1s; user-select: none;
+}
+.col-item:hover { background: var(--surface2); }
+.col-item input[type=checkbox] {
+  accent-color: var(--accent); width: 13px; height: 13px;
+  cursor: pointer; flex-shrink: 0;
+}
+.col-item span { font-size: 12px; color: var(--text); font-family: 'IBM Plex Mono', monospace; }
+  #toggles-dropdown .col-item span { font-family: 'IBM Plex Sans', sans-serif; }
+
+/* ═══════════════════════════════════════════════════════
+   TABLE WRAPPER
+═══════════════════════════════════════════════════════ */
+.table-wrap {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 8px;
+  /* NO overflow:hidden — traps sticky thead inside the box */
+}
+.table-info {
+  padding: 8px 14px; border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: 8px;
+  font-size: 11px; color: var(--muted);
+  flex-wrap: wrap;
+}
+.table-info .spacer-auto { margin-left: auto; }
+#row-count {
+  font-family: 'IBM Plex Mono', monospace;
+  color: var(--accent); font-weight: 600; font-size: 12px;
+}
+
+/*
+  SCROLL CONTAINER
+  ─────────────────────────────────────────────────────────
+  Root cause of the "first row hidden" bug:
+    • .table-wrap had overflow:hidden → trapped the sticky thead
+      inside that box, so it stuck to the wrong top edge.
+    • thead top:var(--header-h) fought against the clipping ancestor.
+
+  Fix strategy — make .scroll-x the single scroll parent:
+    • overflow-x: auto   → horizontal scroll for wide tables
+    • overflow-y: auto   → vertical scroll here, NOT on the page
+    • max-height: calc(100vh - header - controls) fills the viewport
+    • thead position:sticky; top:0 → sticks to the TOP of .scroll-x
+      (its actual scroll ancestor), never behind anything.
+    • No conflict with the site header at all.
+  ───────────────────────────────────────────────────────── */
+.scroll-x {
+  overflow-x: auto;
+  overflow-y: auto;
+  /* Viewport minus: site header (56px) + dashboard padding (40px)
+     + meta-bar (~42px) + filter-bar (~68px) + table-info (~40px) */
+  max-height: calc(100vh - 56px - 200px);
+  /* scroll-padding-top pushes anchored/focused rows below the sticky thead */
+  scroll-padding-top: 40px;
+}
+
+/* ═══════════════════════════════════════════════════════
+   TABLE
+   border-collapse:separate + border-spacing:0 is required
+   so that each th can carry its own solid background —
+   border-collapse:collapse makes backgrounds merge/bleed.
+═══════════════════════════════════════════════════════ */
+table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  table-layout: auto;
+}
+
+thead {
+  position: sticky;
+  top: 0;          /* relative to .scroll-x, the scroll container */
+  z-index: 20;     /* above tbody rows; site header is z-index:200 */
+}
+
+thead th {
+  /* Hard-coded opaque color — CSS variables can resolve to
+     transparent in some engines, breaking the sticky cover. */
+  background: #0d1117;
+  padding: 9px 10px;
+  text-align: left;
+  color: var(--muted);
+  font-size: 10px; font-weight: 600;
+  text-transform: uppercase; letter-spacing: .07em;
+  white-space: nowrap;
+  border-bottom: 2px solid var(--border);
+  cursor: pointer; user-select: none; transition: color .15s;
+}
+
+/* Extra top padding on the very first tbody row so it never
+   visually touches the thead border on load. */
+#tbody tr:first-child td { padding-top: 10px; }
+thead th:hover { color: var(--accent); }
+thead th.sort-asc::after  { content: ' ▲'; color: var(--accent); font-size: 8px; }
+thead th.sort-desc::after { content: ' ▼'; color: var(--accent); font-size: 8px; }
+#th-check { cursor: default; width: 36px; }
+#th-check:hover { color: var(--muted); }
+
+/* Hidden columns */
+th.col-hidden, td.col-hidden { display: none !important; }
+
+/* ─── ROWS ─── */
+tbody tr { transition: background .1s; }
+/* Simulate row separator (can't use border-collapse:collapse) */
+tbody td { border-bottom: 1px solid var(--border); }
+tbody tr:last-child td { border-bottom: none; }
+tbody tr:hover td { background: var(--surface2); }
+
+/* Category separator */
+tr.cat-row td {
+  background: rgba(240,165,0,.08) !important;
+  color: var(--accent);
+  font-family: 'IBM Plex Sans', sans-serif;
+  font-size: 10px; font-weight: 600; text-transform: uppercase;
+  letter-spacing: .1em; padding: 6px 12px;
+  border-top: 1px solid rgba(240,165,0,.2);
+  border-bottom: 1px solid rgba(240,165,0,.15) !important;
+}
+
+td {
+  padding: 7px 10px; white-space: nowrap;
+  color: var(--text); vertical-align: middle;
+  text-align: left;
+  background: transparent; /* needed for hover override above */
+}
+td.muted     { color: var(--muted); }
+td.num       { text-align: left; color: var(--info); }
+td.num-neg   { text-align: left; color: var(--danger); }
+td.num-ok    { text-align: left; color: var(--ok); }
+
+/* ─── DONE ROW ─── */
+tr.row-done td { background: var(--done-bg); }
+tr.row-done:hover td { background: rgba(63,185,80,.06); }
+tr.row-done td:not(.td-check) {
+  text-decoration: line-through;
+  text-decoration-color: rgba(125,133,144,.45);
+  color: var(--muted) !important;
+}
+tr.row-done .badge, tr.row-done .giro { opacity: .45; }
+
+/* ─── CHECK CELL ─── */
+.td-check {
+  width: 36px; text-align: center; padding: 0 4px; cursor: pointer;
+}
+.check-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 22px; height: 22px; border-radius: 5px;
+  border: 1.5px solid var(--border);
+  background: transparent; cursor: pointer; transition: all .15s; flex-shrink: 0;
+}
+.check-btn svg { display: none; }
+.check-btn:hover { border-color: var(--ok); background: rgba(63,185,80,.1); }
+.check-btn.checked { border-color: var(--ok); background: rgba(63,185,80,.18); }
+.check-btn.checked svg { display: block; }
+
+/* ─── BADGES ─── */
+.badge {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 22px; height: 22px; border-radius: 4px;
+  font-size: 11px; font-weight: 700;
+}
+.badge-A { background: rgba(63,185,80,.15);   color: var(--ok); }
+.badge-I { background: rgba(248,81,73,.15);   color: var(--danger); }
+.badge-X { background: rgba(125,133,144,.15); color: var(--muted); }
+
+.giro {
+  display: inline-flex; align-items: center;
+  padding: 2px 7px; border-radius: 3px;
+  font-size: 10px; font-weight: 700; letter-spacing: .04em;
+}
+.giro-A  { background: rgba(63,185,80,.15);  color: var(--ok); }
+.giro-B  { background: rgba(88,166,255,.15); color: var(--info); }
+.giro-CA { background: rgba(240,165,0,.15);  color: var(--accent); }
+.giro-CB { background: rgba(240,165,0,.10);  color: #c88a00; }
+.giro-CC { background: rgba(248,81,73,.10);  color: var(--danger); }
+
+.desc-cell { max-width: 240px; overflow: hidden; text-overflow: ellipsis; }
+.nome-cell { max-width: 170px; overflow: hidden; text-overflow: ellipsis; color: var(--muted); }
+
+/* ─── EMPTY ─── */
+#empty-state {
+  display: none; padding: 60px; text-align: center;
+  color: var(--muted); font-size: 13px;
+}
+
+/* ─── SCROLLBAR ─── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--muted); }
+
+/* ═══════════════════════════════════════════════════════
+   PRINT
+═══════════════════════════════════════════════════════ */
+@media print {
+  :root {
+    --bg:#fff; --surface:#fff; --surface2:#fff; --border:#ccc;
+    --accent:#b06000; --text:#111; --muted:#555;
+    --ok:#1a7a30; --danger:#b91c1c; --info:#1d4ed8;
+  }
+  body { background:#fff; color:#111; font-size:10px; }
+
+  header, #upload-area, #loading, .meta-bar,
+  .filter-bar, .table-info, #empty-state,
+  .td-check, #th-check { display:none !important; }
+
+  #dashboard { display:block !important; padding:0; }
+  .table-wrap { border:1px solid #ccc; border-radius:0; }
+  .scroll-x { overflow:visible; }
+
+  table { width:100%; font-size:9px; page-break-inside:auto; border-collapse:collapse; }
+  thead { position:static; background:#f0f0f0; z-index:auto; }
+  thead th {
+    background:#f0f0f0 !important; color:#333;
+    border-bottom:2px solid #bbb; padding:5px 6px; font-size:8px;
+  }
+  thead th::after { display:none; }
+  tbody tr { page-break-inside:avoid; }
+  td { color:#111; padding:4px 6px; border-bottom:1px solid #e0e0e0; background:#fff !important; }
+  td.muted   { color:#555; }
+  td.num     { color:#1d4ed8; }
+  td.num-neg { color:#b91c1c; }
+  td.num-ok  { color:#1a7a30; }
+  tr.cat-row td { background:#fff8e1 !important; color:#b06000; border-top:1px solid #e0c060; }
+  tr.row-done { opacity:.4; }
+  tr.row-done td { text-decoration:line-through; color:#999 !important; }
+  .badge-A { background:#d1fae5; color:#065f46; }
+  .badge-I { background:#fee2e2; color:#991b1b; }
+  .giro { background:transparent !important; border:1px solid #999; color:#333 !important; }
+  .desc-cell, .nome-cell { max-width:none; overflow:visible; }
+
+  #dashboard::before {
+    content:'Planograma — Condor Super Center';
+    display:block; font-family:'IBM Plex Mono',monospace;
+    font-size:13px; font-weight:600; color:#111;
+    margin-bottom:10px; padding-bottom:6px; border-bottom:2px solid #111;
+  }
+}
+
+  /* ─── TOAST NOTIFICATION ─── */
+  #toast {
+    position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%) translateY(12px);
+    background: #1c2128; border: 1px solid var(--ok);
+    color: var(--text); font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px; padding: 9px 20px; border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0,0,0,.5);
+    opacity: 0; pointer-events: none;
+    transition: opacity .2s, transform .2s;
+    z-index: 9999; white-space: nowrap;
+    display: flex; align-items: center; gap: 8px;
+  }
+  #toast.show {
+    opacity: 1; transform: translateX(-50%) translateY(0);
+  }
+  #toast .toast-icon { color: var(--ok); flex-shrink: 0; }
+  #toast.toast-copy  { border-color: var(--info); }
+  #toast.toast-copy .toast-icon { color: var(--info); }
+
+  /* Produto cell in auto-done mode */
+  .auto-done-active td.td-produto {
+    cursor: pointer;
+    color: var(--accent) !important;
+    text-decoration: underline;
+    text-decoration-style: dotted;
+    text-underline-offset: 3px;
+    transition: color .1s;
+  }
+  .auto-done-active td.td-produto:hover { color: var(--accent2) !important; }
+
+  /* Flash animation when auto-done fires */
+  @keyframes flash-copy {
+    0%   { background: rgba(88,166,255,.25); }
+    100% { background: transparent; }
+  }
+  tr.flash-copy td { animation: flash-copy .55s ease-out forwards; }
+
+
+  /* ─── COLUMN DRAG & DROP ─── */
+  thead th[data-col] { cursor: grab; }
+  thead th[data-col]:active { cursor: grabbing; }
+
+  /* Column being dragged: ghost */
+  thead th.col-dragging {
+    opacity: .35;
+    background: rgba(240,165,0,.12) !important;
+  }
+
+  /* Drop target indicator: left edge highlight */
+  thead th.col-drag-over {
+    box-shadow: -3px 0 0 0 var(--accent);
+  }
+  thead th.col-drag-over-right {
+    box-shadow: 3px 0 0 0 var(--accent);
+  }
+
+</style>
+</head>
+<body>
+
+<!-- ═══ SITE HEADER ═══ -->
+<header>
+  <div class="logo">PLANOGRAMA<span> // CONDOR</span></div>
+  <div class="spacer"></div>
+  <div id="header-meta"></div>
+
+  <input type="file" id="file-input" accept=".txt,.json">
+  <input type="file" id="transit-input" accept=".txt" style="display:none">
+
+  <!-- Secondary actions (visible after file is loaded) -->
+  <div id="header-actions" style="display:none; align-items:center; gap:8px;">
+    <div class="header-sep"></div>
+    <label class="btn-outline" id="transit-btn" for="transit-input"
+           title="Carregar relatório de Trânsito (+Qt.Trânsito e Total Geral)">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>
+        <circle cx="12" cy="12" r="10"/>
+      </svg>
+      <span id="transit-btn-label">Trânsito</span>
+    </label>
+    <button class="btn-outline" id="print-btn" onclick="window.print()"
+            title="Imprimir tabela">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+        <polyline points="6 9 6 2 18 2 18 9"/>
+        <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>
+        <rect x="6" y="14" width="12" height="8"/>
+      </svg>
+      Imprimir
+    </button>
+    <div class="header-sep"></div>
+    <label class="btn" id="reload-btn" for="file-input" title="Carregar outro arquivo">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/>
+      </svg>
+      Novo arquivo
+    </label>
+  </div>
+</header>
+
+<!-- ═══ UPLOAD / START SCREEN ═══ -->
+<div id="upload-area">
+  <h2>Leitor de Planograma</h2>
+  <p>Carregue o arquivo <strong>.txt</strong> exportado do sistema Condor. Após carregado, o arquivo fica salvo no navegador — você pode fechar e voltar sem perder o progresso.</p>
+
+  <!-- Card: dados online (Firebase) -->
+  <div id="cloud-card" style="display:block;margin-bottom:14px">
+    <div class="sc-title">☁️ Dados online</div>
+    <div class="sc-name" id="cc-title">—</div>
+    <div class="sc-meta" id="cc-meta">—</div>
+    <div class="sc-actions">
+      <button class="btn" id="cc-load-btn" style="display:none">Baixar e abrir</button>
+      <button class="btn-outline" id="cc-code-btn" style="cursor:pointer">Informar código</button>
+    </div>
+  </div>
+
+  <!-- Card: saved file (shown if IndexedDB has data) -->
+  <div id="saved-card">
+    <div class="sc-title">📂 Relatório salvo no navegador</div>
+    <div class="sc-name" id="sc-filename">—</div>
+    <div class="sc-meta" id="sc-meta">—</div>
+    <div class="sc-actions">
+      <button class="btn" id="sc-open-btn">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>
+        </svg>
+        Abrir último relatório
+      </button>
+      <button class="btn-danger" id="sc-delete-btn">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+          <polyline points="3 6 5 6 21 6"/>
+          <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+          <path d="M10 11v6"/><path d="M14 11v6"/>
+          <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+        </svg>
+        Excluir arquivo salvo
+      </button>
+    </div>
+  </div>
+
+  <div class="divider" id="divider-or" style="display:none">ou</div>
+
+  <div class="drop-zone" id="drop-zone">
+    <svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+      <polyline points="14 2 14 8 20 8"/>
+      <line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 12 15 15"/>
+    </svg>
+    <span class="dz-label">Arraste o arquivo aqui ou <strong>clique para selecionar</strong></span>
+    <span class="dz-label" style="font-size:10px">Relatório listaplanograma.w (.txt) ou dados exportados do app (.json)</span>
+  </div>
+  <label class="btn" for="file-input">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+      <polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+    </svg>
+    Selecionar arquivo
+  </label>
+</div>
+
+<!-- ═══ LOADING ═══ -->
+<div id="loading">
+  <div class="spinner"></div>
+  <span id="loading-msg">Carregando…</span>
+</div>
+
+<!-- ═══ DASHBOARD ═══ -->
+<div id="dashboard">
+  <div class="meta-bar" id="meta-bar"></div>
+
+  <div class="filter-bar">
+    <div class="filter-group">
+      <label>Buscar</label>
+      <input type="text" id="search-box" placeholder="Descrição, EAN, código…">
+    </div>
+    <div class="filter-group">
+      <label>Categoria</label>
+      <select id="cat-filter"><option value="">Todas as categorias</option></select>
+    </div>
+    <div class="filter-group">
+      <label>Status</label>
+      <select id="st-filter">
+        <option value="">Todos</option>
+        <option value="A">A – Ativo</option>
+        <option value="I">I – Inativo</option>
+      </select>
+    </div>
+    <div class="filter-group">
+      <label>Giro</label>
+      <select id="giro-filter"><option value="">Todos</option></select>
+    </div>
+    <div class="filter-group">
+      <label>Estoque</label>
+      <select id="stock-filter">
+        <option value="">Todos</option>
+        <option value="neg">Negativo</option>
+        <option value="zero">Zero</option>
+        <option value="pos">Positivo</option>
+      </select>
+    </div>
+    <div class="filter-group">
+      <label>Trânsito</label>
+      <select id="transit-filter" disabled title="Carregue o relatório de Trânsito para ativar">
+        <option value="">Todos</option>
+        <option value="yes">Com trânsito</option>
+        <option value="no">Sem trânsito</option>
+      </select>
+    </div>
+    <div class="filter-actions">
+      <div class="col-picker-wrap">
+        <button class="btn-outline" id="toggles-btn">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M4 6h16M4 12h10M4 18h6"/>
+          </svg>
+          Filtros
+        </button>
+        <div id="toggles-dropdown">
+          <div class="col-dropdown-header">
+            <span>Opções rápidas</span>
+          </div>
+          <label class="col-item">
+            <input type="checkbox" id="show-done-cb">
+            <span>Mostrar concluídos</span>
+          </label>
+          <label class="col-item" title="Oculta itens com Cob.Plan ≤ 0 ou inválida">
+            <input type="checkbox" id="hide-invalid-cob-cb">
+            <span>Ocultar Cob. Inválida</span>
+          </label>
+          <label class="col-item" title="Mostra apenas itens onde o Total é diferente da Embalagem">
+            <input type="checkbox" id="prof-emb-cb">
+            <span>Total ≠ Emb.</span>
+          </label>
+          <div class="col-dropdown-header" style="margin-top:4px;border-top:1px solid var(--border);">
+            <span>Automação (clique no Produto) — escolha 1</span>
+          </div>
+          <label class="col-item" title="Desativa o clique automático na coluna Produto">
+            <input type="radio" name="auto-mode" id="auto-none-cb" value="none" checked>
+            <span>Nenhum</span>
+          </label>
+          <label class="col-item" title="Clique no código Produto para copiar e dar baixa automaticamente">
+            <input type="radio" name="auto-mode" id="auto-done-cb" value="done">
+            <span>Aut. Conclusão</span>
+          </label>
+          <label class="col-item" title="Clique no código Produto para copiar 'produto;emb' e dar baixa automaticamente">
+            <input type="radio" name="auto-mode" id="auto-qty-cb" value="qty">
+            <span>Aut. Produto x QTD</span>
+          </label>
+          <label class="col-item" title="Clique no código Produto para copiar 'produto;emb;qtd que falta' (conforme filtro atual) e dar baixa automaticamente">
+            <input type="radio" name="auto-mode" id="auto-qty-v2-cb" value="qtyv2">
+            <span>Aut. Produto x QTD V2</span>
+          </label>
+        </div>
+      </div>
+
+      <div class="header-sep" style="height:20px;margin:0 2px;"></div>
+      <button class="btn-outline" id="clear-btn">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+        Limpar
+      </button>
+      <button class="btn-danger" id="reset-progress-btn" style="display:none">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+          <polyline points="3 6 5 6 21 6"/>
+          <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+          <path d="M10 11v6"/><path d="M14 11v6"/>
+          <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+        </svg>
+        Resetar baixas
+      </button>
+
+      <div class="col-picker-wrap">
+        <button class="btn-outline" id="col-btn">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="8"  y1="6"  x2="21" y2="6"/><line x1="8"  y1="12" x2="21" y2="12"/>
+            <line x1="8"  y1="18" x2="21" y2="18"/>
+            <line x1="3"  y1="6"  x2="3.01" y2="6"/><line x1="3"  y1="12" x2="3.01" y2="12"/>
+            <line x1="3"  y1="18" x2="3.01" y2="18"/>
+          </svg>
+          Colunas
+        </button>
+        <div id="col-dropdown">
+          <div class="col-dropdown-header">
+            <span>Colunas visíveis</span>
+            <button id="col-toggle-all">Desmarcar todas</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="header-sep" style="height:20px;margin:0 2px;"></div>
+      <div class="col-picker-wrap">
+        <button class="btn-outline" id="export-btn">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="7 10 12 15 17 10"/>
+            <line x1="12" y1="15" x2="12" y2="3"/>
+          </svg>
+          Exportar
+        </button>
+        <div id="export-dropdown">
+          <div class="col-dropdown-header">
+            <span>Exportar tabela filtrada</span>
+          </div>
+          <label class="col-item" id="export-csv-btn" style="cursor:pointer">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <polyline points="14 2 14 8 20 8"/>
+            </svg>
+            <span>Exportar como .CSV</span>
+          </label>
+          <label class="col-item" id="export-xlsx-btn" style="cursor:pointer">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="3" width="18" height="18" rx="2"/><path d="m9 9 6 6m0-6-6 6"/>
+            </svg>
+            <span>Exportar como .XLSX</span>
+          </label>
+          <div class="col-dropdown-header" style="margin-top:4px"><span>Levar para outro aparelho</span></div>
+          <label class="col-item" id="export-json-btn" style="cursor:pointer" title="Salva relatório, trânsito e itens concluídos. Abra o arquivo no outro aparelho pela tela inicial.">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M17.5 19a4.5 4.5 0 1 0-1.4-8.8A6 6 0 1 0 5 14.5"/><path d="M12 12v8"/><path d="m9 17 3 3 3-3"/>
+            </svg>
+            <span>Exportar dados (.JSON)</span>
+          </label>
+          <label class="col-item" id="export-online-btn" style="cursor:pointer" title="Envia para o Firebase. No outro aparelho, abra o app: o card 'Dados online' já aparece.">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M17.5 19a4.5 4.5 0 1 0-1.4-8.8A6 6 0 1 0 5 14.5"/><path d="M12 12v8"/><path d="m9 17 3 3 3-3" transform="rotate(180 12 15)"/>
+            </svg>
+            <span>Exportar online (nuvem)</span>
+          </label>
+          <label class="col-item" id="sync-code-btn" style="cursor:pointer">
+            <span style="padding-left:21px">🔑 Código de sincronização…</span>
+          </label>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TABLE -->
+  <div class="table-wrap">
+    <div class="table-info">
+      Exibindo <span id="row-count">0</span> produto(s)
+      <span id="shown-badge" style="font-size:10px;color:var(--muted);display:none;margin-left:4px;"></span>
+      <span class="spacer-auto"></span>
+      <span id="progress-pill"></span>
+    </div>
+    <div class="scroll-x">
+      <table id="main-table">
+        <thead>
+          <tr id="thead-row">
+            <th id="th-check" title="Dar baixa / Concluído"></th>
+            <th data-col="st">St</th>
+            <th data-col="automacao">Automação / EAN</th>
+            <th data-col="produto">Produto</th>
+            <th data-col="descricao">Descrição</th>
+            <th data-col="emb">Emb</th>
+            <th data-col="referencia">Referência</th>
+            <th data-col="fornec">Fornec.</th>
+            <th data-col="nome">Nome Fornecedor</th>
+            <th data-col="sist">Sist</th>
+            <th data-col="giro">Giro</th>
+            <th data-col="corredor">Corredor</th>
+            <th data-col="altura">Altura</th>
+            <th data-col="largura">Largura</th>
+            <th data-col="prof">Prof</th>
+            <th data-col="total">Total</th>
+            <th data-col="cobplan">Cob.Plan</th>
+            <th data-col="qtdestoque">Qtd.Estoque</th>
+            <th data-col="pbl">PBL</th>
+            <th data-col="qt_transito" class="col-hidden">Qt.Trânsito</th>
+            <th data-col="total_geral" class="col-hidden">Total Geral</th>
+            <th data-col="mdv" class="col-hidden" title="Média diária de vendas (do relatório de Trânsito)">MDV</th>
+            <th data-col="cob_total" class="col-hidden">Cob.Total</th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+      <div id="empty-state">Nenhum produto encontrado com os filtros atuais.</div>
+      <!-- Sentinel: IntersectionObserver watches this to trigger next page load -->
+      <div id="load-sentinel" style="height:1px;"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     JAVASCRIPT
+═══════════════════════════════════════════════════════ -->
+<script>
+'use strict';
+
+/* ────────────────────────────────────────────────────────
+   COLUMN DEFINITIONS — fixed-width positions in the .txt
+──────────────────────────────────────────────────────── */
+const COLS = [
+  { key:'st',         start:0,   end:2   },
+  { key:'automacao',  start:3,   end:16  },
+  { key:'produto',    start:17,  end:25  },
+  { key:'descricao',  start:26,  end:66  },
+  { key:'emb',        start:66,  end:72  },  // widened to catch right-aligned values
+  { key:'referencia', start:72,  end:87  },
+  { key:'fornec',     start:88,  end:96  },
+  { key:'nome',       start:97,  end:119 },
+  { key:'sist',       start:120, end:124 },
+  { key:'giro',       start:125, end:129 },
+  { key:'corredor',   start:130, end:138 },
+  { key:'altura',     start:139, end:146 },
+  { key:'largura',    start:147, end:154 },
+  { key:'prof',       start:155, end:162 },
+  { key:'total',      start:163, end:170 },
+  { key:'cobplan',    start:171, end:179 },
+  { key:'qtdestoque', start:180, end:191 },
+  { key:'pbl',        start:192, end:195 },
+  // Virtual columns — populated from the transit report when loaded
+  { key:'qt_transito',  start:0, end:0, virtual:true },
+  { key:'total_geral',  start:0, end:0, virtual:true },
+  { key:'mdv',          start:0, end:0, virtual:true },
+  { key:'cob_total',    start:0, end:0, virtual:true },
+];
+
+const COL_LABELS = {
+  st:'St (Status)', automacao:'Automação / EAN', produto:'Produto',
+  descricao:'Descrição', emb:'Emb', referencia:'Referência',
+  fornec:'Fornec.', nome:'Nome Fornecedor', sist:'Sist',
+  giro:'Giro', corredor:'Corredor', altura:'Altura',
+  largura:'Largura', prof:'Prof', total:'Total',
+  cobplan:'Cob.Plan', qtdestoque:'Qtd.Estoque', pbl:'PBL',
+  qt_transito:'Qt.Trânsito', total_geral:'Total Geral', mdv:'MDV', cob_total:'Cob.Total',
+};
+
+/* ── Transit report state ── */
+let transitMap = {};   // { produto_code → { qt_transito, estoque_transito } }
+let transitLoaded = false;
+
+/* Parse the transit .txt report and build a lookup map keyed by produto code */
+function parseTransitFile(text) {
+  const RE_DATA = /^[A-Z] \d{8}/;
+  const map = {};
+  const lines = text.split('\n');
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].replace(/\r$/, '');
+    if (!RE_DATA.test(line)) continue;
+    const produto    = line.substring(2, 10).trim();
+    // pt-BR: "1.234,50" → remove o ponto de milhar e troca a vírgula por ponto
+    const num = str => parseFloat((str || '0').trim().replace(/\./g, '').replace(',', '.')) || 0;
+    // Lê pelo padrão do texto (Sist, Estoque, MDV, Cobert, Cl, Qt.Trânsito, Ped.Pend)
+    // — acentos/caracteres especiais na descrição deslocam as colunas fixas.
+    const m = /\s\d{2}\s+(-?[\d.]*,\d{2})\s+(\d+)\s+(\d+)\s+[A-Z]{1,2}\s+(-?[\d.]*,\d{2})\s+(-?[\d.]*,\d{2})/
+              .exec(line.substring(45));
+    let estoque, mdv, cobert, qt_transit;
+    if (m) {
+      estoque = num(m[1]); mdv = num(m[2]); cobert = num(m[3]); qt_transit = num(m[4]);
+    } else {                                   // fallback: posições fixas
+      qt_transit = num(line.substring(105, 116));
+      estoque    = num(line.substring(73,  85));
+      mdv        = num(line.substring(85,  91));
+      cobert     = num(line.substring(91,  99));
+    }
+    // MDV = estoque ÷ cobertura (cobertura = dias para vender o estoque).
+    // Só usa o MDV do relatório (arredondado p/ inteiro) quando não dá para calcular.
+    let mdvDerivado = false;
+    if (cobert > 0 && estoque > 0) { mdv = estoque / cobert; mdvDerivado = true; }
+    map[produto] = { qt_transito: qt_transit, mdv, mdvDerivado };
+  }
+  return map;
+}
+
+const DEFAULT_VISIBLE_COLS = [
+  'produto','descricao','emb','total','giro',
+  'corredor','altura','largura','prof','cobplan','qtdestoque','qt_transito','total_geral','mdv','cob_total'
+];
+const visibleCols = new Set(DEFAULT_VISIBLE_COLS);
+
+/* ── Column order — persists in localStorage ── */
+const LS_COL_ORDER = 'planograma_col_order';
+
+// The canonical sequence of data-col keys (excludes the check col)
+let colOrder = COLS.map(c => c.key);  // default: same as COLS
+
+function colOrderLoad() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(LS_COL_ORDER) || 'null');
+    if (Array.isArray(saved) && saved.length === COLS.length &&
+        saved.every(k => COLS.some(c => c.key === k))) {
+      colOrder = saved;
+    }
+  } catch {}
+}
+
+function colOrderSave() {
+  try { localStorage.setItem(LS_COL_ORDER, JSON.stringify(colOrder)); } catch {}
+}
+
+/* Reorder <th> elements in thead-row to match colOrder.
+   #th-check is always slot 0 and is never touched. */
+function applyColOrderToThead() {
+  const theadRow = document.getElementById('thead-row');
+  const checkTh  = document.getElementById('th-check');
+  // detach all data-col th
+  const ths = {};
+  theadRow.querySelectorAll('th[data-col]').forEach(th => {
+    ths[th.dataset.col] = th;
+    th.remove();
+  });
+  // re-append in colOrder
+  colOrder.forEach(key => {
+    if (ths[key]) theadRow.appendChild(ths[key]);
+  });
+}
+
+/* ────────────────────────────────────────────────────────
+   INDEXEDDB  — stores the raw .txt file content
+   DB: PlanogramaDB  |  Store: files
+   Record: { id:'current', name, content, savedAt, filial, date }
+──────────────────────────────────────────────────────── */
+const IDB_NAME    = 'PlanogramaDB';
+const IDB_VERSION = 1;
+const IDB_STORE   = 'files';
+
+let idb = null; // will hold the opened IDBDatabase
+
+function idbOpen() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(IDB_NAME, IDB_VERSION);
+    req.onupgradeneeded = e => {
+      e.target.result.createObjectStore(IDB_STORE, { keyPath:'id' });
+    };
+    req.onsuccess = e => { idb = e.target.result; resolve(idb); };
+    req.onerror   = e => reject(e.target.error);
+  });
+}
+
+function idbSave(record) {
+  return new Promise((resolve, reject) => {
+    const tx = idb.transaction(IDB_STORE, 'readwrite');
+    tx.objectStore(IDB_STORE).put(record);
+    tx.oncomplete = resolve;
+    tx.onerror    = e => reject(e.target.error);
+  });
+}
+
+function idbGet(id) {
+  return new Promise((resolve, reject) => {
+    const tx  = idb.transaction(IDB_STORE, 'readonly');
+    const req = tx.objectStore(IDB_STORE).get(id);
+    req.onsuccess = e => resolve(e.target.result || null);
+    req.onerror   = e => reject(e.target.error);
+  });
+}
+
+function idbDelete(id) {
+  return new Promise((resolve, reject) => {
+    const tx = idb.transaction(IDB_STORE, 'readwrite');
+    tx.objectStore(IDB_STORE).delete(id);
+    tx.oncomplete = resolve;
+    tx.onerror    = e => reject(e.target.error);
+  });
+}
+
+/* ────────────────────────────────────────────────────────
+   LOCALSTORAGE — done-set (EANs)
+   Key: planograma_done_<slug>
+──────────────────────────────────────────────────────── */
+let lsKey  = 'planograma_done_default';
+let doneSet = new Set();
+
+function lsKeyFor(filial, date) {
+  const slug = (filial + '_' + date).replace(/[^a-zA-Z0-9]/g,'_').toLowerCase();
+  return 'planograma_done_' + (slug || 'default');
+}
+
+function lsLoad()  {
+  try { doneSet = new Set(JSON.parse(localStorage.getItem(lsKey) || '[]')); }
+  catch { doneSet = new Set(); }
+}
+function lsSave()  {
+  try { localStorage.setItem(lsKey, JSON.stringify([...doneSet])); } catch {}
+}
+function lsClear() {
+  doneSet.clear();
+  try { localStorage.removeItem(lsKey); } catch {}
+}
+
+/* ────────────────────────────────────────────────────────
+   REGEXES
+──────────────────────────────────────────────────────── */
+const RE_CAT    = /^\s{2,}\d{2}\.\d{3}\.\d{3}\.\d{3}\s+(.+)/;
+const RE_DATA   = /^([A-Z])\s{2}(\d{13})/;
+const RE_DATE   = /Data:\s*([\d/]+)/;
+const RE_FILIAL = /Filial:\s*(.+?)\s{3,}/;
+const RE_HORA   = /Hora:\s*([\d:]+)/;
+
+/* ────────────────────────────────────────────────────────
+   PARSER
+──────────────────────────────────────────────────────── */
+function extractField(line, col) {
+  if (line.length <= col.start) return '';
+  return (line.substring(col.start, col.end) || '').trim();
+}
+
+function parseLine(line) {
+  const row = {};
+  for (const col of COLS) row[col.key] = extractField(line, col);
+  return row;
+}
+
+function parseFile(text) {
+  const lines = text.split(/\r?\n/);
+  const records = [];
+  let currentCat = '';
+  let metaDate = '', metaFilial = '', metaHora = '';
+
+  for (const line of lines) {
+    if (!metaDate)   { const m = RE_DATE.exec(line);   if (m) metaDate   = m[1]; }
+    if (!metaHora)   { const m = RE_HORA.exec(line);   if (m) metaHora   = m[1]; }
+    if (!metaFilial) {
+      const m = RE_FILIAL.exec(line);
+      if (m) metaFilial = m[1].replace(/CONDOR SUPER CENTER LTDA\.\s*/i,'').trim();
+    }
+    const catM = RE_CAT.exec(line);
+    if (catM) { currentCat = catM[1].trim(); continue; }
+    if (RE_DATA.test(line)) {
+      const row = parseLine(line);
+      row.categoria = currentCat;
+      ['corredor','altura','largura','prof','total','cobplan','qtdestoque'].forEach(k => {
+        if (row[k]) row[k] = row[k].replace(/_+/g,'').trim();
+      });
+      records.push(row);
+    }
+  }
+  return { records, meta:{ date:metaDate, filial:metaFilial, hora:metaHora } };
+}
+
+/* ────────────────────────────────────────────────────────
+   STATE
+──────────────────────────────────────────────────────── */
+let allRecords   = [];
+let filtered     = [];   // full filtered+sorted array (ALL matching records)
+let sortCol      = null, sortDir = 1;
+const PAGE       = 200;  // rows per lazy-load page
+let displayLimit = PAGE; // how many rows are currently in the DOM
+let lastCat      = null; // last category header rendered (shared across incremental appends)
+let currentMeta = {};
+
+/* ────────────────────────────────────────────────────────
+   DOM REFS
+──────────────────────────────────────────────────────── */
+const $ = id => document.getElementById(id);
+const uploadArea      = $('upload-area');
+const loadingEl       = $('loading');
+const loadingMsg      = $('loading-msg');
+const dashboard       = $('dashboard');
+const fileInput       = $('file-input');
+const dropZone        = $('drop-zone');
+const savedCard       = $('saved-card');
+const scFilename      = $('sc-filename');
+const scMeta          = $('sc-meta');
+const scOpenBtn       = $('sc-open-btn');
+const scDeleteBtn     = $('sc-delete-btn');
+const dividerOr       = $('divider-or');
+const tbody           = $('tbody');
+const rowCountEl      = $('row-count');
+const searchBox       = $('search-box');
+const catFilter       = $('cat-filter');
+const stFilter        = $('st-filter');
+const giroFilter      = $('giro-filter');
+const stockFilter     = $('stock-filter');
+const showDoneCb      = $('show-done-cb');
+const clearBtn        = $('clear-btn');
+const resetProgressBtn= $('reset-progress-btn');
+const reloadBtn       = $('reload-btn');
+const printBtn        = $('print-btn');
+const metaBar         = $('meta-bar');
+const headerMeta      = $('header-meta');
+const colBtn          = $('col-btn');
+const colDropdown     = $('col-dropdown');
+const colToggleAll    = $('col-toggle-all');
+const progressPill    = $('progress-pill');
+const hideInvalidCobCb = $('hide-invalid-cob-cb');
+const autoDoneCb       = $('auto-done-cb');
+const profEmbCb        = $('prof-emb-cb');
+const transitFilter    = $('transit-filter');
+const exportBtn        = $('export-btn');
+const exportDropdown   = $('export-dropdown');
+const autoQtyCb        = $('auto-qty-cb');
+const autoQtyV2Cb      = $('auto-qty-v2-cb');
+const autoNoneCb       = $('auto-none-cb');
+const autoModeRadios   = document.querySelectorAll('input[name="auto-mode"]');
+const togglesBtn       = $('toggles-btn');
+const togglesDropdown  = $('toggles-dropdown');
+const emptyState      = $('empty-state');
+const transitBtn      = $('transit-btn');
+const transitInput    = $('transit-input');
+const transitBtnLabel = $('transit-btn-label');
+
+/* ────────────────────────────────────────────────────────
+   TOAST
+──────────────────────────────────────────────────────── */
+let toastTimer = null;
+function showToast(msg, type='ok') {
+  const toastEl  = document.getElementById('toast');
+  const toastMsg = document.getElementById('toast-msg');
+  if (!toastEl || !toastMsg) return;
+  toastMsg.textContent = msg;
+  toastEl.className = type==='copy' ? 'toast-copy' : '';
+  // swap icon colour via class; the SVG stroke is set by CSS
+  void toastEl.offsetWidth; // force reflow to restart transition
+  toastEl.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>{ toastEl.classList.remove('show'); }, 2200);
+}
+
+/* ────────────────────────────────────────────────────────
+   SCREEN TRANSITIONS
+──────────────────────────────────────────────────────── */
+function showScreen(name) {
+  uploadArea.style.display  = name==='upload'  ? 'flex' : 'none';
+  loadingEl.style.display   = name==='loading' ? 'flex' : 'none';
+  dashboard.style.display   = name==='dash'    ? 'block': 'none';
+}
+
+function setLoading(msg) {
+  showScreen('loading');
+  loadingMsg.textContent = msg || 'Carregando…';
+}
+
+/* ────────────────────────────────────────────────────────
+   INIT — open IndexedDB, then check for saved file
+──────────────────────────────────────────────────────── */
+async function init() {
+  setLoading('Verificando dados salvos…');
+  try {
+    await idbOpen();
+    await refreshSavedCard();
+  } catch(e) {
+    console.warn('IndexedDB unavailable:', e);
+  }
+  showScreen('upload');
+  refreshCloudCard();
+}
+
+/* Mostra/esconde o card "Relatório salvo" conforme o que há na memória */
+async function refreshSavedCard() {
+  const saved = idb ? await idbGet('current') : null;
+  if (saved) {
+    scFilename.textContent = saved.name;
+    scMeta.textContent = `Filial: ${saved.filial || '?'} · ${saved.date || '?'} · Salvo em: ${saved.savedAt}`
+      + (saved.transit ? ' · Trânsito ✓' : '')
+      + (saved.importedFrom ? ' · Importado' : '');
+    savedCard.style.display = 'block';
+    dividerOr.style.display = 'flex';
+  } else {
+    savedCard.style.display = 'none';
+    dividerOr.style.display = 'none';
+  }
+  return saved;
+}
+
+/* ────────────────────────────────────────────────────────
+   FILE INPUT / DRAG-DROP
+──────────────────────────────────────────────────────── */
+fileInput.addEventListener('change', e => { if (e.target.files[0]) readFile(e.target.files[0]); });
+dropZone.addEventListener('click',   () => fileInput.click());
+dropZone.addEventListener('dragover',e  => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+dropZone.addEventListener('dragleave',  () => dropZone.classList.remove('drag-over'));
+dropZone.addEventListener('drop',    e  => {
+  e.preventDefault(); dropZone.classList.remove('drag-over');
+  if (e.dataTransfer.files[0]) readFile(e.dataTransfer.files[0]);
+});
+
+/* read a File object (from input or drop) */
+function readFile(file) {
+  setLoading('Lendo arquivo…');
+  const reader = new FileReader();
+  if (/\.json$/i.test(file.name)) {          // dados exportados de outro aparelho
+    reader.onload = ev => importBackup(ev.target.result, file.name);
+    reader.readAsText(file, 'utf-8');
+    return;
+  }
+  reader.onload = async ev => {
+    const text = ev.target.result;
+    await processText(text, file.name);
+  };
+  reader.readAsText(file, 'latin1');
+}
+
+/* ────────────────────────────────────────────────────────
+   SAVED FILE BUTTONS
+──────────────────────────────────────────────────────── */
+scOpenBtn.addEventListener('click', async () => {
+  setLoading('Abrindo relatório salvo…');
+  try {
+    const saved = await idbGet('current');
+    if (!saved) { showScreen('upload'); return; }
+
+    if (saved.records) {
+      // Fast path: data already parsed — no file re-read needed
+      loadingMsg.textContent = 'Restaurando registros…';
+      await tick();
+      allRecords  = saved.records;
+      currentMeta = saved.meta || {};
+      lsKey = lsKeyFor(currentMeta.filial, currentMeta.date);
+      lsLoad();
+      colOrderLoad();
+      buildDashboard(currentMeta);
+      applyColOrderToThead();
+      showScreen('dash');
+      document.getElementById('header-actions').style.display = 'flex';
+      if (saved.transit) applyTransit(saved.transit);   // Trânsito guardado junto
+    } else if (saved.content) {
+      // Legacy path: old save had raw text — parse it once then resave as JSON
+      await processText(saved.content, saved.name, /*persist=*/true);
+    } else {
+      showScreen('upload');
+    }
+  } catch { showScreen('upload'); }
+});
+
+scDeleteBtn.addEventListener('click', async () => {
+  if (!confirm('Excluir o arquivo salvo? Os itens marcados como feitos serão mantidos caso você recarregue o mesmo arquivo.')) return;
+  await idbDelete('current');
+  savedCard.style.display = 'none';
+  dividerOr.style.display = 'none';
+});
+
+/* ────────────────────────────────────────────────────────
+   PROCESS TEXT  (parse + optionally save to IDB + render)
+──────────────────────────────────────────────────────── */
+async function processText(text, filename, persist=true) {
+  loadingMsg.textContent = 'Processando registros…';
+
+  await tick(); // let the DOM update
+
+  const { records, meta } = parseFile(text);
+  allRecords  = records;
+  currentMeta = meta;
+
+  // localStorage key for done-set
+  lsKey = lsKeyFor(meta.filial, meta.date);
+  lsLoad();
+
+  // Save to IndexedDB as parsed JSON — much faster to reopen than raw .txt
+  if (persist && idb) {
+    const now = new Date().toLocaleString('pt-BR');
+    await idbSave({
+      id:      'current',
+      name:    filename,
+      records: records,   // already-parsed array, no re-parsing needed on reopen
+      meta:    meta,
+      savedAt: now,
+      filial:  meta.filial,
+      date:    meta.date,
+      transit: transitLoaded ? transitMap : undefined,
+    }).catch(()=>{});
+  }
+
+  colOrderLoad();          // restore saved column sequence
+  buildDashboard(meta);
+  applyColOrderToThead();   // reorder <th> elements
+  showScreen('dash');
+  document.getElementById('header-actions').style.display = 'flex';
+}
+
+/* requestAnimationFrame tick so loading message renders */
+function tick() { return new Promise(r => requestAnimationFrame(r)); }
+
+/* ────────────────────────────────────────────────────────
+   BUILD DASHBOARD
+──────────────────────────────────────────────────────── */
+function buildDashboard(meta) {
+  // meta pills
+  metaBar.innerHTML = '';
+  [
+    ['Filial', meta.filial || '—'],
+    ['Data',   meta.date   || '—'],
+    ['Hora',   meta.hora   || '—'],
+    ['Total',  allRecords.length + ' produtos'],
+  ].forEach(([l,v]) => {
+    const p = document.createElement('div');
+    p.className = 'meta-pill';
+    p.innerHTML = `${l}: <strong>${v}</strong>`;
+    metaBar.appendChild(p);
+  });
+  headerMeta.textContent = meta.filial ? `${meta.filial} · ${meta.date}` : '';
+
+  // category filter
+  const cats = [...new Set(allRecords.map(r=>r.categoria).filter(Boolean))].sort();
+  catFilter.innerHTML = '<option value="">Todas as categorias</option>';
+  cats.forEach(c => { const o=document.createElement('option'); o.value=c; o.textContent=c; catFilter.appendChild(o); });
+
+  // giro filter
+  const giros = [...new Set(allRecords.map(r=>(r.giro||'').trim()).filter(Boolean))].sort();
+  giroFilter.innerHTML = '<option value="">Todos</option>';
+  giros.forEach(g => { const o=document.createElement('option'); o.value=g; o.textContent=g; giroFilter.appendChild(o); });
+
+  buildColDropdown();
+  applyColVisibility();  // sync th/td visibility on first load
+  applyFilters();
+}
+
+/* ────────────────────────────────────────────────────────
+   DONE-SET HELPERS
+──────────────────────────────────────────────────────── */
+function toggleDone(ean) {
+  if (doneSet.has(ean)) doneSet.delete(ean); else doneSet.add(ean);
+  lsSave(); updateResetBtn(); applyFilters();
+}
+function updateResetBtn() {
+  resetProgressBtn.style.display = doneSet.size > 0 ? 'inline-flex' : 'none';
+}
+/* Build the "current filter" base — every active filter EXCEPT the
+   done-visibility toggle. Shared by the progress pill and by
+   "Aut. Produto x QTD V2" so both report the same X/Y numbers,
+   regardless of whether done rows are hidden or visible. */
+function getFilterStats() {
+  const q          = searchBox.value.toLowerCase();
+  const cat        = catFilter.value;
+  const st         = stFilter.value;
+  const giro       = giroFilter.value;
+  const stock      = stockFilter.value;
+  const hideInvCob = hideInvalidCobCb.checked;
+  const filterPE   = profEmbCb.checked;
+
+  const base = allRecords.filter(r => {
+    if (cat  && r.categoria !== cat)           return false;
+    if (st   && r.st !== st)                   return false;
+    if (giro && (r.giro||'').trim() !== giro)  return false;
+    if (stock) {
+      const v = parseFloat((r.qtdestoque||'0').replace(/\./g,'').replace(',','.'));
+      if (stock==='neg'  && v>=0)  return false;
+      if (stock==='zero' && v!==0) return false;
+      if (stock==='pos'  && v<=0)  return false;
+    }
+    if (hideInvCob) {
+      const cob = (r.cobplan||'').replace(/[_\-—]/g,'').trim();
+      const cv  = parseFloat(cob);
+      if (!cob || isNaN(cv) || cv <= 0) return false;
+    }
+    if (filterPE) {
+      const totalN = parseFloat((r.total||'').replace(/[^0-9.]/g,''));
+      const embN   = parseFloat((r.emb||'').replace(/[^0-9.]/g,''));
+      if (!isNaN(totalN) && !isNaN(embN) && totalN === embN) return false;
+    }
+    if (q) {
+      const hay = [r.descricao,r.automacao,r.produto,r.nome,r.referencia,r.fornec]
+                    .join(' ').toLowerCase();
+      if (!hay.includes(q)) return false;
+    }
+    return true;
+  });
+
+  const total = base.length;
+  const done  = base.filter(r => doneSet.has(r.automacao)).length;
+  const falta = total - done;
+  return { total, done, falta };
+}
+
+function updateProgressPill() {
+  const { total, done, falta } = getFilterStats();
+  const allDone = done > 0 && done === total;
+
+  if (total === 0) {
+    progressPill.style.display = 'none';
+    return;
+  }
+
+  progressPill.innerHTML =
+    `✓ <strong>${done}</strong> / ${total} feitos` +
+    (falta > 0 ? ` · faltam <strong>${falta}</strong>` : '');
+  progressPill.classList.toggle('all-done', allDone);
+  progressPill.style.display = 'inline-flex';
+}
+
+/* ────────────────────────────────────────────────────────
+   COLUMN PICKER
+──────────────────────────────────────────────────────── */
+function buildColDropdown() {
+  colDropdown.querySelectorAll('.col-item').forEach(el=>el.remove());
+  COLS.forEach(col => {
+    const item = document.createElement('label');
+    item.className = 'col-item';
+    const cb = document.createElement('input');
+    cb.type='checkbox'; cb.checked=visibleCols.has(col.key); cb.dataset.colKey=col.key;
+    cb.addEventListener('change', () => {
+      if(cb.checked) visibleCols.add(col.key); else visibleCols.delete(col.key);
+      applyColVisibility(); syncToggleAllLabel();
+    });
+    const lbl=document.createElement('span'); lbl.textContent=COL_LABELS[col.key]||col.key;
+    item.appendChild(cb); item.appendChild(lbl); colDropdown.appendChild(item);
+  });
+}
+
+function applyColVisibility() {
+  const visCount = COLS.filter(c=>visibleCols.has(c.key)).length + 1; // +1 check col
+  document.querySelectorAll('#thead-row th[data-col]').forEach(th=>{
+    th.classList.toggle('col-hidden', !visibleCols.has(th.dataset.col));
+  });
+  document.querySelectorAll('#tbody td[data-col]').forEach(td=>{
+    td.classList.toggle('col-hidden', !visibleCols.has(td.dataset.col));
+  });
+  document.querySelectorAll('#tbody tr.cat-row td').forEach(td=>{ td.colSpan=visCount||1; });
+}
+
+function syncToggleAllLabel() {
+  colToggleAll.textContent = visibleCols.size===COLS.length ? 'Desmarcar todas' : 'Marcar todas';
+}
+
+colBtn.addEventListener('click', e=>{
+  e.stopPropagation();
+  colDropdown.classList.toggle('open');
+  colBtn.classList.toggle('active', colDropdown.classList.contains('open'));
+});
+document.addEventListener('click', e=>{
+  if(!colDropdown.contains(e.target)&&e.target!==colBtn){
+    colDropdown.classList.remove('open'); colBtn.classList.remove('active');
+  }
+});
+
+/* Filtros dropdown (consolidated checkboxes) */
+togglesBtn.addEventListener('click', e=>{
+  e.stopPropagation();
+  togglesDropdown.classList.toggle('open');
+  togglesBtn.classList.toggle('active', togglesDropdown.classList.contains('open'));
+});
+document.addEventListener('click', e=>{
+  if(!togglesDropdown.contains(e.target) && e.target!==togglesBtn){
+    togglesDropdown.classList.remove('open'); togglesBtn.classList.remove('active');
+  }
+});
+colToggleAll.addEventListener('click', ()=>{
+  const all = visibleCols.size===COLS.length;
+  if(all) COLS.forEach((c,i)=>{ if(i>0) visibleCols.delete(c.key); });
+  else    COLS.forEach(c=>visibleCols.add(c.key));
+  colDropdown.querySelectorAll('input[type=checkbox]').forEach(cb=>{
+    cb.checked=visibleCols.has(cb.dataset.colKey);
+  });
+  applyColVisibility(); syncToggleAllLabel();
+});
+
+/* ────────────────────────────────────────────────────────
+   FILTERS + SORT
+   Processes the FULL allRecords array every time.
+   Only the rendering step respects displayLimit.
+──────────────────────────────────────────────────────── */
+/* Compute MDV from a planogram row (Estoque ÷ Cob.Plan).
+   Returns null if not computable. Precision: 2 decimals. */
+function getMDV(r) {
+  const estq = parseFloat((r.qtdestoque||'0').replace(/\./g,'').replace(',','.')) || 0;
+  const cob  = parseFloat((r.cobplan||'0').replace(/\./g,'').replace(/[^0-9]/g,'')) || 0;
+  if (estq <= 0 || cob <= 0 || cob === 999) return null;
+  return estq / cob;
+}
+
+function applyFilters() {
+  const q        = searchBox.value.toLowerCase();
+  const cat      = catFilter.value;
+  const st       = stFilter.value;
+  const giro     = giroFilter.value;
+  const stock    = stockFilter.value;
+  const showDone       = showDoneCb.checked;
+  const hideInvalidCob = hideInvalidCobCb.checked;
+  const filterProfEmb  = profEmbCb.checked;
+  const transitF       = transitFilter.value;  // '' | 'yes' | 'no'
+
+  // ① Filter the COMPLETE dataset
+  filtered = allRecords.filter(r => {
+    if (!showDone && doneSet.has(r.automacao)) return false;
+    if (cat   && r.categoria !== cat)           return false;
+    if (st    && r.st !== st)                   return false;
+    if (giro  && (r.giro||'').trim() !== giro)  return false;
+    if (stock) {
+      const v = parseFloat((r.qtdestoque||'0').replace(/\./g,'').replace(',','.'));
+      if (stock==='neg'  && v>=0)  return false;
+      if (stock==='zero' && v!==0) return false;
+      if (stock==='pos'  && v<=0)  return false;
+    }
+    // Ocultar Cobertura Inválida: remove items where cobplan ≤ 0, blank, or '—'
+    if (hideInvalidCob) {
+      const cob = (r.cobplan||'').replace(/[_\-—]/g,'').trim();
+      const cv  = parseFloat(cob);
+      if (!cob || isNaN(cv) || cv <= 0) return false;
+    }
+    // Total ≠ Emb.: compare numeric values (strips leading zeros)
+    if (filterProfEmb) {
+      const totalN = parseFloat((r.total||'').replace(/[^0-9.]/g,''));
+      const embN   = parseFloat((r.emb||'').replace(/[^0-9.]/g,''));
+      if (!isNaN(totalN) && !isNaN(embN) && totalN === embN) return false;
+    }
+    // Trânsito filter
+    if (transitF) {
+      const hasTransit = !!(transitMap[r.produto] && transitMap[r.produto].qt_transito > 0);
+      if (transitF === 'yes' && !hasTransit) return false;
+      if (transitF === 'no'  &&  hasTransit) return false;
+    }
+    if (q) {
+      const hay = [r.descricao,r.automacao,r.produto,r.nome,r.referencia,r.fornec]
+                    .join(' ').toLowerCase();
+      if (!hay.includes(q)) return false;
+    }
+    return true;
+  });
+
+  // ② Sort the COMPLETE filtered array
+  if (sortCol) {
+    // Helper: resolve a row's value for any column, including virtual ones
+    const resolveVal = (r, col) => {
+      if (col === 'qt_transito') {
+        const t = transitMap[r.produto];
+        return t ? t.qt_transito : -Infinity;
+      }
+      if (col === 'total_geral') {
+        const estq = parseFloat((r.qtdestoque||'0').replace(/\./g,'').replace(',','.')) || 0;
+        const t    = transitMap[r.produto];
+        return estq + (t ? t.qt_transito : 0);
+      }
+      if (col === 'mdv') {
+        const m = getMDV(r);
+        return m === null ? -Infinity : m;
+      }
+      if (col === 'cob_total') {
+        const m = getMDV(r);
+        if (m === null) return -Infinity;
+        const estq = parseFloat((r.qtdestoque||'0').replace(/\./g,'').replace(',','.')) || 0;
+        const t    = transitLoaded ? transitMap[r.produto] : null;
+        return (estq + (t ? t.qt_transito : 0)) / m;
+      }
+      const raw = r[col] || '';
+      const n   = parseFloat(raw.replace(/\./g,'').replace(',','.'));
+      return isNaN(n) ? raw : n;
+    };
+
+    filtered.sort((a, b) => {
+      const va = resolveVal(a, sortCol);
+      const vb = resolveVal(b, sortCol);
+      if (typeof va === 'number' && typeof vb === 'number') return (va - vb) * sortDir;
+      return String(va).localeCompare(String(vb)) * sortDir;
+    });
+  }
+
+  // ③ Reset lazy-load window and render first page
+  displayLimit = PAGE;
+  renderTable();
+  updateProgressPill();
+  updateResetBtn();
+}
+
+/* ────────────────────────────────────────────────────────
+   RENDER TABLE  (lazy / incremental)
+
+   renderTable()   → wipes tbody, draws rows [0, displayLimit)
+   appendNextPage()→ called by IntersectionObserver; draws the
+                     next PAGE rows and advances displayLimit.
+
+   Category separators are tracked via the module-level `lastCat`
+   so incremental appends never duplicate or skip headers.
+──────────────────────────────────────────────────────── */
+function renderTable() {
+  tbody.innerHTML = '';
+  lastCat = null;                // reset category tracker for fresh render
+
+  rowCountEl.textContent = filtered.length;
+  emptyState.style.display = filtered.length===0 ? 'block' : 'none';
+
+  const end = Math.min(displayLimit, filtered.length);
+  appendRows(0, end);
+  updateShownBadge();
+}
+
+/* Append rows [from, to) to tbody without clearing it */
+function appendRows(from, to) {
+  if (from >= to) return;
+  const visCount = COLS.filter(c=>visibleCols.has(c.key)).length + 1;
+  const frag = document.createDocumentFragment();
+
+  for (let i = from; i < to; i++) {
+    const r = filtered[i];
+
+    /* Category separator — only when category changes */
+    if (r.categoria && r.categoria !== lastCat) {
+      lastCat = r.categoria;
+      const tr=document.createElement('tr'); tr.className='cat-row';
+      const td=document.createElement('td'); td.colSpan=visCount; td.textContent=r.categoria;
+      tr.appendChild(td); frag.appendChild(tr);
+    }
+
+    /* Data row */
+    const isDone = doneSet.has(r.automacao);
+    const tr = document.createElement('tr');
+    if (isDone) tr.classList.add('row-done');
+    tr.dataset.ean = r.automacao;
+
+    const appendTd = (td, colKey) => {
+      if (colKey) { td.dataset.col=colKey; if(!visibleCols.has(colKey)) td.classList.add('col-hidden'); }
+      tr.appendChild(td);
+    };
+
+    /* Check cell */
+    const checkTd=document.createElement('td'); checkTd.className='td-check';
+    const btn=document.createElement('button'); btn.className='check-btn'+(isDone?' checked':'');
+    btn.title=isDone?'Desmarcar':'Dar baixa';
+    btn.innerHTML=`<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--ok)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
+    btn.addEventListener('click', e=>{ e.stopPropagation(); toggleDone(r.automacao); });
+    checkTd.appendChild(btn); tr.appendChild(checkTd);
+
+    /* ── Cell builder map — colOrder drives the sequence ── */
+    const makeProdTd = () => {
+      const td = monoCell(r.produto, 'muted');
+      td.classList.add('td-produto');
+      td.addEventListener('click', async () => {
+        // Three mutually-exclusive auto modes:
+        //  • Aut. Conclusão        → copies "produto"
+        //  • Aut. Produto x QTD    → copies "produto;emb"
+        //  • Aut. Produto x QTD V2 → copies "qtd feita;produto;emb;qtd que falta"
+        //    (counts are relative to the CURRENT filter, after this click)
+        if (!autoDoneCb.checked && !autoQtyCb.checked && !autoQtyV2Cb.checked) return;
+        const prodCode = r.produto.trim();
+        if (!prodCode || prodCode==='—') return;
+        const embCode = (r.emb||'').trim();
+
+        // Mark as done BEFORE building the V2 string, so the counters
+        // already reflect this item as completed.
+        if (!doneSet.has(r.automacao)) toggleDone(r.automacao);
+
+        let code;
+        if (autoQtyV2Cb.checked) {
+          const { falta } = getFilterStats();
+          code = `${prodCode};${embCode};${falta}`;
+        } else if (autoQtyCb.checked) {
+          code = `${prodCode};${embCode}`;
+        } else {
+          code = prodCode;
+        }
+
+        try { await navigator.clipboard.writeText(code); }
+        catch {
+          const ta=document.createElement('textarea'); ta.value=code;
+          ta.style.position='fixed'; ta.style.opacity='0';
+          document.body.appendChild(ta); ta.select();
+          document.execCommand('copy'); document.body.removeChild(ta);
+        }
+        requestAnimationFrame(()=>{
+          const row=tbody.querySelector(`tr[data-ean="${r.automacao}"]`);
+          if(row){ row.classList.remove('flash-copy'); void row.offsetWidth;
+            row.classList.add('flash-copy');
+            setTimeout(()=>row.classList.remove('flash-copy'),600); }
+        });
+        showToast(`Copiado: ${code}  ✓ Baixa dada`, 'copy');
+      });
+      return td;
+    };
+    const makeDescTd = () => {
+      const td=document.createElement('td'); td.className='desc-cell';
+      td.textContent=r.descricao||'—'; td.title=r.descricao||''; return td;
+    };
+    const makeNomeTd = () => {
+      const td=document.createElement('td'); td.className='nome-cell';
+      td.textContent=r.nome||'—'; td.title=r.nome||''; return td;
+    };
+    const cellBuilders = {
+      st:          () => badgeCell(r.st),
+      automacao:   () => monoCell(r.automacao),
+      produto:     makeProdTd,
+      descricao:   makeDescTd,
+      emb:         () => monoCell(r.emb,'muted'),
+      referencia:  () => monoCell(r.referencia,'muted'),
+      fornec:      () => monoCell(r.fornec,'muted'),
+      nome:        makeNomeTd,
+      sist:        () => monoCell(r.sist,'muted'),
+      giro:        () => giroCell((r.giro||'').trim()),
+      corredor:    () => numCell(r.corredor),
+      altura:      () => numCell(r.altura),
+      largura:     () => numCell(r.largura),
+      prof:        () => numCell(r.prof),
+      total:       () => numCell(r.total),
+      cobplan:     () => cobCell(r.cobplan),
+      qtdestoque:  () => estCell(r.qtdestoque),
+      pbl:         () => monoCell(r.pbl,'muted'),
+
+      // Virtual — data comes from transitMap, not the planogram row
+      qt_transito: () => {
+        if (!transitLoaded) { const td=document.createElement('td'); td.className='muted'; td.textContent='—'; return td; }
+        const transit = transitMap[r.produto] || null;
+        const val = transit ? transit.qt_transito : 0;
+        const td = document.createElement('td');
+        td.textContent = transit ? val.toLocaleString('pt-BR', {minimumFractionDigits:0, maximumFractionDigits:2}) : '—';
+        td.className = val > 0 ? 'num-ok' : 'muted';
+        return td;
+      },
+      total_geral: () => {
+        const td = document.createElement('td');
+        const estq = parseFloat((r.qtdestoque||'0').replace(/\./g,'').replace(',','.')) || 0;
+        if (!transitLoaded) { td.textContent = '—'; td.className = 'muted'; return td; }
+        const transit = transitMap[r.produto] || null;
+        const trans_q = transit ? transit.qt_transito : 0;
+        const total = estq + trans_q;
+        td.textContent = total.toLocaleString('pt-BR', {minimumFractionDigits:0, maximumFractionDigits:2});
+        td.className = total > 0 ? 'num-ok' : total < 0 ? 'num-neg' : 'num';
+        return td;
+      },
+      mdv: () => {
+        const td  = document.createElement('td');
+        const mdv = getMDV(r);
+        if (mdv === null) { td.textContent = '—'; td.className = 'muted'; return td; }
+        td.textContent = mdv.toLocaleString('pt-BR', {minimumFractionDigits:1, maximumFractionDigits:2});
+        td.title = 'Estoque ÷ Cob.Plan';
+        td.className = 'num';
+        return td;
+      },
+      cob_total: () => {
+        const td  = document.createElement('td');
+        const mdv = getMDV(r);
+        if (mdv === null) { td.textContent = '—'; td.className = 'muted'; return td; }
+        const estq    = parseFloat((r.qtdestoque||'0').replace(/\./g,'').replace(',','.')) || 0;
+        const transit = transitLoaded ? (transitMap[r.produto] || null) : null;
+        const trans_q = transit ? transit.qt_transito : 0;
+        const total   = estq + trans_q;
+        const cob     = total / mdv;
+        const cobTxt = cob.toLocaleString('pt-BR', {minimumFractionDigits:1, maximumFractionDigits:1});
+        td.textContent = cob > 999 ? '+999' : cobTxt;
+        td.title = (cob > 999 ? `Cobertura real: ${cobTxt} dias — ` : '') + (transitLoaded && trans_q > 0
+          ? `(${estq.toLocaleString('pt-BR')} estoque + ${trans_q.toLocaleString('pt-BR')} trânsito) ÷ ${mdv.toFixed(2)} MDV`
+          : `${estq.toLocaleString('pt-BR')} estoque ÷ ${mdv.toFixed(2)} MDV`);
+        td.className = cob >= 15 ? 'num-ok' : cob >= 7 ? 'num' : 'num-neg';
+        return td;
+      },
+    };
+    // Render cells in the current colOrder
+    for (const key of colOrder) {
+      if (cellBuilders[key]) appendTd(cellBuilders[key](), key);
+    }
+
+    frag.appendChild(tr);
+  }
+
+  tbody.appendChild(frag);   // single DOM write for the whole batch
+}
+
+/* Load the next PAGE of rows when the sentinel enters the viewport */
+function appendNextPage() {
+  if (displayLimit >= filtered.length) return;   // nothing left to load
+  const from = displayLimit;
+  displayLimit = Math.min(displayLimit + PAGE, filtered.length);
+  appendRows(from, displayLimit);
+  updateShownBadge();
+}
+
+/* Badge: "mostrando 200 de 6000" — hidden when all rows are rendered */
+const shownBadge = document.getElementById('shown-badge');
+function updateShownBadge() {
+  if (!shownBadge) return;
+  if (displayLimit >= filtered.length) {
+    shownBadge.style.display = 'none';
+  } else {
+    shownBadge.textContent = `— mostrando ${displayLimit} de ${filtered.length}`;
+    shownBadge.style.display = 'inline';
+  }
+}
+
+/* ────────────────────────────────────────────────────────
+   INTERSECTION OBSERVER — scroll-to-load-more
+   Watches #load-sentinel inside .scroll-x.
+   root: scrollEl  → fires relative to the scroll container,
+   not the viewport, so it works even with max-height scroll.
+──────────────────────────────────────────────────────── */
+const scrollEl  = document.querySelector('.scroll-x');
+const sentinel  = document.getElementById('load-sentinel');
+const observer  = new IntersectionObserver(entries => {
+  if (entries[0].isIntersecting) appendNextPage();
+}, { root: scrollEl, threshold: 0 });
+observer.observe(sentinel);
+
+/* ────────────────────────────────────────────────────────
+   CELL HELPERS
+──────────────────────────────────────────────────────── */
+function monoCell(val,cls=''){
+  const td=document.createElement('td'); td.textContent=val||'—'; if(cls) td.className=cls; return td;
+}
+function numCell(val){
+  const td=document.createElement('td'); td.textContent=val||'—'; td.className='num'; return td;
+}
+function badgeCell(st){
+  const td=document.createElement('td');
+  const sp=document.createElement('span'); sp.className=`badge badge-${st||'X'}`; sp.textContent=st||'?';
+  td.appendChild(sp); return td;
+}
+function giroCell(giro){
+  const td=document.createElement('td');
+  if(!giro){td.textContent='—';td.className='muted';return td;}
+  const sp=document.createElement('span');
+  const m={A:'giro-A',B:'giro-B',CA:'giro-CA',CB:'giro-CB',CC:'giro-CC'};
+  sp.className=`giro ${m[giro]||''}`; sp.textContent=giro; td.appendChild(sp); return td;
+}
+function cobCell(val){
+  const td=document.createElement('td'); const v=parseInt(val||'0',10); td.textContent=val||'—';
+  if(v===999){td.className='num';td.style.color='var(--muted)';}
+  else if(v<=5) td.className='num-neg';
+  else if(v>=20)td.className='num-ok';
+  else          td.className='num';
+  return td;
+}
+function estCell(val){
+  const td=document.createElement('td');
+  const v=parseFloat((val||'0').replace(/\./g,'').replace(',','.'));
+  td.textContent=val||'—';
+  if(v<0) td.className='num-neg'; else if(v===0) td.className='num'; else td.className='num-ok';
+  return td;
+}
+
+/* ────────────────────────────────────────────────────────
+   SORTING — delegated on thead-row so it survives reorder
+──────────────────────────────────────────────────────── */
+document.getElementById('thead-row').addEventListener('click', e => {
+  const th = e.target.closest('th[data-col]');
+  if (!th) return;
+  const col = th.dataset.col;
+  if (sortCol===col) sortDir*=-1; else { sortCol=col; sortDir=1; }
+  document.querySelectorAll('#thead-row th').forEach(h=>h.classList.remove('sort-asc','sort-desc'));
+  th.classList.add(sortDir===1?'sort-asc':'sort-desc');
+  applyFilters();
+});
+
+/* ────────────────────────────────────────────────────────
+   COLUMN DRAG & DROP
+   Strategy:
+   • dragstart  — record dragged col key; add ghost class
+   • dragover   — add drop-indicator class to target th
+   • dragleave  — remove indicator
+   • drop       — splice colOrder, reorder DOM th elements,
+                  re-render tbody, save to localStorage
+   The check column (#th-check) is excluded (no draggable attr).
+──────────────────────────────────────────────────────── */
+(function initColDrag() {
+  let dragKey   = null;   // key of the column being dragged
+  let dropSide  = null;   // 'left' | 'right' — which side of target
+
+  const theadRow = document.getElementById('thead-row');
+
+  function draggableThs() {
+    return Array.from(theadRow.querySelectorAll('th[data-col]'));
+  }
+
+  function clearDragClasses() {
+    theadRow.querySelectorAll('th').forEach(th => {
+      th.classList.remove('col-dragging','col-drag-over','col-drag-over-right');
+    });
+  }
+
+  // Attach drag listeners — called once, and again after reorder
+  function bindDragListeners() {
+    draggableThs().forEach(th => {
+      th.draggable = true;
+
+      th.addEventListener('dragstart', e => {
+        dragKey = th.dataset.col;
+        th.classList.add('col-dragging');
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/plain', dragKey);
+      });
+
+      th.addEventListener('dragend', () => {
+        clearDragClasses();
+        dragKey = null;
+      });
+
+      th.addEventListener('dragover', e => {
+        e.preventDefault();
+        if (!dragKey || th.dataset.col === dragKey) return;
+        clearDragClasses();
+        th.classList.add('col-dragging');    // keep ghost on source
+        // determine drop side by cursor position within target
+        const rect = th.getBoundingClientRect();
+        dropSide = (e.clientX - rect.left) < rect.width / 2 ? 'left' : 'right';
+        th.classList.add(dropSide==='left' ? 'col-drag-over' : 'col-drag-over-right');
+        // restore ghost on dragged col
+        const draggedTh = theadRow.querySelector(`th[data-col="${dragKey}"]`);
+        if (draggedTh) draggedTh.classList.add('col-dragging');
+      });
+
+      th.addEventListener('dragleave', () => {
+        th.classList.remove('col-drag-over','col-drag-over-right');
+      });
+
+      th.addEventListener('drop', e => {
+        e.preventDefault();
+        const targetKey = th.dataset.col;
+        if (!dragKey || dragKey === targetKey) { clearDragClasses(); return; }
+
+        // Update colOrder
+        const fromIdx = colOrder.indexOf(dragKey);
+        let   toIdx   = colOrder.indexOf(targetKey);
+        if (fromIdx === -1 || toIdx === -1) { clearDragClasses(); return; }
+        colOrder.splice(fromIdx, 1);
+        // recalculate toIdx after removal
+        toIdx = colOrder.indexOf(targetKey);
+        const insertAt = dropSide === 'right' ? toIdx + 1 : toIdx;
+        colOrder.splice(insertAt, 0, dragKey);
+
+        // Reorder <th> elements
+        applyColOrderToThead();
+
+        // Persist + re-render tbody to match new order
+        colOrderSave();
+        clearDragClasses();
+        renderTable();
+
+        // Re-bind listeners on the now-reordered ths
+        bindDragListeners();
+      });
+    });
+  }
+
+  bindDragListeners();
+})();
+
+/* ────────────────────────────────────────────────────────
+   F4 SHORTCUT — Aut. Produto x QTD V2 (and other auto modes)
+   Simulates a click on the FIRST visible Produto cell in the
+   table — i.e. the next pending item — letting the user run
+   the whole "copy + dar baixa" flow without touching the mouse.
+──────────────────────────────────────────────────────── */
+document.addEventListener('keydown', async e => {
+  if (e.key !== 'F4') return;
+  if (!autoDoneCb.checked && !autoQtyCb.checked && !autoQtyV2Cb.checked) return;
+
+  e.preventDefault(); // F4 has no default browser action, but just in case
+
+  const firstProdTd = tbody.querySelector('td.td-produto');
+  if (firstProdTd) {
+    firstProdTd.click();
+  } else {
+    // Sem itens pendentes — copia sentinel 000;000;0 para que a macro
+    // detecte o fim do loop pelo próprio clipboard, sem depender de UI.
+    const sentinel = '000;000;0';
+    try { await navigator.clipboard.writeText(sentinel); }
+    catch {
+      const ta = document.createElement('textarea'); ta.value = sentinel;
+      ta.style.position = 'fixed'; ta.style.opacity = '0';
+      document.body.appendChild(ta); ta.select();
+      document.execCommand('copy'); document.body.removeChild(ta);
+    }
+    showToast('Fim — 000;000;0 copiado', 'ok');
+  }
+});
+
+/* ────────────────────────────────────────────────────────
+   EXPORT — CSV and XLSX (pure JS, no library needed for CSV;
+   XLSX uses a minimal BOM-prefixed TSV that Excel opens natively)
+──────────────────────────────────────────────────────── */
+// Visible column headers in current order
+function getVisibleHeaders() {
+  return colOrder
+    .filter(k => visibleCols.has(k))
+    .map(k => COL_LABELS[k] || k);
+}
+
+// Get cell value for a row+col key (same logic as cellBuilders but text-only)
+function getExportValue(r, key) {
+  if (key === 'qt_transito') {
+    const t = transitMap[r.produto];
+    return t ? t.qt_transito : '';
+  }
+  if (key === 'total_geral') {
+    const estq = parseFloat((r.qtdestoque||'0').replace(/\./g,'').replace(',','.')) || 0;
+    const t    = transitMap[r.produto];
+    return t ? estq + t.qt_transito : estq;
+  }
+  if (key === 'mdv') {
+    const m = getMDV(r);
+    return m !== null ? m.toFixed(2) : '';
+  }
+  if (key === 'cob_total') {
+    const m = getMDV(r);
+    if (m === null) return '';
+    const estq = parseFloat((r.qtdestoque||'0').replace(/\./g,'').replace(',','.')) || 0;
+    const t    = transitLoaded ? (transitMap[r.produto] || null) : null;
+    return ((estq + (t ? t.qt_transito : 0)) / m).toFixed(1);
+  }
+  return r[key] || '';
+}
+
+function buildExportRows() {
+  const keys = colOrder.filter(k => visibleCols.has(k));
+  const rows = [getVisibleHeaders()];
+  for (const r of filtered) {
+    rows.push(keys.map(k => getExportValue(r, k)));
+  }
+  return rows;
+}
+
+function exportCSV() {
+  const rows  = buildExportRows();
+  const csv   = rows.map(row =>
+    row.map(v => `"${String(v).replace(/"/g,'""')}"`).join(';')
+  ).join('\n');
+  const blob  = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8' });
+  downloadBlob(blob, 'planograma_export.csv');
+}
+
+function exportXLSX() {
+  // Minimal XLSX via TSV with BOM — Excel opens it as a proper spreadsheet
+  const rows = buildExportRows();
+  const tsv  = rows.map(row => row.join('\t')).join('\n');
+  const blob = new Blob(['\uFEFF' + tsv], { type: 'application/vnd.ms-excel;charset=utf-8' });
+  downloadBlob(blob, 'planograma_export.xls');
+}
+
+function downloadBlob(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const a   = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+// Export dropdown toggle
+exportBtn.addEventListener('click', e => {
+  e.stopPropagation();
+  exportDropdown.classList.toggle('open');
+  exportBtn.classList.toggle('active', exportDropdown.classList.contains('open'));
+});
+document.addEventListener('click', e => {
+  if (!exportDropdown.contains(e.target) && e.target !== exportBtn) {
+    exportDropdown.classList.remove('open');
+    exportBtn.classList.remove('active');
+  }
+});
+
+$('export-csv-btn').addEventListener('click',  () => { exportCSV();  exportDropdown.classList.remove('open'); exportBtn.classList.remove('active'); });
+$('export-xlsx-btn').addEventListener('click', () => { exportXLSX(); exportDropdown.classList.remove('open'); exportBtn.classList.remove('active'); });
+
+/* ────────────────────────────────────────────────────────
+   TRANSIT REPORT LOADER
+──────────────────────────────────────────────────────── */
+function applyTransit(map) {
+  transitMap    = map;
+  transitLoaded = true;
+  transitBtnLabel.textContent = '✓ Trânsito';
+  transitBtn.classList.add('active');
+  // Make virtual columns visible automatically
+  visibleCols.add('qt_transito');
+  visibleCols.add('total_geral');
+  visibleCols.add('mdv');
+  visibleCols.add('cob_total');
+  // Sync col picker checkboxes
+  document.querySelectorAll('#col-dropdown input[type=checkbox]').forEach(cb => {
+    if (['qt_transito','total_geral','mdv','cob_total'].includes(cb.dataset.colKey))
+      cb.checked = true;
+  });
+  transitFilter.disabled = false;
+  transitFilter.title    = '';
+  applyColVisibility();
+  renderTable();
+}
+
+/* guarda o Trânsito junto do relatório salvo (e do .json exportado) */
+async function persistTransit() {
+  if (!idb) return;
+  try {
+    const rec = await idbGet('current');
+    if (rec) { rec.transit = transitMap; await idbSave(rec); }
+  } catch {}
+}
+
+transitInput.addEventListener('change', e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    applyTransit(parseTransitFile(ev.target.result));
+    persistTransit();
+    showToast(`Trânsito carregado — ${Object.keys(transitMap).length} itens`, 'ok');
+  };
+  reader.readAsText(file, 'latin1');
+  e.target.value = '';   // allow re-selecting same file
+});
+
+/* ────────────────────────────────────────────────────────
+   EXPORT / IMPORT DOS DADOS (.json) — levar para outro aparelho
+   Estrutura pensada para trocar por Firebase depois:
+   é só gravar/ler este mesmo objeto no banco.
+──────────────────────────────────────────────────────── */
+function buildBackup(name) {
+  return {
+    app: 'planograma', version: 1,
+    exportedAt: new Date().toISOString(),
+    name:    name || 'planograma',
+    meta:    currentMeta,
+    records: allRecords,
+    transit: transitLoaded ? transitMap : null,
+    done:    [...doneSet],
+    prefs:   { colOrder },
+  };
+}
+
+async function exportBackupJSON() {
+  if (!allRecords.length) { showToast('Nada para exportar', 'ok'); return; }
+  let rec = null; try { rec = await idbGet('current'); } catch {}
+  const b    = buildBackup(rec && rec.name);
+  const slug = ((currentMeta.filial||'') + '_' + (currentMeta.date||'')).replace(/[^a-zA-Z0-9]+/g,'_').replace(/^_|_$/g,'');
+  downloadBlob(new Blob([JSON.stringify(b)], { type:'application/json;charset=utf-8' }),
+               `planograma_${slug || 'dados'}.json`);
+  showToast(`Dados exportados — ${b.records.length} produtos${b.transit ? ' + trânsito' : ''}`, 'ok');
+}
+
+async function importBackup(text, filename) {
+  try {
+    const b = JSON.parse(text);
+    if (b.app !== 'planograma' || !Array.isArray(b.records)) throw new Error('formato');
+    const meta = b.meta || {};
+    await idbSave({
+      id: 'current', name: b.name || filename, records: b.records, meta,
+      savedAt: new Date().toLocaleString('pt-BR'),
+      filial: meta.filial, date: meta.date,
+      transit: b.transit || undefined,
+      importedFrom: filename,
+    });
+    // itens concluídos e ordem das colunas (sobrescreve o que houver neste aparelho)
+    try { localStorage.setItem(lsKeyFor(meta.filial, meta.date), JSON.stringify(b.done || [])); } catch {}
+    try { if (b.prefs && b.prefs.colOrder) localStorage.setItem(LS_COL_ORDER, JSON.stringify(b.prefs.colOrder)); } catch {}
+    showScreen('upload');
+    await refreshSavedCard();
+    showToast(`Dados importados — ${b.records.length} produtos${b.transit ? ' + trânsito' : ''}. Já estão na memória.`, 'ok');
+    return true;
+  } catch (e) {
+    showScreen('upload');
+    showToast('Arquivo .json inválido', 'ok');
+    return false;
+  }
+}
+
+/* ────────────────────────────────────────────────────────
+   ONLINE (Firebase Realtime Database via REST — sem SDK)
+   Caminho: /planograma/<código>/info  e  /planograma/<código>/data
+   O código funciona como senha: só quem o conhece acessa o caminho.
+──────────────────────────────────────────────────────── */
+const FB_URL  = 'https://planograma-48711-default-rtdb.firebaseio.com';
+const LS_SYNC = 'planograma_sync_code';
+const getSyncCode = () => { try { return localStorage.getItem(LS_SYNC) || ''; } catch { return ''; } };
+
+function askSyncCode() {
+  const c = prompt('Código de sincronização (8+ letras/números).\nUse o MESMO código nos dois aparelhos — ele funciona como senha:', getSyncCode());
+  if (c === null) return '';
+  const code = c.trim();
+  if (!/^[A-Za-z0-9_-]{8,64}$/.test(code)) { showToast('Código inválido: use 8+ letras ou números', 'ok'); return ''; }
+  try { localStorage.setItem(LS_SYNC, code); } catch {}
+  return code;
+}
+const cloudUrl = (code, leaf) => `${FB_URL}/planograma/${encodeURIComponent(code)}/${leaf}.json`;
+
+async function cloudFetch(url, opts) {
+  let r;
+  try { r = await fetch(url, opts); } catch { throw new Error('Sem conexão com a nuvem'); }
+  if (r.status === 401 || r.status === 403) throw new Error('Sem permissão — confira as regras do Firebase');
+  if (!r.ok) throw new Error('Erro da nuvem (' + r.status + ')');
+  return r;
+}
+
+async function exportOnline() {
+  if (!allRecords.length) { showToast('Nada para exportar', 'ok'); return; }
+  const code = getSyncCode() || askSyncCode();
+  if (!code) return;
+  try {
+    let rec = null; try { rec = await idbGet('current'); } catch {}
+    const b = buildBackup(rec && rec.name);
+    const payload = JSON.stringify(b);
+    if (payload.length > 9_000_000) throw new Error('Dados grandes demais para a nuvem (limite ~9 MB)');
+    showToast('Enviando para a nuvem…', 'ok');
+    const put = (leaf, val) => cloudFetch(cloudUrl(code, leaf), {
+      method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify(val) });
+    await put('data', payload);                       // dados primeiro…
+    await put('info', {                               // …depois o resumo
+      exportedAt: b.exportedAt, name: b.name, filial: currentMeta.filial || '',
+      date: currentMeta.date || '', total: b.records.length, hasTransit: !!b.transit,
+    });
+    showToast(`Enviado para a nuvem — ${b.records.length} produtos${b.transit ? ' + trânsito' : ''}`, 'ok');
+  } catch (e) { showToast(e.message, 'ok'); }
+}
+
+async function refreshCloudCard() {
+  const code = getSyncCode();
+  const title = $('cc-title'), meta = $('cc-meta'), load = $('cc-load-btn'), codeBtn = $('cc-code-btn');
+  load.style.display = 'none';
+  if (!code) {
+    title.textContent = 'Sincronização não configurada';
+    meta.textContent  = 'Informe seu código para buscar os dados exportados por outro aparelho.';
+    codeBtn.textContent = 'Informar código';
+    return;
+  }
+  codeBtn.textContent = 'Mudar código';
+  title.textContent = 'Verificando…'; meta.textContent = '';
+  try {
+    const info = await (await cloudFetch(cloudUrl(code, 'info'))).json();
+    if (!info) { title.textContent = 'Nenhum dado online com este código'; meta.textContent = 'Exporte de um aparelho: Exportar → Exportar online.'; return; }
+    title.textContent = '✓ Tem dados online na nuvem';
+    meta.textContent  = `Filial: ${info.filial || '?'} · ${info.date || '?'} · ${info.total} produtos`
+      + (info.hasTransit ? ' · Trânsito ✓' : '')
+      + ` · Exportado em: ${new Date(info.exportedAt).toLocaleString('pt-BR')}`;
+    load.style.display = '';
+  } catch (e) { title.textContent = 'Não foi possível verificar'; meta.textContent = e.message; }
+}
+
+async function importOnline() {
+  const code = getSyncCode();
+  if (!code) return;
+  setLoading('Baixando da nuvem…');
+  try {
+    const str = await (await cloudFetch(cloudUrl(code, 'data'))).json();
+    if (typeof str !== 'string') throw new Error('Nada encontrado na nuvem');
+    if (await importBackup(str, 'online')) scOpenBtn.click();   // já abre o relatório
+  } catch (e) { showScreen('upload'); showToast(e.message, 'ok'); }
+}
+
+$('cc-load-btn').addEventListener('click', importOnline);
+$('cc-code-btn').addEventListener('click', () => { if (askSyncCode()) refreshCloudCard(); });
+$('export-online-btn').addEventListener('click', () => { exportOnline(); exportDropdown.classList.remove('open'); exportBtn.classList.remove('active'); });
+$('sync-code-btn').addEventListener('click', () => { askSyncCode(); exportDropdown.classList.remove('open'); exportBtn.classList.remove('active'); });
+
+$('export-json-btn').addEventListener('click', () => { exportBackupJSON(); exportDropdown.classList.remove('open'); exportBtn.classList.remove('active'); });
+
+/* ────────────────────────────────────────────────────────
+   FILTER EVENTS
+──────────────────────────────────────────────────────── */
+searchBox.addEventListener('input',  applyFilters);
+catFilter.addEventListener('change', applyFilters);
+stFilter.addEventListener('change',  applyFilters);
+giroFilter.addEventListener('change',applyFilters);
+stockFilter.addEventListener('change',applyFilters);
+showDoneCb.addEventListener('change', applyFilters);
+hideInvalidCobCb.addEventListener('change', applyFilters);
+transitFilter.addEventListener('change', applyFilters);
+profEmbCb.addEventListener('change', applyFilters);
+
+/* Aut. Conclusão — toggle class on table; the click handler
+   lives inside appendRows on each td.td-produto */
+function syncAutoModeClass() {
+  // Radio group guarantees only one of these is ever true at a time.
+  const active = autoDoneCb.checked || autoQtyCb.checked || autoQtyV2Cb.checked;
+  document.getElementById('main-table').classList.toggle('auto-done-active', active);
+}
+
+autoModeRadios.forEach(r => r.addEventListener('change', syncAutoModeClass));
+
+clearBtn.addEventListener('click',()=>{
+  searchBox.value=''; catFilter.value=''; stFilter.value='';
+  giroFilter.value=''; stockFilter.value=''; showDoneCb.checked=false;
+  hideInvalidCobCb.checked=false; autoNoneCb.checked=true;
+  profEmbCb.checked=false; transitFilter.value='';
+  document.getElementById('main-table').classList.remove('auto-done-active');
+  sortCol=null; sortDir=1;
+  document.querySelectorAll('#thead-row th').forEach(h=>h.classList.remove('sort-asc','sort-desc'));
+  applyFilters();
+});
+
+resetProgressBtn.addEventListener('click',()=>{
+  if(!confirm(`Desmarcar todos os ${doneSet.size} itens concluídos?`)) return;
+  lsClear(); applyFilters();
+});
+
+reloadBtn.addEventListener('click',()=>{
+  showScreen('upload');
+  document.getElementById('header-actions').style.display = 'none';
+  headerMeta.textContent='';
+  allRecords=[]; filtered=[]; doneSet.clear();
+  fileInput.value='';
+  // Re-check saved card
+  refreshSavedCard().catch(()=>{});
+  refreshCloudCard();
+});
+
+/* ────────────────────────────────────────────────────────
+   BOOT
+──────────────────────────────────────────────────────── */
+init();
+
+/* PWA: registra o service worker (só funciona em https/localhost) */
+if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
+  window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(()=>{}));
+}
+</script>
+<!-- ─── TOAST ─── -->
+<div id="toast">
+  <svg class="toast-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+    <polyline points="20 6 9 17 4 12"/>
+  </svg>
+  <span id="toast-msg"></span>
+</div>
+</body>
+</html>
