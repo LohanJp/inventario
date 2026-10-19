@@ -2309,12 +2309,20 @@ const FB_URL  = 'https://planograma-48711-default-rtdb.firebaseio.com';
 const LS_SYNC = 'planograma_sync_code';
 const getSyncCode = () => { try { return localStorage.getItem(LS_SYNC) || ''; } catch { return ''; } };
 
+function normalizeCode(c) {
+  // tira acentos e espaços, usa minúsculas — evita diferença entre os aparelhos
+  return c.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9_@!*+=~-]/g, '');
+}
 function askSyncCode() {
-  const c = prompt('Código de sincronização (8+ letras/números).\nUse o MESMO código nos dois aparelhos — ele funciona como senha:', getSyncCode());
-  if (c === null) return '';
-  const code = c.trim();
-  if (!/^[A-Za-z0-9_-]{8,64}$/.test(code)) { showToast('Código inválido: use 8+ letras ou números', 'ok'); return ''; }
+  const raw = prompt('Invente um código de sincronização: mínimo 8 caracteres (letras, números, @ ! * + = ~ _ -), sem espaços.\nExemplo: planocolombo2026\nUse o MESMO código nos dois aparelhos:', getSyncCode());
+  if (raw === null) return '';
+  const code = normalizeCode(raw).slice(0, 64);
+  if (code.length < 8) {
+    showToast(`Código com ${code.length} caractere(s) — precisa de 8 ou mais`, 'ok');
+    return '';
+  }
   try { localStorage.setItem(LS_SYNC, code); } catch {}
+  showToast(`Código salvo: ${code} — use o mesmo no outro aparelho`, 'ok');
   return code;
 }
 const cloudUrl = (code, leaf) => `${FB_URL}/planograma/${encodeURIComponent(code)}/${leaf}.json`;
