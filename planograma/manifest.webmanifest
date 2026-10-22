@@ -1,18 +1,33 @@
 {
-  "id": "planograma-mobile-condor",
-  "name": "Planograma Mobile",
+  "name": "Leitor de Planograma",
   "short_name": "Planograma",
-  "description": "Cobertura, ruptura e pedido do planograma da loja",
+  "description": "Leitor de planograma Condor com cobertura, MDV e sincronização online.",
   "lang": "pt-BR",
-  "start_url": "./index.html",
-  "scope": "./",
+  "start_url": "/planograma-condor/",
+  "scope": "/planograma-condor/",
   "display": "standalone",
-  "orientation": "portrait",
-  "background_color": "#0b0f14",
-  "theme_color": "#0b0f14",
+  "orientation": "any",
+  "background_color": "#0d1117",
+  "theme_color": "#0d1117",
   "icons": [
-    {"src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any"},
-    {"src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any"},
-    {"src": "icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable"}
-  ]
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "id": "/planograma-condor/"
 }
