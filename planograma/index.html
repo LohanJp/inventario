@@ -40,6 +40,17 @@ h2{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--mu);m
 .row2{display:flex;gap:8px;align-items:center;margin-top:8px;font-size:12px;color:var(--mu)}
 .row2 select{flex:none;background:var(--card);color:var(--tx);border:1px solid var(--bd);border-radius:10px;padding:6px 8px;font-size:14px}
 .catx{background:#2a2110;color:var(--am);border:1px solid #5a4410;border-radius:20px;padding:4px 10px;font-size:12px;max-width:60%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cat-btn{flex:none;border:1px solid var(--bd);background:var(--card);color:var(--mu);border-radius:20px;padding:7px 13px;font:600 13px system-ui;white-space:nowrap;cursor:pointer}
+.cat-btn.on{border-color:var(--am);color:var(--am)}
+#cat-sheet{position:fixed;inset:0;z-index:90;display:flex;flex-direction:column;background:rgba(0,0,0,.55)}
+#cat-sheet .cs-box{margin-top:auto;background:var(--card);border-radius:16px 16px 0 0;max-height:70vh;display:flex;flex-direction:column;overflow:hidden}
+#cat-sheet .cs-hd{padding:14px 16px 10px;font-weight:700;font-size:15px;border-bottom:1px solid var(--bd);display:flex;justify-content:space-between;align-items:center}
+#cat-sheet .cs-hd button{background:none;border:none;color:var(--mu);font-size:22px;line-height:1;cursor:pointer;padding:0 4px}
+#cat-sheet .cs-list{overflow-y:auto;padding:6px 0 24px}
+#cat-sheet .cs-item{padding:12px 16px;font-size:14px;cursor:pointer;border-bottom:1px solid var(--bd);display:flex;justify-content:space-between;align-items:center}
+#cat-sheet .cs-item:active{background:var(--bg)}
+#cat-sheet .cs-item.on{color:var(--am);font-weight:600}
+#cat-sheet .cs-item .cs-count{font-size:12px;color:var(--mu);font-weight:400}
 .p{display:flex;gap:12px;background:var(--card);border:1px solid var(--bd);border-left:5px solid var(--c);border-radius:14px;padding:12px;margin-top:9px}
 .p{content-visibility:auto;contain-intrinsic-size:auto 132px}.pi{content-visibility:auto;contain-intrinsic-size:auto 96px}
 .cdx{color:var(--cr)!important;background:#2a1414!important}.lnk{background:none;border:0;color:var(--am);font:600 12px system-ui;padding:0;text-decoration:underline}
@@ -101,7 +112,15 @@ input[type=file],[hidden]{display:none!important}
 <section id="s-prod">
  <div class="sticky"><div class="sw"><input class="srch" id="q" placeholder="Buscar: nome, EAN ou código (ex.: omo 1,6)" type="search"><button class="scanb" id="b-scan" aria-label="Ler código de barras"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3"/><path d="M8 9v6M11 9v6M14 9v6M17 9v6" stroke-width="1.6"/></svg></button></div>
   <div class="chips" id="chips"></div>
-  <div class="row2"><span id="cnt"></span><span id="catx"></span><select id="sort" style="margin-left:auto"><option value="cob">Menor cobertura</option><option value="est">Menor estoque</option><option value="nome">Nome A–Z</option><option value="corr">Corredor</option></select></div></div>
+  <div class="row2"><span id="cnt"></span><span id="catx"></span><button class="cat-btn" id="cat-pick-btn" style="margin-left:auto;display:none">📂 Categoria</button><select id="sort"><option value="cob">Menor cobertura</option><option value="est">Menor estoque</option><option value="nome">Nome A–Z</option><option value="corr">Corredor</option></select></div></div>
+
+<!-- Category picker bottom sheet -->
+<div id="cat-sheet" style="display:none">
+  <div class="cs-box">
+    <div class="cs-hd"><span>Filtrar por categoria</span><button id="cat-sheet-x">✕</button></div>
+    <div class="cs-list" id="cat-list"></div>
+  </div>
+</div>
  <div id="list"></div><div id="more" style="height:40px"></div>
 </section>
 <section id="s-ped">
@@ -457,6 +476,8 @@ const CHIPS=[['all','Todos'],['sug','💡 Sugestão'],['cd','⚠ Falta no CD'],[
 function renderList(reset){if(reset)shown=40;const T=toks(F.q);
  $('chips').innerHTML=CHIPS.filter(c=>c[0]!=='trans'||transitLoaded).map(c=>`<button class="chip ${F.chip===c[0]?'on':''}" data-c="${c[0]}">${c[1]}</button>`).join('');
  $('sort').value=F.sort;$('catx').innerHTML=F.cat?`<span class="catx" data-x="1">✕ ${esc(short(F.cat))}</span>`:'';
+ $('cat-pick-btn').style.display=allRecords.length?'':'none';
+ $('cat-pick-btn').classList.toggle('on',!!F.cat);
  const base=r=>(!F.cat||r.categoria===F.cat)&&
   (F.chip==='all'||F.chip===r._k||(F.chip==='alert'&&(r._k==='rup'||r._k==='crit'))||(F.chip==='trans'&&r._t>0)||(F.chip==='pend'&&!r._d)||(F.chip==='done'&&r._d)||(F.chip==='sug'&&r._sg>0)||(F.chip==='cd'&&r._e<0));
  let rel=false;
@@ -475,6 +496,32 @@ $('q').oninput=e=>{F.q=e.target.value;qGo()};
 $('sort').onchange=e=>{F.sort=e.target.value;renderList(true)};
 $('chips').onclick=e=>{const b=e.target.closest('.chip');if(b){F.chip=b.dataset.c;renderList(true)}};
 $('catx').onclick=()=>{F.cat='';renderList(true)};
+
+/* ── Category picker ── */
+function openCatPicker(){
+  // Build category list with item counts (respecting current chip filter, ignoring cat)
+  const counts={};
+  allRecords.forEach(r=>{
+    const pass=(F.chip==='all'||F.chip===r._k||
+      (F.chip==='alert'&&(r._k==='rup'||r._k==='crit'))||
+      (F.chip==='trans'&&r._t>0)||(F.chip==='pend'&&!r._d)||
+      (F.chip==='done'&&r._d)||(F.chip==='sug'&&r._sg>0)||(F.chip==='cd'&&r._e<0));
+    if(pass)counts[r.categoria]=(counts[r.categoria]||0)+1;
+  });
+  const cats=Object.entries(counts).sort((a,b)=>b[1]-a[1]);
+  $('cat-list').innerHTML=
+    `<div class="cs-item${!F.cat?' on':''}" data-c=""><span>Todas as categorias</span><span class="cs-count">${allRecords.length} produtos</span></div>`+
+    cats.map(([k,v])=>`<div class="cs-item${F.cat===k?' on':''}" data-c="${esc(k)}"><span>${esc(short(k))}</span><span class="cs-count">${v}</span></div>`).join('');
+  $('cat-sheet').style.display='flex';
+}
+$('cat-pick-btn').onclick=openCatPicker;
+$('cat-sheet-x').onclick=()=>{$('cat-sheet').style.display='none'};
+$('cat-sheet').onclick=e=>{if(e.target===$('cat-sheet'))$('cat-sheet').style.display='none'};
+$('cat-list').onclick=e=>{
+  const item=e.target.closest('.cs-item');if(!item)return;
+  F.cat=item.dataset.c;renderList(true);
+  $('cat-sheet').style.display='none';
+};
 $('list').onclick=e=>{const c=e.target.closest('.p');if(!c)return;const r=byProd.get(c.dataset.p);
  if(e.target.closest('.cart')){const b=e.target.closest('.cart');if(inPed(r.produto)){pedido=pedido.filter(x=>x.p!==r.produto);savePed();b.classList.remove('on');toast('Removido do pedido')}else{addS(r);b.classList.add('on');toast('Adicionado ao pedido de amanhã')}}
  else if(e.target.closest('.chk')){r._d?doneSet.delete(key(r)):doneSet.add(key(r));r._d=!r._d;lsSave();c.classList.toggle('done',r._d);c.querySelector('.chk').textContent=r._d?'✓':'';if(r._d)copyEAN(r.automacao||r.produto)}else openSheet(r)};
