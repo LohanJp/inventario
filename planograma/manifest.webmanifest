@@ -3,8 +3,8 @@
   "short_name": "Planograma",
   "description": "Leitor de planograma Condor com cobertura, MDV e sincronização online.",
   "lang": "pt-BR",
-  "start_url": "/planograma-condor/",
-  "scope": "/planograma-condor/",
+  "start_url": "./",
+  "scope": "./",
   "display": "standalone",
   "orientation": "any",
   "background_color": "#0d1117",
@@ -28,6 +28,5 @@
       "type": "image/png",
       "purpose": "maskable"
     }
-  ],
-  "id": "/planograma-condor/"
+  ]
 }

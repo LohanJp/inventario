@@ -2,7 +2,7 @@
    - Sem Background Sync / Periodic Sync / polling / timers: ele só acorda quando o app pede algo.
    - Não mantém conexões abertas: Firebase (SSE/REST) e qualquer outra origem passam direto, sem interceptação.
    - Ao mudar o app, troque o número da versão (V) para renovar o cache. */
-const V='planograma-condor-v1';  // único por app — mude só o sufixo (v1→v2) ao atualizar
+const V='planograma-condor-v2';  // único por app — mude só o sufixo (v1→v2) ao atualizar
 const SHELL=['./','./index.html','./manifest.webmanifest','./icon-192.png','./icon-512.png','./icon-maskable-512.png','./apple-touch-icon.png'];
 
 /* Instalação tolerante: um ícone ausente não derruba o SW inteiro */
