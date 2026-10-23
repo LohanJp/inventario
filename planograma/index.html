@@ -63,14 +63,32 @@ h2{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--mu);m
 .cat-btn{flex:none;border:1px solid var(--bd);background:var(--card);color:var(--mu);border-radius:20px;padding:7px 13px;font:600 13px system-ui;white-space:nowrap;cursor:pointer}
 .cat-btn.on{border-color:var(--am);color:var(--am)}
 #cat-sheet{position:fixed;inset:0;z-index:90;display:flex;flex-direction:column;background:rgba(0,0,0,.55)}
-#cat-sheet .cs-box{margin-top:auto;background:var(--card);border-radius:16px 16px 0 0;max-height:70vh;display:flex;flex-direction:column;overflow:hidden}
-#cat-sheet .cs-hd{padding:14px 16px 10px;font-weight:700;font-size:15px;border-bottom:1px solid var(--bd);display:flex;justify-content:space-between;align-items:center}
+#cat-sheet .cs-box{margin-top:auto;background:var(--card);border-radius:16px 16px 0 0;max-height:78vh;display:flex;flex-direction:column;overflow:hidden}
+#cat-sheet .cs-hd{padding:12px 14px 10px;border-bottom:1px solid var(--bd);display:flex;flex-direction:column;gap:6px}
+#cat-sheet .cs-hd-top{display:flex;justify-content:space-between;align-items:center}
+#cat-sheet .cs-hd-top span{font-weight:700;font-size:15px}
 #cat-sheet .cs-hd button{background:none;border:none;color:var(--mu);font-size:22px;line-height:1;cursor:pointer;padding:0 4px}
-#cat-sheet .cs-list{overflow-y:auto;padding:6px 0 24px}
-#cat-sheet .cs-item{padding:12px 16px;font-size:14px;cursor:pointer;border-bottom:1px solid var(--bd);display:flex;justify-content:space-between;align-items:center}
+/* Breadcrumb trail */
+#cs-bread{display:flex;align-items:center;gap:4px;flex-wrap:wrap;min-height:20px}
+.cs-crumb{font-size:12px;color:var(--mu);cursor:pointer;background:none;border:none;padding:2px 4px;border-radius:4px}
+.cs-crumb:hover{color:var(--am)}
+.cs-crumb.active{color:var(--tx);font-weight:600;cursor:default}
+.cs-crumb-sep{font-size:11px;color:var(--bd)}
+/* Back button row */
+#cs-back-row{display:none;padding:8px 14px 2px;border-bottom:1px solid var(--bd)}
+#cs-back-btn{background:none;border:1px solid var(--bd);color:var(--mu);font-size:13px;padding:5px 12px;border-radius:8px;cursor:pointer}
+#cs-back-btn:active{background:var(--bg)}
+/* Apply at this level button */
+#cs-apply-row{padding:6px 14px;border-bottom:1px solid var(--bd);display:none}
+#cs-apply-btn{width:100%;background:#2a2110;border:1px solid #5a4410;color:var(--am);font:600 13px system-ui;padding:8px;border-radius:8px;cursor:pointer}
+#cat-sheet .cs-list{overflow-y:auto;padding:4px 0 24px}
+#cat-sheet .cs-item{padding:12px 16px;font-size:14px;cursor:pointer;border-bottom:1px solid var(--bd);display:flex;justify-content:space-between;align-items:center;gap:10px}
 #cat-sheet .cs-item:active{background:var(--bg)}
 #cat-sheet .cs-item.on{color:var(--am);font-weight:600}
+#cat-sheet .cs-item .cs-right{display:flex;align-items:center;gap:8px;flex-shrink:0}
 #cat-sheet .cs-item .cs-count{font-size:12px;color:var(--mu);font-weight:400}
+#cat-sheet .cs-item .cs-arrow{font-size:14px;color:var(--bd)}  /* › children indicator */
+#cat-sheet .cs-item.has-children .cs-arrow{color:var(--mu)}
 .p{display:flex;gap:12px;background:var(--card);border:1px solid var(--bd);border-left:5px solid var(--c);border-radius:14px;padding:12px;margin-top:9px}
 .p{content-visibility:auto;contain-intrinsic-size:auto 132px}.pi{content-visibility:auto;contain-intrinsic-size:auto 96px}
 .mtg{display:flex;align-items:center;gap:6px;flex:none;height:34px;padding:0 8px 0 10px;background:var(--card);border:1px solid var(--bd);border-radius:20px;font:600 12px system-ui;color:var(--mu);white-space:nowrap;cursor:pointer;transition:color .2s,border-color .2s}
@@ -166,7 +184,12 @@ input[type=file],[hidden]{display:none!important}
 <!-- Category picker bottom sheet -->
 <div id="cat-sheet" style="display:none">
   <div class="cs-box">
-    <div class="cs-hd"><span>Filtrar por categoria</span><button id="cat-sheet-x">✕</button></div>
+    <div class="cs-hd">
+      <div class="cs-hd-top"><span id="cs-title">Categoria</span><button id="cat-sheet-x">✕</button></div>
+      <div id="cs-bread"></div>
+    </div>
+    <div id="cs-back-row"><button id="cs-back-btn">← Voltar</button></div>
+    <div id="cs-apply-row"><button id="cs-apply-btn">Filtrar esta categoria →</button></div>
     <div class="cs-list" id="cat-list"></div>
   </div>
 </div>
@@ -480,7 +503,7 @@ const p40=r=>{const cap=capOf(r);if(cap<=0)return '40%: —';
 /* ═══ PREVISÃO DE PLANOGRAMA ═══ o pedido automático dispara quando o estoque bate 40% da capacidade (alt × larg × prof)
    OU a cobertura chega a 1 dia. Quem já tem trânsito não entra. bit 1 = ≤ 40% · bit 2 = cobertura ≤ 1 dia */
 function prevBits(r){
-  const cap=capOf(r);if(cap<=0||r._t>0)return 0;
+  const cap=capOf(r);if(cap<=0||r._t>0||cdRisk(r))return 0; // ignora falta no CD
   return (r._e<=cap*0.4?1:0)|(r._c!==null&&r._c<=1?2:0)}
 const capTxt=r=>{const c=capOf(r),e=num(r.emb)||1;return `${f0(c)} un`+(e>1?` · ${Number.isInteger(c/e)?f0(c/e):f1(c/e)} cx`:'')};
 /* quantidade que o pedido automático deve trazer:
@@ -546,11 +569,11 @@ $('kpis').onclick=e=>{const b=e.target.closest('.kpi');if(!b)return;const k=b.da
 $('cats').onclick=e=>{const b=e.target.closest('.bar');if(!b)return;F={chip:'alert',cat:b.dataset.c,q:'',sort:'cob'};$('q').value='';go('prod')};
 function renderPrev(){const el=$('prev');
   if(!allRecords.length){el.innerHTML='';return}
-  let n=0,a=0,b=0;allRecords.forEach(r=>{if(r._pv){n++;if(r._pv&1)a++;else b++}});
+  let n=0,a=0,b=0,cd=0;allRecords.forEach(r=>{if(cdRisk(r)){cd++;return}if(r._pv){n++;if(r._pv&1)a++;else b++}});
   const out=transitLoaded?allRecords.filter(r=>r._t>0&&capOf(r)>0&&(r._e<=capOf(r)*0.4||(r._c!==null&&r._c<=1))).length:0;
   el.innerHTML=`<button class="prevc" id="prev-go"><div class="n num">${f0(n)}</div><div class="t"><b>produtos devem entrar no próximo pedido</b>
    <small>Estoque ≤ 40% da capacidade pede 1× alt × larg × prof · cobertura ≤ 1 dia pede +1 dia de venda · só itens sem trânsito</small>
-   <div class="pc"><span>pede a capacidade: <b>${f0(a)}</b></span><span>pede +1 dia: <b>${f0(b)}</b></span>${transitLoaded?`<span>já em trânsito (fora): <b>${f0(out)}</b></span>`:''}</div>
+   <div class="pc"><span>pede a capacidade: <b>${f0(a)}</b></span><span>pede +1 dia: <b>${f0(b)}</b></span>${transitLoaded?`<span>já em trânsito (fora): <b>${f0(out)}</b></span>`:''}<span>falta no CD (ignorado): <b>${f0(cd)}</b></span></div>
    ${transitLoaded?'':'<small style="color:var(--am)">Carregue o Trânsito para tirar os itens que já estão a caminho.</small>'}</div><span class="go">›</span></button>`}
 $('prev').onclick=e=>{if(e.target.closest('#prev-go')){F={chip:'prev',cat:'',q:'',sort:'cob'};$('q').value='';go('prod')}};
 function renderSug(){const el=$('sug');
@@ -599,31 +622,152 @@ $('sort').onchange=e=>{F.sort=e.target.value;renderList(true)};
 $('chips').onclick=e=>{const b=e.target.closest('.chip');if(b){F.chip=b.dataset.c;renderList(true)}};
 $('catx').onclick=()=>{F.cat='';renderList(true)};
 
-/* ── Category picker ── */
-function openCatPicker(){
-  // Build category list with item counts (respecting current chip filter, ignoring cat)
+/* ── Category Tree Picker ──────────────────────────────────────────────
+   catPath = string[] of segments drilled into, e.g. ['MERCEARIA','LIMPEZA']
+   Displays children of the current path level.
+   Tapping a node with children → drills in.
+   "Filtrar esta categoria →" → applies that prefix as F.cat filter.
+   Tapping a leaf (no children) → applies immediately.
+──────────────────────────────────────────────────────────────────── */
+let catPath=[];   // current drill-down path
+
+function passesChip(r){
+  return (F.chip==='cd'||!noCD||!cdRisk(r))&&
+    (F.chip==='all'||F.chip===r._k||
+    (F.chip==='alert'&&(r._k==='rup'||r._k==='crit'))||
+    (F.chip==='trans'&&r._t>0)||(F.chip==='pend'&&!r._d)||
+    (F.chip==='done'&&r._d)||(F.chip==='sug'&&r._sg>0)||
+    (F.chip==='cd'&&r._e<0)||(F.chip==='prev'&&r._pv>0));}
+
+function buildCatTree(){
+  /* Build { prefixKey → count } for all records passing the chip filter */
   const counts={};
   allRecords.forEach(r=>{
-    const pass=(F.chip==='cd'||!noCD||!cdRisk(r))&&(F.chip==='all'||F.chip===r._k||
-      (F.chip==='alert'&&(r._k==='rup'||r._k==='crit'))||
-      (F.chip==='trans'&&r._t>0)||(F.chip==='pend'&&!r._d)||
-      (F.chip==='done'&&r._d)||(F.chip==='sug'&&r._sg>0)||(F.chip==='cd'&&r._e<0)||(F.chip==='prev'&&r._pv>0));
-    if(pass)counts[r.categoria]=(counts[r.categoria]||0)+1;
+    if(!passesChip(r))return;
+    const segs=(r.categoria||'').split('->');
+    /* Count every prefix level */
+    for(let i=1;i<=segs.length;i++){
+      const k=segs.slice(0,i).join('->');
+      counts[k]=(counts[k]||0)+1;
+    }
   });
-  const cats=Object.entries(counts).sort((a,b)=>b[1]-a[1]);
-  $('cat-list').innerHTML=
-    `<div class="cs-item${!F.cat?' on':''}" data-c=""><span>Todas as categorias</span><span class="cs-count">${allRecords.length} produtos</span></div>`+
-    cats.map(([k,v])=>`<div class="cs-item${F.cat===k?' on':''}" data-c="${esc(k)}"><span>${esc(short(k))}</span><span class="cs-count">${v}</span></div>`).join('');
-  $('cat-sheet').style.display='flex';pushOv('cat');
+  return counts;}
+
+function renderCatLevel(){
+  const counts=buildCatTree();
+  const depth=catPath.length;
+  const prefix=catPath.join('->');
+
+  /* Children = keys that are exactly one level deeper than catPath */
+  const children={};
+  Object.entries(counts).forEach(([k,v])=>{
+    const segs=k.split('->');
+    if(segs.length===depth+1&&(depth===0||k.startsWith(prefix+'->'))){
+      children[k]=v;}
+  });
+  const sorted=Object.entries(children).sort((a,b)=>b[1]-a[1]);
+
+  /* Check if current level itself has grandchildren (some child has children) */
+  const hasGrandchildren=key=>Object.keys(counts).some(k=>k.startsWith(key+'->'));
+
+  /* Header breadcrumb */
+  const breadParts=['Todas',...catPath];
+  $('cs-bread').innerHTML=breadParts.map((p,i)=>{
+    const isCurrent=i===breadParts.length-1;
+    return (i>0?`<span class="cs-crumb-sep">›</span>`:'')
+      +`<button class="cs-crumb${isCurrent?' active':''}" data-lvl="${i}">${esc(p==='Todas'?p:p.split('->').pop())}</button>`;
+  }).join('');
+
+  /* Title */
+  $('cs-title').textContent=depth===0?'Categoria':catPath[catPath.length-1].split('->').pop();
+
+  /* Back button */
+  $('cs-back-row').style.display=depth>0?'block':'none';
+
+  /* Apply button — show when drilled into at least one level */
+  const applyRow=$('cs-apply-row');
+  if(depth>0){
+    applyRow.style.display='block';
+    $('cs-apply-btn').dataset.cat=prefix;
+    const label=catPath[catPath.length-1].split('->').pop();
+    $('cs-apply-btn').textContent=`Filtrar "${esc(label)}" (${f0(counts[prefix]||0)} itens) →`;
+  } else {
+    applyRow.style.display='none';
+  }
+
+  /* "All" item at top */
+  const allCount=depth===0
+    ? allRecords.filter(passesChip).length
+    : (counts[prefix]||0);
+  const allActive=F.cat===''&&depth===0;
+  let html=`<div class="cs-item${allActive?' on':''}" data-c="" data-action="all">
+    <span>${depth===0?'Todos os itens':'Todos em '+esc(catPath[catPath.length-1].split('->').pop())}</span>
+    <div class="cs-right"><span class="cs-count">${f0(allCount)}</span></div></div>`;
+
+  /* Children items */
+  html+=sorted.map(([k,v])=>{
+    const label=k.split('->').pop();
+    const hasKids=hasGrandchildren(k);
+    const isActive=F.cat===k;
+    return `<div class="cs-item${isActive?' on':''}${hasKids?' has-children':''}" data-c="${esc(k)}" data-action="${hasKids?'drill':'apply'}">
+      <span>${esc(label)}</span>
+      <div class="cs-right"><span class="cs-count">${f0(v)}</span>${hasKids?'<span class="cs-arrow">›</span>':''}</div></div>`;
+  }).join('');
+
+  $('cat-list').innerHTML=html;
 }
+
+function openCatPicker(){
+  /* Start from current filter context — if F.cat is set, pre-navigate there */
+  if(F.cat){
+    catPath=F.cat.split('->');
+    /* Go up one level so the selected item is visible */
+    if(catPath.length>0)catPath=catPath.slice(0,-1);
+  } else {
+    catPath=[];
+  }
+  renderCatLevel();
+  $('cat-sheet').style.display='flex';
+  pushOv('cat');
+}
+
 function closeCat(){$('cat-sheet').style.display='none';popOv()}
+
 $('cat-pick-btn').onclick=openCatPicker;
 $('cat-sheet-x').onclick=closeCat;
 $('cat-sheet').onclick=e=>{if(e.target===$('cat-sheet'))closeCat()};
+
+/* Breadcrumb click — navigate to that level */
+$('cs-bread').onclick=e=>{
+  const b=e.target.closest('.cs-crumb');if(!b||b.classList.contains('active'))return;
+  const lvl=parseInt(b.dataset.lvl);
+  catPath=lvl===0?[]:catPath.slice(0,lvl);
+  renderCatLevel();
+};
+
+/* Back button */
+$('cs-back-btn').onclick=()=>{catPath=catPath.slice(0,-1);renderCatLevel()};
+
+/* Apply button — filter at current drill level */
+$('cs-apply-btn').onclick=()=>{
+  F.cat=$('cs-apply-btn').dataset.cat;
+  renderList(true);closeCat();
+};
+
+/* List item click */
 $('cat-list').onclick=e=>{
   const item=e.target.closest('.cs-item');if(!item)return;
-  F.cat=item.dataset.c;renderList(true);
-  closeCat();
+  const action=item.dataset.action;
+  if(action==='all'){
+    if(catPath.length===0){F.cat='';renderList(true);closeCat();}
+    else{F.cat=item.dataset.c||catPath.join('->');renderList(true);closeCat();}
+  } else if(action==='drill'){
+    catPath=item.dataset.c.split('->');
+    renderCatLevel();
+  } else if(action==='apply'){
+    F.cat=item.dataset.c;
+    renderList(true);closeCat();
+  }
 };
 $('list').onclick=e=>{const c=e.target.closest('.p');if(!c)return;const r=byProd.get(c.dataset.p);
  if(e.target.closest('.cart')){const b=e.target.closest('.cart');if(inPed(r.produto)){pedido=pedido.filter(x=>x.p!==r.produto);savePed();b.classList.remove('on');toast('Removido do pedido')}else{addS(r);b.classList.add('on');toast('Adicionado ao pedido de amanhã')}}
@@ -813,7 +957,10 @@ $('plist').onclick=e=>{const g=e.target.closest('[data-gx]');if(g){const d=g.dat
  if(confirm(`Excluir os ${n} ${n>1?'itens adicionados':'item adicionado'} em ${d.split('-').reverse().join('/')}?`)){pedido=pedido.filter(x=>x.added!==d);savePed();renderPed();toast('Itens excluídos')}return}
  const c=e.target.closest('.pi');if(!c)return;const x=pedido.find(y=>y.p===c.dataset.p);
  if(e.target.closest('[data-rm]'))pedido=pedido.filter(y=>y!==x);else if(e.target.closest('[data-ck]'))x.done=!x.done;
- else if(e.target.closest('[data-dt]'))x.date=x.date===tomorrow()?today():tomorrow();else return;savePed();renderPed()};
+ else if(e.target.closest('[data-dt]'))x.date=x.date===tomorrow()?today():tomorrow();
+ else if(!e.target.closest('.qty')&&!e.target.closest('.rm')&&!e.target.closest('.chk')&&!e.target.closest('.dch')){openSheet(byProd.get(c.dataset.p));return}
+ else return;
+ savePed();renderPed()};
 $('plist').oninput=e=>{if(!e.target.classList.contains('qty'))return;const x=pedido.find(y=>y.p===e.target.closest('.pi').dataset.p);x.q=e.target.value;savePedSoon()};
 $('pq').oninput=debounce(e=>{const T=toks(e.target.value);if(!T.length||T.join('').length<2){$('pres').innerHTML='';return}
  let m=allRecords.filter(r=>!inPed(r.produto)&&(r._s=score(r,T))>0);
