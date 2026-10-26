@@ -105,7 +105,7 @@ h2{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--mu);m
 .cdx{color:var(--cr)!important;background:#2a1414!important}.lnk{background:none;border:0;color:var(--am);font:600 12px system-ui;padding:0;text-decoration:underline}
 .sg{display:inline-block;margin-top:6px;font-size:12px;color:var(--am);background:#2a2110;border-radius:8px;padding:4px 8px}.btn[disabled]{opacity:.45}
 /* bloco de números do cartão: Estoque em destaque (un + caixas) e 3 mini-cartões */
-.p .st{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;margin-top:10px}
+.p .st{display:grid;grid-template-columns:repeat(2,1fr);gap:5px;margin-top:10px}
 .p .st>div{background:var(--card2);border-radius:10px;padding:7px 10px;min-width:0}
 .p .st .stq{grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;gap:8px}
 .p .st small{display:block;font-size:9.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--mu);margin-bottom:2px}
@@ -119,6 +119,10 @@ h2{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--mu);m
 .prevc .t{flex:1;min-width:0}.prevc .t b{font-size:14px}.prevc .t small{display:block;color:var(--mu);font-size:11.5px;margin-top:3px}
 .prevc .pc{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}.prevc .pc span{background:var(--card2);border-radius:8px;padding:3px 8px;font-size:11.5px;color:var(--mu)}.prevc .pc b{color:var(--tx);font-size:11.5px}
 .prevc .go{color:var(--mu);font-size:24px}
+.pedc .cob{display:flex;flex-direction:column;align-items:flex-end}
+.pedc .rm{width:36px;height:36px;border-radius:50%;border:2px solid var(--bd);color:var(--mu);font-size:15px;padding:0}
+.pedc.done .nm{text-decoration:line-through}
+.pedc .dch{margin-top:8px}
 .p.done{opacity:.5}.p .m{flex:1;min-width:0}
 .p .nm{font-weight:600;font-size:14.5px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .p .sb{color:var(--mu);font-size:11.5px;margin-top:2px}
@@ -206,7 +210,9 @@ input[type=file],[hidden]{display:none!important}
  <div class="card"><b>Planograma</b><div class="ln" id="d-plano">Nenhum relatório carregado</div>
   <label class="btn" for="f-plano">Escolher arquivo (.txt ou .json)</label><input type="file" id="f-plano" accept=".txt,.json">
   <div style="height:16px"></div><b>Trânsito</b><div class="ln" id="d-trans">Não carregado</div>
-  <label class="btn o" for="f-trans">Escolher relatório de Trânsito</label><input type="file" id="f-trans" accept=".txt"></div>
+  <label class="btn o" for="f-trans">Escolher relatório de Trânsito</label><input type="file" id="f-trans" accept=".txt">
+  <div style="height:16px"></div><b>Cobertura</b><div class="ln" id="cob-status">Não carregado</div>
+  <label class="btn o" for="cob-input">Escolher relatório de Cobertura</label><input type="file" id="cob-input" accept=".txt"></div>
  <h2>Nuvem</h2>
  <div class="card"><div class="kv" style="padding-top:0"><span>🔑 Código</span><span><b id="d-code">não definido</b></span></div>
   <button class="btn o" id="b-code" style="margin-top:12px">Definir / alterar código</button>
@@ -242,6 +248,27 @@ input[type=file],[hidden]{display:none!important}
 <div id="scan"><video id="sv" playsinline muted></video><div class="sframe"></div><div class="sbar"><b>Aponte para o código de barras</b>A câmera desliga sozinha ao ler ou em 30 s, para poupar bateria<button class="btn o" id="scan-x">Fechar câmera</button></div></div>
 <div id="sheet"><div id="sheetc"></div></div><div id="toast"></div><div id="load"><div class="spin"></div><div id="lmsg">Carregando…</div><div id="lhint"></div></div>
 <script>
+/* ═══ LEITURA ÚNICA E À PROVA DE DESLOCAMENTO — vale para TODOS os relatórios ═══
+   1) Decodifica como UTF-8 (cada acento = 1 coluna) e só cai para Windows-1252 se o arquivo não for UTF-8.
+   2) normalize('NFC') junta letra+acento decomposto ("C"+"¸") em 1 caractere.
+   3) Cada linha de colunas fixas é CONFERIDA: campos numéricos têm que ser números e os vãos entre colunas só espaços.
+      Se não fechar (acento mal codificado, emoji, tab…), tenta realinhar a linha em até ±6 casas; se não der,
+      a linha é IGNORADA e o app avisa — melhor sem o item do que com número errado. */
+function decodeBuf(buf){let t;try{t=new TextDecoder('utf-8',{fatal:true}).decode(buf)}catch{t=new TextDecoder('windows-1252').decode(buf)}return t.normalize('NFC')}
+const readReport=file=>file.arrayBuffer().then(decodeBuf);
+let parseWarn={realign:0,skip:0};
+const warnTxt=()=>(parseWarn.realign||parseWarn.skip)?` · ⚠ ${parseWarn.realign?parseWarn.realign+' linha(s) realinhada(s)':''}${parseWarn.realign&&parseWarn.skip?', ':''}${parseWarn.skip?parseWarn.skip+' ignorada(s)':''}`:'';
+const NUMF=/^-?\d[\d.]*(,\d+)?$|^$/;                     // 999 · -94 · 2.207 · 1.234,56 · vazio
+function colsOk(line,cols,d){
+  for(let i=0;i<cols.length;i++){const c=cols[i],nx=cols[i+1];
+    if(!c.txt&&!NUMF.test(line.substring(c.start+d,c.end+d).replace(/_+/g,'').trim()))return false;   // txt: coluna pode ter texto (ex.: BLOQ)
+    if(line.substring(c.end+d,nx?nx.start+d:c.end+d+1).trim())return false}      // vão entre colunas = só espaço
+  return true}
+function findShift(line,cols){
+  if(colsOk(line,cols,0))return 0;
+  for(const d of [2,1,3,-1,-2,4,-3,-4,5,6,-5,-6])if(colsOk(line,cols,d))return d;
+  return null}
+
 /* ═══ DADOS (leitura dos relatórios, memória do navegador) ═══ */
 const COLS = [
   { key:'st',         start:0,   end:2   },
@@ -272,6 +299,36 @@ let transitMap = {};   // { produto_code → { qt_transito, estoque_transito } }
 let transitLoaded = false;
 
 /* Parse the transit .txt report and build a lookup map keyed by produto code */
+/* Análise de Estoque (relatório com MDV e cobertura reais) */
+let estoqueMap={},estoqueLoaded=false;
+
+/* Parse Análise de Estoque .txt — colunas de posição fixa */
+const ES_NUM=[{start:73,end:84},{start:85,end:91,txt:true},{start:92,end:98},{start:99,end:106}];   // estoque · compra (número OU "BLOQ") · MDV · cobertura
+function parseEstoqueFile(text) {
+  const RE_DATA = /^[A-Z] \d{8}/;
+  const map = {};
+  parseWarn = {realign:0, skip:0};
+  for (const line of text.split(/\n/)) {
+    const l = line.replace(/\r$/, '');
+    if (!RE_DATA.test(l)) continue;
+    const d = findShift(l, ES_NUM);                    // linha deslocada? realinha ou ignora
+    if (d === null) { parseWarn.skip++; continue; }
+    if (d !== 0) parseWarn.realign++;
+    const produto = l.substring(2, 10).trim();
+    const parse  = (s, e) => parseFloat((l.substring(s + d, e + d) || '0').replace(/\./g, '').replace(',', '.')) || 0;
+    map[produto] = {
+      estq:   parse(73, 84),
+      compra: parse(85, 91),
+      bloq:   /BLOQ/i.test(l.substring(85 + d, 91 + d)),   // item bloqueado para compra
+      mdv:    parse(92, 98),
+      cob:    parse(99, 106),
+      cl:     l.substring(107 + d, 109 + d).trim(),
+      vda12:  parse(110, 124),
+    };
+  }
+  return map;
+}
+
 function parseTransitFile(text) {
   const RE_DATA = /^[A-Z] \d{8}/;
   const map = {};
@@ -388,7 +445,9 @@ function parseLine(line) {
   return row;
 }
 
+const PL_NUM = COLS.filter(c => ['corredor','altura','largura','prof','total','cobplan','qtdestoque'].includes(c.key));
 function parseFile(text) {
+  parseWarn = {realign:0, skip:0};
   const lines = text.split(/\r?\n/);
   const records = [];
   let currentCat = '';
@@ -405,6 +464,9 @@ function parseFile(text) {
     if (catM) { currentCat = catM[1].trim(); continue; }
     if (RE_DATA.test(line)) {
       const row = parseLine(line);
+      const d = findShift(line, PL_NUM);               // linha deslocada? realinha ou ignora
+      if (d === null) { parseWarn.skip++; continue; }
+      if (d !== 0) { parseWarn.realign++; for (const col of COLS) if (!col.virtual && col.start >= 120) row[col.key] = extractField(line, {start:col.start + d, end:col.end + d}); }
       row.categoria = currentCat;
       ['corredor','altura','largura','prof','total','cobplan','qtdestoque'].forEach(k => {
         if (row[k]) row[k] = row[k].replace(/_+/g,'').trim();
@@ -415,15 +477,11 @@ function parseFile(text) {
   return { records, meta:{ date:metaDate, filial:metaFilial, hora:metaHora } };
 }
 let allRecords=[];
+/* getMDV — reads MDV from estoque file only; null when not loaded */
 function getMDV(r) {
-  // MDV = capacidade do planograma (altura × largura × profundidade) ÷ Cob.Plan
-  // — a Cob.Plan do relatório é calculada sobre a capacidade, não sobre o estoque.
-  const num = v => parseFloat(String(v || '0').replace(/\./g, '').replace(',', '.')) || 0;
-  let cap = num(r.total);                                   // coluna Total = alt × larg × prof
-  if (cap <= 0) cap = num(r.altura) * num(r.largura) * num(r.prof);
-  const cob = parseFloat((r.cobplan || '0').replace(/\./g, '').replace(/[^0-9]/g, '')) || 0;
-  if (cap <= 0 || cob <= 0 || cob === 999) return null;
-  return cap / cob;
+  if (!estoqueLoaded) return null;
+  const es = estoqueMap[r.produto];
+  return (es && es.mdv > 0) ? es.mdv : null;
 }
 function downloadBlob(blob, filename) {
   const url = URL.createObjectURL(blob);
@@ -503,12 +561,13 @@ const p40=r=>{const cap=capOf(r);if(cap<=0)return '40%: —';
 /* ═══ PREVISÃO DE PLANOGRAMA ═══ o pedido automático dispara quando o estoque bate 40% da capacidade (alt × larg × prof)
    OU a cobertura chega a 1 dia. Quem já tem trânsito não entra. bit 1 = ≤ 40% · bit 2 = cobertura ≤ 1 dia */
 function prevBits(r){
+  if(!estoqueLoaded)return 0; // sem arquivo de estoque não há MDV real
   const cap=capOf(r);if(cap<=0||r._t>0||cdRisk(r))return 0; // ignora falta no CD
   return (r._e<=cap*0.4?1:0)|(r._c!==null&&r._c<=1?2:0)}
 const capTxt=r=>{const c=capOf(r),e=num(r.emb)||1;return `${f0(c)} un`+(e>1?` · ${Number.isInteger(c/e)?f0(c/e):f1(c/e)} cx`:'')};
 /* quantidade que o pedido automático deve trazer:
    estoque ≤ 40%  → 1× a capacidade (alt × larg × prof)
-   só cobertura ≤ 1 dia → o suficiente para +1 dia de venda (MDV, que vem de capacidade ÷ Cob.Plan), em caixas fechadas */
+   só cobertura ≤ 1 dia → o suficiente para +1 dia de venda (MDV do relatório de Cobertura), em caixas fechadas */
 function prevQty(r){
   if(r._pv&1)return{un:Math.round(capOf(r)),kind:'cap'};
   const e=num(r.emb)||1,d=r._m||0;
@@ -517,9 +576,16 @@ const unCx=(un,r)=>{const e=num(r.emb)||1;return `${f0(un)} un`+(e>1?` · ${Numb
 const pvTxt=r=>{const q=prevQty(r);return `Pedido previsto: <b>${unCx(q.un,r)}</b> · `+(q.kind==='cap'?'1× a capacidade (estoque ≤ 40%)':'+1 dia de venda (cobertura ≤ 1 dia)')};
 const sugCx=r=>{const e=num(r.emb)||1;return e>1?`${f0(r._sg/e)} cx de ${f0(e)}`:''};
 const sugTxt=r=>`${f0(r._sg)} un`+(num(r.emb)>1?` · ${sugCx(r)}`:'');
-const addS=r=>addPed(r,(F.chip==='prev'&&r._pv)?String(prevQty(r).un):(r._sg>0?String(r._sg):''));   // já entra no pedido com a quantidade sugerida
+const addS=r=>addPed(r);   // sem quantidade: a sugestão continua visível nas etiquetas do cartão
 function derive(){byProd=new Map(allRecords.map(r=>[r.produto,r]));for(const r of allRecords){const t=transitLoaded?transitMap[r.produto]:null;
- r._e=num(r.qtdestoque);r._t=t?t.qt_transito:0;r._m=getMDV(r);r._c=r._m?(r._e+r._t)/r._m:null;
+ r._e=num(r.qtdestoque);r._t=t?t.qt_transito:0;
+ const _es=estoqueLoaded?estoqueMap[r.produto]:null;
+ r._m=_es&&_es.mdv>0?_es.mdv:null;
+ r._c=_es?_es.cob:null; // cobertura do relatório (vem em número inteiro)
+ // relatório arredonda: 0 com estoque na loja → usa estoque (un) ÷ MDV com casas decimais
+ if(r._c===0&&r._e>0&&r._m>0)r._c=r._e/r._m;
+ // cobertura com o trânsito somado: (estoque + trânsito) ÷ MDV — sempre em unidades, nunca arredondada
+ r._ct=r._m>0?(Math.max(r._e,0)+r._t)/r._m:null;
  r._k=r._e<=0?'rup':r._c===null?'nd':r._c<7?'crit':r._c<15?'aten':'ok';r._d=doneSet.has(key(r));if(!r._h)r._h=norm(r.descricao+' '+r.produto+' '+r.automacao+' '+(r.referencia||''));r._sg=sugQty(r);r._pv=prevBits(r)}
   if(encItems.length)setTimeout(renderEnc,0)}   // reatualiza o Encarte quando o planograma/trânsito mudam
 const short=c=>(c||'Sem categoria').split('->').slice(-2).join(' › ');
@@ -557,11 +623,12 @@ function renderHome(){const n=allRecords.length;renderBan();renderSug();renderPr
  $('h-fil').textContent=(currentMeta.filial||'Filial').replace(/ - Produtos.*/i,'');
  $('h-sub').textContent=`${currentMeta.date||''} ${currentMeta.hora||''} · ${f0(n)} produtos · ${f0(c.dn)} concluídos`;
  const K=[['rup','Ruptura','estoque zerado/negativo','var(--cr)'],['crit','Crítico','cobertura < 7 dias','#ff7b72'],['aten','Atenção','7 a 15 dias','var(--am)'],['ok','Saudável','15 dias ou mais','var(--ok)']];
+  if(!estoqueLoaded)$('urg').innerHTML='<div class="empty" style="padding:16px;text-align:center">📂 Carregue o relatório de <b>Cobertura</b> na aba <b>Dados</b><br>para ver MDV e dias de cobertura reais.</div>';
  if(transitLoaded)K.push(['tr','Em trânsito','itens com entrada a caminho','var(--in)']);
  $('kpis').innerHTML=K.map(k=>`<button class="kpi" data-k="${k[0]}" style="--c:${k[3]}"><div class="n num">${f0(c[k[0]])}</div><div class="l"><b>${k[1]}</b> · ${k[2]}</div></button>`).join('');
  const u=allRecords.filter(r=>!r._d&&r._k!=='nd'&&r._k!=='ok').sort((a,b)=>(a._k==='rup'?-1e9:a._c)-(b._k==='rup'?-1e9:b._c)||b._m-a._m);
  u.sort((a,b)=>b._m-a._m);const top=u.filter(r=>r._k==='rup'||r._k==='crit').slice(0,6);
- $('urg').innerHTML=top.length?top.map(r=>`<div class="urg" data-p="${esc(r.produto)}" style="border-left:4px solid ${COLOR[r._k]}"><div class="d">${esc(r.descricao)}<small>${r.produto} · estoque ${f0(r._e)} · MDV ${r._m?f1(r._m):'—'}</small></div><div class="cob" style="--c:${COLOR[r._k]}"><b class="num" style="font-size:19px">${r._k==='rup'?'0':f1(Math.max(r._c,0))}</b><small>dias</small></div></div>`).join(''):'<div class="empty">Nenhum item crítico 🎉</div>';
+ if(estoqueLoaded)$('urg').innerHTML=top.length?top.map(r=>`<div class="urg" data-p="${esc(r.produto)}" style="border-left:4px solid ${COLOR[r._k]}"><div class="d">${esc(r.descricao)}<small>${r.produto} · estoque ${f0(r._e)} · MDV ${r._m?f1(r._m):'—'}</small></div><div class="cob" style="--c:${COLOR[r._k]}"><b class="num" style="font-size:19px">${r._k==='rup'?'0':f1(Math.max(r._c,0))}</b><small>dias</small></div></div>`).join(''):'<div class="empty">Nenhum item crítico 🎉</div>';
  const g={};for(const r of allRecords)if(r._k==='rup'||r._k==='crit'){g[r.categoria]=(g[r.categoria]||0)+1}
  const rows=Object.entries(g).sort((a,b)=>b[1]-a[1]).slice(0,6),mx=rows[0]?rows[0][1]:1;
  $('cats').innerHTML=rows.length?rows.map(([k,v])=>`<button class="bar" data-c="${esc(k)}"><span class="r"><span>${esc(short(k))}</span><b class="num">${v}</b></span><i><u style="width:${v/mx*100}%"></u></i></button>`).join(''):'<div class="empty">Sem alertas</div>'}
@@ -591,8 +658,8 @@ $('sug').onclick=e=>{
   if(e.target.closest('#sg-cd')){F={chip:'cd',cat:'',q:'',sort:'cob'};$('q').value='';return go('prod')}
   if(e.target.closest('#sg-all')){F={chip:'sug',cat:'',q:'',sort:'cob'};$('q').value='';return go('prod')}
   if(e.target.closest('#sg-add')){const f=allRecords.filter(r=>r._sg>0&&!r._d&&!inPed(r.produto));if(!f.length)return;
-    if(!confirm(`Adicionar ${f0(f.length)} produtos ao pedido de amanhã, já com as quantidades sugeridas?`))return;
-    f.forEach(r=>addPed(r,String(r._sg),true));savePed();renderSug();toast(f0(f.length)+' produtos adicionados ao pedido')}};
+    if(!confirm(`Adicionar ${f0(f.length)} produtos ao pedido de amanhã?`))return;
+    f.forEach(r=>addPed(r,'',true));savePed();renderSug();toast(f0(f.length)+' produtos adicionados ao pedido')}};
 $('urg').onclick=e=>{const b=e.target.closest('.urg');if(b)openSheet(byProd.get(b.dataset.p))};
 
 /* PRODUTOS */
@@ -602,7 +669,7 @@ function renderList(reset){if(reset)shown=40;const T=toks(F.q);
  $('sort').value=F.sort;$('nocd').checked=noCD;$('catx').innerHTML=F.cat?`<span class="catx" data-x="1">✕ ${esc(short(F.cat))}</span>`:'';
  $('cat-pick-btn').style.display=allRecords.length?'':'none';
  $('cat-pick-btn').classList.toggle('on',!!F.cat);
- const base=r=>(!F.cat||r.categoria===F.cat)&&(F.chip==='cd'||!noCD||!cdRisk(r))&&
+ const base=r=>catOk(r)&&(F.chip==='cd'||!noCD||!cdRisk(r))&&
   (F.chip==='all'||F.chip===r._k||(F.chip==='alert'&&(r._k==='rup'||r._k==='crit'))||(F.chip==='trans'&&r._t>0)||(F.chip==='pend'&&!r._d)||(F.chip==='done'&&r._d)||(F.chip==='sug'&&r._sg>0)||(F.chip==='cd'&&r._e<0)||(F.chip==='prev'&&r._pv>0));
  let rel=false;
  list=allRecords.filter(r=>base(r)&&(!T.length||(r._s=score(r,T))>0));
@@ -611,9 +678,11 @@ function renderList(reset){if(reset)shown=40;const T=toks(F.q);
   est:(a,b)=>a._e-b._e,nome:(a,b)=>a.descricao.localeCompare(b.descricao)};
  list.sort(T.length?(a,b)=>b._s-a._s||S[F.sort](a,b):S[F.sort]);$('cnt').textContent=f0(list.length)+(rel?' itens parciais — nenhum tem todas as palavras':' itens')+(noCD?' · ocultando '+f0(allRecords.filter(cdRisk).length)+' (falta no CD)':'');
  $('list').innerHTML=list.length?list.slice(0,shown).map(card).join(''):'<div class="empty">Nenhum produto encontrado</div>'}
+/* corpo do cartão (nome, código, etiquetas e bloco de números) — o MESMO nas abas Produtos e Pedido */
+function cardMain(r,extra,alwaysPrev){return `<div class="m"><div class="nm">${esc(r.descricao)}</div><div class="sb">${r.produto} · ${p40(r)} · ${esc(r.emb||'')}</div>${(alwaysPrev||F.chip==='prev')&&r._pv?`<div class="sg">🔮 ${pvTxt(r)}</div>`:''}${r._sg>0?`<div class="sg">💡 Sugestão: <b>${sugTxt(r)}</b></div>`:r._e<0?'<div class="sg cdx">⚠ Estoque negativo · provável falta no CD</div>':''}
+ <div class="st"><div class="stq"><div><small>Estoque</small><b class="num">${f0(r._e)}<i>un</i></b></div>${cxUn(r)?`<em class="cxp${cxUn(r)[0]==='<'?' low':''}">📦 ${cxUn(r)}</em>`:''}</div><div><small>Trânsito</small><b class="num">${transitLoaded?f0(r._t):'—'}${transitLoaded&&r._t>0?'<i>un</i>':''}</b></div><div><small>Cob. Trânsito</small><b class="num">${transitLoaded&&r._ct!==null?(r._ct>999?'+999':f1(r._ct)):'—'}${transitLoaded&&r._ct!==null?'<i>dias</i>':''}</b></div><div><small>MDV</small><b class="num">${r._m?f1(r._m):'—'}</b></div><div><small>Cob.Plan</small><b class="num">${esc(r.cobplan||'—')}</b></div></div>${extra||''}</div>`}
 function card(r){return `<div class="p ${r._d?'done':''}" data-p="${esc(r.produto)}" style="--c:${COLOR[r._k]}">
- <div class="m"><div class="nm">${esc(r.descricao)}</div><div class="sb">${r.produto} · ${p40(r)} · ${esc(r.emb||'')}</div>${F.chip==='prev'&&r._pv?`<div class="sg">🔮 ${pvTxt(r)}</div>`:''}${r._sg>0?`<div class="sg">💡 Sugestão: <b>${sugTxt(r)}</b></div>`:r._e<0?'<div class="sg cdx">⚠ Estoque negativo · provável falta no CD</div>':''}
- <div class="st"><div class="stq"><div><small>Estoque</small><b class="num">${f0(r._e)}<i>un</i></b></div>${cxUn(r)?`<em class="cxp${cxUn(r)[0]==='<'?' low':''}">📦 ${cxUn(r)}</em>`:''}</div><div><small>Trânsito</small><b class="num">${transitLoaded?f0(r._t):'—'}</b></div><div><small>MDV</small><b class="num">${r._m?f1(r._m):'—'}</b></div><div><small>Cob.Plan</small><b class="num">${esc(r.cobplan||'—')}</b></div></div></div>
+ ${cardMain(r)}
  <div class="cob"><b class="num">${r._c===null?'—':(r._c>999?'+999':f1(Math.max(r._c,0)))}</b><small>${r._k==='rup'?'Ruptura':'dias'}</small><br><div class="acts"><button class="cart ${inPed(r.produto)?'on':''}" data-a="1">🛒</button><button class="chk" data-k="1">${r._d?'✓':''}</button></div></div></div>`}
 const qGo=debounce(()=>renderList(true),180);
 $('q').oninput=e=>{F.q=e.target.value;qGo()};
@@ -630,6 +699,7 @@ $('catx').onclick=()=>{F.cat='';renderList(true)};
    Tapping a leaf (no children) → applies immediately.
 ──────────────────────────────────────────────────────────────────── */
 let catPath=[];   // current drill-down path
+const catOk=r=>!F.cat||r.categoria===F.cat||(r.categoria||'').startsWith(F.cat+'->');   // nível pai inclui os filhos
 
 function passesChip(r){
   return (F.chip==='cd'||!noCD||!cdRisk(r))&&
@@ -901,7 +971,7 @@ async function loadEncFile(file){
       }
       items=await parseEncXLSX(file);
     } else {
-      const text=await file.text();
+      const text=await readReport(file);
       items=parseEncCSV(text);
     }
     encItems=items;
@@ -909,6 +979,26 @@ async function loadEncFile(file){
     renderEnc();
   }catch(e){$('enc-title').textContent='Erro ao ler arquivo: '+e.message}
 }
+
+/* ── Cobertura de Estoque loader ── */
+async function loadCobFile(file){
+  busy(true,'Lendo cobertura…');
+  try{
+    const text=await readReport(file);
+    estoqueMap=parseEstoqueFile(text);
+    estoqueLoaded=true;
+    const total=Object.keys(estoqueMap).length;
+    // Update status
+    $('cob-status').innerHTML=`<b>✓ ${esc(file.name)}</b> · ${f0(total)} produtos · ${f0(Object.values(estoqueMap).filter(e=>e.mdv>0).length)} com MDV`;
+    // Save to IDB alongside planogram
+    if(idb)idbSave({id:'estoque',map:estoqueMap,name:file.name,savedAt:new Date().toLocaleString('pt-BR')}).catch(()=>{});
+    // Re-derive all records with real MDV/Cob
+    if(allRecords.length){derive();renderHome();if($('s-prod').classList.contains('on'))renderList(false);}
+    busy(false);renderData();toast(`Cobertura carregada · ${f0(total)} produtos`+warnTxt());
+  }catch(e){busy(false);$('cob-status').textContent='Erro: '+e.message}
+}
+
+$('cob-input').onchange=e=>{if(e.target.files[0])loadCobFile(e.target.files[0]);e.target.value=''};
 
 $('enc-drop').onclick=()=>$('enc-input').click();
 $('enc-input').onchange=e=>{if(e.target.files[0])loadEncFile(e.target.files[0]);e.target.value=''};
@@ -946,8 +1036,12 @@ $('pban').onclick=e=>{if(e.target.closest('[data-go]'))go('ped')};
 function renderPed(){const w=winMsg(),n=pend().length;
  $('phead').innerHTML=w?`<div class="t">${w.k}</div><div class="s">${n} ${n>1?'itens para pedir':'item para pedir'} · ${w.s}</div>`:`<div class="t">Pedido de amanhã</div><div class="s">Nenhum item na lista. Adicione abaixo ou pelo 🛒 nos produtos.</div>`;
  const row=x=>{const r=byProd.get(x.p);
-  return `<div class="pi ${x.done?'done':''}" data-p="${esc(x.p)}"><div class="m"><div class="nm">${esc(x.d)}</div><div class="sb">${x.p}${r?` · estoque ${f0(r._e)} · cob. ${r._c===null?'—':f1(Math.max(r._c,0))}d · ${p40(r)}`:''}</div><button class="dch" data-dt="1">Pedir: ${dlabel(x.date)} ⇄</button></div>
-  <input class="qty" inputmode="numeric" placeholder="Qtd" value="${esc(x.q)}"><button class="chk" data-ck="1" style="margin:0">${x.done?'✓':''}</button><button class="rm" data-rm="1">✕</button></div>`};
+  if(!r)return `<div class="pi ${x.done?'done':''}" data-p="${esc(x.p)}"><div class="m"><div class="nm">${esc(x.d)}</div><div class="sb">${x.p} · fora do planograma carregado</div><button class="dch" data-dt="1">Pedir: ${dlabel(x.date)} ⇄</button></div>
+   <button class="chk" data-ck="1" style="margin:0">${x.done?'✓':''}</button><button class="rm" data-rm="1">✕</button></div>`;
+  return `<div class="p pedc ${x.done?'done':''}" data-p="${esc(x.p)}" style="--c:${COLOR[r._k]}">
+   ${cardMain(r,`<button class="dch" data-dt="1">Pedir: ${dlabel(x.date)} ⇄</button>`,true)}
+   <div class="cob"><b class="num">${r._c===null?'—':(r._c>999?'+999':f1(Math.max(r._c,0)))}</b><small>${r._k==='rup'?'Ruptura':'dias'}</small>
+    <div class="acts"><button class="chk" data-ck="1">${x.done?'✓':''}</button><button class="rm" data-rm="1">✕</button></div></div></div>`};
  const gs={};pedido.forEach(x=>(gs[x.added]=gs[x.added]||[]).push(x));
  const yest=new Date();yest.setDate(yest.getDate()-1);
  const dl=d=>{const f=d.split('-').reverse();return d===today()?'hoje · '+f[0]+'/'+f[1]:d===ymd(yest)?'ontem · '+f[0]+'/'+f[1]:f.join('/')};
@@ -955,13 +1049,12 @@ function renderPed(){const w=winMsg(),n=pend().length;
   return `<div class="gh"><span>Adicionados ${dl(d)}<small>${pn} de ${it.length} a pedir</small></span><button data-gx="${d}">Excluir dia</button></div>`+it.map(row).join('')}).join('')||'<div class="empty">Sua lista está vazia</div>'}
 $('plist').onclick=e=>{const g=e.target.closest('[data-gx]');if(g){const d=g.dataset.gx,n=pedido.filter(x=>x.added===d).length;
  if(confirm(`Excluir os ${n} ${n>1?'itens adicionados':'item adicionado'} em ${d.split('-').reverse().join('/')}?`)){pedido=pedido.filter(x=>x.added!==d);savePed();renderPed();toast('Itens excluídos')}return}
- const c=e.target.closest('.pi');if(!c)return;const x=pedido.find(y=>y.p===c.dataset.p);
+ const c=e.target.closest('.pedc,.pi');if(!c)return;const x=pedido.find(y=>y.p===c.dataset.p);
  if(e.target.closest('[data-rm]'))pedido=pedido.filter(y=>y!==x);else if(e.target.closest('[data-ck]'))x.done=!x.done;
  else if(e.target.closest('[data-dt]'))x.date=x.date===tomorrow()?today():tomorrow();
- else if(!e.target.closest('.qty')&&!e.target.closest('.rm')&&!e.target.closest('.chk')&&!e.target.closest('.dch')){openSheet(byProd.get(c.dataset.p));return}
+ else if(!e.target.closest('.rm')&&!e.target.closest('.chk')&&!e.target.closest('.dch')){openSheet(byProd.get(c.dataset.p));return}
  else return;
  savePed();renderPed()};
-$('plist').oninput=e=>{if(!e.target.classList.contains('qty'))return;const x=pedido.find(y=>y.p===e.target.closest('.pi').dataset.p);x.q=e.target.value;savePedSoon()};
 $('pq').oninput=debounce(e=>{const T=toks(e.target.value);if(!T.length||T.join('').length<2){$('pres').innerHTML='';return}
  let m=allRecords.filter(r=>!inPed(r.produto)&&(r._s=score(r,T))>0);
  if(!m.length&&T.length>1)m=allRecords.filter(r=>!inPed(r.produto)&&(r._s=score(r,T,true))>0);
@@ -973,7 +1066,7 @@ $('pres').onclick=e=>{const c=e.target.closest('.pr');if(!c)return;addS(byProd.g
 /* FICHA DO PRODUTO */
 function openSheet(r){if(!r)return;const kv=(a,b)=>`<div class="kv"><span>${a}</span><span>${b}</span></div>`;
  $('sheetc').innerHTML=`<h3>${esc(r.descricao)}</h3><div class="ln" style="margin:0 0 8px"><b style="color:${COLOR[r._k]}">${LBL[r._k]}</b> · ${esc(short(r.categoria))}</div>
- ${kv('Cobertura total',r._c===null?'—':f1(Math.max(r._c,0))+' dias')}${kv('Estoque',f0(r._e))}${kv('Em trânsito',transitLoaded?f0(r._t):'—')}${kv('MDV (capacidade ÷ Cob.Plan)',r._m?f1(r._m):'—')}${r._sg>0?kv('💡 Sugestão de pedido',`<b style="color:var(--am)">${sugTxt(r)}</b>`):r._e<0?kv('⚠ Falta no CD','<b style="color:var(--cr)">Estoque negativo — fora da sugestão</b>'):''}
+ ${kv('Cobertura (relatório)',r._c===null?'—':f1(Math.max(r._c,0))+' dias')}${kv('Estoque',f0(r._e))}${kv('Em trânsito',transitLoaded?f0(r._t):'—')}${kv('Cobertura com trânsito',transitLoaded&&r._ct!==null?(r._ct>999?'+999':f1(r._ct))+' dias':'—')}${kv('MDV (relatório de Cobertura)',r._m?f1(r._m):'—')}${r._sg>0?kv('💡 Sugestão de pedido',`<b style="color:var(--am)">${sugTxt(r)}</b>`):r._e<0?kv('⚠ Falta no CD','<b style="color:var(--cr)">Estoque negativo — fora da sugestão</b>'):''}
  ${kv('Cob.Plan',esc(r.cobplan||'—')+' dias')}${kv('Capacidade (alt × larg × prof)',`${esc(r.altura||'—')} × ${esc(r.largura||'—')} × ${esc(r.prof||'—')} = ${esc(r.total||'—')}`)}
  ${kv('Corredor',esc(r.corredor||'—'))}${kv('Giro',esc(r.giro||'—'))}${kv('Embalagem',esc(r.emb||'—'))}${kv('Código / EAN',`${r.produto} · ${esc(r.automacao||'')}`)}${kv('Fornecedor',esc(r.nome||r.fornec||'—'))}
  <button class="btn o" id="sh-ped">${inPed(r.produto)?'🛒 Remover do pedido':'🛒 Adicionar ao pedido de amanhã'+(r._sg>0?' · '+f0(r._sg)+' un':'')}</button><button class="btn" id="sh-done">${r._d?'Desfazer conclusão':'Marcar como feito'}</button><button class="btn o" id="sh-x">Fechar</button>`;
@@ -989,11 +1082,16 @@ async function loadRecords(records,meta,name,transit,persist,savedAt){
  savedInfo={name,savedAt:savedAt||new Date().toLocaleString('pt-BR')};
  if(persist&&idb)await idbSave({id:'current',name,records,meta,savedAt:savedInfo.savedAt,filial:meta.filial,date:meta.date,transit:transitLoaded?transitMap:undefined}).catch(()=>{});
  derive();F={chip:'all',cat:'',q:'',sort:'cob'};$('q').value='';go('home')}
-function readFile(file,cb,enc){const r=new FileReader();r.onload=e=>cb(e.target.result);r.readAsText(file,enc)}
+/* Os relatórios do sistema são UTF-8 (cada acento ocupa 1 coluna). Ler como latin1 transformava Ç, Ã, º… em 2 caracteres e
+   DESLOCAVA as colunas dessas linhas (≈2% do planograma): Cob.Plan 999 virava "6 9", estoque 0 virava 9, etc.
+   Agora tenta UTF-8 e só cai para Windows-1252 se o arquivo realmente não for UTF-8. */
+function readFile(file,cb,enc){const r=new FileReader();
+  if(enc==='latin1'){r.onload=e=>cb(decodeBuf(e.target.result));r.readAsArrayBuffer(file);return}
+  r.onload=e=>cb(e.target.result);r.readAsText(file,enc)}
 $('f-plano').onchange=e=>{const f=e.target.files[0];if(!f)return;e.target.value='';busy(true,'Lendo arquivo…',true);
  if(/\.json$/i.test(f.name))readFile(f,t=>importBackup(t,f.name),'utf-8');
  else readFile(f,async t=>{await tick();const p=parseFile(t);if(!p.records.length){busy(false);return toast('Nenhum produto encontrado no arquivo')}
-  await loadRecords(p.records,p.meta,f.name,null,true);busy(false);toast(f0(p.records.length)+' produtos carregados')},'latin1')};
+  await loadRecords(p.records,p.meta,f.name,null,true);busy(false);toast(f0(p.records.length)+' produtos carregados'+warnTxt())},'latin1')};
 $('f-trans').onchange=e=>{const f=e.target.files[0];if(!f)return;e.target.value='';busy(true,'Lendo trânsito…');
  readFile(f,async t=>{transitMap=parseTransitFile(t);transitLoaded=true;derive();
   if(idb){try{const rec=await idbGet('current');if(rec){rec.transit=transitMap;await idbSave(rec)}}catch{}}
@@ -1012,7 +1110,7 @@ async function importBackup(text,fname){try{const b=JSON.parse(text);if(b.app!==
  busy(false);toast(f0(b.records.length)+' produtos importados');return true}catch{busy(false);toast('Arquivo .json inválido');return false}}
 $('b-json').onclick=()=>{if(!allRecords.length)return toast('Nada para exportar');const s=((currentMeta.filial||'')+'_'+(currentMeta.date||'')).replace(/[^a-zA-Z0-9]+/g,'_').replace(/^_|_$/g,'');
  downloadBlob(new Blob([JSON.stringify(buildBackup())],{type:'application/json;charset=utf-8'}),`planograma_${s||'dados'}.json`)};
-$('b-csv').onclick=()=>{if(!allRecords.length)return toast('Nada para exportar');const H=['Produto','EAN','Descrição','Categoria','Corredor','Estoque','Trânsito','MDV','Cob.Plan','Cob.Total','Situação','Feito'];
+$('b-csv').onclick=()=>{if(!allRecords.length)return toast('Nada para exportar');const H=['Produto','EAN','Descrição','Categoria','Corredor','Estoque','Trânsito','MDV','Cob.Plan','Cobertura','Situação','Feito'];
  const q=v=>'"'+String(v??'').replace(/"/g,'""')+'"';const rows=allRecords.map(r=>[r.produto,r.automacao,r.descricao,r.categoria,r.corredor,r._e,r._t,r._m?r._m.toFixed(2).replace('.',','):'',r.cobplan,r._c===null?'':r._c.toFixed(1).replace('.',','),LBL[r._k],r._d?'sim':'']);
  downloadBlob(new Blob(['\ufeff'+[H,...rows].map(r=>r.map(q).join(';')).join('\n')],{type:'text/csv;charset=utf-8'}),'planograma.csv')};
 
@@ -1279,6 +1377,11 @@ $('b-up').onclick=async()=>{
 /* Inicialização: abre app → tenta nuvem → fallback IDB */
 async function boot(){
   try{await idbOpen()}catch{}
+  try{                                           // restaura o relatório de estoque ANTES de montar a tela (vale p/ nuvem e p/ local)
+    const e=await idbGet('estoque');
+    if(e&&e.map){estoqueMap=e.map;estoqueLoaded=true;
+      $('cob-status').innerHTML=`<b>✓ ${esc(e.name||'estoque')}</b> · ${Object.keys(estoqueMap).length} produtos · salvo em ${esc(e.savedAt||'')}`}
+  }catch{}
   const c=code();
   if(c){
     // Tenta carregar da nuvem primeiro
@@ -1289,6 +1392,9 @@ async function boot(){
   try{
     const s=await idbGet('current');
     if(s&&s.records){
+      if(s.estoqueMap){estoqueMap=s.estoqueMap;estoqueLoaded=true;
+        $('cob-status').textContent=`✓ Estoque salvo · ${Object.keys(estoqueMap).length} produtos`;
+      }
       await loadRecords(s.records,s.meta||{},s.name,s.transit||null,false,s.savedAt);
       if(c)startSSE(c); // inicia SSE mesmo com dado local, para receber updates
       return;
