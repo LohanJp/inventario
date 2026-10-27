@@ -65,6 +65,18 @@ section{display:none}section.on{display:block}
 #cs-apply-row{padding:6px 14px;border-bottom:1px solid var(--bd);display:none}
 #cs-apply-btn{width:100%;background:var(--am-bg);border:1px solid var(--am-bd);color:var(--am);font:600 13px system-ui;padding:8px;border-radius:8px;cursor:pointer}
 #cat-sheet .cs-list{overflow-y:auto;padding:4px 0 24px}
+#flt-sheet{position:fixed;inset:0;z-index:90;display:flex;flex-direction:column;background:rgba(0,0,0,.55)}
+#flt-sheet .cs-box{margin-top:auto;background:var(--card);border-radius:16px 16px 0 0;max-height:78vh;display:flex;flex-direction:column;overflow:hidden}
+#flt-sheet .cs-hd{padding:12px 14px 10px;border-bottom:1px solid var(--bd);display:flex;justify-content:space-between;align-items:center}
+#flt-sheet .cs-hd span{font-weight:700;font-size:15px}
+#flt-sheet .cs-hd button{background:none;border:none;color:var(--mu);font-size:22px;line-height:1;cursor:pointer;padding:0 4px}
+#flt-sheet .cs-list{overflow-y:auto;padding:4px 0 24px}
+#flt-sheet .cs-item{padding:12px 16px;font-size:14px;cursor:pointer;border-bottom:1px solid var(--bd);display:flex;justify-content:space-between;align-items:center;gap:10px}
+#flt-sheet .cs-item:active{background:var(--bg)}
+#flt-sheet .cs-item.on{color:var(--am);font-weight:600}
+#flt-sheet .cs-item .cs-right{display:flex;align-items:center;gap:8px;flex-shrink:0}
+#flt-sheet .cs-item .cs-count{font-size:12px;color:var(--mu);font-weight:400}
+.chips .cat-btn{min-height:40px;display:inline-flex;align-items:center;gap:6px}
 #cat-sheet .cs-item{padding:12px 16px;font-size:14px;cursor:pointer;border-bottom:1px solid var(--bd);display:flex;justify-content:space-between;align-items:center;gap:10px}
 #cat-sheet .cs-item:active{background:var(--bg)}
 #cat-sheet .cs-item.on{color:var(--am);font-weight:600}
@@ -93,6 +105,10 @@ section{display:none}section.on{display:block}
 .prevc .pc{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}.prevc .pc span{background:var(--card2);border-radius:8px;padding:3px 8px;font-size:11.5px;color:var(--mu)}.prevc .pc b{color:var(--tx);font-size:11.5px}
 .prevc .go{color:var(--mu);font-size:24px}
 .pedc.done .nm{text-decoration:line-through}
+.pedc,#list .p{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
+.p.dep,.pi.dep{background:rgba(88,166,255,.09);box-shadow:inset 0 0 0 1px rgba(88,166,255,.45)}
+.depi{flex:none;font-size:15px;line-height:1}
+.p.lpress,.pi.lpress{filter:brightness(1.3)}
 .p.done{opacity:.5}
 .p .nm{font-weight:600;font-size:14.5px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .p .sb{color:var(--mu)}
@@ -154,6 +170,7 @@ input[type=file],[hidden]{display:none!important}
 /* topo enxuto e alvos de toque ≥ 40–44 px */
 .chip{min-height:40px;padding:0 14px;display:inline-flex;align-items:center;gap:6px;font-size:13.5px}
 .row2 .cat-btn{min-height:40px;display:inline-flex;align-items:center;gap:6px}
+#ctl{flex-wrap:wrap;gap:6px}   /* cabe tudo numa linha; se a tela for estreita, quebra */
 .mtg{height:40px}.row2 select{min-height:40px}
 #s-prod .sticky{margin-top:0}
 /* leitura: nada abaixo de 12 px; rótulos em minúscula */
@@ -212,8 +229,8 @@ h2{font-size:13px;letter-spacing:.01em;text-transform:none;font-weight:700;color
 
 <section id="s-prod">
  <div class="sticky"><div class="sw"><input class="srch" id="q" placeholder="Buscar: nome, EAN ou código (ex.: omo 1,6)" type="search"><button class="scanb" id="b-scan" aria-label="Ler código de barras"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3"/><path d="M8 9v6M11 9v6M14 9v6M17 9v6" stroke-width="1.6"/></svg></button></div>
-  <div class="chips" id="chips"></div></div>
-  <div class="row2" id="ctl"><button class="cat-btn" id="cat-pick-btn" style="display:none"><svg class="ic" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg> Categoria</button><label class="mtg" title="Ignorar possível falta no CD (estoque menor que 1 caixa)"><span class="a">Sem falta CD</span><span class="b">Sem CD</span><input type="checkbox" id="nocd" class="sw-i"><span class="sw-t"></span></label><select id="sort" style="margin-left:auto;min-width:0"><option value="cob">Cobertura</option><option value="est">Estoque</option><option value="nome">Nome A–Z</option></select></div>
+  </div>
+  <div class="row2" id="ctl"><button class="cat-btn" id="flt-btn" type="button"><svg class="ic" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5h18l-7 8v6l-4 2v-8z"/></svg> Filtro</button><button class="cat-btn" id="cat-pick-btn" style="display:none"><svg class="ic" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg> Categoria</button><label class="mtg" title="F/CD = sem falta no CD: esconde produtos com possível falta no CD (estoque menor que 1 caixa)"><span>F/CD</span><input type="checkbox" id="nocd" class="sw-i"><span class="sw-t"></span></label><select id="sort" style="flex:1 1 72px;min-width:0"><option value="cob">Cobertura</option><option value="est">Estoque</option><option value="nome">Nome A–Z</option></select></div>
   <div class="row2" style="margin-top:6px"><span id="cnt"></span><span id="catx"></span></div>
 
 <!-- Category picker bottom sheet -->
@@ -228,13 +245,20 @@ h2{font-size:13px;letter-spacing:.01em;text-transform:none;font-weight:700;color
     <div class="cs-list" id="cat-list"></div>
   </div>
 </div>
+<!-- Filter picker bottom sheet -->
+<div id="flt-sheet" style="display:none">
+  <div class="cs-box">
+    <div class="cs-hd"><span>Filtrar produtos</span><button id="flt-sheet-x">✕</button></div>
+    <div class="cs-list" id="flt-list"></div>
+  </div>
+</div>
  <div id="list"></div><div id="more" style="height:40px"></div>
 </section>
 <section id="s-ped">
  <div class="hero" id="phead" style="flex-direction:column;align-items:flex-start;gap:4px"></div>
  <h2>Adicionar produto</h2>
  <div class="sw"><input class="srch" id="pq" placeholder="Buscar produto (ex.: omo 1,6)" type="search"><button class="scanb" id="b-scan2" aria-label="Ler código de barras"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3"/><path d="M8 9v6M11 9v6M14 9v6M17 9v6" stroke-width="1.6"/></svg></button></div><div id="pres"></div>
- <h2>Lista de pedido <span style="text-transform:none;letter-spacing:0;font-weight:400">· deslize → concluir · ← excluir</span></h2><div id="plist"></div>
+ <h2>Lista de pedido <span style="text-transform:none;letter-spacing:0;font-weight:400">· deslize → concluir · ← excluir · segure 🔎 depósito</span></h2><div id="plist"></div>
 </section>
 <section id="s-data">
  <h2 style="margin-top:6px">Relatórios</h2>
@@ -628,7 +652,7 @@ function popOv(){if(ovHist){ovHist=false;skipPop=true;history.back()}}
 function closeSheet(){$('sheet').classList.remove('on');popOv()}
 addEventListener('popstate',e=>{
   if(skipPop){skipPop=false;return}                           // voltar disparado pelo próprio app
-  if(ovHist){ovHist=false;$('sheet').classList.remove('on');$('cat-sheet').style.display='none';if(scanStream)scanStop(true);return}   // 1º voltar: fecha ficha/leitor
+  if(ovHist){ovHist=false;$('sheet').classList.remove('on');$('cat-sheet').style.display='none';$('flt-sheet').style.display='none';if(scanStream)scanStop(true);return}   // 1º voltar: fecha ficha/leitor
   const st=e.state||{s:'home'};if(st.o)return;
   tabPushed=st.s!=='home';if(st.s&&st.s!==curTab)go(st.s,true) // 2º voltar: volta à aba anterior
 });
@@ -687,9 +711,13 @@ $('sug').onclick=e=>{
     f.forEach(r=>addPed(r,'',true));savePed();renderSug();toast(f0(f.length)+' produtos adicionados ao pedido')}};
 
 /* PRODUTOS */
-const CHIPS=[['all','Todos'],['sug','Sugestão','bulb'],['cd','Falta no CD','warn'],['prev','Previsão','spark'],['alert','Alertas'],['rup','Ruptura'],['crit','Crítico'],['aten','Atenção'],['ok','OK'],['trans','Em trânsito'],['pend','Pendentes'],['done','Feitos']];
+const CHIPS=[['all','Todos'],['sug','Sugestão','bulb'],['cd','Falta no CD','warn'],['dep','🔎 Procurar no depósito'],['prev','Previsão','spark'],['alert','Alertas'],['rup','Ruptura'],['crit','Crítico'],['aten','Atenção'],['ok','OK'],['trans','Em trânsito'],['pend','Pendentes'],['done','Feitos']];
+/* 🔎 itens do pedido marcados para procurar no depósito (atualizado a cada renderList) */
+let DEP=new Set();function refreshDep(){DEP=new Set(Object.keys(depMap))}
+const FLT_SHORT={dep:'🔎 Depósito'};
 function renderList(reset){if(reset)shown=40;const T=toks(F.q);
- $('chips').innerHTML=CHIPS.filter(c=>c[0]!=='trans'||transitLoaded).map(c=>`<button class="chip ${F.chip===c[0]?'on':''}" data-c="${c[0]}">${c[2]?ic(c[2],15)+' ':''}${c[1]}</button>`).join('');
+ refreshDep();{const fc=CHIPS.find(c=>c[0]===F.chip)||CHIPS[0],fb=$('flt-btn');   // botão "Filtro" mostra o filtro ativo
+  fb.lastChild.textContent=' '+(F.chip==='all'?'Filtro':(FLT_SHORT[F.chip]||fc[1]));fb.classList.toggle('on',F.chip!=='all')}
  $('sort').value=F.sort;$('nocd').checked=noCD;$('catx').innerHTML=F.cat?`<span class="catx" data-x="1">✕ ${esc(short(F.cat))}</span>`:'';
  $('cat-pick-btn').style.display=allRecords.length?'':'none';
  $('cat-pick-btn').classList.toggle('on',!!F.cat);
@@ -723,13 +751,12 @@ const swOk=d=>`<b>${d?'↩':'✓'}</b><span>${d?'Reabrir':'Concluir'}</span>`;
 const swrap=(inner,done,cls,txt,ico)=>`<div class="swr">${done===null?'':`<div class="swg ok">${swOk(done)}</div>`}<div class="swg ${cls}"><span>${txt}</span><b>${ico}</b></div>${inner}</div>`;
 function toggleDone(r,c){r._d?doneSet.delete(key(r)):doneSet.add(key(r));r._d=!r._d;lsSave();c.classList.toggle('done',r._d);
   const g=c.closest('.swr');if(g)g.querySelector('.swg.ok').innerHTML=swOk(r._d);if(r._d)copyEAN(r.automacao||r.produto)}
-function card(r){return swrap(`<div class="p ${r._d?'done':''}" data-p="${esc(r.produto)}" style="--c:${COLOR[r._k]}">${cardBody(r,'')}</div>`,r._d,'add',inPed(r.produto)?'Já no pedido':'Pedido','🛒')}
+function card(r){const dp=DEP.has(r.produto);return swrap(`<div class="p ${r._d?'done':''}${dp?' dep':''}" data-p="${esc(r.produto)}" style="--c:${COLOR[r._k]}">${cardBody(r,dp?'<span class="depi" title="Procurar no depósito">🔎</span>':'')}</div>`,r._d,'add',inPed(r.produto)?'Já no pedido':'Pedido','🛒')}
 
 const qGo=debounce(()=>renderList(true),180);
 $('q').oninput=e=>{F.q=e.target.value;qGo()};
 $('nocd').onchange=e=>{noCD=e.target.checked;try{localStorage.setItem('planograma_nocd',noCD?'1':'0')}catch{};renderList(true)};
 $('sort').onchange=e=>{F.sort=e.target.value;renderList(true)};
-$('chips').onclick=e=>{const b=e.target.closest('.chip');if(b){F.chip=b.dataset.c;renderList(true)}};
 $('catx').onclick=()=>{F.cat='';renderList(true)};
 
 /* ── Category Tree Picker ──────────────────────────────────────────────
@@ -742,13 +769,13 @@ $('catx').onclick=()=>{F.cat='';renderList(true)};
 let catPath=[];   // current drill-down path
 const catOk=r=>!F.cat||r.categoria===F.cat||(r.categoria||'').startsWith(F.cat+'->');   // nível pai inclui os filhos
 
-function passesChip(r){
-  return (F.chip==='cd'||!noCD||!cdRisk(r))&&
-    (F.chip==='all'||F.chip===r._k||
-    (F.chip==='alert'&&(r._k==='rup'||r._k==='crit'))||
-    (F.chip==='trans'&&r._t>0)||(F.chip==='pend'&&!r._d)||
-    (F.chip==='done'&&r._d)||(F.chip==='sug'&&r._sg>0)||
-    (F.chip==='cd'&&r._e<0)||(F.chip==='prev'&&r._pv>0));}
+function passesChip(r,ch=F.chip){
+  return (ch==='cd'||ch==='dep'||!noCD||!cdRisk(r))&&
+    (ch==='all'||ch===r._k||
+    (ch==='alert'&&(r._k==='rup'||r._k==='crit'))||
+    (ch==='trans'&&r._t>0)||(ch==='pend'&&!r._d)||
+    (ch==='done'&&r._d)||(ch==='sug'&&r._sg>0)||
+    (ch==='cd'&&r._e<0)||(ch==='prev'&&r._pv>0)||(ch==='dep'&&DEP.has(r.produto)));}
 
 function buildCatTree(){
   /* Build { prefixKey → count } for all records passing the chip filter */
@@ -843,6 +870,22 @@ function openCatPicker(){
 }
 
 function closeCat(){$('cat-sheet').style.display='none';popOv()}
+
+/* ── Filtro (junta Todos · Sugestão · Falta no CD · 🔎 Depósito · Ruptura…) — mesmo padrão da Categoria ── */
+function openFlt(){
+  refreshDep();
+  $('flt-list').innerHTML=CHIPS.filter(c=>c[0]!=='trans'||transitLoaded).map(c=>{
+    const n=allRecords.reduce((a,r)=>a+(catOk(r)&&passesChip(r,c[0])?1:0),0);       // quantos itens teria (respeita a categoria escolhida)
+    return `<div class="cs-item${F.chip===c[0]?' on':''}" data-c="${c[0]}"><span>${c[2]?ic(c[2],15)+' ':''}${c[1]}</span><div class="cs-right"><span class="cs-count">${f0(n)}</span></div></div>`}).join('');
+  $('flt-sheet').style.display='flex';pushOv('flt');
+}
+function closeFlt(){$('flt-sheet').style.display='none';popOv()}
+$('flt-btn').onclick=openFlt;
+$('flt-sheet-x').onclick=closeFlt;
+$('flt-sheet').onclick=e=>{
+  if(e.target===$('flt-sheet'))return closeFlt();
+  const it=e.target.closest('.cs-item');if(!it)return;
+  F.chip=it.dataset.c;closeFlt();renderList(true)};
 
 $('cat-pick-btn').onclick=openCatPicker;
 $('cat-sheet-x').onclick=closeCat;
@@ -1045,6 +1088,13 @@ const inTransit=x=>{const r=byProd.get(x.p);return !!(transitLoaded&&r&&r._t>0)}
 const pend=()=>pedido.filter(x=>!x.done&&!inTransit(x));
 addEventListener('pagehide',()=>{try{localStorage.setItem(LSP,JSON.stringify(pedido))}catch{}});   // não perde o que está pendente
 function updBadge(){const n=pend().length,b=$('pbadge');b.textContent=n;b.style.display=n?'':'none'}
+/* 🔎 PROCURAR NO DEPÓSITO: marca por produto (independe do pedido). Guardada no aparelho e na nuvem em live/dep */
+const LSDEP='planograma_dep';let depMap={};try{(JSON.parse(localStorage.getItem(LSDEP)||'[]')||[]).forEach(k=>{if(k)depMap[k]=true})}catch{}
+function saveDep(){try{localStorage.setItem(LSDEP,JSON.stringify(Object.keys(depMap)))}catch{}cloudWriteDep()}
+function depRefresh(){refreshDep();const s=document.querySelector('section.on');if(!s)return;const id=s.id.slice(2);if(id==='ped')renderPed();else if(id==='prod')renderList(false)}
+function setDep(p,v){if(v)depMap[p]=true;else delete depMap[p];saveDep();depRefresh()}
+function toggleDep(p){const v=!depMap[p];setDep(p,v);if(navigator.vibrate)navigator.vibrate(15);
+  toastUndo(v?'🔎 Procurar no depósito':'Saiu de "Procurar no depósito"',()=>setDep(p,!v))}
 function savePed(){
   try{localStorage.setItem(LSP,JSON.stringify(pedido))}catch{}
   updBadge();
@@ -1054,18 +1104,22 @@ function addPed(r,q,noSave){if(inPed(r.produto))return false;pedido=pedido.filte
 function renderBan(){const n=pend().length,t=pedido.filter(x=>!x.done&&inTransit(x)).length;
  $('pban').innerHTML=n||t?`<button class="pban" data-go="ped"><b>🛒 ${n?`${n} ${n>1?'itens':'item'} para pedir`:'Nada para pedir agora'}</b>${t?`<small>${t} aguardando trânsito</small>`:''}</button>`:''}
 $('pban').onclick=e=>{if(e.target.closest('[data-go]'))go('ped')};
+let depOnly=false;   // filtro "🔎 Procurar no depósito" ligado?
 const dropOpen={trd:false,dnd:false};   // lembra quais dropdowns do pedido estão abertos
 function renderPed(){
  const act=pedido.filter(x=>!x.done&&!inTransit(x)),tr=pedido.filter(x=>!x.done&&inTransit(x)),dn=pedido.filter(x=>x.done),n=act.length;
  $('phead').innerHTML=`<div class="t">${n?`${n} ${n>1?'itens':'item'} para pedir`:(pedido.length?'Nada para pedir agora':'Pedido vazio')}</div><div class="s">${tr.length?`${tr.length} aguardando chegada do trânsito`:(pedido.length?'Itens fora do trânsito aparecem na lista abaixo':'Adicione abaixo ou pelo 🛒 nos produtos.')}</div>`;
- const row0=x=>{const r=byProd.get(x.p);
-  if(!r)return `<div class="pi ${x.done?'done':''}" data-p="${esc(x.p)}"><div class="hd"><div class="nm">${esc(x.d)}</div><div class="acts"></div></div><div class="sb">${esc(x.p)} · fora do planograma carregado</div></div>`;
-  return `<div class="p pedc ${x.done?'done':''}" data-p="${esc(x.p)}" style="--c:${COLOR[r._k]}">${cardBody(r,'','',true)}</div>`};
+ const nd=pedido.filter(x=>depMap[x.p]&&!x.done).length;if(depOnly&&!nd)depOnly=false;   // tirou o último: desliga o filtro
+ const fl=l=>depOnly?l.filter(x=>depMap[x.p]):l;
+ const row0=x=>{const r=byProd.get(x.p),di=depMap[x.p]?'<span class="depi" title="Procurar no depósito">🔎</span>':'';
+  if(!r)return `<div class="pi ${x.done?'done':''}${depMap[x.p]?' dep':''}" data-p="${esc(x.p)}"><div class="hd"><div class="nm">${esc(x.d)}</div><div class="acts">${di}</div></div><div class="sb">${esc(x.p)} · fora do planograma carregado</div></div>`;
+  return `<div class="p pedc ${x.done?'done':''}${depMap[x.p]?' dep':''}" data-p="${esc(x.p)}" style="--c:${COLOR[r._k]}">${cardBody(r,di,'',true)}</div>`};
  const row=x=>swrap(row0(x),x.done,'del','Excluir','🗑');
  const ord=l=>l.slice().sort((a,b)=>a.d.localeCompare(b.d));
  const drop=(id,title,sub,l)=>l.length?`<details class="trd" id="${id}"${dropOpen[id]?' open':''}><summary><span>${title}<small>${sub}</small></span><span class="cnt">${l.length}</span><svg class="ch" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></summary>${ord(l).map(row).join('')}</details>`:'';
- const trHtml=drop('trd','⏳ Aguardando trânsito','Ficam aqui até a mercadoria chegar',tr)+drop('dnd','✓ Concluídos','Deslize → para reabrir',dn);
- $('plist').innerHTML=pedido.length?ord(act).map(row).join('')+trHtml:'<div class="empty"><p>Sua lista está vazia</p><div class="btns" style="margin-top:14px"><button class="btn" id="pe-sug" style="margin:0">Adicionar sugestões</button><button class="btn o" id="pe-scan" style="margin:0">Ler código</button></div></div>'}
+ const trHtml=drop('trd','⏳ Aguardando trânsito','Ficam aqui até a mercadoria chegar',fl(tr))+drop('dnd','✓ Concluídos','Deslize → para reabrir',fl(dn));
+ const chip=(nd||depOnly)?`<div style="margin-top:6px"><button class="chip ${depOnly?'on':''}" id="pc-dep">🔎 Procurar no depósito (${nd})</button></div>`:'';
+ $('plist').innerHTML=pedido.length?chip+ord(fl(act)).map(row).join('')+trHtml:'<div class="empty"><p>Sua lista está vazia</p><div class="btns" style="margin-top:14px"><button class="btn" id="pe-sug" style="margin:0">Adicionar sugestões</button><button class="btn o" id="pe-scan" style="margin:0">Ler código</button></div></div>'}
 $('plist').addEventListener('toggle',e=>{if(e.target.id in dropOpen)dropOpen[e.target.id]=e.target.open},true);   // lembra se o dropdown está aberto
 function swAddPed(r,s){
   if(inPed(r.produto))return toast('Já está no pedido');
@@ -1118,7 +1172,22 @@ bindSwipe($('list'),'.p',s=>{
   if(s.dx>0)return toggleDone(r,s.c);                                    // → concluir / reabrir
   swAddPed(r,s)});                                                       // ← adiciona ao pedido
 bindSwipe($('enc-list'),'.p',s=>{swReset(s,true);const r=byProd.get(s.c.dataset.p);if(r&&s.dx<0)swAddPed(r,s)});   // Encarte: só ← adiciona ao pedido
+/* segurar o cartão ~0,45 s liga/desliga 🔎 (Produtos e Pedido). Android manda "contextmenu" ao segurar; iOS só o timer — por isso os dois */
+function bindLP(host,sel){
+  let T=null,V=null,p0=null,C=null,At=0;
+  const cancel=()=>{clearTimeout(T);clearTimeout(V);T=V=null;p0=null;if(C){C.classList.remove('lpress');C=null}};
+  const fire=p=>{if(Date.now()-At<900)return;At=Date.now();swBlock=Date.now()+700;toggleDep(p)};   // evita disparar 2× (timer + menu)
+  host.addEventListener('touchstart',e=>{cancel();const c=e.target.closest(sel);if(!c||e.touches.length!==1)return;
+    p0={x:e.touches[0].clientX,y:e.touches[0].clientY};C=c;
+    V=setTimeout(()=>{if(C)C.classList.add('lpress')},150);                       // o card "acende" enquanto segura
+    T=setTimeout(()=>{T=null;fire(c.dataset.p)},450)},{passive:true});
+  host.addEventListener('touchmove',e=>{if(!p0)return;const t=e.touches[0];if(Math.abs(t.clientX-p0.x)>10||Math.abs(t.clientY-p0.y)>10)cancel()},{passive:true});   // deslizar/rolar cancela
+  host.addEventListener('touchend',cancel,{passive:true});                       // (touchcancel não cancela: o Android manda ao abrir o menu)
+  host.addEventListener('contextmenu',e=>{const c=e.target.closest(sel);if(!c)return;e.preventDefault();if(p0)fire(c.dataset.p)});
+}
+bindLP($('plist'),'.pedc,.pi');bindLP($('list'),'.p');
 $('plist').onclick=e=>{if(Date.now()<swBlock)return;
+  if(e.target.closest('#pc-dep')){depOnly=!depOnly;renderPed();return}
   if(e.target.closest('#pe-sug')){const f=allRecords.filter(r=>r._sg>0&&!r._d&&!inPed(r.produto));if(!f.length)return toast('Nenhuma sugestão no momento');f.forEach(r=>addPed(r,'',true));savePed();renderPed();return toast(f0(f.length)+' produtos adicionados')}
   if(e.target.closest('#pe-scan'))return $('b-scan2').click();
 const c=e.target.closest('.pedc,.pi');if(!c)return;openSheet(byProd.get(c.dataset.p))};
@@ -1136,9 +1205,10 @@ function openSheet(r){if(!r)return;const kv=(a,b)=>`<div class="kv"><span>${a}</
  ${kv('Cobertura (relatório)',r._c===null?'—':f1(Math.max(r._c,0))+' dias')}${kv('Estoque',f0(r._e))}${kv('Em trânsito',transitLoaded?f0(r._t):'—')}${kv('Cobertura com trânsito',transitLoaded&&r._ct!==null?(r._ct>999?'+999':f1(r._ct))+' dias':'—')}${kv('MDV (relatório de Cobertura)',r._m?f1(r._m):'—')}${r._sg>0?kv('💡 Sugestão de pedido',`<b style="color:var(--am)">${sugTxt(r)}</b>`):r._e<0?kv('⚠ Falta no CD','<b style="color:var(--cr)">Estoque negativo — fora da sugestão</b>'):''}
  ${kv('Cob.Plan',esc(r.cobplan||'—')+' dias')}${kv('Capacidade (alt × larg × prof)',`${esc(r.altura||'—')} × ${esc(r.largura||'—')} × ${esc(r.prof||'—')} = ${esc(r.total||'—')}`)}
  ${kv('Corredor',esc(r.corredor||'—'))}${kv('Giro',esc(r.giro||'—'))}${kv('Embalagem',esc(r.emb||'—'))}${kv('Código / EAN',`${r.produto} · ${esc(r.automacao||'')}`)}${kv('Fornecedor',esc(r.nome||r.fornec||'—'))}
- <button class="btn o" id="sh-ped">${inPed(r.produto)?'🛒 Remover do pedido':'🛒 Adicionar ao pedido'+(r._sg>0?' · '+f0(r._sg)+' un':'')}</button><button class="btn" id="sh-done">${r._d?'Desfazer conclusão':'Marcar como feito'}</button><button class="btn o" id="sh-x">Fechar</button>`;
+ <button class="btn o" id="sh-ped">${inPed(r.produto)?'🛒 Remover do pedido':'🛒 Adicionar ao pedido'+(r._sg>0?' · '+f0(r._sg)+' un':'')}</button><button class="btn o" id="sh-dep">${depMap[r.produto]?'🔎 Tirar de "Procurar no depósito"':'🔎 Procurar no depósito'}</button><button class="btn" id="sh-done">${r._d?'Desfazer conclusão':'Marcar como feito'}</button><button class="btn o" id="sh-x">Fechar</button>`;
  $('sheet').classList.add('on');pushOv('sheet');$('sh-x').onclick=closeSheet;
  $('sh-ped').onclick=()=>{if(inPed(r.produto)){pedido=pedido.filter(x=>x.p!==r.produto);savePed();toast('Removido do pedido')}else{addS(r);toast(addMsg(r))}closeSheet();go(document.querySelector('section.on').id.slice(2))};
+ $('sh-dep').onclick=()=>{const v=!depMap[r.produto];setDep(r.produto,v);toast(v?'🔎 Procurar no depósito':'Saiu de "Procurar no depósito"');closeSheet()};
  $('sh-done').onclick=()=>{const marking=!r._d;r._d?doneSet.delete(key(r)):doneSet.add(key(r));r._d=!r._d;lsSave();if(marking)copyEAN(r.automacao||r.produto);closeSheet();go($('s-home').classList.contains('on')?'home':'prod')}}
 $('sheet').onclick=e=>{if(e.target.id==='sheet')closeSheet()};
 
@@ -1183,10 +1253,10 @@ $('b-clear').onclick=()=>{if(confirm('Zerar todos os itens concluídos?')){lsCle
 
 /* BACKUP .json / CSV (mesmo formato do app principal) */
 function buildBackup(){return{app:'planograma',version:1,exportedAt:new Date().toISOString(),name:savedInfo?.name||'planograma',meta:currentMeta,
- records:allRecords.map(({_e,_t,_m,_c,_k,_d,_h,_s,...r})=>r),transit:transitLoaded?transitMap:null,done:[...doneSet],pedido,prefs:{}}}
+ records:allRecords.map(({_e,_t,_m,_c,_k,_d,_h,_s,...r})=>r),transit:transitLoaded?transitMap:null,done:[...doneSet],pedido,dep:Object.keys(depMap),prefs:{}}}
 async function importBackup(text,fname){try{const b=JSON.parse(text);if(b.app!=='planograma'||!Array.isArray(b.records))throw 0;
  const meta=b.meta||{};await loadRecords(b.records,meta,b.name||fname,b.transit||null,true);
- try{localStorage.setItem(lsKeyFor(meta.filial||'',meta.date||''),JSON.stringify(b.done||[]));lsLoad();derive();if(Array.isArray(b.pedido)){pedido=b.pedido;savePed()}renderHome()}catch{}
+ try{localStorage.setItem(lsKeyFor(meta.filial||'',meta.date||''),JSON.stringify(b.done||[]));lsLoad();derive();if(Array.isArray(b.pedido)){pedido=b.pedido;savePed()}if(Array.isArray(b.dep)){depMap={};b.dep.forEach(k=>{if(k)depMap[k]=true});saveDep()}renderHome()}catch{}
  busy(false);toast(f0(b.records.length)+' produtos importados');return true}catch{busy(false);toast('Arquivo .json inválido');return false}}
 $('b-json').onclick=()=>{if(!allRecords.length)return toast('Nada para exportar');const s=((currentMeta.filial||'')+'_'+(currentMeta.date||'')).replace(/[^a-zA-Z0-9]+/g,'_').replace(/^_|_$/g,'');
  downloadBlob(new Blob([JSON.stringify(buildBackup())],{type:'application/json;charset=utf-8'}),`planograma_${s||'dados'}.json`)};
@@ -1249,6 +1319,7 @@ async function copyEAN(ean){
      /planograma/{code}/estq/data      — estoqueMap (escrito no upload)
      /planograma/{code}/live/done      — { "produto": true/null } em tempo real
      /planograma/{code}/live/pedido    — array do pedido em tempo real
+     /planograma/{code}/live/dep       — array de códigos marcados 🔎 Procurar no depósito
 
    Qualquer marcação ou mudança de pedido é escrita imediatamente no Firebase.
    Todos os dispositivos recebem via SSE sem precisar de botão "Baixar".
@@ -1297,16 +1368,31 @@ function cloudWriteDone(){
 /* pedido: espera 0,4 s parado (digitar a quantidade não dispara um envio por letra) */
 function cloudWritePedido(){
   const c=code();if(!c)return;lastLocal=Date.now();
-  clearTimeout(pedT);pedT=setTimeout(()=>put(c,'live/pedido',pedido.length?pedido:null),400);
+  clearTimeout(pedT);pedT=setTimeout(()=>{
+    fetch(cu(c,'live/pedido'),{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(pedido.length?pedido:null)})
+      .then(r=>{if(!r.ok)throw 0}).catch(()=>toast('⚠ Pedido salvo só neste aparelho — não chegou na nuvem'))},400);
+}
+/* 🔎 marcações de depósito: array de códigos em live/dep (array evita o Firebase converter chaves numéricas) */
+let depT;
+function cloudWriteDep(){
+  const c=code();if(!c)return;lastLocal=Date.now();
+  clearTimeout(depT);depT=setTimeout(()=>{const ks=Object.keys(depMap);
+    fetch(cu(c,'live/dep'),{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(ks.length?ks:null)})
+      .then(r=>{if(!r.ok)throw 0}).catch(()=>toast('⚠ Marcação 🔎 salva só neste aparelho — não chegou na nuvem'))},400);
 }
 /* undefined = falha de rede (não mexe no local) · null = nuvem vazia */
 async function applyLive(c){
   const g=p=>cf(cu(c,p)).then(r=>r.json()).catch(()=>undefined);
-  const live=await g('live');const ld=live===undefined?undefined:(live&&live.done)||null,lp=live===undefined?undefined:(live&&live.pedido)||null;
+  const live=await g('live');const ld=live===undefined?undefined:(live&&live.done)||null,lp=live===undefined?undefined:(live&&live.pedido)||null,ldp=live===undefined?undefined:(live&&live.dep)||null;
   if(ld!==undefined){
     doneSet=new Set(ld&&typeof ld==='object'?Object.entries(ld).filter(([,v])=>v===true).map(([k])=>k):[]);
     cloudDone=new Set(doneSet);
     try{localStorage.setItem(lsKey,JSON.stringify([...doneSet]))}catch{}
+  }
+  if(ldp!==undefined){
+    depMap={};(Array.isArray(ldp)?ldp:(ldp&&typeof ldp==='object'?Object.values(ldp):[])).forEach(k=>{if(k)depMap[k]=true});
+    try{localStorage.setItem(LSDEP,JSON.stringify(Object.keys(depMap)))}catch{}
+    refreshDep();
   }
   if(lp!==undefined){
     pedido=Array.isArray(lp)?lp:(lp&&typeof lp==='object'?Object.values(lp):[]);
@@ -1368,7 +1454,7 @@ async function loadFromCloud(c){
 
 /* SSE: avisa que algo mudou em live/ → relê (pequeno) e redesenha só se for diferente */
 let sseConn=null,liveT;
-const liveSig=()=>JSON.stringify([...doneSet].sort())+JSON.stringify(pedido);
+const liveSig=()=>JSON.stringify([...doneSet].sort())+JSON.stringify(pedido)+Object.keys(depMap).sort().join();
 function liveRefresh(){clearTimeout(liveT);
   liveT=setTimeout(async()=>{
     if(document.hidden)return;                                   // ⚡ em segundo plano não gasta rede nem CPU
@@ -1458,7 +1544,9 @@ $('b-up').onclick=async()=>{
       cf(cu(c,'live/done'),{method:'PUT',headers:{'Content-Type':'application/json'},
         body:JSON.stringify(Object.keys(doneMap).length?doneMap:null)}),
       cf(cu(c,'live/pedido'),{method:'PUT',headers:{'Content-Type':'application/json'},
-        body:JSON.stringify(pedido.length?pedido:null)})
+        body:JSON.stringify(pedido.length?pedido:null)}),
+      cf(cu(c,'live/dep'),{method:'PUT',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify(Object.keys(depMap).length?Object.keys(depMap):null)})
     ]).then(rs=>{if(!rs.every(r=>r.ok))fails.push('pedido/concluídos')}).catch(()=>{fails.push('pedido/concluídos')});
     // Envia trânsito separadamente se carregado
     if(transitLoaded){
