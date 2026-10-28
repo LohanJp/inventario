@@ -106,6 +106,39 @@ section{display:none}section.on{display:block}
 .prevc .go{color:var(--mu);font-size:24px}
 .pedc.done .nm{text-decoration:line-through}
 .pedc,#list .p{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
+/* Anexos: menu flutuante */
+.axbar{position:sticky;top:calc(44px + env(safe-area-inset-top,0px));z-index:6;background:var(--bg);margin:0 -14px 6px;padding:10px 14px 6px}
+.axw{position:relative;display:inline-block}
+#ax-btn{min-height:40px;display:inline-flex;align-items:center;gap:8px}
+#ax-menu{position:absolute;top:calc(100% + 6px);left:0;min-width:250px;background:var(--card);border:1px solid var(--bd);border-radius:12px;box-shadow:0 10px 28px rgba(0,0,0,.45);overflow:hidden;z-index:7}
+.axi{display:flex;justify-content:space-between;align-items:center;gap:10px;width:100%;padding:13px 14px;background:none;border:0;border-bottom:1px solid var(--bd);color:var(--tx);font:inherit;font-size:14px;text-align:left;cursor:pointer}
+.axi:last-child{border-bottom:0}.axi:active{background:var(--bg)}.axi.on{color:var(--am);font-weight:600}
+.axi small{color:var(--mu);font-weight:400;font-size:11.5px}
+/* Oferta do dia: 7 slots (seg → dom) */
+.ofdays{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin:0 0 12px}
+.ofdays button{position:relative;display:flex;flex-direction:column;align-items:center;gap:1px;min-height:46px;padding:6px 0 5px;background:var(--card);border:1px solid var(--bd);border-radius:10px;color:var(--mu);font:600 12px system-ui,-apple-system,Roboto,sans-serif;cursor:pointer}
+.ofdays button small{font-weight:400;font-size:10.5px}
+.ofdays button.has::after{content:'';position:absolute;top:4px;right:5px;width:6px;height:6px;border-radius:50%;background:var(--ok)}
+.ofdays button.old::after{background:var(--am)}
+.ofdays button.tdy{border-color:var(--am)}
+.ofdays button.on{background:var(--am-bg);color:var(--am);border-color:var(--am)}
+/* Switch de layout (Panfleto / Oferta do dia) */
+.laysw{display:inline-flex;background:var(--card2);border:1px solid var(--bd);border-radius:10px;padding:2px;gap:2px;margin:2px 0 8px}
+.laysw button{background:none;border:0;color:var(--mu);font:600 12.5px system-ui,-apple-system,Roboto,sans-serif;padding:7px 12px;border-radius:8px;min-height:34px;cursor:pointer}
+.laysw button.on{background:var(--card);color:var(--am);box-shadow:0 0 0 1px var(--bd)}
+.pfc{cursor:pointer;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
+/* Panfleto */
+.pf-ta{width:100%;box-sizing:border-box;background:var(--card);color:var(--tx);border:1px solid var(--bd);border-radius:12px;padding:10px 12px;font:14px/1.4 system-ui,sans-serif;resize:vertical}
+.pfh{display:flex;justify-content:space-between;align-items:baseline;gap:10px;font-size:13px;font-weight:600;margin:12px 2px 5px;color:var(--mu)}
+.pfh b{color:var(--am);white-space:nowrap}.pfh,.pfn{cursor:pointer}.pfh:active,.pfn:active{opacity:.6}
+.pfr{background:var(--card);border:1px solid var(--bd);border-left:5px solid var(--c);border-radius:12px;padding:9px 11px;margin-bottom:6px;cursor:pointer;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
+.pfr.dep{background:rgba(88,166,255,.09);box-shadow:inset 0 0 0 1px rgba(88,166,255,.45)}
+.pfr.lpress{filter:brightness(1.3)}
+.pfr .pn{font-size:14px;font-weight:600}
+.pfr .pm{display:flex;flex-wrap:wrap;gap:3px 12px;font-size:12.5px;color:var(--mu);margin-top:3px}
+.pfr .pm b{color:var(--tx)}.pfr .pk{margin-left:auto;color:var(--c);font-weight:600}
+.pfh em{font-style:normal;font-size:11px;border:1px solid var(--am);color:var(--am);border-radius:6px;padding:1px 5px;margin-left:4px}.pfh s{color:var(--mu);font-weight:400;font-size:12px}.pfh small{font-weight:400;color:var(--mu)}.pfh .pp{white-space:nowrap;text-align:right}
+.pfn{display:flex;justify-content:space-between;gap:10px;font-size:13px;color:var(--mu);padding:9px 11px;border:1px dashed var(--bd);border-radius:12px;margin-top:6px}.pfn b{color:var(--am);white-space:nowrap}
 .p.dep,.pi.dep{background:rgba(88,166,255,.09);box-shadow:inset 0 0 0 1px rgba(88,166,255,.45)}
 .depi{flex:none;font-size:15px;line-height:1}
 .p.lpress,.pi.lpress{filter:brightness(1.3)}
@@ -279,7 +312,15 @@ h2{font-size:13px;letter-spacing:.01em;text-transform:none;font-weight:700;color
   <button class="btn o" id="b-clear">Zerar itens concluídos</button></div>
 </section>
 <section id="s-enc">
-  <div class="pad">
+  <div class="axbar"><div class="axw">
+    <button class="cat-btn on" id="ax-btn" type="button">📎 <b id="ax-lbl">Encarte</b> ▾</button>
+    <div id="ax-menu" style="display:none">
+      <button class="axi" data-ax="enc" type="button"><span>📋 Encarte</span></button>
+      <button class="axi" data-ax="pan" type="button"><span>🧾 Panfleto</span></button>
+      <button class="axi" data-ax="dia" type="button"><span>⭐ Oferta do dia</span><small>em desenvolvimento</small></button>
+    </div>
+  </div></div>
+  <div class="pad" id="ax-enc">
     <h2>Análise de Encarte</h2>
     <p style="font-size:13px;color:var(--mu);margin-bottom:14px">Carregue a planilha (.xlsx, .csv) com EAN, Host e Nome dos itens do panfleto.</p>
     <div class="enc-drop" id="enc-drop">
@@ -293,13 +334,53 @@ h2{font-size:13px;letter-spacing:.01em;text-transform:none;font-weight:700;color
     <div id="enc-summary-box"></div>
     <div id="enc-list"></div>
   </div>
+
+  <!-- 🧾 Panfleto: cole a lista → o app procura cada item no planograma -->
+  <div class="pad" id="ax-pan" style="display:none">
+    <h2>Panfleto</h2>
+    <p style="font-size:13px;color:var(--mu);margin-bottom:10px">Cole a lista do panfleto (um produto por linha, com ou sem preço). O app procura cada item no planograma e mostra estoque e cobertura. Toque no <b>nome do item</b> (🔍) para pesquisá-lo direto em Produtos. Ao buscar uma lista nova, o app pergunta para qual dia ela é (segunda a domingo) e guarda uma por dia, sincronizada com os outros aparelhos.</p>
+    <div class="ofdays" id="pf-days"></div>
+    <textarea class="pf-ta" id="pf-txt" rows="6" autocapitalize="off" spellcheck="false" placeholder="Ex.:&#10;Arroz Urbano 5kg Parboilizado · 18,90&#10;Feijão Caldo Bom 1kg Preto · 5,99"></textarea>
+    <div style="display:flex;gap:8px;margin:10px 0"><button class="btn" id="pf-go" style="margin:0;flex:1">Buscar no app</button><button class="btn o" id="pf-paste" style="margin:0">📋 Colar</button><button class="btn o" id="pf-clear" style="margin:0">Limpar</button></div>
+    <div class="laysw" role="group" aria-label="Layout da lista"><button type="button" data-lay="bar">☰ Resumo</button><button type="button" data-lay="card">▦ Card</button></div>
+    <div id="pf-meta" style="font-size:12px;color:var(--mu);margin:0 0 6px"></div>
+    <div id="pf-sum" style="font-size:12.5px;color:var(--mu);margin:0 0 4px"></div>
+    <div id="pf-list"></div>
+    <div id="pf-ask" style="display:none;position:fixed;inset:0;z-index:40;background:rgba(0,0,0,.55);align-items:flex-end;justify-content:center">
+      <div class="card" style="width:100%;max-width:520px;box-sizing:border-box;border-radius:18px 18px 0 0;padding:16px 14px calc(16px + env(safe-area-inset-bottom,0px))">
+        <div style="font-weight:700;font-size:16px;margin-bottom:3px">Para qual dia é este panfleto?</div>
+        <div style="font-size:12.5px;color:var(--mu);margin-bottom:12px">Fica salvo nesse dia e sincroniza com os outros aparelhos. Dia com ● já tem panfleto e será substituído.</div>
+        <div class="ofdays" id="pf-ask-days"></div>
+        <button class="btn o" id="pf-ask-x" type="button" style="margin:4px 0 0">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ⭐ Oferta do dia: planilha de ofertas × planograma -->
+  <div class="pad" id="ax-dia" style="display:none">
+    <h2>Oferta do dia</h2>
+    <p style="font-size:13px;color:var(--mu);margin-bottom:14px">Escolha o dia e carregue a planilha de ofertas (.xlsx, .csv). Cada dia da semana guarda a sua (segunda a domingo); ao carregar outra no mesmo dia da semana, a mais antiga é substituída. A coluna de preço é opcional.</p>
+    <div class="ofdays" id="of-days"></div>
+    <div class="enc-drop" id="of-drop">
+      <div id="of-droptxt">📂 Toque para carregar a planilha da oferta</div>
+      <div style="font-size:12px;margin-top:4px"><b>.xlsx</b> ou <b>.csv</b> · colunas EAN · Código · Descrição (preço opcional)</div>
+    </div>
+    <input type="file" id="of-input" accept=".xlsx,.xls,.csv,.ods" style="display:none">
+    <div id="of-title" style="font-size:12px;color:var(--mu);margin:10px 0 4px;display:none"></div>
+    <div id="of-warn" style="font-size:12.5px;color:var(--am);margin:0 0 6px;display:none"></div>
+    <button class="lnk" id="of-del" type="button" style="display:none;margin:0 0 8px">🗑 Limpar a planilha deste dia</button>
+    <div class="row2" id="of-sortbar" style="display:none;margin:6px 0 8px"><span>Ordenar por</span><select id="of-sort" style="margin-left:auto"><option value="arq">Ordem da planilha</option><option value="sev">Situação (pior primeiro)</option></select></div>
+    <div class="laysw" role="group" aria-label="Layout da lista"><button type="button" data-lay="bar">☰ Resumo</button><button type="button" data-lay="card">▦ Card</button></div>
+    <div id="of-sum" style="font-size:12.5px;color:var(--mu);margin:0 0 4px"></div>
+    <div id="of-list"></div>
+  </div>
 </section>
 </main>
 <nav><div id="nav">
  <button data-s="home" class="on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9" rx="2"/><rect x="14" y="3" width="7" height="5" rx="2"/><rect x="14" y="12" width="7" height="9" rx="2"/><rect x="3" y="16" width="7" height="5" rx="2"/></svg>Resumo</button>
  <button data-s="prod"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h10"/></svg>Produtos</button>
  <button data-s="ped"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="20" r="1.5"/><circle cx="18" cy="20" r="1.5"/><path d="M3 4h3l2.4 10.5a1 1 0 0 0 1 .8h8.2a1 1 0 0 0 1-.8L20 8H7"/></svg>Pedido<span class="badge" id="pbadge" style="display:none">0</span></button>
- <button data-s="enc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h4"/></svg>Encarte</button>
+ <button data-s="enc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.5l-8.5 8.5a5.5 5.5 0 0 1-7.8-7.8l9-9a3.7 3.7 0 0 1 5.2 5.2l-9 9a1.8 1.8 0 0 1-2.6-2.6l8.3-8.3"/></svg>Anexos</button>
 </div></nav>
 <div id="scan"><video id="sv" playsinline muted></video><div class="sframe"></div><div class="sbar"><b>Aponte para o código de barras</b>A câmera desliga sozinha ao ler ou em 30 s, para poupar bateria<button class="btn o" id="scan-x">Fechar câmera</button></div></div>
 <div id="sheet"><div id="sheetc"></div></div><div id="toast"></div><div id="load"><div class="spin"></div><div id="lmsg">Carregando…</div><div id="lhint"></div></div>
@@ -556,6 +637,10 @@ const COLOR={rup:'var(--cr)',crit:'var(--cr)',aten:'var(--am)',ok:'var(--ok)',nd
 const LBL={rup:'Ruptura',crit:'Crítico',aten:'Atenção',ok:'OK',nd:'Sem MDV'};
 let tmr;function toastUndo(msg,fn){const t=$('toast');t.innerHTML=`${esc(msg)} <button class="tu" id="tu">Desfazer</button>`;t.classList.add('on','act');clearTimeout(tmr);tmr=setTimeout(()=>t.classList.remove('on','act'),5000);$('tu').onclick=()=>{fn();t.classList.remove('on','act')}}
 function toast(m){const t=$('toast');t.classList.remove('act');t.textContent=m;t.classList.add('on');clearTimeout(tmr);tmr=setTimeout(()=>t.classList.remove('on'),3200)}
+/* diagnóstico: qualquer erro de JavaScript aparece na tela (antes o app só "parava" sem dizer nada) */
+let errAt=0;const showErr=m=>{if(Date.now()-errAt<4000)return;errAt=Date.now();try{toast('⚠ Erro no app: '+String(m||'desconhecido').slice(0,140))}catch{}};
+addEventListener('error',e=>showErr(e.message+(e.lineno?' (linha '+e.lineno+')':'')));
+addEventListener('unhandledrejection',e=>showErr(e.reason&&e.reason.message||e.reason));
 /* Tela de carregamento: só aparece se a ação passar de 1 s (now=true: trabalho pesado que trava a tela, mostra já) */
 let busyT=null,busyH=null,busyMsg='Carregando…';
 function busy(on,m,now){
@@ -640,7 +725,9 @@ function derive(){byProd=new Map(allRecords.map(r=>[r.produto,r]));for(const r o
  r._ct=r._m>0?(Math.max(r._e,0)+r._t)/r._m:null;
  r._k=r._e<=0?'rup':r._c===null?'nd':r._c<7?'crit':r._c<15?'aten':'ok';r._d=doneSet.has(key(r));if(!r._h)r._h=norm(r.descricao+' '+r.produto+' '+r.automacao+' '+(r.referencia||''));r._sg=sugQty(r);r._pv=prevBits(r)}
   updBadge();
-  if(encItems.length)setTimeout(renderEnc,0)}   // reatualiza o Encarte quando o planograma/trânsito mudam
+  if(encItems.length)setTimeout(renderEnc,0);   // reatualiza o Encarte quando o planograma/trânsito mudam
+  if($('pf-txt'))setTimeout(pfSync,0);            // e o Panfleto
+  if($('of-list'))setTimeout(ofSync,0)}            // e a Oferta do dia
 const short=c=>(c||'Sem categoria').split('->').slice(-2).join(' › ');
 
 /* navegação */
@@ -659,7 +746,7 @@ addEventListener('popstate',e=>{
 try{history.replaceState({s:'home'},'')}catch{}
 function go(s,fromPop){document.querySelectorAll('section').forEach(e=>e.classList.toggle('on',e.id==='s-'+s));
  document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('on',b.dataset.s===s));scrollTo(0,0);
- if(s==='home')renderHome();if(s==='prod')renderList(true);if(s==='data')renderData();if(s==='ped')renderPed();
+ if(s==='home')renderHome();if(s==='prod')renderList(true);if(s==='data')renderData();if(s==='ped')renderPed();if(s==='enc'&&axCur==='pan')pfOpen();if(s==='enc'&&axCur==='dia')ofOpen();
  if(!fromPop&&s!==curTab){                                      // registra no histórico (home → aba; entre abas não empilha)
    if(s==='home'){if(tabPushed){tabPushed=false;skipPop=true;history.back()}else history.replaceState({s:'home'},'')}
    else if(curTab==='home'){history.pushState({s},'');tabPushed=true}
@@ -713,6 +800,7 @@ $('sug').onclick=e=>{
 /* PRODUTOS */
 const CHIPS=[['all','Todos'],['sug','Sugestão','bulb'],['cd','Falta no CD','warn'],['dep','🔎 Procurar no depósito'],['prev','Previsão','spark'],['alert','Alertas'],['rup','Ruptura'],['crit','Crítico'],['aten','Atenção'],['ok','OK'],['trans','Em trânsito'],['pend','Pendentes'],['done','Feitos']];
 /* 🔎 itens do pedido marcados para procurar no depósito (atualizado a cada renderList) */
+const LSDEP='planograma_dep';let depMap={};try{(JSON.parse(localStorage.getItem(LSDEP)||'[]')||[]).forEach(k=>{if(k)depMap[k]=true})}catch{}   // ⚠ precisa vir ANTES de refreshDep: a Oferta do dia chama refreshDep() na abertura e dava "Cannot access 'depMap' before initialization", travando o app inteiro
 let DEP=new Set();function refreshDep(){DEP=new Set(Object.keys(depMap))}
 const FLT_SHORT={dep:'🔎 Depósito'};
 function renderList(reset){if(reset)shown=40;const T=toks(F.q);
@@ -952,7 +1040,7 @@ function parseEncXLSX(file){
     const r=new FileReader();
     r.onload=e=>{try{
       const wb=XLSX.read(new Uint8Array(e.target.result),{type:'array'}),sh=wb.Sheets[wb.SheetNames[0]],rg=XLSX.utils.decode_range(sh['!ref']||'A1');
-      resolve({...rowsToItems(XLSX.utils.sheet_to_json(sh,{header:1,defval:''})),kind:'xlsx',wb,sh,rg});
+      resolve({...rowsToItems(XLSX.utils.sheet_to_json(sh,{header:1,defval:''})),kind:'xlsx',wb,sh,rg,buf:e.target.result});
     }catch(err){reject(err)}};
     r.onerror=()=>reject(new Error('não foi possível ler o arquivo'));
     r.readAsArrayBuffer(file);
@@ -1002,8 +1090,11 @@ $('enc-sort').onchange=e=>{encSort=e.target.value;renderEnc()};
 $('enc-list').onclick=e=>{if(Date.now()<swBlock)return;const c=e.target.closest('.p');if(c)openSheet(byProd.get(c.dataset.p))};
 
 /* Exportar: a planilha volta igual à recebida, só com uma coluna a mais no fim de cada item (OK / Falta no CD) */
-function exportEnc(){
+async function exportEnc(){
   if(!encSrc||!encItems.length)return toast('Carregue uma planilha primeiro');
+  if(encSrc.kind==='xlsx'&&!encSrc.wb){                       // Encarte restaurado do aparelho: reabre a planilha guardada
+    try{await ensureXLSX();const o=await parseEncXLSX(new Blob([encSrc.buf]));encSrc={...encSrc,wb:o.wb,sh:o.sh,rg:o.rg}}
+    catch(e){return toast('Não consegui reabrir a planilha: '+e.message)}}
   const st=new Map(encMatch().map(({it,r})=>[it.row,ENC_TXT[encStatus(r)]]));
   const base=encSrc.name.replace(/\.[^.]+$/,''),ext=((encSrc.name.match(/\.([^.]+)$/)||[])[1]||'csv').toLowerCase();
   if(encSrc.kind==='xlsx'){
@@ -1022,7 +1113,371 @@ function exportEnc(){
 }
 $('enc-export').onclick=exportEnc;
 
+/* ══ ANEXOS: menu flutuante → Encarte · Panfleto · Oferta do dia ══ */
+/* 🧾 PANFLETO: cole a lista (um produto por linha) → procura cada item no planograma e mostra estoque / cobertura */
+const LSPF='planograma_pf';let pfGroups=[],pfNmOpen=false,pfPedOpen=false;                 // [{nome,preco,codes[]}] — guarda só os códigos; os números vêm sempre dos dados atuais
+const PF_STOP=new Set(['de','da','do','das','dos','com','sem','em','e','ou','tp','un','cx','sabor','sabores','tipo','cada']);
+const PF_PR='(\\d+(?:\\.\\d{3})*,\\d{2}|\\d+\\.\\d{2})';
+function pfParse(txt){
+  const raw=txt.split(/\r?\n/).map(l=>l.replace(/[*_#`>]/g,'').replace(/^\s*(?:[-•–—▪●○]|\d+[.)])\s+/,'').trim()).filter(Boolean);
+  const hasP=l=>new RegExp('[·|]\\s*(?:R\\$\\s*)?'+PF_PR).test(l)||/R\$\s*\d/.test(l);
+  const skipHead=raw.length&&raw.filter(hasP).length/raw.length>=.5;     // se a maioria das linhas tem preço, linha sem preço é título de seção
+  const out=[];
+  for(const l of raw){
+    if(skipHead&&!hasP(l))continue;
+    let nome=l,preco='',m=l.match(new RegExp('^(.*?)\\s*[·|]\\s*(?:R\\$\\s*)?'+PF_PR+'(?!\\d)'))||l.match(new RegExp('^(.*?)\\s*R\\$\\s*'+PF_PR));
+    if(m){nome=m[1];preco=m[2]}
+    nome=nome.replace(/\([^)]*\)/g,' ').replace(/R\$/g,' ').replace(/\s+/g,' ').replace(/[\s·|:;,-]+$/,'').trim();
+    if(nome.length<3)continue;
+    out.push({nome,preco,parts:nome.split(/\s+ou\s+/i).map(x=>x.trim()).filter(Boolean)});
+  }
+  return out}
+const pfToks=q=>toks(q.replace(/(\d)([a-zà-ú])/gi,'$1 $2')).filter(t=>t.length>1&&!PF_STOP.has(t));
+function pfMatch(q,top){
+  const T=pfToks(q);if(!T.length)return[];
+  const alpha=T.filter(t=>!NUM.test(t)),max=T.reduce((a,t)=>a+(NUM.test(t)?1:3)*2,0);
+  let res=[];
+  for(const r of allRecords){const sc=score(r,T,false);if(sc>0)res.push([sc,r])}          // 1º: todas as palavras presentes
+  if(!res.length&&alpha.length)for(const r of allRecords){                                  // 2º: aceita palavras faltando (≥ 50 %)
+    const sc=score(r,T,true);if(sc>=max*.5&&alpha.some(t=>score(r,[t],false)>0))res.push([sc,r])}
+  res.sort((a,b)=>b[0]-a[0]||b[1]._e-a[1]._e);
+  return res.slice(0,top).map(x=>x[1])}
+let axLay='bar';try{if(localStorage.getItem('planograma_axlay')==='card')axLay='card'}catch{}
+const pfRowHtml=r=>{if(axLay==='card'){const dp=DEP.has(r.produto);return `<div class="p pfc${dp?' dep':''}" data-p="${esc(r.produto)}" style="--c:${COLOR[r._k]}">${cardBody(r,dp?'<span class="depi" title="Procurar no depósito">🔎</span>':'',  '',true)}</div>`}
+  const c=r._c===null?'—':(r._c>999?'+999':f1(Math.max(r._c,0))),dp=DEP.has(r.produto);
+    return `<div class="pfr${dp?' dep':''}" data-p="${esc(r.produto)}" style="--c:${COLOR[r._k]}"><div class="pn">${esc(r.descricao)}${dp?' <span class="depi">🔎</span>':''}</div><div class="pm"><span>Estoque <b>${f0(r._e)}</b></span><span>Cob. <b>${c}</b>${r._c!==null?' d':''}</span>${transitLoaded&&r._t>0?`<span>Trânsito <b>${f0(r._t)}</b></span>`:''}<span class="pk">${GLY[r._k]} ${SLBL[r._k]}</span></div></div>`};
+function renderPf(){
+  const box=$('pf-list'),sum=$('pf-sum');refreshDep();
+  if(!pfGroups.length){box.innerHTML='';return}
+  let ok=0,al=0;
+  const row=pfRowHtml;
+  const nm=[];                                                   // sem correspondência → dropdown no fim da lista
+  const mainH=[],pedH=[];
+  pfGroups.forEach(g=>{
+    const rs=g.codes.map(c=>byProd.get(c)).filter(Boolean);
+    if(!rs.length){nm.push(g);return}
+    ok++;if(rs[0]._k==='rup'||rs[0]._k==='crit')al++;
+    const hd=`<div class="pfh" data-q="${esc(g.q||g.nome)}"><span>🔍 ${esc(g.nome)}</span>${g.preco?`<b>R$ ${esc(g.preco)}</b>`:''}</div>`,
+      rm=rs.filter(r=>!inPed(r.produto)),rp=rs.filter(r=>inPed(r.produto));
+    if(rm.length)mainH.push(hd+rm.map(row).join(''));if(rp.length)pedH.push(hd+rp.map(row).join(''))});   // produtos que já estão no pedido (e não concluídos) vão para um dropdown à parte
+  const found=mainH.join('');
+  const pedHtml=pedH.length?`<details class="trd" id="pfped"${pfPedOpen?' open':''} style="margin-top:14px"><summary><span>🛒 Já no pedido<small>Itens do panfleto que você já pediu</small></span><span class="cnt">${pedH.length}</span><svg class="ch" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></summary>${pedH.join('')}</details>`:'';
+  const nmHtml=nm.length?`<details class="trd" id="pfnm"${pfNmOpen?' open':''} style="margin-top:14px"><summary><span>❔ Sem correspondência<small>Não achei no planograma</small></span><span class="cnt">${nm.length}</span><svg class="ch" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></summary>${nm.map(g=>`<div class="pfn" data-q="${esc(g.q||g.nome)}"><span>🔍 ${esc(g.nome)}</span>${g.preco?`<b>R$ ${esc(g.preco)}</b>`:''}</div>`).join('')}</details>`:'';
+  box.innerHTML=found+pedHtml+nmHtml;
+  sum.textContent=`${pfGroups.length} itens · ${ok} encontrados${pedH.length?` · ${pedH.length} já no pedido`:''} · ${pfGroups.length-ok} sem correspondência${al?` · ${al} em ruptura/crítico`:''}`}
+function pfRun(){
+  const txt=$('pf-txt').value;try{localStorage.setItem(LSPF,txt)}catch{}
+  if(!allRecords.length){pfGroups=[];$('pf-list').innerHTML='';$('pf-sum').textContent='Carregue o planograma primeiro (aba Dados).';return}
+  const items=pfParse(txt);
+  if(!items.length){pfGroups=[];$('pf-list').innerHTML='';$('pf-sum').textContent='Cole a lista do panfleto (um produto por linha).';return}
+  $('pf-sum').textContent='Procurando…';
+  setTimeout(()=>{pfGroups=items.map(it=>{const seen=new Set(),codes=[];
+      it.parts.forEach(pt=>pfMatch(pt,it.parts.length>1?2:3).forEach(r=>{if(!seen.has(r.produto)){seen.add(r.produto);codes.push(r.produto)}}));
+      return{nome:it.nome,preco:it.preco,codes,q:it.parts[0]||it.nome}});renderPf()},30)}   // q = texto que vai para a busca de Produtos (com "A ou B" usa o 1º)
+function pfOpen(){const hoje=ofISO(new Date());
+  if(pfSelOn!==hoje){pfSelOn=hoje;pfSelDay=new Date().getDay();pfApplyDay(false)}      // virou o dia com o app aberto → volta para hoje
+  pfDayBar();if(pfGroups.length)renderPf();else if($('pf-txt').value.trim()&&allRecords.length)pfRun()}
+function pfSync(){if(!allRecords.length)return;if(pfGroups.length)renderPf();else if(axCur==='pan'&&curTab==='enc'&&$('pf-txt').value.trim())pfRun()}
+$('pf-list').addEventListener('toggle',e=>{if(e.target.id==='pfnm')pfNmOpen=e.target.open;if(e.target.id==='pfped')pfPedOpen=e.target.open},true);   // lembra se está aberto
+$('pf-go').onclick=()=>pfSubmit();
+$('pf-paste').onclick=async()=>{try{const t=await navigator.clipboard.readText();if(!t.trim())return toast('Área de transferência vazia');$('pf-txt').value=t;pfSubmit()}catch{toast('Não consegui colar sozinho — toque no campo e cole')}};
+$('pf-clear').onclick=()=>{const t=$('pf-txt').value,sl=pfDays[pfSelDay],del=!!(sl&&sl.text&&sl.text===t);   // só apaga o panfleto SALVO do dia se o campo ainda é ele (rascunho solto só limpa o campo)
+  if(del&&!confirm('Limpar o panfleto de '+OF_DN[pfSelDay]+' '+ofShort(sl.date)+'? (apaga também nos outros aparelhos)'))return;
+  $('pf-txt').value='';pfGroups=[];try{localStorage.removeItem(LSPF)}catch{}$('pf-list').innerHTML='';$('pf-sum').textContent='';
+  if(del){const w=pfSelDay,c=code();pfDays[w]=null;if(idb)idbSave({id:'panfleto-d'+w,w,text:''}).catch(()=>{});
+    if(c){lastLocal=Date.now();put(c,'pf/d'+w,null);patch(c,'live/pf',{['d'+w]:null}).catch(()=>{})}}
+  pfDayBar()};
+$('pf-txt').oninput=debounce(()=>{try{localStorage.setItem(LSPF,$('pf-txt').value)}catch{}},500);
+function pfSearch(q){F.q=q;F.chip='all';F.cat='';$('q').value=q;go('prod')}   // abre Produtos já pesquisando o texto do panfleto
+$('pf-list').onclick=e=>{if(Date.now()<swBlock)return;
+  const h=e.target.closest('.pfh,.pfn');if(h&&h.dataset.q){pfSearch(h.dataset.q);return}
+  const c=e.target.closest('.pfr,.pfc');if(c){const r=byProd.get(c.dataset.p);if(r)openSheet(r)}};
+try{$('pf-txt').value=localStorage.getItem(LSPF)||''}catch{}
+
+/* ══ ⭐ OFERTA DO DIA: planilha de ofertas × planograma ══
+   Colunas reconhecidas pelo NOME do cabeçalho (qualquer ordem). Só precisa de EAN e/ou Código; Descrição e preços são opcionais
+   (sem cabeçalho/sem preço o app NÃO dá erro: lê o que achar e avisa). Linhas extras tipo "APP"/"No App" viram etiqueta do item de cima. */
+let ofItems=[],ofMeta={},ofRes=[],ofMatchedFor=null,ofNmOpen=false,ofPedOpen=false,ofSortV='arq';
+/* 📅 7 slots (um por dia da semana): carregar outra planilha no mesmo dia da semana sobrescreve a antiga */
+const OF_DN=['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'],OF_ORD=[1,2,3,4,5,6,0];
+const ofISO=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+const ofShort=iso=>iso?iso.slice(8)+'/'+iso.slice(5,7):'';
+function ofDateFor(w){const t=new Date();t.setHours(12,0,0,0);let o=(w-t.getDay()+7)%7;if(o>3)o-=7;t.setDate(t.getDate()+o);return ofISO(t)}   // data mais próxima de hoje (−3 a +3 dias) com esse dia da semana
+let ofDays=[null,null,null,null,null,null,null],ofSelDay=new Date().getDay(),ofSelOn=ofISO(new Date());
+function ofApplyDay(){const o=ofDays[ofSelDay];ofMatchedFor=null;
+  if(o&&o.items&&o.items.length){ofItems=o.items;ofMeta={name:o.name,savedAt:o.savedAt,warn:o.warn,validade:o.validade,sheet:o.sheet,date:o.date}}else{ofItems=[];ofMeta={}}}
+function ofDayBar(){const tw=new Date().getDay();
+  $('of-days').innerHTML=OF_ORD.map(w=>{const o=ofDays[w],ex=ofDateFor(w),has=!!(o&&o.items&&o.items.length),old=has&&o.date!==ex;
+    return `<button type="button" data-w="${w}" class="${w===ofSelDay?'on ':''}${has?'has ':''}${old?'old ':''}${w===tw?'tdy':''}">${OF_DN[w]}<small>${ofShort(has?o.date:ex)}</small></button>`}).join('');
+  $('of-droptxt').textContent='📂 Toque para carregar a planilha de '+OF_DN[ofSelDay]+' '+ofShort(ofDateFor(ofSelDay));
+  $('of-del').style.display=ofItems.length?'':'none'}
+const OF_H={
+  ean:t=>/\bean\b|gtin|barra/.test(t),
+  code:t=>/^(codigo|cod|cod\.|host|sku|plu)$/.test(t),
+  desc:t=>/^(descricao|descr\.?|produto|nome|item|mercadoria)$/.test(t),
+  reg:t=>!/unid|qtd|qtde|loja|cashback/.test(t)&&/(venda reg|preco reg|preco normal|preco de|^preco$|^valor$)/.test(t),
+  club:t=>!/unid|qtd|qtde|loja|cashback/.test(t)&&/(clube|promo|oferta|preco por)/.test(t),
+  val:t=>/validade/.test(t)};
+const ofDig=v=>typeof v==='number'?String(Math.round(v)):String(v??'').replace(/\D/g,'');
+function ofNum(v){                                              // 7.29 · "7,29" · "R$ 1.234,56" → número (ou null)
+  if(typeof v==='number')return v>0?Math.round(v*100)/100:null;
+  let t=String(v??'').replace(/[^\d.,]/g,'');if(!t)return null;
+  t=t.includes(',')?t.replace(/\./g,'').replace(',','.'):t;
+  const n=parseFloat(t);return n>0?Math.round(n*100)/100:null}
+function ofHeader(rows){                                         // acha a linha do cabeçalho e o índice de cada coluna
+  for(let i=0;i<Math.min(rows.length,80);i++){
+    const cols={};(rows[i]||[]).forEach((c,j)=>{const t=norm(String(c??'').trim());if(!t||t.length>40)return;
+      for(const k of['ean','code','desc','reg','club','val'])if(cols[k]==null&&OF_H[k](t)){cols[k]=j;break}});
+    if((cols.desc!=null&&(cols.code!=null||cols.ean!=null))||(cols.code!=null&&cols.ean!=null))return{row:i,cols}}
+  return null}
+function ofParse(rows){
+  const items=[];let warn=[],h=ofHeader(rows);
+  if(h){
+    const C=h.cols,g=(r,c)=>c==null?'':r[c];let last=null;
+    for(let i=h.row+1;i<rows.length;i++){const r=rows[i]||[];
+      const code=ofDig(g(r,C.code)),ean=ofDig(g(r,C.ean)),desc=String(g(r,C.desc)??'').replace(/\s+/g,' ').trim();
+      if(code.length>=3||ean.length>=3){
+        last={ean,code,desc:desc||('Código '+(code||ean)),reg:ofNum(g(r,C.reg)),club:ofNum(g(r,C.club)),tag:'',val:String(g(r,C.val)??'').trim()};items.push(last)}
+      else if(last){                                              // linha de apoio ("APP", "No App"…) → etiqueta do item anterior
+        const tx=r.map(c=>typeof c==='string'?c.trim():'').filter(t=>t&&t.length<=20&&/[a-zA-Z]/.test(t));
+        if(tx.length)last.tag=(last.tag?last.tag+' ':'')+tx.join(' ')}}
+    if(!items.some(x=>x.reg||x.club))warn.push('Esta planilha não tem preços — mostrando só os produtos.')
+  }else{                                                          // sem cabeçalho: lê pela aparência (códigos numéricos + texto), sem preço
+    for(const r of rows){const cs=(r||[]).map(c=>c??'');
+      const dg=cs.map(ofDig).filter((d,k)=>/^\d{3,14}$/.test(d)&&/^[\d\s.]+$/.test(String(cs[k]).trim()));
+      const tx=cs.filter(c=>typeof c==='string'&&(c.match(/[a-zA-ZÀ-ú]/g)||[]).length>=3).map(c=>c.replace(/\s+/g,' ').trim()).sort((a,b)=>b.length-a.length);
+      if(dg.length&&tx.length){const ean=dg.find(d=>d.length>=8)||'',code=dg.find(d=>d!==ean&&d.length<=8)||(ean?'':dg[0]);
+        items.push({ean,code,desc:tx[0],reg:null,club:null,tag:'',val:''})}}
+    if(items.length)warn.push('Não achei o cabeçalho (EAN · Código · Descrição): li as linhas pela aparência, sem preços. Confira os itens.')}
+  return{items,warn}}
+const ofClean=d=>String(d||'').replace(/\s*-\s*(A PARTIR|NESTA).*$/i,'').replace(/\./g,' ').replace(/\s+/g,' ').trim();
+const ofFmt=v=>'R$ '+v.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+function ofPrice(it){
+  const tag=it.tag?`<em>${esc(it.tag)}</em>`:'';
+  if(it.club&&(!it.reg||it.club<it.reg))return`<b>${ofFmt(it.club)}</b>${it.reg?` <s>${ofFmt(it.reg)}</s>`:''}${tag}`;
+  if(it.reg||it.club)return`<b>${ofFmt(it.reg||it.club)}</b>${tag}`;
+  return tag}
+function ofMatch(){                                              // 1º código/EAN (exato) · 2º nome (aproximado, marcado "≈")
+  const bE={},bH={};allRecords.forEach(r=>{const e=zeros(r.automacao),h=zeros(r.produto);if(e)bE[e]=r;if(h)bH[h]=r});
+  ofRes=ofItems.map(it=>{const c=zeros(it.code),e=zeros(it.ean),r=(c&&bH[c])||(e&&bE[e]);
+    if(r)return{codes:[r.produto],approx:false};
+    const q=ofClean(it.desc),rs=q&&!/^C[oó]digo \d+$/i.test(q)?pfMatch(q,2):[];
+    return{codes:rs.map(x=>x.produto),approx:rs.length>0}});
+  ofMatchedFor=allRecords}
+function renderOf(){
+  const box=$('of-list'),sum=$('of-sum'),has=ofItems.length>0;refreshDep();
+  $('of-sortbar').style.display=has?'flex':'none';
+  if(!has){box.innerHTML='';sum.textContent=`Nenhuma planilha salva para ${OF_DN[ofSelDay]} ${ofShort(ofDateFor(ofSelDay))}. Toque acima para carregar.`;return}
+  if(!allRecords.length){box.innerHTML='';sum.textContent='Carregue o planograma primeiro (aba Dados).';return}
+  if(ofMatchedFor!==allRecords)ofMatch();
+  const found=[],nm=[];
+  ofItems.forEach((it,i)=>{const rs=((ofRes[i]||{}).codes||[]).map(c=>byProd.get(c)).filter(Boolean);
+    if(rs.length)found.push({it,rs,approx:ofRes[i].approx});else nm.push(it)});
+  let al=0;found.forEach(g=>{if(g.rs[0]._k==='rup'||g.rs[0]._k==='crit')al++});
+  if(ofSortV==='sev'){const R={rup:0,crit:1,aten:2,ok:3,nd:4};found.sort((a,b)=>R[a.rs[0]._k]-R[b.rs[0]._k]||(a.rs[0]._c??999)-(b.rs[0]._c??999))}
+  const grp=(g,rs)=>`<div class="pfh" data-q="${esc(ofClean(g.it.desc))}"><span>🔍 ${esc(g.it.desc)}${g.approx?' <small>≈ achado pelo nome</small>':''}</span><span class="pp">${ofPrice(g.it)}</span></div>`+rs.map(pfRowHtml).join('');
+  const mainG=[],inP=[];found.forEach(g=>{const rm=g.rs.filter(r=>!inPed(r.produto)),rp=g.rs.filter(r=>inPed(r.produto));   // produtos que já estão no pedido (e não concluídos) vão para um dropdown à parte
+    if(rm.length)mainG.push(grp(g,rm));if(rp.length)inP.push(grp(g,rp))});
+  const html=mainG.join('');
+  const pedHtml=inP.length?`<details class="trd" id="ofped"${ofPedOpen?' open':''} style="margin-top:14px"><summary><span>🛒 Já no pedido<small>Itens da oferta que você já pediu</small></span><span class="cnt">${inP.length}</span><svg class="ch" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></summary>${inP.join('')}</details>`:'';
+  const nmHtml=nm.length?`<details class="trd" id="ofnm"${ofNmOpen?' open':''} style="margin-top:14px"><summary><span>❔ Sem correspondência<small>Não achei no planograma</small></span><span class="cnt">${nm.length}</span><svg class="ch" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></summary>${nm.map(it=>`<div class="pfn" data-q="${esc(ofClean(it.desc))}"><span>🔍 ${esc(it.desc)}</span><span class="pp">${ofPrice(it)}</span></div>`).join('')}</details>`:'';
+  box.innerHTML=html+pedHtml+nmHtml;
+  sum.textContent=`${ofItems.length} itens · ${found.length} no planograma${inP.length?` · ${inP.length} já no pedido`:''} · ${nm.length} sem correspondência${al?` · ${al} em ruptura/crítico`:''}`}
+function ofShowMeta(){
+  const t=$('of-title'),w=$('of-warn');ofDayBar();
+  if(!ofItems.length){t.style.display='none';w.style.display='none';return}
+  const ex=ofDateFor(ofSelDay),old=ofMeta.date&&ofMeta.date!==ex;
+  const sl=ofDays[ofSelDay],cl=sl&&code()?(sl.pending?' · ⏳ ainda não enviada':sl.cloudAt?' · ☁ na nuvem':''):'';
+  t.style.display='';t.textContent=`${ofMeta.date?'📅 '+OF_DN[ofSelDay]+' '+ofShort(ofMeta.date)+' · ':''}${ofMeta.name||'planilha'} · ${ofItems.length} itens${ofMeta.validade?` · ${ofMeta.validade}`:''}${ofMeta.savedAt?` · salva em ${ofMeta.savedAt}`:''}${cl}`;
+  const msg=[old?`⚠ Esta planilha é de ${ofShort(ofMeta.date)}, não de ${ofShort(ex)} — carregue a nova.`:'',ofMeta.warn?'ℹ️ '+ofMeta.warn:''].filter(Boolean).join(' ');
+  w.style.display=msg?'':'none';w.textContent=msg}
+async function loadOfFile(file){
+  if(!file)return;const t=$('of-title');t.style.display='';t.textContent='Lendo planilha…';
+  try{
+    let res=null,sheet='';
+    if(/\.(xlsx|xls|ods)$/i.test(file.name)){
+      await ensureXLSX();
+      const wb=await new Promise((ok,no)=>{const r=new FileReader();r.onload=e=>{try{ok(XLSX.read(new Uint8Array(e.target.result),{type:'array'}))}catch(x){no(x)}};r.onerror=()=>no(new Error('não foi possível ler o arquivo'));r.readAsArrayBuffer(file)});
+      for(const sn of wb.SheetNames){const o=ofParse(XLSX.utils.sheet_to_json(wb.Sheets[sn],{header:1,defval:''}));if(o.items.length){res=o;sheet=sn;break}}
+    }else{
+      const sep=l=>l.includes(';')?';':l.includes('\t')?'\t':',';
+      res=ofParse((await readReport(file)).replace(/^\uFEFF/,'').split(/\r?\n/).map(l=>l.split(sep(l)).map(c=>c.trim().replace(/^"|"$/g,''))));
+      if(!res.items.length)res=null}
+    if(!res){ofShowMeta();$('of-warn').style.display='';$('of-warn').textContent='⚠ Não achei itens nessa planilha. Ela precisa ter pelo menos uma coluna de código ou EAN (com texto no cabeçalho, como "Codigo" ou "EAN") e uma de descrição. A oferta anterior foi mantida.';return}
+    const val=(res.items.find(x=>x.val)||{}).val||'';
+    const w=ofSelDay;ofItems=res.items;ofMatchedFor=null;
+    ofMeta={name:file.name,savedAt:new Date().toLocaleString('pt-BR'),warn:res.warn.join(' '),validade:val,sheet,date:ofDateFor(w)};
+    ofDays[w]={id:'oferta-d'+w,w,items:ofItems,...ofMeta,at:Date.now(),cloudAt:0,pending:!!code()};     // pending = ainda não chegou na nuvem
+    (idb?idbSave(ofDays[w]):Promise.resolve()).catch(()=>toast('⚠ Não consegui salvar a oferta neste aparelho')).then(()=>pushOf(w));
+    ofShowMeta();renderOf();
+  }catch(e){ofShowMeta();$('of-warn').style.display='';$('of-warn').textContent='⚠ Não consegui ler a planilha: '+e.message}}
+/* ☁ NUVEM: cada dia vai para of/d0…d6 + um aviso pequeno em live/of → os outros aparelhos baixam sozinhos (PC → celular) */
+const ofBusy={};
+async function pushOf(w){
+  const c=code(),rec=ofDays[w];if(!c||!rec||!rec.pending||ofBusy[w])return;
+  ofBusy[w]=true;const at=rec.at,prev=rec.cloudAt||0,H={'Content-Type':'application/json'};
+  try{
+    const {id,pending,cloudAt,...data}=rec;
+    let r=await cf(cu(c,'of/d'+w),{method:'PUT',headers:H,body:JSON.stringify(data)});if(!r.ok)throw 0;
+    rec.cloudAt=at;rec.pending=false;lastLocal=Date.now();                  // marca ANTES do aviso, p/ não baixar o próprio eco
+    r=await cf(cu(c,'live/of'),{method:'PATCH',headers:H,body:JSON.stringify({['d'+w]:at})});if(!r.ok)throw 0;
+    if(idb)await idbSave(rec).catch(()=>{});
+    toast('☁ Oferta de '+OF_DN[w]+' enviada para a nuvem');
+  }catch{rec.cloudAt=prev;rec.pending=true;toast('⚠ Oferta salva só neste aparelho — não chegou na nuvem')}
+  finally{ofBusy[w]=false;if(ofSelDay===w&&axCur==='dia'&&curTab==='enc')ofShowMeta()}
+}
+/* chamado pelo applyLive: baixa os dias que a nuvem tem mais novos, envia os que só existem aqui e apaga os que foram apagados em outro aparelho */
+async function syncOf(c,lof){
+  let ch=false;
+  for(let w=0;w<7;w++){
+    const loc=ofDays[w],ca=lof&&lof['d'+w];
+    if(loc&&loc.pending){pushOf(w);continue}
+    if(!ca){
+      if(loc&&loc.cloudAt){ofDays[w]=null;ch=true;if(idb)idbSave({id:'oferta-d'+w,w,items:[]}).catch(()=>{})}     // apagada em outro aparelho
+      else if(loc){loc.at=loc.at||Date.now();loc.pending=true;if(idb)idbSave(loc).catch(()=>{});pushOf(w)}       // só existe neste aparelho → envia
+      continue}
+    if(loc&&loc.cloudAt===ca)continue;                                       // já tenho esta versão
+    const d=await cf(cu(c,'of/d'+w)).then(r=>r.json()).catch(()=>null);
+    if(!d||!Array.isArray(d.items)||!d.items.length)continue;
+    const rec={...d,id:'oferta-d'+w,w,cloudAt:ca,pending:false};
+    ofDays[w]=rec;ch=true;if(idb)await idbSave(rec).catch(()=>{})}
+  if(ch){ofApplyDay();if(axCur==='dia'&&curTab==='enc'){ofShowMeta();renderOf()}else if($('of-days'))ofDayBar()}
+}
+function ofOpen(){const hoje=ofISO(new Date());
+  if(ofSelOn!==hoje){ofSelOn=hoje;ofSelDay=new Date().getDay();ofApplyDay()}      // virou o dia com o app aberto → volta para hoje
+  ofShowMeta();renderOf()}
+$('of-days').onclick=e=>{const b=e.target.closest('button[data-w]');if(!b)return;ofSelDay=+b.dataset.w;ofApplyDay();ofShowMeta();renderOf()};
+$('of-del').onclick=()=>{if(!ofItems.length||!confirm('Limpar a planilha de '+OF_DN[ofSelDay]+' '+ofShort(ofMeta.date||ofDateFor(ofSelDay))+'?'))return;
+  const w=ofSelDay,c=code();ofDays[w]=null;if(idb)idbSave({id:'oferta-d'+w,w,items:[]}).catch(()=>{});
+  if(c){lastLocal=Date.now();put(c,'of/d'+w,null);patch(c,'live/of',{['d'+w]:null}).catch(()=>{})}              // some dos outros aparelhos também
+  ofApplyDay();ofShowMeta();renderOf()};
+function ofSync(){if(curTab==='enc'&&axCur==='dia')renderOf()}
+$('of-drop').onclick=()=>$('of-input').click();
+$('of-input').onchange=e=>{if(e.target.files[0])loadOfFile(e.target.files[0]);e.target.value=''};
+$('of-sort').onchange=e=>{ofSortV=e.target.value;renderOf()};
+$('of-list').addEventListener('toggle',e=>{if(e.target.id==='ofnm')ofNmOpen=e.target.open;if(e.target.id==='ofped')ofPedOpen=e.target.open},true);
+$('of-list').onclick=e=>{if(Date.now()<swBlock)return;
+  const h=e.target.closest('.pfh,.pfn');if(h&&h.dataset.q){pfSearch(h.dataset.q);return}
+  const c=e.target.closest('.pfr,.pfc');if(c){const r=byProd.get(c.dataset.p);if(r)openSheet(r)}};
+
+/* 🧾 PANFLETO por dia da semana (mesmo esquema da Oferta do dia): 7 slots + nuvem (pf/d0…d6 + aviso em live/pf) */
+let pfDays=[null,null,null,null,null,null,null],pfSelDay=new Date().getDay(),pfSelOn=ofISO(new Date()),pfAskCb=null;
+const pfBusy={},pfTxt=()=>$('pf-txt').value;
+const pfIsDraft=()=>{const t=pfTxt();return !!t.trim()&&!pfDays.some(o=>o&&o.text===t)};
+function pfDayBar(){const tw=new Date().getDay(),sl=pfDays[pfSelDay],ex=ofDateFor(pfSelDay),m=$('pf-meta');
+  $('pf-days').innerHTML=OF_ORD.map(w=>{const o=pfDays[w],e=ofDateFor(w),has=!!(o&&o.text&&o.text.trim()),old=has&&o.date!==e;
+    return `<button type="button" data-w="${w}" class="${w===pfSelDay?'on ':''}${has?'has ':''}${old?'old ':''}${w===tw?'tdy':''}">${OF_DN[w]}<small>${ofShort(has?o.date:e)}</small></button>`}).join('');
+  if(!sl||!sl.text){m.textContent=`Nenhum panfleto salvo para ${OF_DN[pfSelDay]} ${ofShort(ex)}. Cole a lista e toque em Buscar — o app pergunta o dia.`;return}
+  const cl=code()?(sl.pending?' · ⏳ ainda não enviado':sl.cloudAt?' · ☁ na nuvem':''):'';
+  m.textContent=`📅 ${OF_DN[pfSelDay]} ${ofShort(sl.date)} · salvo em ${sl.savedAt||''}${cl}`+(sl.date!==ex?` · ⚠ é de ${ofShort(sl.date)}, não de ${ofShort(ex)}`:'')}
+function pfApplyDay(run){const o=pfDays[pfSelDay];pfGroups=[];
+  if(o&&o.text){$('pf-txt').value=o.text;try{localStorage.setItem(LSPF,o.text)}catch{}
+    pfDayBar();if(run!==false)pfRun();return}
+  if(!pfIsDraft()){$('pf-txt').value='';try{localStorage.removeItem(LSPF)}catch{}$('pf-list').innerHTML='';$('pf-sum').textContent=''}   // dia vazio: limpa (mas nunca apaga um rascunho colado e ainda não buscado)
+  pfDayBar()}
+$('pf-days').onclick=e=>{const b=e.target.closest('button[data-w]');if(!b)return;pfSelDay=+b.dataset.w;pfApplyDay()};
+/* Buscar: lista nova → pergunta o dia; mesma lista do dia → só busca */
+function pfSubmit(){const t=pfTxt();if(!t.trim()){pfRun();return}
+  const sl=pfDays[pfSelDay];if(sl&&sl.text===t){pfRun();return}
+  pfAsk(w=>{pfSelDay=w;pfSave(w,t);pfRun()})}
+function pfAskClose(){$('pf-ask').style.display='none';pfAskCb=null}
+function pfAsk(cb){const tw=new Date().getDay();
+  $('pf-ask-days').innerHTML=OF_ORD.map(w=>{const o=pfDays[w],has=!!(o&&o.text);
+    return `<button type="button" data-w="${w}" class="${w===pfSelDay?'on ':''}${has?'has ':''}${w===tw?'tdy':''}">${OF_DN[w]}<small>${ofShort(ofDateFor(w))}</small></button>`}).join('');
+  pfAskCb=cb;$('pf-ask').style.display='flex'}
+$('pf-ask-days').onclick=e=>{const b=e.target.closest('button[data-w]');if(!b)return;const cb=pfAskCb;pfAskClose();if(cb)cb(+b.dataset.w)};
+$('pf-ask-x').onclick=pfAskClose;$('pf-ask').onclick=e=>{if(e.target.id==='pf-ask')pfAskClose()};
+function pfSave(w,t){const rec={id:'panfleto-d'+w,w,text:t,date:ofDateFor(w),at:Date.now(),savedAt:new Date().toLocaleString('pt-BR'),cloudAt:0,pending:!!code()};
+  pfDays[w]=rec;(idb?idbSave(rec):Promise.resolve()).catch(()=>toast('⚠ Não consegui salvar o panfleto neste aparelho')).then(()=>pushPf(w));pfDayBar()}
+async function pushPf(w){
+  const c=code(),rec=pfDays[w];if(!c||!rec||!rec.pending||pfBusy[w])return;
+  pfBusy[w]=true;const at=rec.at,prev=rec.cloudAt||0,H={'Content-Type':'application/json'};
+  try{
+    const {id,pending,cloudAt,...data}=rec;
+    let r=await cf(cu(c,'pf/d'+w),{method:'PUT',headers:H,body:JSON.stringify(data)});if(!r.ok)throw 0;
+    rec.cloudAt=at;rec.pending=false;lastLocal=Date.now();                  // marca ANTES do aviso, p/ não baixar o próprio eco
+    r=await cf(cu(c,'live/pf'),{method:'PATCH',headers:H,body:JSON.stringify({['d'+w]:at})});if(!r.ok)throw 0;
+    if(idb)await idbSave(rec).catch(()=>{});
+    toast('☁ Panfleto de '+OF_DN[w]+' enviado para a nuvem');
+  }catch{rec.cloudAt=prev;rec.pending=true;toast('⚠ Panfleto salvo só neste aparelho — não chegou na nuvem')}
+  finally{pfBusy[w]=false;pfDayBar()}
+}
+async function syncPf(c,lpf){
+  let apply=false;
+  for(let w=0;w<7;w++){
+    const loc=pfDays[w],ca=lpf&&lpf['d'+w];
+    if(loc&&loc.pending){pushPf(w);continue}
+    if(!ca){
+      if(loc&&loc.cloudAt){                                                  // apagado em outro aparelho
+        if(w===pfSelDay&&pfTxt()===loc.text)apply=true;
+        pfDays[w]=null;if(idb)idbSave({id:'panfleto-d'+w,w,text:''}).catch(()=>{});apply=apply||w===pfSelDay}
+      else if(loc){loc.at=loc.at||Date.now();loc.pending=true;if(idb)idbSave(loc).catch(()=>{});pushPf(w)}   // só existe neste aparelho → envia
+      continue}
+    if(loc&&loc.cloudAt===ca)continue;                                       // já tenho esta versão
+    const d=await cf(cu(c,'pf/d'+w)).then(r=>r.json()).catch(()=>null);
+    if(!d||typeof d.text!=='string'||!d.text.trim())continue;
+    if(w===pfSelDay&&(!pfTxt().trim()||pfTxt()===(loc?loc.text:'')))apply=true;   // não pisa num rascunho que você está digitando
+    const rec={...d,id:'panfleto-d'+w,w,cloudAt:ca,pending:false};
+    pfDays[w]=rec;if(idb)await idbSave(rec).catch(()=>{})}
+  if(apply)pfApplyDay(axCur==='pan'&&curTab==='enc');else pfDayBar()
+}
+function layUi(){document.querySelectorAll('.laysw button').forEach(b=>b.classList.toggle('on',b.dataset.lay===axLay))}
+document.querySelectorAll('.laysw').forEach(w=>w.onclick=e=>{const b=e.target.closest('button');if(!b||b.dataset.lay===axLay)return;
+  axLay=b.dataset.lay;try{localStorage.setItem('planograma_axlay',axLay)}catch{}
+  layUi();if(pfGroups.length)renderPf();if(ofItems.length)renderOf()});
+layUi();
+const AXL={enc:'📋 Encarte',pan:'🧾 Panfleto',dia:'⭐ Oferta do dia'};
+let axCur='enc';try{const v=localStorage.getItem('planograma_ax');if(AXL[v])axCur=v}catch{}
+function axShow(k){
+  axCur=k;try{localStorage.setItem('planograma_ax',k)}catch{}
+  ['enc','pan','dia'].forEach(x=>$('ax-'+x).style.display=x===k?'':'none');
+  $('ax-lbl').textContent=AXL[k];
+  document.querySelectorAll('#ax-menu .axi').forEach(b=>b.classList.toggle('on',b.dataset.ax===k));
+  $('ax-menu').style.display='none';
+  if(k==='pan')pfOpen();if(k==='dia')ofOpen()}
+$('ax-btn').onclick=e=>{e.stopPropagation();const m=$('ax-menu');m.style.display=m.style.display==='none'?'block':'none'};
+$('ax-menu').onclick=e=>{const b=e.target.closest('.axi');if(b)axShow(b.dataset.ax)};
+document.addEventListener('click',e=>{if(!e.target.closest('.axw'))$('ax-menu').style.display='none'});
+axShow(axCur);
+
 /* File input handler */
+function ensureXLSX(){
+  if(typeof XLSX!=='undefined')return Promise.resolve();
+  return new Promise((res,rej)=>{const s=document.createElement('script');
+    s.src='https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+    s.onload=res;s.onerror=()=>rej(new Error('sem internet para carregar o leitor de planilhas — tente um arquivo .csv'));document.head.appendChild(s)})}
+/* ☁ ENCARTE NA NUVEM: planilha em enc/data (grande) + aviso pequeno em live/enc → os outros aparelhos recebem em tempo real */
+let encCloudAt=0,encPending=false,encSavedAt='',encBusy=false;
+const ab2b64=buf=>{const u=new Uint8Array(buf);let t='';for(let i=0;i<u.length;i+=0x8000)t+=String.fromCharCode.apply(null,u.subarray(i,i+0x8000));return btoa(t)};
+const b642ab=b=>{const t=atob(b),u=new Uint8Array(t.length);for(let i=0;i<t.length;i++)u[i]=t.charCodeAt(i);return u.buffer};
+function encSaveLocal(){
+  if(!idb||!encSrc)return Promise.resolve();
+  return idbSave({id:'encarte',name:encSrc.name,kind:encSrc.kind,items:encItems,hdr:encSrc.hdr,text:encSrc.text,buf:encSrc.buf,savedAt:encSavedAt,cloudAt:encCloudAt,pending:encPending})
+    .catch(()=>toast('⚠ Não consegui salvar o Encarte neste aparelho'))}
+async function pushEnc(){
+  const c=code();if(!c||!encSrc||!encItems.length||encBusy)return;
+  encBusy=true;const at=Date.now(),prev=encCloudAt,H={'Content-Type':'application/json'};
+  try{
+    const data={name:encSrc.name,kind:encSrc.kind,items:encItems,hdr:encSrc.hdr??-1,savedAt:encSavedAt};
+    if(encSrc.kind==='xlsx')data.b64=ab2b64(encSrc.buf);else data.text=encSrc.text||'';
+    let r=await cf(cu(c,'enc/data'),{method:'PUT',headers:H,body:JSON.stringify(data)});if(!r.ok)throw 0;
+    encCloudAt=at;lastLocal=Date.now();                                  // marca ANTES do aviso, p/ não baixar o próprio eco
+    r=await cf(cu(c,'live/enc'),{method:'PUT',headers:H,body:JSON.stringify({at,name:encSrc.name})});if(!r.ok)throw 0;
+    encPending=false;await encSaveLocal();toast('☁ Encarte enviado para a nuvem');
+  }catch{encCloudAt=prev;toast('⚠ Encarte salvo só neste aparelho — não chegou na nuvem')}
+  finally{encBusy=false}
+}
+/* chamado pelo applyLive: baixa o Encarte se a nuvem tem um mais novo (e nunca sobrescreve um que ainda não foi enviado) */
+async function syncEnc(c,le){
+  if(encPending){pushEnc();return}
+  if(!le||!le.at||le.at===encCloudAt)return;
+  const d=await cf(cu(c,'enc/data')).then(r=>r.json()).catch(()=>null);
+  if(!d||!Array.isArray(d.items)||!d.items.length)return;
+  encItems=d.items;encSavedAt=d.savedAt||new Date().toLocaleString('pt-BR');
+  encSrc=d.kind==='xlsx'?{kind:'xlsx',name:d.name,buf:b642ab(d.b64||''),hdr:d.hdr}:{...parseEncCSV(d.text||''),name:d.name,text:d.text||''};
+  encCloudAt=le.at;encPending=false;await encSaveLocal();
+  $('enc-title').style.display='';$('enc-title').textContent=`${d.name} · ${encItems.length} itens · da nuvem`;
+}
 async function loadEncFile(file){
   if(!file)return;
   $('enc-title').style.display='';
@@ -1030,20 +1485,15 @@ async function loadEncFile(file){
   try{
     let src;
     if(file.name.match(/\.(xlsx|xls|ods)$/i)){
-      // Load SheetJS if not already loaded
-      if(typeof XLSX==='undefined'){
-        await new Promise((res,rej)=>{
-          const s=document.createElement('script');
-          s.src='https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
-          s.onload=res;s.onerror=()=>rej(new Error('sem internet para carregar o leitor de planilhas — tente um arquivo .csv'));document.head.appendChild(s);
-        });
-      }
+      await ensureXLSX();
       src=await parseEncXLSX(file);
     } else {
-      src=parseEncCSV(await readReport(file));
+      const txt=await readReport(file);src=parseEncCSV(txt);src.text=txt;
     }
     encItems=src.items;encSrc={...src,name:file.name};
     $('enc-title').textContent=`${file.name} · ${encItems.length} itens`;
+    encSavedAt=new Date().toLocaleString('pt-BR');encPending=!!code();   // pendente até chegar na nuvem
+    encSaveLocal().then(pushEnc);
     renderEnc();
   }catch(e){$('enc-title').textContent='Erro ao ler arquivo: '+e.message}
 }
@@ -1089,9 +1539,9 @@ const pend=()=>pedido.filter(x=>!x.done&&!inTransit(x));
 addEventListener('pagehide',()=>{try{localStorage.setItem(LSP,JSON.stringify(pedido))}catch{}});   // não perde o que está pendente
 function updBadge(){const n=pend().length,b=$('pbadge');b.textContent=n;b.style.display=n?'':'none'}
 /* 🔎 PROCURAR NO DEPÓSITO: marca por produto (independe do pedido). Guardada no aparelho e na nuvem em live/dep */
-const LSDEP='planograma_dep';let depMap={};try{(JSON.parse(localStorage.getItem(LSDEP)||'[]')||[]).forEach(k=>{if(k)depMap[k]=true})}catch{}
+/* depMap/LSDEP agora são declarados antes de refreshDep (acima) */
 function saveDep(){try{localStorage.setItem(LSDEP,JSON.stringify(Object.keys(depMap)))}catch{}cloudWriteDep()}
-function depRefresh(){refreshDep();const s=document.querySelector('section.on');if(!s)return;const id=s.id.slice(2);if(id==='ped')renderPed();else if(id==='prod')renderList(false)}
+function depRefresh(){refreshDep();const s=document.querySelector('section.on');if(!s)return;const id=s.id.slice(2);if(id==='ped')renderPed();else if(id==='prod')renderList(false);else if(id==='enc'&&axCur==='pan')renderPf();else if(id==='enc'&&axCur==='dia')renderOf()}
 function setDep(p,v){if(v)depMap[p]=true;else delete depMap[p];saveDep();depRefresh()}
 function toggleDep(p){const v=!depMap[p];setDep(p,v);if(navigator.vibrate)navigator.vibrate(15);
   toastUndo(v?'🔎 Procurar no depósito':'Saiu de "Procurar no depósito"',()=>setDep(p,!v))}
@@ -1105,7 +1555,7 @@ function renderBan(){const n=pend().length,t=pedido.filter(x=>!x.done&&inTransit
  $('pban').innerHTML=n||t?`<button class="pban" data-go="ped"><b>🛒 ${n?`${n} ${n>1?'itens':'item'} para pedir`:'Nada para pedir agora'}</b>${t?`<small>${t} aguardando trânsito</small>`:''}</button>`:''}
 $('pban').onclick=e=>{if(e.target.closest('[data-go]'))go('ped')};
 let depOnly=false;   // filtro "🔎 Procurar no depósito" ligado?
-const dropOpen={trd:false,dnd:false};   // lembra quais dropdowns do pedido estão abertos
+const dropOpen={pnd:false,trd:false,dnd:false};   // lembra quais dropdowns do pedido estão abertos
 function renderPed(){
  const act=pedido.filter(x=>!x.done&&!inTransit(x)),tr=pedido.filter(x=>!x.done&&inTransit(x)),dn=pedido.filter(x=>x.done),n=act.length;
  $('phead').innerHTML=`<div class="t">${n?`${n} ${n>1?'itens':'item'} para pedir`:(pedido.length?'Nada para pedir agora':'Pedido vazio')}</div><div class="s">${tr.length?`${tr.length} aguardando chegada do trânsito`:(pedido.length?'Itens fora do trânsito aparecem na lista abaixo':'Adicione abaixo ou pelo 🛒 nos produtos.')}</div>`;
@@ -1117,9 +1567,9 @@ function renderPed(){
  const row=x=>swrap(row0(x),x.done,'del','Excluir','🗑');
  const ord=l=>l.slice().sort((a,b)=>a.d.localeCompare(b.d));
  const drop=(id,title,sub,l)=>l.length?`<details class="trd" id="${id}"${dropOpen[id]?' open':''}><summary><span>${title}<small>${sub}</small></span><span class="cnt">${l.length}</span><svg class="ch" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></summary>${ord(l).map(row).join('')}</details>`:'';
- const trHtml=drop('trd','⏳ Aguardando trânsito','Ficam aqui até a mercadoria chegar',fl(tr))+drop('dnd','✓ Concluídos','Deslize → para reabrir',fl(dn));
+ const trHtml=drop('pnd','📋 Para pedir','Ainda falta pedir',fl(act))+drop('trd','⏳ Aguardando trânsito','Ficam aqui até a mercadoria chegar',fl(tr))+drop('dnd','✓ Concluídos','Deslize → para reabrir',fl(dn));
  const chip=(nd||depOnly)?`<div style="margin-top:6px"><button class="chip ${depOnly?'on':''}" id="pc-dep">🔎 Procurar no depósito (${nd})</button></div>`:'';
- $('plist').innerHTML=pedido.length?chip+ord(fl(act)).map(row).join('')+trHtml:'<div class="empty"><p>Sua lista está vazia</p><div class="btns" style="margin-top:14px"><button class="btn" id="pe-sug" style="margin:0">Adicionar sugestões</button><button class="btn o" id="pe-scan" style="margin:0">Ler código</button></div></div>'}
+ $('plist').innerHTML=pedido.length?chip+trHtml:'<div class="empty"><p>Sua lista está vazia</p><div class="btns" style="margin-top:14px"><button class="btn" id="pe-sug" style="margin:0">Adicionar sugestões</button><button class="btn o" id="pe-scan" style="margin:0">Ler código</button></div></div>'}
 $('plist').addEventListener('toggle',e=>{if(e.target.id in dropOpen)dropOpen[e.target.id]=e.target.open},true);   // lembra se o dropdown está aberto
 function swAddPed(r,s){
   if(inPed(r.produto))return toast('Já está no pedido');
@@ -1185,7 +1635,7 @@ function bindLP(host,sel){
   host.addEventListener('touchend',cancel,{passive:true});                       // (touchcancel não cancela: o Android manda ao abrir o menu)
   host.addEventListener('contextmenu',e=>{const c=e.target.closest(sel);if(!c)return;e.preventDefault();if(p0)fire(c.dataset.p)});
 }
-bindLP($('plist'),'.pedc,.pi');bindLP($('list'),'.p');
+bindLP($('plist'),'.pedc,.pi');bindLP($('list'),'.p');bindLP($('pf-list'),'.pfr,.pfc');bindLP($('of-list'),'.pfr,.pfc');
 $('plist').onclick=e=>{if(Date.now()<swBlock)return;
   if(e.target.closest('#pc-dep')){depOnly=!depOnly;renderPed();return}
   if(e.target.closest('#pe-sug')){const f=allRecords.filter(r=>r._sg>0&&!r._d&&!inPed(r.produto));if(!f.length)return toast('Nenhuma sugestão no momento');f.forEach(r=>addPed(r,'',true));savePed();renderPed();return toast(f0(f.length)+' produtos adicionados')}
@@ -1383,7 +1833,7 @@ function cloudWriteDep(){
 /* undefined = falha de rede (não mexe no local) · null = nuvem vazia */
 async function applyLive(c){
   const g=p=>cf(cu(c,p)).then(r=>r.json()).catch(()=>undefined);
-  const live=await g('live');const ld=live===undefined?undefined:(live&&live.done)||null,lp=live===undefined?undefined:(live&&live.pedido)||null,ldp=live===undefined?undefined:(live&&live.dep)||null;
+  const live=await g('live');const ld=live===undefined?undefined:(live&&live.done)||null,lp=live===undefined?undefined:(live&&live.pedido)||null,ldp=live===undefined?undefined:(live&&live.dep)||null,lenc=live===undefined?undefined:(live&&live.enc)||null,lof=live===undefined?undefined:(live&&live.of)||null,lpf=live===undefined?undefined:(live&&live.pf)||null;
   if(ld!==undefined){
     doneSet=new Set(ld&&typeof ld==='object'?Object.entries(ld).filter(([,v])=>v===true).map(([k])=>k):[]);
     cloudDone=new Set(doneSet);
@@ -1398,6 +1848,9 @@ async function applyLive(c){
     pedido=Array.isArray(lp)?lp:(lp&&typeof lp==='object'?Object.values(lp):[]);
     try{localStorage.setItem(LSP,JSON.stringify(pedido))}catch{}
   }
+  if(lenc!==undefined)await syncEnc(c,lenc).catch(()=>{});
+  if(lof!==undefined)await syncOf(c,lof).catch(()=>{});
+  if(lpf!==undefined)await syncPf(c,lpf).catch(()=>{});
   derive();updBadge();
 }
 
@@ -1420,13 +1873,11 @@ async function syncEstoque(c,ei){
 }
 async function loadFromCloud(c){
   busy(true,'Baixando da nuvem…');
+  let cerr='';                                                       // 1º erro de rede/Firebase (antes ficava escondido e o app só abria os dados locais)
+  const gj=p=>cf(cu(c,p)).then(r=>r.json()).catch(e=>{cerr=cerr||e.message;return null});
   try{
-    const [pi,ti,ei]=await Promise.all([
-      cf(cu(c,'plano/info')).then(r=>r.json()).catch(()=>null),
-      cf(cu(c,'trans/info')).then(r=>r.json()).catch(()=>null),
-      cf(cu(c,'estq/info')).then(r=>r.json()).catch(()=>null)
-    ]);
-    if(!pi||!pi.total){busy(false);return false}
+    const [pi,ti,ei]=await Promise.all([gj('plano/info'),gj('trans/info'),gj('estq/info')]);
+    if(!pi||!pi.total){busy(false);if(cerr)toast('⚠ Nuvem: '+cerr);return false}
     await syncEstoque(c,ei);                                         // antes de montar a tela, para o MDV/cobertura já virem certos
     const loc=idb?await idbGet('current').catch(()=>null):null;   // já tem esta versão neste aparelho?
     if(loc&&loc.records&&loc.cloudAt===pi.exportedAt&&(!ti||loc.transAt===ti.exportedAt)){
@@ -1434,11 +1885,8 @@ async function loadFromCloud(c){
       await applyLive(c);derive();renderHome();busy(false);return true;
     }
 
-    const [records,transData]=await Promise.all([
-      cf(cu(c,'plano/records')).then(r=>r.json()).catch(()=>null),
-      ti?cf(cu(c,'trans/data')).then(r=>r.json()).catch(()=>null):Promise.resolve(null)
-    ]);
-    if(!Array.isArray(records)||!records.length){busy(false);return false}
+    const [records,transData]=await Promise.all([gj('plano/records'),ti?gj('trans/data'):Promise.resolve(null)]);
+    if(!Array.isArray(records)||!records.length){busy(false);toast('⚠ Não consegui baixar o planograma'+(cerr?': '+cerr:' (resposta vazia da nuvem)'));return false}
 
     if(ti)transitMeta=ti.meta||{date:ti.date||'',hora:''};            // data REAL do relatório de Trânsito
     const meta=pi.meta||{filial:pi.filial,date:pi.date,hora:''};
@@ -1537,6 +1985,7 @@ $('b-up').onclick=async()=>{
           filial:currentMeta.filial||'',date:currentMeta.date||'',total:allRecords.length,
           meta:currentMeta})}).then(r=>{if(!r.ok)throw Error('Falha ao enviar info')})
     ]);
+    if(encSrc&&encItems.length){encPending=true;await encSaveLocal();pushEnc()}   // Encarte vai junto
     // Envia live/done e live/pedido junto (garante consistência)
     const doneMap={};
     allRecords.forEach(r=>{const k=key(r);if(doneSet.has(k))doneMap[k]=true});
@@ -1599,6 +2048,24 @@ async function boot(){
       $('cob-status').innerHTML=`<b>✓ ${esc(e.name||'estoque')}</b> · ${Object.keys(estoqueMap).length} produtos · salvo em ${esc(e.savedAt||'')}`}
   }catch{}
   try{const t=await idbGet('transitmeta');if(t&&t.meta)transitMeta=t.meta}catch{}
+  try{const en=await idbGet('encarte');                       // restaura o último Encarte carregado (aparece após o planograma abrir)
+    if(en&&en.items&&en.items.length){encItems=en.items;
+      encSrc=en.kind==='xlsx'?{kind:'xlsx',name:en.name,buf:en.buf,hdr:en.hdr}:{...parseEncCSV(en.text||''),name:en.name,text:en.text||''};
+      encCloudAt=en.cloudAt||0;encPending=!!en.pending;encSavedAt=en.savedAt||'';
+      $('enc-title').style.display='';$('enc-title').textContent=`${en.name} · ${encItems.length} itens · salvo em ${en.savedAt||''}`}
+  }catch{}
+  try{for(let w=0;w<7;w++){const o=await idbGet('oferta-d'+w);if(o&&o.items&&o.items.length)ofDays[w]=o}      // restaura as planilhas da semana (1 por dia)
+    if(!ofDays.some(Boolean)){                                    // versão antiga guardava só 1 planilha: vai para o dia da semana em que foi salva
+      const o=await idbGet('oferta'),m=o&&o.items&&o.items.length&&String(o.savedAt||'').match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+      if(m){const d=new Date(+m[3],+m[2]-1,+m[1],12),w=d.getDay();ofDays[w]={...o,id:'oferta-d'+w,w,date:ofISO(d)};idbSave(ofDays[w]).catch(()=>{})}}
+    ofSelOn=ofISO(new Date());ofSelDay=new Date().getDay();ofApplyDay();if(axCur==='dia'&&curTab==='enc'){ofShowMeta();renderOf()}
+  }catch{}
+  try{for(let w=0;w<7;w++){const o=await idbGet('panfleto-d'+w);if(o&&o.text&&o.text.trim())pfDays[w]=o}       // restaura os panfletos da semana (1 por dia)
+    if(!pfDays.some(Boolean)&&pfTxt().trim()){const w=new Date().getDay(),t=new Date();                          // versão antiga guardava só 1 texto: vira o panfleto de hoje
+      pfDays[w]={id:'panfleto-d'+w,w,text:pfTxt(),date:ofISO(t),at:Date.now(),savedAt:t.toLocaleString('pt-BR'),cloudAt:0,pending:false};if(idb)idbSave(pfDays[w]).catch(()=>{})}
+    pfSelOn=ofISO(new Date());pfSelDay=new Date().getDay();const po=pfDays[pfSelDay];if(po&&po.text){$('pf-txt').value=po.text;try{localStorage.setItem(LSPF,po.text)}catch{}}
+    pfDayBar();if(axCur==='pan'&&curTab==='enc')pfOpen();
+  }catch{}
   const c=code();
   if(c){
     // Tenta carregar da nuvem primeiro
