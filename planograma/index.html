@@ -185,7 +185,7 @@ input[type=file],[hidden]{display:none!important}
 .p{display:block}
 .p .hd{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
 .p .hd .nm{flex:1;min-width:0;font-size:15px;padding-top:2px}
-.p .acts{display:flex;gap:8px;flex:none;margin:0}
+.p .acts{display:flex;gap:8px;flex:none;margin:0;align-items:center}.infb{position:relative;flex:none;width:26px;height:26px;padding:0;border-radius:50%;border:1px solid var(--in);background:transparent;color:var(--in);display:inline-flex;align-items:center;justify-content:center;cursor:pointer;-webkit-tap-highlight-color:transparent}.infb::before{content:'';position:absolute;inset:-9px}.infb:active{background:rgba(88,166,255,.18)}
 .st3{display:flex;flex-wrap:wrap}.st3>div{flex:1 1 auto}.st3 b i.sp{display:inline-block;width:2px;height:15px;border-radius:2px;background:var(--mu);opacity:.45;margin:0 8px;vertical-align:-2px}
 .st3>div{background:var(--card2);border-radius:10px;min-width:0}
 .st3 small{display:block;font-size:12px;color:var(--mu);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -200,6 +200,8 @@ input[type=file],[hidden]{display:none!important}
 .row2 .cat-btn{min-height:40px;display:inline-flex;align-items:center;gap:6px}
 #ctl{flex-wrap:wrap;gap:6px}   /* cabe tudo numa linha; se a tela for estreita, quebra */
 .mtg{height:40px}.row2 select{min-height:40px}
+/* controles da busca: ícone/botões/toggle com tamanho próprio e os 2 seletores com largura parecida (nunca esticam demais); se a tela não couber, quebra para a linha de baixo */
+#ctl{justify-content:flex-start;align-items:center}#ctl>*{flex:none}#ctl #flt-btn{width:40px;padding:0;justify-content:center}#ctl select{flex:1 1 84px;min-width:76px;max-width:132px;width:auto;text-overflow:ellipsis}
 #s-prod .sticky{margin-top:0}
 /* leitura: nada abaixo de 12 px; rótulos em minúscula */
 .kpi .l,.sb,.ln,#cnt,.catx,.urg small,.cob small,.badge{font-size:12.5px;letter-spacing:0;text-transform:none}
@@ -259,7 +261,7 @@ h2{font-size:13px;letter-spacing:.01em;text-transform:none;font-weight:700;color
 <section id="s-prod">
  <div class="sticky"><div class="sw"><input class="srch" id="q" placeholder="Buscar: nome, EAN ou código (ex.: omo 1,6)" type="search"><button class="scanb" id="b-scan" aria-label="Ler código de barras"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3"/><path d="M8 9v6M11 9v6M14 9v6M17 9v6" stroke-width="1.6"/></svg></button></div>
   </div>
-  <div class="row2" id="ctl" style="flex-wrap:wrap"><button class="cat-btn" id="flt-btn" type="button"><svg class="ic" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5h18l-7 8v6l-4 2v-8z"/></svg> Filtro</button><button class="cat-btn" id="cat-pick-btn" style="display:none"><svg class="ic" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg> Categoria</button><label class="mtg" title="F/CD = sem falta no CD: esconde produtos com possível falta no CD (estoque menor que 1 caixa)"><span>F/CD</span><input type="checkbox" id="nocd" class="sw-i"><span class="sw-t"></span></label><select id="ent" title="Tipo de entrega" style="flex:none"><option value="">Todos</option><option value="1">Sist. 1</option><option value="10">Sist. 10</option><option value="20">Sist. 20</option><option value="np">Sem plano</option></select><select id="sort" title="Ordenar" style="flex:1 1 90px;min-width:0"><option value="cobt">Cobertura total</option><option value="cob">Cobertura</option><option value="est">Estoque</option><option value="nome">Nome A–Z</option></select></div>
+  <div class="row2" id="ctl" style="flex-wrap:wrap"><button class="cat-btn" id="flt-btn" type="button" aria-label="Filtro"><svg class="ic" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5h18l-7 8v6l-4 2v-8z"/></svg></button><button class="cat-btn" id="cat-pick-btn" style="display:none"><svg class="ic" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg> Categoria</button><label class="mtg" title="F/CD = sem falta no CD: esconde produtos com possível falta no CD (estoque menor que 1 caixa)"><span>F/CD</span><input type="checkbox" id="nocd" class="sw-i"><span class="sw-t"></span></label><select id="ent" title="Tipo de entrega"><option value="">Todos</option><option value="1">Sist. 1</option><option value="10">Sist. 10</option><option value="20">Sist. 20</option><option value="np">Sem plano</option></select><select id="sort" title="Ordenar"><option value="cobt">Cob. T.</option><option value="cob">Cobertura</option><option value="est">Estoque</option><option value="nome">Nome A–Z</option></select></div>
   <div class="row2" style="margin-top:6px"><span id="cnt"></span><span id="catx"></span></div>
 
 <!-- Category picker bottom sheet -->
@@ -814,22 +816,31 @@ let DEP=new Set();function refreshDep(){DEP=new Set(Object.keys(depMap))}
 const FLT_SHORT={dep:'🔎 Depósito'};
 function renderList(reset){if(reset)shown=40;const T=toks(F.q);
  refreshDep();{const fc=CHIPS.find(c=>c[0]===F.chip)||CHIPS[0],fb=$('flt-btn');   // botão "Filtro" mostra o filtro ativo
-  fb.lastChild.textContent=' '+(F.chip==='all'?'Filtro':(FLT_SHORT[F.chip]||fc[1]));fb.classList.toggle('on',F.chip!=='all')}
+  const nm=F.chip==='all'?'Filtro':(FLT_SHORT[F.chip]||fc[1]);fb.title=nm;fb.setAttribute('aria-label','Filtro: '+nm);fb.classList.toggle('on',F.chip!=='all')}   // só o ícone; o nome do filtro ativo fica no title/aria-label
  $('sort').value=F.sort;$('ent').value=F.ent||'';$('nocd').checked=noCD;$('catx').innerHTML=F.cat?`<span class="catx" data-x="1">✕ ${esc(short(F.cat))}</span>`:'';
  $('cat-pick-btn').style.display=allRecords.length?'':'none';
  $('cat-pick-btn').classList.toggle('on',!!F.cat);
- const base=r=>catOk(r)&&entOk(r)&&passesChip(r);
+ const fAct=F.chip!=='all'||!!F.cat||!!F.ent||noCD;   // algum filtro ligado?
+ const base=T.length?(()=>true):r=>catOk(r)&&entOk(r)&&passesChip(r);   // BUSCANDO: os filtros (chip, categoria, sistemática, F/CD) não escondem nada
  let rel=false;
  list=allRecords.filter(r=>base(r)&&(!T.length||(r._s=score(r,T))>0));
  if(T.length>1&&!list.length){rel=true;list=allRecords.filter(r=>base(r)&&(r._s=score(r,T,true))>0)}   // nada tem TODAS as palavras → mostra os que têm parte
  const S={cobt:(a,b)=>Math.max(a._ct??1e9,0)-Math.max(b._ct??1e9,0)||(b._m||0)-(a._m||0),   /* cobertura total (estoque + trânsito) ÷ MDV; sem MDV vai pro fim */
   cob:(a,b)=>Math.max(a._c??1e9,0)-Math.max(b._c??1e9,0)||(b._m||0)-(a._m||0),   /* cobertura mín. 0; empate → quem mais vende primeiro */
   est:(a,b)=>a._e-b._e,nome:(a,b)=>a.descricao.localeCompare(b.descricao)};
- list.sort(T.length?(a,b)=>b._s-a._s||S[F.sort](a,b):S[F.sort]);$('cnt').textContent=f0(list.length)+(rel?' itens parciais — nenhum tem todas as palavras':' itens')+(noCD?' · ocultando '+f0(allRecords.filter(r=>cdRisk(r)&&catOk(r)&&entOk(r)&&passesChip(r,F.chip,true)&&(!T.length||score(r,T,rel)>0)).length)+' (falta no CD)':'');
- const hid=!list.length&&T.length?allRecords.filter(r=>score(r,T)>0||score(r,T,true)>0).length:0;   // existe, mas algum filtro (chip, F/CD, categoria, sistemática) esconde
- $('list').innerHTML=list.length?list.slice(0,shown).map(card).join(''):hid?`<div class="empty">Nenhum produto encontrado com os filtros atuais<br><button class="btn o" id="clr-flt" type="button" style="margin:10px auto 0">Mostrar ${f0(hid)} sem filtros</button></div>`:'<div class="empty">Nenhum produto encontrado</div>'}
-$('list').addEventListener('click',e=>{if(!e.target.closest('#clr-flt'))return;F={...F,chip:'all',cat:'',ent:''};noCD=false;try{localStorage.setItem('planograma_nocd','0')}catch{};renderList(true)});
+ list.sort(T.length?(a,b)=>b._s-a._s||S[F.sort](a,b):S[F.sort]);$('cnt').textContent=f0(list.length)+(rel?' itens parciais — nenhum tem todas as palavras':' itens')+(T.length?(fAct?' · busca ignora os filtros':''):noCD?' · ocultando '+f0(allRecords.filter(r=>cdRisk(r)&&catOk(r)&&entOk(r)&&passesChip(r,F.chip,true)).length)+' (falta no CD)':'');
+ $('list').innerHTML=list.length?list.slice(0,shown).map(card).join(''):'<div class="empty">Nenhum produto encontrado</div>'}
+/* escolheu (abriu) um item achado na busca que algum filtro esconderia → desmarca só esse(s) filtro(s), para ele não sumir da lista depois */
+function relaxFiltersFor(r){
+  const off=[];
+  if(!catOk(r)){F.cat='';off.push('categoria')}
+  if(!entOk(r)){F.ent='';off.push('sistemática')}
+  if(!passesChip(r,F.chip,true)){off.push(FLT_SHORT[F.chip]||(CHIPS.find(c=>c[0]===F.chip)||[])[1]||'filtro');F.chip='all'}
+  if(noCD&&cdRisk(r)&&F.chip!=='cd'&&F.chip!=='dep'){noCD=false;try{localStorage.setItem('planograma_nocd','0')}catch{};off.push('F/CD')}
+  if(!off.length)return;
+  renderList();toast('Filtro desmarcado: '+off.join(', '))}
 /* corpo do cartão — o MESMO nas abas Produtos e Pedido. números em largura total */
+const INFOBTN='<button type="button" class="infb" aria-label="Mais informações" title="Mais informações"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round"><path d="M12 11v6M12 7v.01"/></svg></button>';   // só ele abre a ficha do produto (o card inteiro não abre mais)
 const PEDBADGE='<span class="ent ped" title="No pedido"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px"><circle cx="9" cy="20" r="1.4"/><circle cx="18" cy="20" r="1.4"/><path d="M2 3h3l2.6 12.4a1 1 0 0 0 .98.8h9.2a1 1 0 0 0 .98-.8L21 7H6"/></svg></span>';   // selo 🛒 ao lado do selo CD: o item já está no pedido
 function cardBody(r,acts,extra,noPed){
   const c=r._c===null?'—':(r._c>999?'+999':f1(Math.max(r._c,0))),ctt=transitLoaded&&r._ct!==null,kt=!ctt?'nd':r._ct<7?'crit':r._ct<15?'aten':'ok';   // cor da cobertura total: mesmas faixas da situação (<7 crítico · <15 atenção · senão saudável)
@@ -837,7 +848,7 @@ function cardBody(r,acts,extra,noPed){
   const ebx=num(r.emb)||1,nbx=r._e,qbx=ebx>1&&nbx>=0?Math.floor(nbx/ebx):null,ubx=qbx===null?0:nbx-qbx*ebx,lowbx=qbx===0&&nbx>0;
   const cxOf=(n,red)=>{const q=ebx>1&&n>=0?Math.floor(n/ebx):null,u=q===null?0:n-q*ebx,low=red&&q===0&&n>0;return q===null?'—':`<span${low?' style="color:var(--cr)"':''}>${low?'&lt; 1':f0(q)}<i>cx</i>${q>0&&u?`<wbr><i class="rem">+${f0(u)} un</i>`:''}</span>`};
   const sep='<i class="sp"></i>';
-  return `<div class="hd"><div class="nm">${esc(r.descricao)}</div><div class="acts">${acts}</div></div>
+  return `<div class="hd"><div class="nm">${esc(r.descricao)}</div><div class="acts">${acts}${INFOBTN}</div></div>
  <div class="sb">${r.produto} · ${r._np?'Fora do planograma':p40(r)+' · '+esc(r.emb||'')}${r._sist?` <span class="ent e${r._sist}">${esc(ENT[r._sist]||'Sist. '+r._sist)}</span>`:''}${!noPed&&inPed(r.produto)?' '+PEDBADGE:''}</div>
  ${r._e<0?`<div class="sg cdx">${ic('warn',14)} ${r._t>0?'Estoque negativo · já em trânsito, aguardando chegada':isCD(r)?'Estoque negativo · provável falta no CD':'Estoque negativo · falta pedir o item'}</div>`:''}
  <div class="st3">
@@ -1025,8 +1036,8 @@ $('cat-list').onclick=e=>{
     renderList(true);closeCat();
   }
 };
-$('list').onclick=e=>{if(Date.now()<swBlock)return;const c=e.target.closest('.p');if(!c)return;const r=byProd.get(c.dataset.p);
-openSheet(r)};
+$('list').onclick=e=>{if(Date.now()<swBlock)return;if(!e.target.closest('.infb'))return;const c=e.target.closest('.p');if(!c)return;const r=byProd.get(c.dataset.p);
+if(r&&toks(F.q).length)relaxFiltersFor(r);openSheet(r)};
 new IntersectionObserver(es=>{if(es[0].isIntersecting&&$('s-prod').classList.contains('on')&&shown<list.length){shown+=40;$('list').insertAdjacentHTML('beforeend',list.slice(shown-40,shown).map(card).join(''))}}).observe($('more'));
 
 /* PEDIDO (lembrete: fazer o pedido amanhã entre 9h e 10h) */
@@ -1101,7 +1112,7 @@ function renderEnc(){
     :`<div class="p" style="--c:var(--mu);opacity:.6"><div class="hd"><div class="nm">${esc(it.nome||'—')}</div></div><div class="sb">EAN ${esc(it.ean)} · Host ${esc(it.host)} · não encontrado no planograma</div></div>`).join('');
 }
 $('enc-sort').onchange=e=>{encSort=e.target.value;renderEnc()};
-$('enc-list').onclick=e=>{if(Date.now()<swBlock)return;const c=e.target.closest('.p');if(c)openSheet(byProd.get(c.dataset.p))};
+$('enc-list').onclick=e=>{if(Date.now()<swBlock)return;if(!e.target.closest('.infb'))return;const c=e.target.closest('.p');if(c)openSheet(byProd.get(c.dataset.p))};
 
 /* ═══ EXPORTAR ENCARTE .xlsx COM A FORMATAÇÃO ORIGINAL ═══
    Em vez de regravar a planilha (o SheetJS perde fontes, bordas e larguras), edita o .xlsx original por dentro (zip + XML):
@@ -1217,7 +1228,7 @@ function pfMatch(q,top){
   res.sort((a,b)=>b[0]-a[0]||b[1]._e-a[1]._e);
   return res.slice(0,top).map(x=>x[1])}
 let axLay='card';try{localStorage.removeItem('planograma_axlay')}catch{}   // layout fixo em Card (o seletor Resumo/Card foi removido)
-const pfRowHtml=r=>{if(axLay==='card'){const dp=DEP.has(r.produto);return `<div class="p pfc${dp?' dep':''}" data-p="${esc(r.produto)}" style="--c:${COLOR[r._k]}">${cardBody(r,dp?'<span class="depi" title="Procurar no depósito">🔎</span>':'')}</div>`}
+const pfRowHtml=r=>{if(axLay==='card'){const dp=DEP.has(r.produto);return swrap(`<div class="p pfc${r._d?' done':''}${dp?' dep':''}" data-p="${esc(r.produto)}" style="--c:${COLOR[r._k]}">${cardBody(r,dp?'<span class="depi" title="Procurar no depósito">🔎</span>':'')}</div>`,r._d,'add',inPed(r.produto)?'Já no pedido':'Pedido','🛒')}
   const c=r._c===null?'—':(r._c>999?'+999':f1(Math.max(r._c,0))),dp=DEP.has(r.produto);
     return `<div class="pfr${dp?' dep':''}" data-p="${esc(r.produto)}" style="--c:${COLOR[r._k]}"><div class="pn">${esc(r.descricao)}${dp?' <span class="depi">🔎</span>':''}</div><div class="pm"><span>Estoque <b>${f0(r._e)}</b></span><span>Cob. <b>${c}</b>${r._c!==null?' d':''}</span>${transitLoaded&&r._t>0?`<span>Trânsito <b>${f0(r._t)}</b></span>`:''}<span class="pk">${GLY[r._k]} ${SLBL[r._k]}</span></div></div>`};
 function renderPf(){
@@ -1265,7 +1276,7 @@ $('pf-txt').oninput=debounce(()=>{try{localStorage.setItem(LSPF,$('pf-txt').valu
 function pfSearch(q){F.q=q;F.chip='all';F.cat='';$('q').value=q;go('prod')}   // abre Produtos já pesquisando o texto do panfleto
 $('pf-list').onclick=e=>{if(Date.now()<swBlock)return;
   const h=e.target.closest('.pfh,.pfn');if(h&&h.dataset.q){pfSearch(h.dataset.q);return}
-  const c=e.target.closest('.pfr,.pfc');if(c){const r=byProd.get(c.dataset.p);if(r)openSheet(r)}};
+  if(Date.now()<swBlock)return;const c=e.target.closest('.pfr,.pfc');if(c&&(c.classList.contains('pfr')||e.target.closest('.infb'))){const r=byProd.get(c.dataset.p);if(r)openSheet(r)}};
 try{$('pf-txt').value=localStorage.getItem(LSPF)||''}catch{}
 
 /* ══ ⭐ OFERTA DO DIA: planilha de ofertas × planograma ══
@@ -1432,7 +1443,7 @@ $('of-sort').onchange=e=>{ofSortV=e.target.value;renderOf()};
 $('of-list').addEventListener('toggle',e=>{if(e.target.id==='ofnm')ofNmOpen=e.target.open;if(e.target.id==='ofped')ofPedOpen=e.target.open},true);
 $('of-list').onclick=e=>{if(Date.now()<swBlock)return;
   const h=e.target.closest('.pfh,.pfn');if(h&&h.dataset.q){pfSearch(h.dataset.q);return}
-  const c=e.target.closest('.pfr,.pfc');if(c){const r=byProd.get(c.dataset.p);if(r)openSheet(r)}};
+  if(Date.now()<swBlock)return;const c=e.target.closest('.pfr,.pfc');if(c&&(c.classList.contains('pfr')||e.target.closest('.infb'))){const r=byProd.get(c.dataset.p);if(r)openSheet(r)}};
 
 /* 🧾 PANFLETO por dia da semana (mesmo esquema da Oferta do dia): 7 slots + nuvem (pf/d0…d6 + aviso em live/pf) */
 let pfDays=[null,null,null,null,null,null,null],pfSelDay=new Date().getDay(),pfSelOn=ofISO(new Date()),pfAskCb=null;
@@ -1695,26 +1706,29 @@ bindSwipe($('list'),'.p',s=>{
   swReset(s,true);const r=byProd.get(s.c.dataset.p);if(!r)return;
   if(s.dx>0)return toggleDone(r,s.c);                                    // → concluir / reabrir
   swAddPed(r,s)});                                                       // ← adiciona ao pedido
-bindSwipe($('enc-list'),'.p',s=>{swReset(s,true);const r=byProd.get(s.c.dataset.p);if(r&&s.dx<0)swAddPed(r,s)});   // Encarte: só ← adiciona ao pedido
-/* segurar o cartão ~0,45 s liga/desliga 🔎 (Produtos e Pedido). Android manda "contextmenu" ao segurar; iOS só o timer — por isso os dois */
+bindSwipe($('enc-list'),'.p',s=>{swReset(s,true);const r=byProd.get(s.c.dataset.p);if(r&&s.dx<0)swAddPed(r,s)});
+const swProd=s=>{swReset(s,true);const r=byProd.get(s.c.dataset.p);if(!r)return;if(s.dx>0)return toggleDone(r,s.c);swAddPed(r,s)};   // Panfleto e Oferta do dia: igual à lista de Produtos
+bindSwipe($('pf-list'),'.pfc',swProd);bindSwipe($('of-list'),'.pfc',swProd);   // Encarte: só ← adiciona ao pedido
+/* segurar o cartão ~0,8 s (LP_MS) liga/desliga 🔎 (Produtos e Pedido). Android manda "contextmenu" ao segurar; iOS só o timer — por isso os dois */
+const LP_MS=800;   // tempo segurando o cartão para marcar 🔎 Procurar no depósito
 function bindLP(host,sel){
-  let T=null,V=null,p0=null,C=null,At=0;
+  let T=null,V=null,p0=null,C=null,At=0,t0=0;
   const cancel=()=>{clearTimeout(T);clearTimeout(V);T=V=null;p0=null;if(C){C.classList.remove('lpress');C=null}};
   const fire=p=>{if(Date.now()-At<900)return;At=Date.now();swBlock=Date.now()+700;toggleDep(p)};   // evita disparar 2× (timer + menu)
   host.addEventListener('touchstart',e=>{cancel();const c=e.target.closest(sel);if(!c||e.touches.length!==1)return;
-    p0={x:e.touches[0].clientX,y:e.touches[0].clientY};C=c;
-    V=setTimeout(()=>{if(C)C.classList.add('lpress')},150);                       // o card "acende" enquanto segura
-    T=setTimeout(()=>{T=null;fire(c.dataset.p)},450)},{passive:true});
+    p0={x:e.touches[0].clientX,y:e.touches[0].clientY};C=c;t0=Date.now();
+    V=setTimeout(()=>{if(C)C.classList.add('lpress')},LP_MS*.45);                       // o card "acende" enquanto segura
+    T=setTimeout(()=>{T=null;fire(c.dataset.p)},LP_MS)},{passive:true});
   host.addEventListener('touchmove',e=>{if(!p0)return;const t=e.touches[0];if(Math.abs(t.clientX-p0.x)>10||Math.abs(t.clientY-p0.y)>10)cancel()},{passive:true});   // deslizar/rolar cancela
   host.addEventListener('touchend',cancel,{passive:true});                       // (touchcancel não cancela: o Android manda ao abrir o menu)
-  host.addEventListener('contextmenu',e=>{const c=e.target.closest(sel);if(!c)return;e.preventDefault();if(p0)fire(c.dataset.p)});
+  host.addEventListener('contextmenu',e=>{const c=e.target.closest(sel);if(!c)return;e.preventDefault();if(p0&&Date.now()-t0>=LP_MS-40)fire(c.dataset.p)});
 }
 bindLP($('plist'),'.pedc,.pi');bindLP($('list'),'.p');bindLP($('pf-list'),'.pfr,.pfc');bindLP($('of-list'),'.pfr,.pfc');
 $('plist').onclick=e=>{if(Date.now()<swBlock)return;
   if(e.target.closest('#pc-dep')){depOnly=!depOnly;renderPed();return}
   if(e.target.closest('#pe-sug')){const f=allRecords.filter(r=>r._sg>0&&!r._d&&!inPed(r.produto));if(!f.length)return toast('Nenhuma sugestão no momento');f.forEach(r=>addPed(r,'',true));savePed();renderPed();return toast(f0(f.length)+' produtos adicionados')}
   if(e.target.closest('#pe-scan'))return $('b-scan2').click();
-const c=e.target.closest('.pedc,.pi');if(!c)return;openSheet(byProd.get(c.dataset.p))};
+const c=e.target.closest('.pedc,.pi');if(!c||(c.classList.contains('pedc')&&!e.target.closest('.infb')))return;openSheet(byProd.get(c.dataset.p))};
 $('pq').oninput=debounce(e=>{const T=toks(e.target.value);if(!T.length||T.join('').length<2){$('pres').innerHTML='';return}
  let m=allRecords.filter(r=>!inPed(r.produto)&&(r._s=score(r,T))>0);
  if(!m.length&&T.length>1)m=allRecords.filter(r=>!inPed(r.produto)&&(r._s=score(r,T,true))>0);
