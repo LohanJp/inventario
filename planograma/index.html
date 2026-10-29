@@ -14,7 +14,7 @@
 *{box-sizing:border-box;margin:0;-webkit-tap-highlight-color:transparent}
 html,body{background:var(--bg);color:var(--tx);font:15px/1.4 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;overflow-x:hidden}
 .num{font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
-main{max-width:560px;margin:0 auto;padding:14px 14px calc(var(--nav) + 28px + env(safe-area-inset-bottom))}
+main{max-width:560px;margin:0 auto;padding:14px 8px calc(var(--nav) + 28px + env(safe-area-inset-bottom))}
 section{display:none}section.on{display:block}
 .card{background:var(--card);border:1px solid var(--bd);border-radius:16px;padding:14px}
 .hero{border:1px solid var(--bd)}
@@ -99,11 +99,6 @@ section{display:none}section.on{display:block}
 .sw-i:focus-visible+.sw-t{outline:2px solid var(--am);outline-offset:2px}
 .cdx{color:var(--cr)!important;background:var(--cr-bg)!important}.sg.okk{color:var(--ok);background:var(--card2)}.lnk{background:none;border:0;color:var(--am);font:600 12px system-ui;padding:0;text-decoration:underline}
 .sg{color:var(--am);background:var(--am-bg)}.btn[disabled]{opacity:.45}
-.prevc{display:flex;gap:14px;align-items:center;width:100%;text-align:left;background:var(--card);border:1px solid var(--bd);border-left:4px solid var(--in);border-radius:16px;padding:14px;color:var(--tx);font:inherit;cursor:pointer}
-.prevc .n{font-size:30px;font-weight:800;color:var(--in);line-height:1;min-width:64px;text-align:center}
-.prevc .t{flex:1;min-width:0}.prevc .t b{font-size:14px}.prevc .t small{display:block;color:var(--mu);font-size:11.5px;margin-top:3px}
-.prevc .pc{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}.prevc .pc span{background:var(--card2);border-radius:8px;padding:3px 8px;font-size:11.5px;color:var(--mu)}.prevc .pc b{color:var(--tx);font-size:11.5px}
-.prevc .go{color:var(--mu);font-size:24px}
 .pedc.done .nm{text-decoration:line-through}
 .pedc,#list .p{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
 /* Anexos: menu flutuante */
@@ -123,9 +118,9 @@ section{display:none}section.on{display:block}
 .ofdays button.tdy{border-color:var(--am)}
 .ofdays button.on{background:var(--am-bg);color:var(--am);border-color:var(--am)}
 /* Switch de layout (Panfleto / Oferta do dia) */
-.laysw{display:inline-flex;background:var(--card2);border:1px solid var(--bd);border-radius:10px;padding:2px;gap:2px;margin:2px 0 8px}
-.laysw button{background:none;border:0;color:var(--mu);font:600 12.5px system-ui,-apple-system,Roboto,sans-serif;padding:7px 12px;border-radius:8px;min-height:34px;cursor:pointer}
-.laysw button.on{background:var(--card);color:var(--am);box-shadow:0 0 0 1px var(--bd)}
+.laysw,.cssw{display:inline-flex;background:var(--card2);border:1px solid var(--bd);border-radius:10px;padding:2px;gap:2px;margin:2px 0 8px}
+.laysw button,.cssw button{background:none;border:0;color:var(--mu);font:600 12.5px system-ui,-apple-system,Roboto,sans-serif;padding:7px 12px;border-radius:8px;min-height:34px;cursor:pointer}
+.laysw button.on,.cssw button.on{background:var(--card);color:var(--am);box-shadow:0 0 0 1px var(--bd)}
 .pfc{cursor:pointer;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
 /* Panfleto */
 .pf-ta{width:100%;box-sizing:border-box;background:var(--card);color:var(--tx);border:1px solid var(--bd);border-radius:12px;padding:10px 12px;font:14px/1.4 system-ui,sans-serif;resize:vertical}
@@ -191,13 +186,13 @@ input[type=file],[hidden]{display:none!important}
 .p .hd{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
 .p .hd .nm{flex:1;min-width:0;font-size:15px;padding-top:2px}
 .p .acts{display:flex;gap:8px;flex:none;margin:0}
-.st3{display:grid;grid-template-columns:repeat(3,1fr)}
+.st3{display:flex;flex-wrap:wrap}.st3>div{flex:1 1 auto}.st3 b i.sp{display:inline-block;width:2px;height:15px;border-radius:2px;background:var(--mu);opacity:.45;margin:0 8px;vertical-align:-2px}
 .st3>div{background:var(--card2);border-radius:10px;min-width:0}
 .st3 small{display:block;font-size:12px;color:var(--mu);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .st3 b{display:block;line-height:1.15}
 .st3 b i{font-style:normal;font-size:12px;font-weight:500;color:var(--mu);margin-left:3px}
 .st3 b i{white-space:nowrap}.st3 b i.rem{font:600 11px system-ui,-apple-system,Roboto,sans-serif;color:var(--am);margin-left:5px}
-.st3 .cv{background:transparent;border:1.5px solid var(--c)}.st3 .cv small{color:var(--c);font-weight:600}.st3 .cv b{color:var(--c)}
+.st3 .ct small,.st3 .ct b{color:var(--c)}.st3 .ct small{font-weight:600}.st3 .cv{background:transparent;border:1.5px solid var(--c)}.st3 .cv small{color:var(--c);font-weight:600}.st3 .cv b{color:var(--c)}
 .p .sb{font-size:12.5px}
 .sg{display:flex;align-items:center;gap:6px;font-size:12.5px;border-radius:10px}
 /* topo enxuto e alvos de toque ≥ 40–44 px */
@@ -207,7 +202,7 @@ input[type=file],[hidden]{display:none!important}
 .mtg{height:40px}.row2 select{min-height:40px}
 #s-prod .sticky{margin-top:0}
 /* leitura: nada abaixo de 12 px; rótulos em minúscula */
-.kpi .l,.sb,.ln,.prevc .t small,.prevc .pc span,.prevc .pc b,#cnt,.catx,.urg small,.cob small,.badge{font-size:12.5px;letter-spacing:0;text-transform:none}
+.kpi .l,.sb,.ln,#cnt,.catx,.urg small,.cob small,.badge{font-size:12.5px;letter-spacing:0;text-transform:none}
 nav button{font-size:12px}
 
 /* faixa de idade dos dados + engrenagem */
@@ -224,10 +219,10 @@ h2{font-size:13px;letter-spacing:.01em;text-transform:none;font-weight:700;color
 #toast.act{pointer-events:auto}.tu{margin-left:10px;background:none;border:0;color:var(--am);font:700 13.5px system-ui;min-height:36px;padding:0 6px}
 .seg{display:flex;background:var(--card2);border:1px solid var(--bd);border-radius:12px;padding:3px;gap:3px}.seg button{flex:1;min-height:40px;border:0;border-radius:9px;background:none;color:var(--mu);font:600 13.5px system-ui}.seg button.on{background:var(--am);color:#000}
 /* cartão ainda mais compacto */
-.p{padding:10px 12px}.st3{gap:5px;margin-top:8px}.st3>div{padding:6px 9px}.st3 small{margin-bottom:1px}.st3 b{font-size:16px}.p .sb{margin-top:2px}.sg{padding:4px 9px;margin-top:6px}
+.p{padding:9px 8px 9px 9px}.st3{gap:4px;margin-top:6px}.st3>div{padding:4px 8px}.st3 small{margin-bottom:0;font-size:11.5px;line-height:1.2}.st3 b{font-size:15.5px}.st3 .cv{padding:3px 8px}.p .sb{margin-top:2px}.sg{padding:4px 9px;margin-top:6px}
 /* ajustes finais de toque/leitura */
 .lnk{min-height:36px;padding:6px 8px;margin:-6px -2px;font-size:13px}
-.urg small,.cob small,.urg .d small,.prevc .t small,.ln small{font-size:12.5px}
+.urg small,.cob small,.urg .d small,.ln small{font-size:12.5px}
 #sug .cob small{font-size:12px}
 
 /* pedido: grupo "Aguardando trânsito" (dropdown) */
@@ -248,6 +243,8 @@ h2{font-size:13px;letter-spacing:.01em;text-transform:none;font-weight:700;color
 .swg.del,.swg.add{right:0;justify-content:flex-end}.swg.del{background:var(--cr)}.swg.add{background:var(--am);color:#000}.swg.del>b,.swg.add>b{margin-right:18px}
 .swg b{font-size:20px;line-height:1;transition:transform .15s}
 .swr.armed .swg b{transform:scale(1.3)}
+.ent{display:inline-block;font:700 10.5px/1.5 system-ui;padding:0 7px;border-radius:10px;border:1px solid currentColor;margin-left:4px;vertical-align:1px;white-space:nowrap}
+.ent.ped{color:var(--am)}.ent.e1{color:var(--in)}.ent.e20{color:#b392f0}.ent.e10{color:#39c5bb}.kv .ent{margin-left:0}
 </style></head><body>
 <main>
 <div id="fresh"><span id="fresh-t">Nenhum relatório carregado</span><button id="fresh-gear" aria-label="Dados e configurações"><svg class="ic" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/></svg></button></div>
@@ -256,14 +253,13 @@ h2{font-size:13px;letter-spacing:.01em;text-transform:none;font-weight:700;color
  <div class="hero"><div class="t" id="h-fil">Sem dados</div><div class="s" id="h-sub">Abra a aba Dados para carregar o relatório</div></div>
  <h2>Situação dos produtos</h2><div class="kpis" id="kpis"></div>
  <h2>Sugestão de pedido</h2><div class="card" id="sug" style="padding:2px 4px"></div>
- <h2>Previsão de planograma</h2><div id="prev"></div>
- <h2>Categorias com mais alertas</h2><div class="card" id="cats"></div>
+ <h2>Categorias com mais alertas</h2><div class="card"><div class="cssw" id="cats-sw" role="group" aria-label="Sistemática"><button type="button" data-cs="1">Sist. 1</button><button type="button" data-cs="10">Sist. 10</button><button type="button" data-cs="20">Sist. 20</button></div><div id="cats"></div></div>
 </section>
 
 <section id="s-prod">
  <div class="sticky"><div class="sw"><input class="srch" id="q" placeholder="Buscar: nome, EAN ou código (ex.: omo 1,6)" type="search"><button class="scanb" id="b-scan" aria-label="Ler código de barras"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3"/><path d="M8 9v6M11 9v6M14 9v6M17 9v6" stroke-width="1.6"/></svg></button></div>
   </div>
-  <div class="row2" id="ctl"><button class="cat-btn" id="flt-btn" type="button"><svg class="ic" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5h18l-7 8v6l-4 2v-8z"/></svg> Filtro</button><button class="cat-btn" id="cat-pick-btn" style="display:none"><svg class="ic" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg> Categoria</button><label class="mtg" title="F/CD = sem falta no CD: esconde produtos com possível falta no CD (estoque menor que 1 caixa)"><span>F/CD</span><input type="checkbox" id="nocd" class="sw-i"><span class="sw-t"></span></label><select id="sort" style="flex:1 1 72px;min-width:0"><option value="cob">Cobertura</option><option value="est">Estoque</option><option value="nome">Nome A–Z</option></select></div>
+  <div class="row2" id="ctl" style="flex-wrap:wrap"><button class="cat-btn" id="flt-btn" type="button"><svg class="ic" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5h18l-7 8v6l-4 2v-8z"/></svg> Filtro</button><button class="cat-btn" id="cat-pick-btn" style="display:none"><svg class="ic" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg> Categoria</button><label class="mtg" title="F/CD = sem falta no CD: esconde produtos com possível falta no CD (estoque menor que 1 caixa)"><span>F/CD</span><input type="checkbox" id="nocd" class="sw-i"><span class="sw-t"></span></label><select id="ent" title="Tipo de entrega" style="flex:none"><option value="">Todos</option><option value="1">Sist. 1</option><option value="10">Sist. 10</option><option value="20">Sist. 20</option><option value="np">Sem plano</option></select><select id="sort" title="Ordenar" style="flex:1 1 90px;min-width:0"><option value="cobt">Cobertura total</option><option value="cob">Cobertura</option><option value="est">Estoque</option><option value="nome">Nome A–Z</option></select></div>
   <div class="row2" style="margin-top:6px"><span id="cnt"></span><span id="catx"></span></div>
 
 <!-- Category picker bottom sheet -->
@@ -342,7 +338,6 @@ h2{font-size:13px;letter-spacing:.01em;text-transform:none;font-weight:700;color
     <div class="ofdays" id="pf-days"></div>
     <textarea class="pf-ta" id="pf-txt" rows="6" autocapitalize="off" spellcheck="false" placeholder="Ex.:&#10;Arroz Urbano 5kg Parboilizado · 18,90&#10;Feijão Caldo Bom 1kg Preto · 5,99"></textarea>
     <div style="display:flex;gap:8px;margin:10px 0"><button class="btn" id="pf-go" style="margin:0;flex:1">Buscar no app</button><button class="btn o" id="pf-paste" style="margin:0">📋 Colar</button><button class="btn o" id="pf-clear" style="margin:0">Limpar</button></div>
-    <div class="laysw" role="group" aria-label="Layout da lista"><button type="button" data-lay="bar">☰ Resumo</button><button type="button" data-lay="card">▦ Card</button></div>
     <div id="pf-meta" style="font-size:12px;color:var(--mu);margin:0 0 6px"></div>
     <div id="pf-sum" style="font-size:12.5px;color:var(--mu);margin:0 0 4px"></div>
     <div id="pf-list"></div>
@@ -370,7 +365,6 @@ h2{font-size:13px;letter-spacing:.01em;text-transform:none;font-weight:700;color
     <div id="of-warn" style="font-size:12.5px;color:var(--am);margin:0 0 6px;display:none"></div>
     <button class="lnk" id="of-del" type="button" style="display:none;margin:0 0 8px">🗑 Limpar a planilha deste dia</button>
     <div class="row2" id="of-sortbar" style="display:none;margin:6px 0 8px"><span>Ordenar por</span><select id="of-sort" style="margin-left:auto"><option value="arq">Ordem da planilha</option><option value="sev">Situação (pior primeiro)</option></select></div>
-    <div class="laysw" role="group" aria-label="Layout da lista"><button type="button" data-lay="bar">☰ Resumo</button><button type="button" data-lay="card">▦ Card</button></div>
     <div id="of-sum" style="font-size:12.5px;color:var(--mu);margin:0 0 4px"></div>
     <div id="of-list"></div>
   </div>
@@ -397,7 +391,6 @@ let parseWarn={realign:0,skip:0};
 const warnTxt=()=>(parseWarn.realign||parseWarn.skip)?` · ⚠ ${parseWarn.realign?parseWarn.realign+' linha(s) realinhada(s)':''}${parseWarn.realign&&parseWarn.skip?', ':''}${parseWarn.skip?parseWarn.skip+' ignorada(s)':''}`:'';
 /* ícones desenhados (mesmo traço da barra de baixo) e símbolos de situação: cor + FORMA, para não depender só do vermelho/verde */
 const IC={ bulb:'<path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0 0 12 3z"/>',
- spark:'<path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8zM19 16l.7 2 2 .7-2 .7-.7 2-.7-2-2-.7 2-.7z"/>',
  warn:'<path d="M12 3l10 18H2z"/><path d="M12 10v5M12 18v.5"/>',
  box:'<path d="M3 7l9-4 9 4v10l-9 4-9-4z"/><path d="M3 7l9 4 9-4M12 11v10"/>',
  folder:'<path d="M3 6a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>',
@@ -452,9 +445,12 @@ function parseEstoqueFile(text) {
   estoqueMeta = metaOf(text);
   const RE_DATA = /^[A-Z] \d{8}/;
   const map = {};
+  let cat = '';                                        // categoria vem da linha "Mercadologico: 01.001.010 - A->B->C"
   parseWarn = {realign:0, skip:0};
   for (const line of text.split(/\n/)) {
     const l = line.replace(/\r$/, '');
+    const mm = /^\s+Mercadologico:\s*[\d.]+\s*-\s*(.+?)\s*$/.exec(l);
+    if (mm) { cat = mm[1]; continue; }
     if (!RE_DATA.test(l)) continue;
     const d = findShift(l, ES_NUM);                    // linha deslocada? realinha ou ignora
     if (d === null) { parseWarn.skip++; continue; }
@@ -469,6 +465,13 @@ function parseEstoqueFile(text) {
       cob:    parse(99, 106),
       cl:     l.substring(107 + d, 109 + d).trim(),
       vda12:  parse(110, 124),
+      sist:   l.substring(68 + d, 72 + d).trim().replace(/^0+(?=\d)/, ''),   // tipo de entrega: 1 CD · 10 forn. via CD · 20 fornecedor
+      d:      l.substring(11 + d, 46 + d).trim(),                              // descrição (p/ itens que não estão no planograma)
+      r:      l.substring(47 + d, 62 + d).trim(),
+      f:      l.substring(167 + d, 193 + d).trim(),
+      c:      cat,
+      ue:     l.substring(194 + d, 202 + d).trim(),                            // última entrada (dd/mm/aa)
+      uv:     l.substring(214 + d, 222 + d).trim(),                            // última venda (dd/mm/aa)
     };
   }
   return map;
@@ -614,7 +617,7 @@ function parseFile(text) {
   }
   return { records, meta:{ date:metaDate, filial:metaFilial, hora:metaHora } };
 }
-let allRecords=[];
+let allRecords=[],planoRecs=[];   // planoRecs = só o que veio do planograma · allRecords = planograma + itens só da Cobertura
 function downloadBlob(blob, filename) {
   const url = URL.createObjectURL(blob);
   const a   = document.createElement('a');
@@ -666,7 +669,7 @@ let byProd=new Map();
    ordem livre ("1,6 omo" = "omo 1,6"), sem acento, maiúsc./minúsc. iguais e vírgula = ponto (1,6 = 1.6).
    Resultados com palavra no INÍCIO de uma palavra do nome ("omo" em "OMO LIMPEZA") sobem na lista. */
 const norm=s=>String(s??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/,/g,'.');
-const toks=q=>norm(q).split(/[\s*+\/-]+/).filter(Boolean);
+const toks=q=>norm(q).split(/[\s*+\/-]+/).filter(Boolean).map(t=>/^\d+$/.test(t)?t.replace(/^0+(?=\d)/,''):t);   // código digitado: ignora zeros à esquerda
 const NUM=/^[\d.]+$/,AN=/[a-z0-9]/;
 function score(r,T,rel){const h=r._h;let sc=0;
   for(const t of T){const wt=NUM.test(t)?1:3;let w=0,i=h.indexOf(t);                 // número pesa menos que palavra
@@ -676,46 +679,53 @@ function score(r,T,rel){const h=r._h;let sc=0;
       while(j>=0){if((j===0||!AN.test(h[j-1]))&&!AN.test(h[j+k]||' ')){w=1;break}j=h.indexOf(q,j+1)}}
     if(w)sc+=wt*w;else if(!rel)return 0}                                              // modo parcial (rel) aceita palavras faltando
   return sc}
-let currentMeta={},savedInfo=null,F={chip:'all',cat:'',q:'',sort:'cob'},shown=40,list=[];
+let currentMeta={},savedInfo=null,F={chip:'all',cat:'',q:'',sort:'cobt'},shown=40,list=[];
+let catSist='1';try{const v=localStorage.getItem('planograma_catsist');if(v==='10'||v==='20')catSist=v}catch{}   // ⚠ declarado aqui no topo: renderCats() roda dentro de renderHome()
 const key=r=>r.automacao||r.produto;
 
 /* ═══ SUGESTÃO DE PEDIDO ═══ repor até a CAPACIDADE do planograma (alt × larg × prof), descontando estoque e trânsito,
    em caixas fechadas (Emb). Só entra item com MDV e cobertura total < SUG_DIAS dias.
-   Estoque NEGATIVO = em falta no CD → fora da sugestão (pedir não resolve); aparece no filtro "Falta no CD". */
+   Item em falta no CD (estoque < 1 caixa — zero ou negativo — e SEM trânsito) → fora da sugestão (pedir não resolve); aparece no filtro "Falta no CD". Com trânsito o CD tem o item → não é falta. */
 const SUG_DIAS=7;
 const capOf=r=>{const c=num(r.total);return c>0?c:num(r.altura)*num(r.largura)*num(r.prof)};
 function sugQty(r){
-  if(r._e<0||!r._m||r._c===null||r._c>=SUG_DIAS)return 0;
+  if(cdRisk(r)||!r._m||r._ct===null||r._ct>=SUG_DIAS)return 0;   // em falta no CD (estoque < 1 caixa, sem trânsito) → pedir não resolve   // cobertura TOTAL (estoque + trânsito) ÷ MDV
   const need=capOf(r)-(Math.max(r._e,0)+r._t);if(need<=0)return 0;
   const emb=num(r.emb)||1;return Math.ceil(need/emb)*emb}
 /* possível falta no CD: estoque menor que 1 caixa (inclui zero e negativo) — mesmo critério do Encarte */
-const cdRisk=r=>r._e<(num(r.emb)||1);
+const isCD=r=>!r._sist||r._sist==='1';   // falta no CD só vale p/ sistemática 1; sist 10/20 negativo = só falta pedir ao fornecedor
+const cdRisk=r=>isCD(r)&&!(r._t>0)&&r._e<(num(r.emb)||1);   // com trânsito o CD TEM o item (só não chegou) → não é falta no CD
 let noCD=false;try{noCD=localStorage.getItem('planograma_nocd')==='1'}catch{}
 /* 40% da capacidade do planograma (alt × larg × prof), em unidades e em caixas (Emb) */
 const p40=r=>{const cap=capOf(r);if(cap<=0)return '40%: —';
   const un=Math.round(cap*0.4),e=num(r.emb)||1,cx=un/e;
   return `40%: ${f0(un)} un`+(e>1?` · ${Number.isInteger(cx)?f0(cx):f1(cx)} cx`:'')};
-/* ═══ PREVISÃO DE PLANOGRAMA ═══ o pedido automático dispara quando o estoque bate 40% da capacidade (alt × larg × prof)
-   OU a cobertura chega a 1 dia. Quem já tem trânsito não entra. bit 1 = ≤ 40% · bit 2 = cobertura ≤ 1 dia */
-function prevBits(r){
-  if(!estoqueLoaded)return 0; // sem arquivo de estoque não há MDV real
-  const cap=capOf(r);if(cap<=0||r._t>0||cdRisk(r))return 0; // ignora falta no CD
-  return (r._e<=cap*0.4?1:0)|(r._c!==null&&r._c<=1?2:0)}
-/* quantidade que o pedido automático deve trazer:
-   estoque ≤ 40%  → 1× a capacidade (alt × larg × prof)
-   só cobertura ≤ 1 dia → o suficiente para +1 dia de venda (MDV do relatório de Cobertura), em caixas fechadas */
-function prevQty(r){
-  if(r._pv&1)return{un:Math.round(capOf(r)),kind:'cap'};
-  const e=num(r.emb)||1,d=r._m||0;
-  return{un:e>1?Math.ceil(d/e)*e:Math.ceil(d),kind:'dia'}}
-const unCx=(un,r)=>{const e=num(r.emb)||1;return `${f0(un)} un`+(e>1?` · ${Number.isInteger(un/e)?f0(un/e):f1(un/e)} cx`:'')};
-const pvTxt=r=>{const q=prevQty(r);return `Pedido previsto: <b>${unCx(q.un,r)}</b> · `+(q.kind==='cap'?'1× a capacidade (estoque ≤ 40%)':'+1 dia de venda (cobertura ≤ 1 dia)')};
 const sugCx=r=>{const e=num(r.emb)||1;return e>1?`${f0(r._sg/e)} cx de ${f0(e)}`:''};
 const sugTxt=r=>`${f0(r._sg)} un`+(num(r.emb)>1?` · ${sugCx(r)}`:'');
 const addMsg=r=>transitLoaded&&r&&r._t>0?'Adicionado — aguardando chegada do trânsito':'Adicionado ao pedido';
 const addS=r=>addPed(r);   // sem quantidade: a sugestão continua visível nas etiquetas do cartão
-function derive(){byProd=new Map(allRecords.map(r=>[r.produto,r]));for(const r of allRecords){const t=transitLoaded?transitMap[r.produto]:null;
- r._e=num(r.qtdestoque);r._t=t?t.qt_transito:0;
+/* ═══ TIPO DE ENTREGA + DATAS ═══ Sist 1 = CD · 20 = fornecedor direto · 10 = fornecedor através do CD */
+const ENT={'1':'CD','10':'Forn. via CD','20':'Fornecedor'};
+const entTxt=r=>r._sist?`<b class="ent e${r._sist}">${esc(ENT[r._sist]||'Sist. '+r._sist)}</b> <small>(sist. ${esc(r._sist)})</small>`:'—';
+function dtTxt(s,vazio){const m=/^(\d\d)\/(\d\d)\/(\d\d)$/.exec(s||'');if(!m)return vazio||'—';
+  const d=new Date(2000+ +m[3],+m[2]-1,+m[1]),h=new Date();h.setHours(0,0,0,0);const n=Math.round((h-d)/864e5);
+  return `${m[1]}/${m[2]}/20${m[3]} · ${n<=0?'hoje':n===1?'ontem':'há '+f0(n)+' dias'}`}
+const entOk=r=>!F.ent||(F.ent==='np'?!!r._np:F.ent==='1'?isCD(r):r._sist===F.ent);
+const rawRec=r=>{const o={};for(const k in r)if(k[0]!=='_')o[k]=r[k];return o};   // tira os campos calculados (_e, _k…) antes de salvar/enviar
+/* junta o planograma com TODOS os itens da Cobertura: quem não está no planograma (sist 10/20) entra com os dados da Cobertura/Trânsito */
+let _mFor={p:null,e:null,l:null};
+function mergeRecs(){
+  if(_mFor.p===planoRecs&&_mFor.e===estoqueMap&&_mFor.l===estoqueLoaded)return;
+  _mFor={p:planoRecs,e:estoqueMap,l:estoqueLoaded};
+  const out=planoRecs.slice();
+  if(estoqueLoaded){const have=new Set(planoRecs.map(r=>r.produto));
+    for(const p in estoqueMap){const x=estoqueMap[p];if(!x||!x.d||have.has(p))continue;
+      out.push({st:'A',automacao:'',produto:p,descricao:x.d,emb:'',referencia:x.r||'',fornec:'',nome:x.f||'',sist:x.sist||'',giro:'',corredor:'',altura:'',largura:'',prof:'',total:'',cobplan:'',qtdestoque:'',categoria:x.c||'',_np:true})}}
+  allRecords=out}
+function derive(){mergeRecs();byProd=new Map(allRecords.map(r=>[r.produto,r]));for(const r of allRecords){const t=transitLoaded?transitMap[r.produto]:null;
+ const _x=estoqueLoaded?estoqueMap[r.produto]:null;
+ r._e=r._np&&_x?_x.estq:num(r.qtdestoque);r._t=t?t.qt_transito:0;
+ r._sist=(_x&&_x.sist)||String(r.sist||'').trim().replace(/^0+(?=\d)/,'');r._ue=(_x&&_x.ue)||'';r._uv=(_x&&_x.uv)||'';
  const _es=estoqueLoaded?estoqueMap[r.produto]:null;
  r._m=_es&&_es.mdv>0?_es.mdv:null;
  r._c=_es?_es.cob:null; // cobertura do relatório (vem em número inteiro)
@@ -723,7 +733,7 @@ function derive(){byProd=new Map(allRecords.map(r=>[r.produto,r]));for(const r o
  if(r._c===0&&r._e>0&&r._m>0)r._c=r._e/r._m;
  // cobertura com o trânsito somado: (estoque + trânsito) ÷ MDV — sempre em unidades, nunca arredondada
  r._ct=r._m>0?(Math.max(r._e,0)+r._t)/r._m:null;
- r._k=r._e<=0?'rup':r._c===null?'nd':r._c<7?'crit':r._c<15?'aten':'ok';r._d=doneSet.has(key(r));if(!r._h)r._h=norm(r.descricao+' '+r.produto+' '+r.automacao+' '+(r.referencia||''));r._sg=sugQty(r);r._pv=prevBits(r)}
+ r._k=r._e<=0?'rup':r._c===null?'nd':r._c<7?'crit':r._c<15?'aten':'ok';r._d=doneSet.has(key(r));if(!r._h)r._h=norm(r.descricao+' '+r.produto+' '+r.automacao+' '+String(r.produto||'').replace(/^0+(?=\d)/,'')+' '+String(r.automacao||'').replace(/^0+(?=\d)/,''));r._sg=sugQty(r)}
   updBadge();
   if(encItems.length)setTimeout(renderEnc,0);   // reatualiza o Encarte quando o planograma/trânsito mudam
   if($('pf-txt'))setTimeout(pfSync,0);            // e o Panfleto
@@ -755,7 +765,7 @@ function go(s,fromPop){document.querySelectorAll('section').forEach(e=>e.classLi
 $('nav').onclick=e=>{const b=e.target.closest('button');if(b)go(b.dataset.s)};
 
 /* RESUMO */
-function renderHome(){const n=allRecords.length;renderBan();renderSug();renderPrev();
+function renderHome(){const n=allRecords.length;renderBan();renderSug();
  if(!n){$('h-fil').textContent='Sem dados';$('h-sub').textContent='Abra a aba Dados para carregar o relatório';$('kpis').innerHTML='';$('cats').innerHTML='<div class="empty">—</div>';return}
  const c={rup:0,crit:0,aten:0,ok:0,nd:0,tr:0};
  for(const r of allRecords){c[r._k]++;if(r._t>0)c.tr++}
@@ -764,41 +774,40 @@ function renderHome(){const n=allRecords.length;renderBan();renderSug();renderPr
  const K=[['rup','Ruptura','estoque zerado/negativo','var(--cr)'],['crit','Crítico','cobertura < 7 dias','#ff7b72'],['aten','Atenção','7 a 15 dias','var(--am)'],['ok','Saudável','15 dias ou mais','var(--ok)']];
  if(transitLoaded)K.push(['tr','Em trânsito','itens com entrada a caminho','var(--in)']);
  $('kpis').innerHTML=K.map(k=>`<button class="kpi" data-k="${k[0]}" style="--c:${k[3]}" title="${k[2]}"><div class="n num">${f0(c[k[0]])}</div><div class="l"><b>${k[1]}</b></div></button>`).join('');
- const g={};for(const r of allRecords)if(r._k==='rup'||r._k==='crit'){const o=g[r.categoria]||(g[r.categoria]={y:0,cd:0});cdRisk(r)?o.cd++:o.y++}   // y = dá para pedir · cd = sem no CD (estoque < 1 caixa)
- const rows=Object.entries(g).sort((a,b)=>b[1].y+b[1].cd-a[1].y-a[1].cd).slice(0,6).sort((a,b)=>b[1].y-a[1].y||a[1].cd-b[1].cd),mx=Math.max(...rows.map(([,v])=>v.y+v.cd),1);   // 6 com mais alertas; os que dá para pedir primeiro
- $('cats').innerHTML=rows.length?`<div class="ln" style="margin:0 0 4px"><span style="color:var(--am)">●</span> dá para pedir · <span style="color:var(--cr)">●</span> sem no CD</div>`+rows.map(([k,v])=>`<button class="bar" data-c="${esc(k)}"><span class="r"><span>${esc(short(k))}</span><b class="num"><span style="color:var(--am)">${v.y}</span> · <span style="color:var(--cr)">${v.cd}</span></b></span><i><u style="width:${(v.y+v.cd)/mx*100}%">${v.y?`<s style="flex:${v.y}"></s>`:''}${v.cd?`<s class="cd" style="flex:${v.cd}"></s>`:''}</u></i></button>`).join(''):'<div class="empty">Sem alertas</div>'}
-$('kpis').onclick=e=>{const b=e.target.closest('.kpi');if(!b)return;const k=b.dataset.k;F={chip:k==='tr'?'trans':k,cat:'',q:'',sort:k==='ok'?'nome':'cob'};$('q').value='';go('prod')};
-$('cats').onclick=e=>{const b=e.target.closest('.bar');if(!b)return;F={chip:'alert',cat:b.dataset.c,q:'',sort:'cob'};$('q').value='';go('prod')};
-function renderPrev(){const el=$('prev');
-  if(!allRecords.length){el.innerHTML='';return}
-  let n=0,a=0,b=0,cd=0;allRecords.forEach(r=>{if(cdRisk(r)){cd++;return}if(r._pv){n++;if(r._pv&1)a++;else b++}});
-  const out=transitLoaded?allRecords.filter(r=>r._t>0&&capOf(r)>0&&(r._e<=capOf(r)*0.4||(r._c!==null&&r._c<=1))).length:0;
-  el.innerHTML=`<button class="prevc" id="prev-go"><div class="n num">${f0(n)}</div><div class="t"><b>produtos devem entrar no próximo pedido</b>
-   <small>Estoque ≤ 40% da capacidade pede 1× alt × larg × prof · cobertura ≤ 1 dia pede +1 dia de venda · só itens sem trânsito</small>
-   <div class="pc"><span>pede a capacidade: <b>${f0(a)}</b></span><span>pede +1 dia: <b>${f0(b)}</b></span>${transitLoaded?`<span>já em trânsito (fora): <b>${f0(out)}</b></span>`:''}<span>falta no CD (ignorado): <b>${f0(cd)}</b></span></div>
-   ${transitLoaded?'':'<small style="color:var(--am)">Carregue o Trânsito para tirar os itens que já estão a caminho.</small>'}</div><span class="go">›</span></button>`}
-$('prev').onclick=e=>{if(e.target.closest('#prev-go')){F={chip:'prev',cat:'',q:'',sort:'cob'};$('q').value='';go('prod')}};
+ renderCats()}
+/* Categorias com mais alertas — por sistemática. Só a Sist. 1 (CD) tem a divisão "dá para pedir" × "sem no CD" */
+function renderCats(){
+  document.querySelectorAll('#cats-sw button').forEach(b=>b.classList.toggle('on',b.dataset.cs===catSist));
+  if(!allRecords.length){$('cats').innerHTML='<div class="empty">—</div>';return}
+  const one=catSist==='1',g={};
+  for(const r of allRecords)if((r._k==='rup'||r._k==='crit')&&(one?isCD(r):r._sist===catSist)){const o=g[r.categoria]||(g[r.categoria]={y:0,cd:0});one&&cdRisk(r)?o.cd++:o.y++}   // y = alertas (dá para pedir) · cd = sem no CD (só Sist. 1)
+  const rows=Object.entries(g).sort((a,b)=>b[1].y+b[1].cd-a[1].y-a[1].cd).slice(0,6).sort((a,b)=>b[1].y-a[1].y||a[1].cd-b[1].cd),mx=Math.max(...rows.map(([,v])=>v.y+v.cd),1);   // 6 com mais alertas
+  const leg=one?`<div class="ln" style="margin:0 0 4px"><span style="color:var(--am)">●</span> dá para pedir · <span style="color:var(--cr)">●</span> sem no CD</div>`:'';
+  $('cats').innerHTML=rows.length?leg+rows.map(([k,v])=>`<button class="bar" data-c="${esc(k)}"><span class="r"><span>${esc(short(k))}</span><b class="num">${one?`<span style="color:var(--am)">${v.y}</span> · <span style="color:var(--cr)">${v.cd}</span>`:`<span style="color:var(--am)">${v.y}</span>`}</b></span><i><u style="width:${(v.y+v.cd)/mx*100}%">${v.y?`<s style="flex:${v.y}"></s>`:''}${v.cd?`<s class="cd" style="flex:${v.cd}"></s>`:''}</u></i></button>`).join(''):'<div class="empty">Sem alertas nessa sistemática</div>'}
+$('cats-sw').onclick=e=>{const b=e.target.closest('button');if(!b||b.dataset.cs===catSist)return;catSist=b.dataset.cs;try{localStorage.setItem('planograma_catsist',catSist)}catch{};renderCats()};
+$('kpis').onclick=e=>{const b=e.target.closest('.kpi');if(!b)return;const k=b.dataset.k;F={chip:k==='tr'?'trans':k,cat:'',q:'',sort:k==='ok'?'nome':'cobt'};$('q').value='';go('prod')};
+$('cats').onclick=e=>{const b=e.target.closest('.bar');if(!b)return;F={chip:'alert',cat:b.dataset.c,q:'',sort:'cobt',ent:catSist};$('q').value='';go('prod')};
 function renderSug(){const el=$('sug');
   if(!allRecords.length){el.innerHTML='<div class="empty">—</div>';return}
   if(!estoqueLoaded){el.innerHTML='<div class="empty" style="padding:18px 12px">Carregue o relatório de <b>Cobertura</b> na aba <b>Dados</b> para ver a sugestão de pedido e as coberturas reais.</div>';return}
-  const all=allRecords.filter(r=>r._sg>0&&!r._d),neg=allRecords.filter(r=>r._e<0&&r._m&&!r._d).length;   // neg: venderiam, mas estão em falta no CD
-  const cd=neg?`<div class="ln" style="margin:6px 0 0;color:var(--cr)">⚠ ${f0(neg)} itens com estoque negativo (provável falta no CD) ficam fora da sugestão · <button class="lnk" id="sg-cd">ver</button></div>`:'';
+  const all=allRecords.filter(r=>r._sg>0&&!r._d),neg=allRecords.filter(r=>cdRisk(r)&&r._m&&!r._d).length;   // neg: venderiam, mas estão em falta no CD (estoque < 1 caixa, sem trânsito)
+  const cd=neg?`<div class="ln" style="margin:6px 0 0;color:var(--cr)">⚠ ${f0(neg)} itens em falta no CD ficam fora da sugestão · <button class="lnk" id="sg-cd">ver</button></div>`:'';
   if(!all.length){el.innerHTML=`<div class="empty" style="padding:20px 12px 8px">Nada para repor agora 🎉</div><div style="padding:0 12px 12px">${cd}</div>`;return}
   const fresh=all.filter(r=>!inPed(r.produto));
-  const top=[...fresh].sort((a,b)=>Math.max(a._c,0)-Math.max(b._c,0)||b._m-a._m).slice(0,5);   // mais perto de zerar primeiro
-  el.innerHTML=`<div style="padding:12px 12px 4px"><b>💡 ${f0(all.length)} produtos para repor</b><div class="ln" style="margin:3px 0 0">Repor até a capacidade do planograma, em caixas fechadas · cobertura &lt; ${SUG_DIAS} dias${transitLoaded?'':' · <b style="color:var(--am)">carregue o Trânsito para descontar o que já está a caminho</b>'}</div>${cd}</div>`
-   +(top.length?top.map(r=>`<div class="urg" data-p="${esc(r.produto)}" style="border-left:4px solid ${COLOR[r._k]}"><div class="d">${esc(r.descricao)}<small>estoque ${f0(r._e)} · MDV ${f1(r._m)} · cob. ${f1(Math.max(r._c,0))}d</small></div><div class="cob" style="--c:var(--am)"><b class="num" style="font-size:17px">${f0(r._sg)} un</b><small>${sugCx(r)}</small></div></div>`).join(''):'<div class="empty" style="padding:14px">Todas as sugestões já estão no pedido ✓</div>')
+  const top=[...fresh].sort((a,b)=>Math.max(a._ct,0)-Math.max(b._ct,0)||b._m-a._m).slice(0,5);   // mais perto de zerar primeiro
+  el.innerHTML=`<div style="padding:12px 12px 4px"><b>💡 ${f0(all.length)} produtos para repor</b><div class="ln" style="margin:3px 0 0">Repor até a capacidade do planograma, em caixas fechadas · cobertura total &lt; ${SUG_DIAS} dias${transitLoaded?'':' · <b style="color:var(--am)">carregue o Trânsito para descontar o que já está a caminho</b>'}</div>${cd}</div>`
+   +(top.length?top.map(r=>`<div class="urg" data-p="${esc(r.produto)}" style="border-left:4px solid ${COLOR[r._k]}"><div class="d">${esc(r.descricao)}<small>estoque ${f0(r._e)}${r._t>0?' · trânsito '+f0(r._t):''} · MDV ${f1(r._m)} · cob. total ${f1(Math.max(r._ct,0))}d</small></div></div>`).join(''):'<div class="empty" style="padding:14px">Todas as sugestões já estão no pedido ✓</div>')
    +`<div class="btns" style="padding:8px 12px 12px"><button class="btn o" id="sg-all" style="margin:0">Ver todas (${f0(all.length)})</button><button class="btn" id="sg-add" style="margin:0"${fresh.length?'':' disabled'}>🛒 Adicionar ${f0(fresh.length)}</button></div>`}
 $('sug').onclick=e=>{
   const u=e.target.closest('.urg');if(u)return openSheet(byProd.get(u.dataset.p));
-  if(e.target.closest('#sg-cd')){F={chip:'cd',cat:'',q:'',sort:'cob'};$('q').value='';return go('prod')}
-  if(e.target.closest('#sg-all')){F={chip:'sug',cat:'',q:'',sort:'cob'};$('q').value='';return go('prod')}
+  if(e.target.closest('#sg-cd')){F={chip:'cd',cat:'',q:'',sort:'cobt'};$('q').value='';return go('prod')}
+  if(e.target.closest('#sg-all')){F={chip:'sug',cat:'',q:'',sort:'cobt'};$('q').value='';return go('prod')}
   if(e.target.closest('#sg-add')){const f=allRecords.filter(r=>r._sg>0&&!r._d&&!inPed(r.produto));if(!f.length)return;
     if(!confirm(`Adicionar ${f0(f.length)} produtos ao pedido?`))return;
     f.forEach(r=>addPed(r,'',true));savePed();renderSug();toast(f0(f.length)+' produtos adicionados ao pedido')}};
 
 /* PRODUTOS */
-const CHIPS=[['all','Todos'],['sug','Sugestão','bulb'],['cd','Falta no CD','warn'],['dep','🔎 Procurar no depósito'],['prev','Previsão','spark'],['alert','Alertas'],['rup','Ruptura'],['crit','Crítico'],['aten','Atenção'],['ok','OK'],['trans','Em trânsito'],['pend','Pendentes'],['done','Feitos']];
+const CHIPS=[['all','Todos'],['sug','Sugestão','bulb'],['cd','Falta no CD','warn'],['dep','🔎 Procurar no depósito'],['alert','Alertas'],['rup','Ruptura'],['crit','Crítico'],['aten','Atenção'],['ok','OK'],['trans','Em trânsito'],['pend','Pendentes'],['done','Feitos']];
 /* 🔎 itens do pedido marcados para procurar no depósito (atualizado a cada renderList) */
 const LSDEP='planograma_dep';let depMap={};try{(JSON.parse(localStorage.getItem(LSDEP)||'[]')||[]).forEach(k=>{if(k)depMap[k]=true})}catch{}   // ⚠ precisa vir ANTES de refreshDep: a Oferta do dia chama refreshDep() na abertura e dava "Cannot access 'depMap' before initialization", travando o app inteiro
 let DEP=new Set();function refreshDep(){DEP=new Set(Object.keys(depMap))}
@@ -806,33 +815,37 @@ const FLT_SHORT={dep:'🔎 Depósito'};
 function renderList(reset){if(reset)shown=40;const T=toks(F.q);
  refreshDep();{const fc=CHIPS.find(c=>c[0]===F.chip)||CHIPS[0],fb=$('flt-btn');   // botão "Filtro" mostra o filtro ativo
   fb.lastChild.textContent=' '+(F.chip==='all'?'Filtro':(FLT_SHORT[F.chip]||fc[1]));fb.classList.toggle('on',F.chip!=='all')}
- $('sort').value=F.sort;$('nocd').checked=noCD;$('catx').innerHTML=F.cat?`<span class="catx" data-x="1">✕ ${esc(short(F.cat))}</span>`:'';
+ $('sort').value=F.sort;$('ent').value=F.ent||'';$('nocd').checked=noCD;$('catx').innerHTML=F.cat?`<span class="catx" data-x="1">✕ ${esc(short(F.cat))}</span>`:'';
  $('cat-pick-btn').style.display=allRecords.length?'':'none';
  $('cat-pick-btn').classList.toggle('on',!!F.cat);
- const base=r=>catOk(r)&&passesChip(r);
+ const base=r=>catOk(r)&&entOk(r)&&passesChip(r);
  let rel=false;
  list=allRecords.filter(r=>base(r)&&(!T.length||(r._s=score(r,T))>0));
  if(T.length>1&&!list.length){rel=true;list=allRecords.filter(r=>base(r)&&(r._s=score(r,T,true))>0)}   // nada tem TODAS as palavras → mostra os que têm parte
- const S={cob:(a,b)=>Math.max(a._c??1e9,0)-Math.max(b._c??1e9,0)||(b._m||0)-(a._m||0),   /* cobertura mín. 0; empate → quem mais vende primeiro */
+ const S={cobt:(a,b)=>Math.max(a._ct??1e9,0)-Math.max(b._ct??1e9,0)||(b._m||0)-(a._m||0),   /* cobertura total (estoque + trânsito) ÷ MDV; sem MDV vai pro fim */
+  cob:(a,b)=>Math.max(a._c??1e9,0)-Math.max(b._c??1e9,0)||(b._m||0)-(a._m||0),   /* cobertura mín. 0; empate → quem mais vende primeiro */
   est:(a,b)=>a._e-b._e,nome:(a,b)=>a.descricao.localeCompare(b.descricao)};
- list.sort(T.length?(a,b)=>b._s-a._s||S[F.sort](a,b):S[F.sort]);$('cnt').textContent=f0(list.length)+(rel?' itens parciais — nenhum tem todas as palavras':' itens')+(noCD?' · ocultando '+f0(allRecords.filter(cdRisk).length)+' (falta no CD)':'');
- $('list').innerHTML=list.length?list.slice(0,shown).map(card).join(''):'<div class="empty">Nenhum produto encontrado</div>'}
+ list.sort(T.length?(a,b)=>b._s-a._s||S[F.sort](a,b):S[F.sort]);$('cnt').textContent=f0(list.length)+(rel?' itens parciais — nenhum tem todas as palavras':' itens')+(noCD?' · ocultando '+f0(allRecords.filter(r=>cdRisk(r)&&catOk(r)&&entOk(r)&&passesChip(r,F.chip,true)&&(!T.length||score(r,T,rel)>0)).length)+' (falta no CD)':'');
+ const hid=!list.length&&T.length?allRecords.filter(r=>score(r,T)>0||score(r,T,true)>0).length:0;   // existe, mas algum filtro (chip, F/CD, categoria, sistemática) esconde
+ $('list').innerHTML=list.length?list.slice(0,shown).map(card).join(''):hid?`<div class="empty">Nenhum produto encontrado com os filtros atuais<br><button class="btn o" id="clr-flt" type="button" style="margin:10px auto 0">Mostrar ${f0(hid)} sem filtros</button></div>`:'<div class="empty">Nenhum produto encontrado</div>'}
+$('list').addEventListener('click',e=>{if(!e.target.closest('#clr-flt'))return;F={...F,chip:'all',cat:'',ent:''};noCD=false;try{localStorage.setItem('planograma_nocd','0')}catch{};renderList(true)});
 /* corpo do cartão — o MESMO nas abas Produtos e Pedido. números em largura total */
-function cardBody(r,acts,extra,alwaysPrev){
-  const c=r._c===null?'—':(r._c>999?'+999':f1(Math.max(r._c,0))),ctt=transitLoaded&&r._ct!==null;
+const PEDBADGE='<span class="ent ped" title="No pedido"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px"><circle cx="9" cy="20" r="1.4"/><circle cx="18" cy="20" r="1.4"/><path d="M2 3h3l2.6 12.4a1 1 0 0 0 .98.8h9.2a1 1 0 0 0 .98-.8L21 7H6"/></svg></span>';   // selo 🛒 ao lado do selo CD: o item já está no pedido
+function cardBody(r,acts,extra,noPed){
+  const c=r._c===null?'—':(r._c>999?'+999':f1(Math.max(r._c,0))),ctt=transitLoaded&&r._ct!==null,kt=!ctt?'nd':r._ct<7?'crit':r._ct<15?'aten':'ok';   // cor da cobertura total: mesmas faixas da situação (<7 crítico · <15 atenção · senão saudável)
   // Estoque em caixas fechadas (+ unidades avulsas); sem embalagem cadastrada ou estoque negativo → traço
   const ebx=num(r.emb)||1,nbx=r._e,qbx=ebx>1&&nbx>=0?Math.floor(nbx/ebx):null,ubx=qbx===null?0:nbx-qbx*ebx,lowbx=qbx===0&&nbx>0;
-  const cxHtml=qbx===null?'<b class="num">—</b>':`<b class="num"${lowbx?' style="color:var(--cr)"':''}>${lowbx?'&lt; 1':f0(qbx)}<i>cx</i>${qbx>0&&ubx?`<wbr><i class="rem">+${f0(ubx)} un</i>`:''}</b>`;
+  const cxOf=(n,red)=>{const q=ebx>1&&n>=0?Math.floor(n/ebx):null,u=q===null?0:n-q*ebx,low=red&&q===0&&n>0;return q===null?'—':`<span${low?' style="color:var(--cr)"':''}>${low?'&lt; 1':f0(q)}<i>cx</i>${q>0&&u?`<wbr><i class="rem">+${f0(u)} un</i>`:''}</span>`};
+  const sep='<i class="sp"></i>';
   return `<div class="hd"><div class="nm">${esc(r.descricao)}</div><div class="acts">${acts}</div></div>
- <div class="sb">${r.produto} · ${p40(r)} · ${esc(r.emb||'')}</div>
- ${(alwaysPrev||F.chip==='prev')&&r._pv?`<div class="sg">${ic('spark',14)} ${pvTxt(r)}</div>`:''}${r._sg>0?`<div class="sg">${ic('bulb',14)} Sugestão: <b>${sugTxt(r)}</b></div>`:r._e<0?`<div class="sg cdx">${ic('warn',14)} Estoque negativo · provável falta no CD</div>`:''}
+ <div class="sb">${r.produto} · ${r._np?'Fora do planograma':p40(r)+' · '+esc(r.emb||'')}${r._sist?` <span class="ent e${r._sist}">${esc(ENT[r._sist]||'Sist. '+r._sist)}</span>`:''}${!noPed&&inPed(r.produto)?' '+PEDBADGE:''}</div>
+ ${r._e<0?`<div class="sg cdx">${ic('warn',14)} ${r._t>0?'Estoque negativo · já em trânsito, aguardando chegada':isCD(r)?'Estoque negativo · provável falta no CD':'Estoque negativo · falta pedir o item'}</div>`:''}
  <div class="st3">
-  <div><small>Estoque</small><b class="num">${f0(r._e)}<i>un</i></b></div>
-  <div><small>Estoque caixa</small>${cxHtml}</div>
-  <div><small>Trânsito</small><b class="num">${transitLoaded?f0(r._t):'—'}${transitLoaded&&r._t>0?'<i>un</i>':''}</b></div>
+  <div><small>Estoque</small><b class="num">${f0(r._e)}<i>un</i>${ebx>1&&r._e>=0?sep+cxOf(r._e,true):''}</b></div>
+  <div><small>Trânsito</small><b class="num">${transitLoaded?f0(r._t):'—'}${transitLoaded&&r._t>0?'<i>un</i>':''}${transitLoaded&&r._t>0&&ebx>1?sep+cxOf(r._t,false):''}</b></div>
   <div><small>MDV</small><b class="num">${r._m?f1(r._m):'—'}</b></div>
   <div class="cv" style="--c:${COLOR[r._k]}"><small>${GLY[r._k]} ${SLBL[r._k]}</small><b class="num">${c}${r._c!==null?'<i>dias</i>':''}</b></div>
-  <div><small>Cob. trânsito</small><b class="num">${ctt?(r._ct>999?'+999':f1(r._ct)):'—'}${ctt?'<i>dias</i>':''}</b></div>
+  <div class="ct" style="--c:${COLOR[kt]}"><small>${ctt?GLY[kt]+' ':''}Cob. total</small><b class="num">${ctt?(r._ct>999?'+999':f1(r._ct)):'—'}${ctt?'<i>dias</i>':''}</b></div>
  </div>${extra||''}`}
 /* cartão deslizável: fundo colorido atrás (→ concluir · ← pedido ou excluir) */
 const swOk=d=>`<b>${d?'↩':'✓'}</b><span>${d?'Reabrir':'Concluir'}</span>`;
@@ -845,6 +858,7 @@ const qGo=debounce(()=>renderList(true),180);
 $('q').oninput=e=>{F.q=e.target.value;qGo()};
 $('nocd').onchange=e=>{noCD=e.target.checked;try{localStorage.setItem('planograma_nocd',noCD?'1':'0')}catch{};renderList(true)};
 $('sort').onchange=e=>{F.sort=e.target.value;renderList(true)};
+$('ent').onchange=e=>{F.ent=e.target.value;renderList(true)};
 $('catx').onclick=()=>{F.cat='';renderList(true)};
 
 /* ── Category Tree Picker ──────────────────────────────────────────────
@@ -857,13 +871,13 @@ $('catx').onclick=()=>{F.cat='';renderList(true)};
 let catPath=[];   // current drill-down path
 const catOk=r=>!F.cat||r.categoria===F.cat||(r.categoria||'').startsWith(F.cat+'->');   // nível pai inclui os filhos
 
-function passesChip(r,ch=F.chip){
-  return (ch==='cd'||ch==='dep'||!noCD||!cdRisk(r))&&
+function passesChip(r,ch=F.chip,ignNoCD){
+  return (ignNoCD||ch==='cd'||ch==='dep'||!noCD||!cdRisk(r))&&
     (ch==='all'||ch===r._k||
     (ch==='alert'&&(r._k==='rup'||r._k==='crit'))||
     (ch==='trans'&&r._t>0)||(ch==='pend'&&!r._d)||
     (ch==='done'&&r._d)||(ch==='sug'&&r._sg>0)||
-    (ch==='cd'&&r._e<0)||(ch==='prev'&&r._pv>0)||(ch==='dep'&&DEP.has(r.produto)));}
+    (ch==='cd'&&cdRisk(r))||(ch==='dep'&&DEP.has(r.produto)));}
 
 function buildCatTree(){
   /* Build { prefixKey → count } for all records passing the chip filter */
@@ -1089,14 +1103,74 @@ function renderEnc(){
 $('enc-sort').onchange=e=>{encSort=e.target.value;renderEnc()};
 $('enc-list').onclick=e=>{if(Date.now()<swBlock)return;const c=e.target.closest('.p');if(c)openSheet(byProd.get(c.dataset.p))};
 
+/* ═══ EXPORTAR ENCARTE .xlsx COM A FORMATAÇÃO ORIGINAL ═══
+   Em vez de regravar a planilha (o SheetJS perde fontes, bordas e larguras), edita o .xlsx original por dentro (zip + XML):
+   acrescenta só a coluna "Situação" copiando o estilo da coluna ao lado e já deixa a impressão pronta —
+   margens mínimas, 1 página de largura, SEM cabeçalho e SEM rodapé (nada para formatar no LibreOffice). */
+function ensureJSZip(){
+  if(typeof JSZip!=='undefined')return Promise.resolve();
+  return new Promise((ok,no)=>{const s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
+    s.onload=ok;s.onerror=()=>no(new Error('sem internet para carregar o JSZip'));document.head.appendChild(s)})}
+const xlCol=n=>{let s='';for(n++;n>0;n=Math.floor((n-1)/26))s=String.fromCharCode(65+(n-1)%26)+s;return s};      // 0 → A
+const xlNum=a=>a.split('').reduce((n,ch)=>n*26+ch.charCodeAt(0)-64,0)-1;                                          // A → 0
+async function exportEncStyled(buf,hdr,st){
+  await ensureJSZip();
+  const NS='http://schemas.openxmlformats.org/spreadsheetml/2006/main',RNS='http://schemas.openxmlformats.org/officeDocument/2006/relationships';
+  const zip=await JSZip.loadAsync(buf);
+  let path='xl/worksheets/sheet1.xml';                                         // 1ª planilha do arquivo
+  try{const wbx=new DOMParser().parseFromString(await zip.file('xl/workbook.xml').async('string'),'application/xml'),
+      rid=wbx.getElementsByTagNameNS(NS,'sheet')[0].getAttributeNS(RNS,'id'),
+      rels=new DOMParser().parseFromString(await zip.file('xl/_rels/workbook.xml.rels').async('string'),'application/xml');
+    for(const r of rels.getElementsByTagName('Relationship'))if(r.getAttribute('Id')===rid){path='xl/'+r.getAttribute('Target').replace(/^\/?(xl\/)?/,'');break}}catch{}
+  const f=zip.file(path);if(!f)throw Error('planilha não encontrada no arquivo');
+  const doc=new DOMParser().parseFromString(await f.async('string'),'application/xml');
+  if(doc.getElementsByTagName('parsererror').length)throw Error('XML da planilha inválido');
+  const root=doc.documentElement,all=n=>[...doc.getElementsByTagNameNS(NS,n)],kid=n=>[...root.children].find(e=>e.localName===n);
+  const rows=all('row');if(!rows.length)throw Error('planilha vazia');
+  const refOf=c=>{const m=/^([A-Z]+)(\d+)$/.exec(c.getAttribute('r')||'');return m?{c:xlNum(m[1]),r:+m[2]}:null};
+  let lc=0;all('c').forEach(c=>{const p=refOf(c);if(p&&p.c>lc)lc=p.c});
+  const nc=lc+1,L=xlCol(nc),dim=kid('dimension'),m0=dim&&/^[A-Z]+(\d+)/.exec(dim.getAttribute('ref')||''),r0=m0?+m0[1]:+rows[0].getAttribute('r');
+  const sOf=(row,ci)=>{const c=[...row.children].find(x=>x.localName==='c'&&(refOf(x)||{}).c===ci);return c?c.getAttribute('s'):null};
+  const hdrR=hdr>=0?r0+hdr:-1,sc=Math.min(1,lc);                             // estilo da coluna ao lado (2ª coluna: centralizada, com borda)
+  for(const row of rows){
+    const rn=+row.getAttribute('r'),txt=st.get(rn-r0);let s=null,val=null;
+    if(rn===hdrR){val='Situação';s=sOf(row,sc)}
+    else if(txt!==undefined){val=txt;s=sOf(row,sc)}
+    else s=sOf(row,lc);                                                      // sem status (título etc.): só continua o estilo/borda
+    if(s===null&&val===null)continue;
+    const c=doc.createElementNS(NS,'c');c.setAttribute('r',L+rn);if(s!==null)c.setAttribute('s',s);
+    if(val!==null){c.setAttribute('t','inlineStr');const is=doc.createElementNS(NS,'is'),t=doc.createElementNS(NS,'t');t.textContent=val;is.appendChild(t);c.appendChild(is)}
+    row.appendChild(c);row.removeAttribute('spans')}
+  // largura da nova coluna (sem sobrepor faixas de colunas já definidas)
+  let cols=kid('cols');if(!cols){cols=doc.createElementNS(NS,'cols');root.insertBefore(cols,kid('sheetData'))}
+  [...cols.children].forEach(e=>{if(+e.getAttribute('min')>nc)cols.removeChild(e);else if(+e.getAttribute('max')>nc)e.setAttribute('max',nc)});
+  const col=doc.createElementNS(NS,'col');col.setAttribute('min',nc+1);col.setAttribute('max',nc+1);col.setAttribute('width','16');col.setAttribute('customWidth','1');cols.appendChild(col);
+  if(dim)dim.setAttribute('ref',(dim.getAttribute('ref')||'').replace(/^([A-Z]+\d+):[A-Z]+(\d+)$/,'$1:'+L+'$2'));
+  all('mergeCell').forEach(m=>{const mm=/^(.*):([A-Z]+)(\d+)$/.exec(m.getAttribute('ref')||'');if(mm&&xlNum(mm[2])===lc)m.setAttribute('ref',mm[1]+':'+L+mm[3])});   // título mesclado cobre a coluna nova
+  // impressão pronta: margens mínimas · A4 retrato · 1 página de largura · sem cabeçalho/rodapé
+  ['printOptions','pageMargins','pageSetup','headerFooter'].forEach(n=>{const e=kid(n);if(e)root.removeChild(e)});
+  let sp=kid('sheetPr');if(!sp){sp=doc.createElementNS(NS,'sheetPr');root.insertBefore(sp,root.firstChild)}
+  let ps0=[...sp.children].find(e=>e.localName==='pageSetUpPr');if(!ps0){ps0=doc.createElementNS(NS,'pageSetUpPr');sp.appendChild(ps0)}ps0.setAttribute('fitToPage','1');
+  const mk=(n,a)=>{const e=doc.createElementNS(NS,n);for(const k in a)e.setAttribute(k,a[k]);return e};
+  const after=['rowBreaks','colBreaks','customProperties','cellWatches','ignoredErrors','smartTags','drawing','legacyDrawing','legacyDrawingHF','picture','oleObjects','controls','webPublishItems','tableParts','extLst'],
+        ref=[...root.children].find(e=>after.includes(e.localName))||null;
+  [mk('pageMargins',{left:'0.2',right:'0.2',top:'0.2',bottom:'0.2',header:'0',footer:'0'}),mk('pageSetup',{paperSize:'9',orientation:'portrait',fitToWidth:'1',fitToHeight:'0'}),mk('headerFooter',{})].forEach(e=>root.insertBefore(e,ref));
+  zip.file(path,'<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n'+new XMLSerializer().serializeToString(root));
+  return zip.generateAsync({type:'arraybuffer',compression:'DEFLATE'});
+}
 /* Exportar: a planilha volta igual à recebida, só com uma coluna a mais no fim de cada item (OK / Falta no CD) */
 async function exportEnc(){
   if(!encSrc||!encItems.length)return toast('Carregue uma planilha primeiro');
+  const st=new Map(encMatch().map(({it,r})=>[it.row,ENC_TXT[encStatus(r)]]));
+  const base=encSrc.name.replace(/\.[^.]+$/,''),ext=((encSrc.name.match(/\.([^.]+)$/)||[])[1]||'csv').toLowerCase();
+  if(encSrc.kind==='xlsx'&&ext==='xlsx'&&encSrc.buf){          // .xlsx: edita o original (mantém a formatação) e já sai pronto p/ imprimir
+    try{const out=await exportEncStyled(encSrc.buf,encSrc.hdr,st);
+      downloadBlob(new Blob([out],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}),`${base}_situacao.xlsx`);
+      return toast('Planilha exportada · formatação original, pronta para imprimir')}
+    catch(e){toast('Não consegui manter a formatação ('+e.message+') — exportando no modo simples')}}
   if(encSrc.kind==='xlsx'&&!encSrc.wb){                       // Encarte restaurado do aparelho: reabre a planilha guardada
     try{await ensureXLSX();const o=await parseEncXLSX(new Blob([encSrc.buf]));encSrc={...encSrc,wb:o.wb,sh:o.sh,rg:o.rg}}
     catch(e){return toast('Não consegui reabrir a planilha: '+e.message)}}
-  const st=new Map(encMatch().map(({it,r})=>[it.row,ENC_TXT[encStatus(r)]]));
-  const base=encSrc.name.replace(/\.[^.]+$/,''),ext=((encSrc.name.match(/\.([^.]+)$/)||[])[1]||'csv').toLowerCase();
   if(encSrc.kind==='xlsx'){
     const{sh,rg}=encSrc,c=rg.e.c+1,put=(i,v)=>{sh[XLSX.utils.encode_cell({r:rg.s.r+i,c})]={t:'s',v}};
     if(encSrc.hdr>=0)put(encSrc.hdr,'Situação');
@@ -1142,8 +1216,8 @@ function pfMatch(q,top){
     const sc=score(r,T,true);if(sc>=max*.5&&alpha.some(t=>score(r,[t],false)>0))res.push([sc,r])}
   res.sort((a,b)=>b[0]-a[0]||b[1]._e-a[1]._e);
   return res.slice(0,top).map(x=>x[1])}
-let axLay='bar';try{if(localStorage.getItem('planograma_axlay')==='card')axLay='card'}catch{}
-const pfRowHtml=r=>{if(axLay==='card'){const dp=DEP.has(r.produto);return `<div class="p pfc${dp?' dep':''}" data-p="${esc(r.produto)}" style="--c:${COLOR[r._k]}">${cardBody(r,dp?'<span class="depi" title="Procurar no depósito">🔎</span>':'',  '',true)}</div>`}
+let axLay='card';try{localStorage.removeItem('planograma_axlay')}catch{}   // layout fixo em Card (o seletor Resumo/Card foi removido)
+const pfRowHtml=r=>{if(axLay==='card'){const dp=DEP.has(r.produto);return `<div class="p pfc${dp?' dep':''}" data-p="${esc(r.produto)}" style="--c:${COLOR[r._k]}">${cardBody(r,dp?'<span class="depi" title="Procurar no depósito">🔎</span>':'')}</div>`}
   const c=r._c===null?'—':(r._c>999?'+999':f1(Math.max(r._c,0))),dp=DEP.has(r.produto);
     return `<div class="pfr${dp?' dep':''}" data-p="${esc(r.produto)}" style="--c:${COLOR[r._k]}"><div class="pn">${esc(r.descricao)}${dp?' <span class="depi">🔎</span>':''}</div><div class="pm"><span>Estoque <b>${f0(r._e)}</b></span><span>Cob. <b>${c}</b>${r._c!==null?' d':''}</span>${transitLoaded&&r._t>0?`<span>Trânsito <b>${f0(r._t)}</b></span>`:''}<span class="pk">${GLY[r._k]} ${SLBL[r._k]}</span></div></div>`};
 function renderPf(){
@@ -1511,7 +1585,7 @@ async function loadCobFile(file){
     // Save to IDB alongside planogram
     if(idb)idbSave({id:'estoque',map:estoqueMap,meta:estoqueMeta,name:file.name,savedAt:new Date().toLocaleString('pt-BR')}).catch(()=>{});
     // Re-derive all records with real MDV/Cob
-    if(allRecords.length){derive();renderHome();if($('s-prod').classList.contains('on'))renderList(false);}
+    derive();renderHome();if($('s-prod').classList.contains('on'))renderList(false);
     busy(false);renderData();toast(`Cobertura carregada · ${f0(total)} produtos`+warnTxt());
   }catch(e){busy(false);$('cob-status').textContent='Erro: '+e.message}
 }
@@ -1573,7 +1647,7 @@ function renderPed(){
 $('plist').addEventListener('toggle',e=>{if(e.target.id in dropOpen)dropOpen[e.target.id]=e.target.open},true);   // lembra se o dropdown está aberto
 function swAddPed(r,s){
   if(inPed(r.produto))return toast('Já está no pedido');
-  addS(r);s.w.querySelector('.swg.add span').textContent='Já no pedido';toast(addMsg(r))}
+  addS(r);s.w.querySelector('.swg.add span').textContent='Já no pedido';{const sb=s.c.querySelector('.sb');if(sb&&!sb.querySelector('.ped'))sb.insertAdjacentHTML('beforeend',' '+PEDBADGE)}toast(addMsg(r))}
 /* deslizar o cartão (Produtos, Pedido e Encarte): → conclui · ← pedido (Produtos) / exclui (Pedido) */
 let sw0=null,swBlock=0;const SW_T=90;
 function swReset(s,anim){
@@ -1652,8 +1726,8 @@ $('pres').onclick=e=>{const c=e.target.closest('.pr');if(!c)return;addS(byProd.g
 /* FICHA DO PRODUTO */
 function openSheet(r){if(!r)return;const kv=(a,b)=>`<div class="kv"><span>${a}</span><span>${b}</span></div>`;
  $('sheetc').innerHTML=`<h3>${esc(r.descricao)}</h3><div class="ln" style="margin:0 0 8px"><b style="color:${COLOR[r._k]}">${LBL[r._k]}</b> · ${esc(short(r.categoria))}</div>
- ${kv('Cobertura (relatório)',r._c===null?'—':f1(Math.max(r._c,0))+' dias')}${kv('Estoque',f0(r._e))}${kv('Em trânsito',transitLoaded?f0(r._t):'—')}${kv('Cobertura com trânsito',transitLoaded&&r._ct!==null?(r._ct>999?'+999':f1(r._ct))+' dias':'—')}${kv('MDV (relatório de Cobertura)',r._m?f1(r._m):'—')}${r._sg>0?kv('💡 Sugestão de pedido',`<b style="color:var(--am)">${sugTxt(r)}</b>`):r._e<0?kv('⚠ Falta no CD','<b style="color:var(--cr)">Estoque negativo — fora da sugestão</b>'):''}
- ${kv('Cob.Plan',esc(r.cobplan||'—')+' dias')}${kv('Capacidade (alt × larg × prof)',`${esc(r.altura||'—')} × ${esc(r.largura||'—')} × ${esc(r.prof||'—')} = ${esc(r.total||'—')}`)}
+ ${kv('Cobertura (relatório)',r._c===null?'—':f1(Math.max(r._c,0))+' dias')}${kv('Estoque',f0(r._e))}${kv('Em trânsito',transitLoaded?f0(r._t):'—')}${kv('Cobertura com trânsito',transitLoaded&&r._ct!==null?(r._ct>999?'+999':f1(r._ct))+' dias':'—')}${kv('MDV (relatório de Cobertura)',r._m?f1(r._m):'—')}${kv('Tipo de entrega',entTxt(r))}${kv('Última entrada',dtTxt(r._ue,'sem registro'))}${kv('Última venda',dtTxt(r._uv,'sem venda registrada'))}${r._sg>0?kv('💡 Sugestão de pedido',`<b style="color:var(--am)">${sugTxt(r)}</b>`):r._e<0?(r._t>0?kv('Estoque negativo','<b style="color:var(--am)">Já em trânsito — aguardando chegada</b>'):isCD(r)?kv('⚠ Falta no CD','<b style="color:var(--cr)">Estoque negativo — fora da sugestão</b>'):kv('⚠ Estoque negativo','<b style="color:var(--cr)">Falta pedir o item</b>')):''}
+ ${r._np?kv('Planograma','Fora do planograma'):kv('Cob.Plan',esc(r.cobplan||'—')+' dias')+kv('Capacidade (alt × larg × prof)',`${esc(r.altura||'—')} × ${esc(r.largura||'—')} × ${esc(r.prof||'—')} = ${esc(r.total||'—')}`)}
  ${kv('Corredor',esc(r.corredor||'—'))}${kv('Giro',esc(r.giro||'—'))}${kv('Embalagem',esc(r.emb||'—'))}${kv('Código / EAN',`${r.produto} · ${esc(r.automacao||'')}`)}${kv('Fornecedor',esc(r.nome||r.fornec||'—'))}
  <button class="btn o" id="sh-ped">${inPed(r.produto)?'🛒 Remover do pedido':'🛒 Adicionar ao pedido'+(r._sg>0?' · '+f0(r._sg)+' un':'')}</button><button class="btn o" id="sh-dep">${depMap[r.produto]?'🔎 Tirar de "Procurar no depósito"':'🔎 Procurar no depósito'}</button><button class="btn" id="sh-done">${r._d?'Desfazer conclusão':'Marcar como feito'}</button><button class="btn o" id="sh-x">Fechar</button>`;
  $('sheet').classList.add('on');pushOv('sheet');$('sh-x').onclick=closeSheet;
@@ -1664,11 +1738,11 @@ $('sheet').onclick=e=>{if(e.target.id==='sheet')closeSheet()};
 
 /* CARREGAR / SALVAR */
 async function loadRecords(records,meta,name,transit,persist,savedAt){
- allRecords=records;currentMeta=meta;lsKey=lsKeyFor(meta.filial||'',meta.date||'');lsLoad();
+ planoRecs=records;allRecords=records;currentMeta=meta;lsKey=lsKeyFor(meta.filial||'',meta.date||'');lsLoad();
  if(transit){transitMap=transit;transitLoaded=true}
  savedInfo={name,savedAt:savedAt||new Date().toLocaleString('pt-BR')};
  if(persist&&idb)await idbSave({id:'current',name,records,meta,savedAt:savedInfo.savedAt,filial:meta.filial,date:meta.date,transit:transitLoaded?transitMap:undefined}).catch(()=>{});
- derive();F={chip:'all',cat:'',q:'',sort:'cob'};$('q').value='';go('home')}
+ derive();F={chip:'all',cat:'',q:'',sort:'cobt'};$('q').value='';go('home')}
 /* Os relatórios do sistema são UTF-8 (cada acento ocupa 1 coluna). Ler como latin1 transformava Ç, Ã, º… em 2 caracteres e
    DESLOCAVA as colunas dessas linhas (≈2% do planograma): Cob.Plan 999 virava "6 9", estoque 0 virava 9, etc.
    Agora tenta UTF-8 e só cai para Windows-1252 se o arquivo realmente não for UTF-8. */
@@ -1690,28 +1764,28 @@ function renderFresh(){
   const base=(currentMeta.date||'').trim();let warn=false;
   const item=(nome,ok,m)=>{if(!ok)return `<span class="off">${nome} —</span>`;const dt=m&&m.date,diff=dt&&base&&dt!==base;if(diff)warn=true;
     return `<span${diff?' class="diff"':''} title="${m&&m.hora?m.date+' '+m.hora:''}">${nome} ${dt?dt.slice(0,5):'✓'}</span>`};
-  el.innerHTML=[item('Plano',true,currentMeta),item('Cobertura',estoqueLoaded,estoqueMeta),item('Trânsito',transitLoaded,transitMeta)].join(' · ')+(warn?' ⚠':'');
+  el.innerHTML=[item('Plano',planoRecs.length>0,currentMeta),item('Cobertura',estoqueLoaded,estoqueMeta),item('Trânsito',transitLoaded,transitMeta)].join(' · ')+(warn?' ⚠':'');
   F_.classList.toggle('warn',warn);F_.title=warn?'Os relatórios são de dias diferentes — confira antes de pedir':'';
 }
 $('fresh-gear').onclick=()=>go('data');
 $('theme-seg').onclick=e=>{const b=e.target.closest('button');if(b)applyTheme(b.dataset.t)};
 let _th='auto';try{_th=localStorage.getItem('planograma_theme')||'auto'}catch{}applyTheme(_th);
-function renderData(){renderFresh();const n=allRecords.length;
+function renderData(){renderFresh();const n=planoRecs.length;
  $('d-plano').innerHTML=n?`<b>${esc(savedInfo?.name||'')}</b><br>${f0(n)} produtos · ${esc(currentMeta.date||'')} · salvo em ${esc(savedInfo?.savedAt||'')}`:'Nenhum relatório carregado';
  $('d-trans').innerHTML=transitLoaded?`<b>✓ Carregado</b> · ${f0(Object.keys(transitMap).length)} itens`:'Não carregado';cloudInfo()}
 $('b-clear').onclick=()=>{if(confirm('Zerar todos os itens concluídos?')){lsClear();derive();toast('Concluídos zerados')}};
 
 /* BACKUP .json / CSV (mesmo formato do app principal) */
 function buildBackup(){return{app:'planograma',version:1,exportedAt:new Date().toISOString(),name:savedInfo?.name||'planograma',meta:currentMeta,
- records:allRecords.map(({_e,_t,_m,_c,_k,_d,_h,_s,...r})=>r),transit:transitLoaded?transitMap:null,done:[...doneSet],pedido,dep:Object.keys(depMap),prefs:{}}}
+ records:planoRecs.map(rawRec),transit:transitLoaded?transitMap:null,done:[...doneSet],pedido,dep:Object.keys(depMap),prefs:{}}}
 async function importBackup(text,fname){try{const b=JSON.parse(text);if(b.app!=='planograma'||!Array.isArray(b.records))throw 0;
  const meta=b.meta||{};await loadRecords(b.records,meta,b.name||fname,b.transit||null,true);
  try{localStorage.setItem(lsKeyFor(meta.filial||'',meta.date||''),JSON.stringify(b.done||[]));lsLoad();derive();if(Array.isArray(b.pedido)){pedido=b.pedido;savePed()}if(Array.isArray(b.dep)){depMap={};b.dep.forEach(k=>{if(k)depMap[k]=true});saveDep()}renderHome()}catch{}
  busy(false);toast(f0(b.records.length)+' produtos importados');return true}catch{busy(false);toast('Arquivo .json inválido');return false}}
 $('b-json').onclick=()=>{if(!allRecords.length)return toast('Nada para exportar');const s=((currentMeta.filial||'')+'_'+(currentMeta.date||'')).replace(/[^a-zA-Z0-9]+/g,'_').replace(/^_|_$/g,'');
  downloadBlob(new Blob([JSON.stringify(buildBackup())],{type:'application/json;charset=utf-8'}),`planograma_${s||'dados'}.json`)};
-$('b-csv').onclick=()=>{if(!allRecords.length)return toast('Nada para exportar');const H=['Produto','EAN','Descrição','Categoria','Corredor','Estoque','Trânsito','MDV','Cob.Plan','Cobertura','Situação','Feito'];
- const q=v=>'"'+String(v??'').replace(/"/g,'""')+'"';const rows=allRecords.map(r=>[r.produto,r.automacao,r.descricao,r.categoria,r.corredor,r._e,r._t,r._m?r._m.toFixed(2).replace('.',','):'',r.cobplan,r._c===null?'':r._c.toFixed(1).replace('.',','),LBL[r._k],r._d?'sim':'']);
+$('b-csv').onclick=()=>{if(!allRecords.length)return toast('Nada para exportar');const H=['Produto','EAN','Descrição','Categoria','Corredor','Estoque','Trânsito','MDV','Cob.Plan','Cobertura','Situação','Entrega','Últ. entrada','Últ. venda','Feito'];
+ const q=v=>'"'+String(v??'').replace(/"/g,'""')+'"';const rows=allRecords.map(r=>[r.produto,r.automacao,r.descricao,r.categoria,r.corredor,r._e,r._t,r._m?r._m.toFixed(2).replace('.',','):'',r.cobplan,r._c===null?'':r._c.toFixed(1).replace('.',','),LBL[r._k],ENT[r._sist]||'',r._ue,r._uv,r._d?'sim':'']);
  downloadBlob(new Blob(['\ufeff'+[H,...rows].map(r=>r.map(q).join(';')).join('\n')],{type:'text/csv;charset=utf-8'}),'planograma.csv')};
 
 /* ═══ LEITOR DE CÓDIGO DE BARRAS — economiza bateria: só liga ao tocar, 640×480 a ~15 fps,
@@ -1961,7 +2035,7 @@ $('b-code').onclick=async()=>{
 
 /* Envia relatório para a nuvem — separado por tipo, com guarda de data */
 $('b-up').onclick=async()=>{
-  if(!allRecords.length)return toast('Nada para enviar');
+  if(!planoRecs.length)return toast('Nada para enviar');
   const c=code()||askCode();if(!c)return;
   busy(true,'Verificando nuvem…');
   try{
@@ -1979,10 +2053,10 @@ $('b-up').onclick=async()=>{
     const now=new Date().toISOString();let tUp=false;const fails=[];
     await Promise.all([
       cf(cu(c,'plano/records'),{method:'PUT',headers:{'Content-Type':'application/json'},
-        body:JSON.stringify(allRecords.map(({_e,_t,_m,_c,_k,_d,_h,_s,...r})=>r))}).then(r=>{if(!r.ok)throw Error('Falha ao enviar records')}),
+        body:JSON.stringify(planoRecs.map(rawRec))}).then(r=>{if(!r.ok)throw Error('Falha ao enviar records')}),
       cf(cu(c,'plano/info'),{method:'PUT',headers:{'Content-Type':'application/json'},
         body:JSON.stringify({exportedAt:now,name:savedInfo?.name||'planograma',
-          filial:currentMeta.filial||'',date:currentMeta.date||'',total:allRecords.length,
+          filial:currentMeta.filial||'',date:currentMeta.date||'',total:planoRecs.length,
           meta:currentMeta})}).then(r=>{if(!r.ok)throw Error('Falha ao enviar info')})
     ]);
     if(encSrc&&encItems.length){encPending=true;await encSaveLocal();pushEnc()}   // Encarte vai junto
@@ -2084,6 +2158,7 @@ async function boot(){
       return;
     }
   }catch{}
+  if(estoqueLoaded&&Object.values(estoqueMap).some(x=>x&&x.d)){derive();go('home');return}   // só a Cobertura carregada: já dá para usar
   go('data'); // sem dados em lugar nenhum → vai direto para aba Dados
 }
 (async()=>{busy(true,'Abrindo seus dados…');try{await boot()}finally{busy(false)}})();
