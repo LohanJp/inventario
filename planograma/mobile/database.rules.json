@@ -1,0 +1,12 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "planograma": {
+      "$code": {
+        ".read": "$code.length >= 8",
+        ".write": "$code.length >= 8"
+      }
+    }
+  }
+}

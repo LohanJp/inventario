@@ -1,0 +1,3 @@
+# relatórios reais da loja: ficam só no seu computador (não vão para o GitHub nem para o servidor)
+tests/relatorios/
+node_modules/

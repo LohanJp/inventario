@@ -1,0 +1,13 @@
+{
+  "name": "planograma-mobile",
+  "private": true,
+  "description": "Leitor de planograma Condor — testes de manutenção (o app em si não precisa de nada instalado)",
+  "scripts": {
+    "test": "node tests/testar-leitura.js",
+    "test:salvar": "node tests/testar-leitura.js --salvar",
+    "test:app": "node tests/testar-app.js"
+  },
+  "devDependencies": {
+    "playwright": "^1.48.0"
+  }
+}
