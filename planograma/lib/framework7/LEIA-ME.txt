@@ -1,0 +1,4 @@
+Framework7 9.3.0 (MIT) — versão enxuta, montada só com o que o app usa:
+núcleo (app, barra, abas de baixo, listas, botões, cartões, chips) + sheet, tabs, virtual-list, swipeout, accordion, preloader.
+JS: ~266 KB (o pacote completo tem ~800 KB). Fica no próprio app e no cache do service worker: não depende de CDN.
+Para remontar: npm i framework7 esbuild less  →  ver build-framework7/ no zip.
