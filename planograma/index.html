@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="pt-BR"><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#f4f6f9">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Planograma">
+<meta name="apple-mobile-web-app-status-bar-style" content="default"><title>Planograma Mobile</title>
+<!-- Framework7 9 (só os componentes usados) — fica salvo junto do app, funciona sem internet -->
+<link rel="stylesheet" href="lib/framework7/framework7.min.css">
+<link rel="stylesheet" href="css/app.css">
+</head><body>
+<div id="app">
+<div class="view view-main safe-areas">
+<div class="page" data-name="main">
+
+ <!-- ═══ BARRA DO TOPO: título da aba + idade dos relatórios + nuvem + engrenagem ═══ -->
+ <div class="navbar">
+  <div class="navbar-bg"></div>
+  <div class="navbar-inner">
+   <div class="left"><span class="brand" aria-hidden="true"><svg viewBox="0 0 32 32" width="30" height="30"><rect width="32" height="32" rx="9" fill="var(--f7-theme-color)"/><path d="M8 22V10M13 22V14M18 22V8M23 22V16" stroke="#fff" stroke-width="3" stroke-linecap="round"/></svg></span></div>
+   <div class="title" id="fresh"><span id="tab-title">Resumo</span><span class="subtitle" id="fresh-t">Nenhum relatório carregado</span></div>
+   <div class="right">
+    <a class="link icon-only fcl" id="fresh-cloud" hidden aria-label="Nuvem"></a>
+    <a class="link icon-only" id="fresh-gear" aria-label="Dados e configurações"><svg class="ic" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></a>
+   </div>
+  </div>
+ </div>
+
+ <!-- ═══ ABAS DE BAIXO ═══ -->
+ <div class="toolbar tabbar tabbar-icons toolbar-bottom" id="nav">
+  <div class="toolbar-inner">
+   <a href="#s-home" class="tab-link tab-link-active" data-s="home"><i class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="2"/><rect x="14" y="3" width="7" height="5" rx="2"/><rect x="14" y="12" width="7" height="9" rx="2"/><rect x="3" y="16" width="7" height="5" rx="2"/></svg></i><span class="tabbar-label">Resumo</span></a>
+   <a href="#s-prod" class="tab-link" data-s="prod"><i class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h10"/></svg></i><span class="tabbar-label">Produtos</span></a>
+   <a href="#s-ped" class="tab-link" data-s="ped"><i class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="20" r="1.5"/><circle cx="18" cy="20" r="1.5"/><path d="M3 4h3l2.4 10.5a1 1 0 0 0 1 .8h8.2a1 1 0 0 0 1-.8L20 8H7"/></svg><span class="badge color-red" id="pbadge" style="display:none">0</span></i><span class="tabbar-label">Pedido</span></a>
+   <a href="#s-enc" class="tab-link" data-s="enc"><i class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.5l-8.5 8.5a5.5 5.5 0 0 1-7.8-7.8l9-9a3.7 3.7 0 0 1 5.2 5.2l-9 9a1.8 1.8 0 0 1-2.6-2.6l8.3-8.3"/></svg></i><span class="tabbar-label">Anexos</span></a>
+  </div>
+ </div>
+
+ <div class="tabs">
+ <!-- ═══ RESUMO ═══ -->
+ <section id="s-home" class="page-content tab tab-active on">
+  <div class="wrap">
+  <div id="pban"></div>
+  <div class="card hero-card"><div class="card-content card-content-padding">
+   <div class="hero-row"><div id="h-ring" class="ring"></div><div class="hero-tx"><div class="t" id="h-fil">Sem dados</div><div class="s" id="h-sub">Abra a aba Dados para carregar o relatório</div><div class="hl" id="h-health"></div></div></div>
+   <button class="button button-fill button-large button-round" id="h-load" type="button" hidden>Carregar relatório de Planograma</button>
+  </div></div>
+  <div id="home-dados">
+   <div class="block-title">Situação dos produtos</div>
+   <div class="kpis" id="kpis"></div>
+   <div class="block-title">Sugestão de pedido</div>
+   <div class="card" id="sug"></div>
+   <div class="block-title">Categorias com mais alertas</div>
+   <div class="card"><div class="card-content card-content-padding">
+    <div class="segmented segmented-strong cssw" id="cats-sw" role="group" aria-label="Sistemática"><button class="button" type="button" data-cs="1">Sist. 1 · CD</button><button class="button" type="button" data-cs="10">Sist. 10</button><button class="button" type="button" data-cs="20">Sist. 20</button></div>
+    <div id="cats"></div>
+   </div></div>
+  </div>
+  </div>
+ </section>
+
+ <!-- ═══ PRODUTOS ═══ -->
+ <section id="s-prod" class="page-content tab">
+  <div class="prod-top">
+   <form class="searchbar sb-f7" onsubmit="return false" role="search">
+    <div class="searchbar-inner">
+     <div class="searchbar-input-wrap">
+      <input type="search" id="q" placeholder="Nome, EAN ou código (ex.: omo 1,6)" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="search">
+      <i class="searchbar-icon"></i>
+      <span class="input-clear-button" id="q-x" role="button" aria-label="Limpar busca"></span>
+     </div>
+     <a class="link icon-only scanb" id="b-scan" aria-label="Ler código de barras"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3"/><path d="M8 9v6M11 9v6M14 9v6M17 9v6" stroke-width="1.6"/></svg></a>
+    </div>
+   </form>
+   <div class="ctl" id="ctl">
+    <button class="chip-btn" id="flt-btn" type="button" aria-label="Filtros"><svg class="ic" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg><span>Filtros</span><span class="fbd" id="flt-n" hidden>0</span></button>
+    <label class="chip-btn chip-sel"><svg class="ic" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4v16M3 16l4 4 4-4M17 20V4M13 8l4-4 4 4"/></svg><select id="sort" title="Ordenar" aria-label="Ordenar lista"><option value="cobt">Menor cobertura</option><option value="cob_d">Maior cobertura</option><option value="mdv_d">Maior MDV</option><option value="mdv_a">Menor MDV</option><option value="nome">Nome A–Z</option><option value="cob">Cobertura (relatório)</option><option value="est">Menor estoque</option></select></label>
+   </div>
+   <div class="row2"><span id="cnt"></span><span id="catx"></span></div>
+  </div>
+  <div class="vlist" id="list"></div>
+  <div class="empty" id="list-empty" hidden>Nenhum produto encontrado</div>
+  <div style="height:24px"></div>
+ </section>
+
+ <!-- ═══ PEDIDO ═══ -->
+ <section id="s-ped" class="page-content tab">
+  <div class="wrap">
+  <div class="card ped-head"><div class="card-content card-content-padding" id="phead"></div></div>
+  <div class="block-title">Adicionar produto</div>
+  <form class="searchbar sb-f7 sb-card" onsubmit="return false" role="search">
+   <div class="searchbar-inner">
+    <div class="searchbar-input-wrap"><input type="search" id="pq" placeholder="Buscar produto (ex.: omo 1,6)" autocomplete="off" autocapitalize="off" spellcheck="false"><i class="searchbar-icon"></i></div>
+    <a class="link icon-only scanb" id="b-scan2" aria-label="Ler código de barras"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3"/><path d="M8 9v6M11 9v6M14 9v6M17 9v6" stroke-width="1.6"/></svg></a>
+   </div>
+  </form>
+  <div id="pres"></div>
+  <div class="block-title">Lista de pedido</div>
+  <div id="plist"></div>
+  </div>
+ </section>
+
+ <!-- ═══ ANEXOS: Encarte · Panfleto · Oferta do dia ═══ -->
+ <section id="s-enc" class="page-content tab">
+  <div class="axbar">
+   <div class="segmented segmented-strong" id="ax-seg"><button class="button" type="button" data-axs="enc">📋 Panfleto</button><button class="button" type="button" data-axs="pan">🧾 Lâmina</button><button class="button" type="button" data-axs="dia">⭐ Oferta</button></div>
+   <!-- seletor antigo (o oferta.js continua usando estes ids; fica escondido) -->
+   <div class="axw" hidden><button id="ax-btn" type="button"><b id="ax-lbl">Panfleto</b></button>
+    <div id="ax-menu" style="display:none"><button class="axi" data-ax="enc" type="button">📋 Panfleto</button><button class="axi" data-ax="pan" type="button">🧾 Lâmina</button><button class="axi" data-ax="dia" type="button">⭐ Oferta do dia</button></div></div>
+  </div>
+  <div class="wrap">
+  <div class="pad" id="ax-enc">
+   <div class="sec-h"><h2>Análise de Panfleto</h2><p>Carregue a planilha (.xlsx, .csv) com EAN, Host e Nome dos itens do panfleto.</p></div>
+   <div class="enc-drop" id="enc-drop"><div class="dz-ic">📂</div><div>Toque para carregar ou arraste aqui</div><small><b>.xlsx</b> ou <b>.csv</b> com colunas EAN · Host · Nome</small></div>
+   <input type="file" id="enc-input" accept=".xlsx,.xls,.csv,.ods" style="display:none">
+   <div id="enc-title" class="ax-meta" style="display:none"></div>
+   <div class="row2" id="enc-sortbar" style="display:none"><span>Ordenar por</span><select id="enc-sort"><option value="arq">Ordem da planilha</option><option value="stat">Falta no CD primeiro</option><option value="cob">Menor cobertura</option><option value="est">Menor estoque</option><option value="mdv">Maior MDV</option><option value="nome">Nome A–Z</option></select></div>
+   <button class="button button-tonal" id="enc-export" style="display:none">⬇ Exportar planilha com situação</button>
+   <input class="axq" id="enc-q" type="search" placeholder="Buscar no panfleto (nome, EAN ou código)" style="display:none">
+   <div id="enc-summary-box"></div>
+   <div id="enc-list"></div>
+  </div>
+
+  <!-- 🧾 Panfleto: cole a lista → o app procura cada item no planograma -->
+  <div class="pad" id="ax-pan" style="display:none">
+   <div class="sec-h"><h2>Lâmina</h2></div>
+   <details class="help"><summary>Cole a lista e toque em Buscar. <u>Como funciona?</u></summary><p>Cole a lista da lâmina (um produto por linha, com ou sem preço). O app procura cada item no planograma e mostra estoque e cobertura. Toque no <b>nome do item</b> (🔍) para pesquisá-lo direto em Produtos. Ao buscar uma lista nova, o app pergunta para qual dia ela é (segunda a domingo) e guarda uma por dia, sincronizada com os outros aparelhos.</p></details>
+   <div class="ofdays" id="pf-days"></div>
+   <textarea class="pf-ta" id="pf-txt" rows="6" autocapitalize="off" spellcheck="false" placeholder="Ex.:&#10;Arroz Urbano 5kg Parboilizado · 18,90&#10;Feijão Caldo Bom 1kg Preto · 5,99"></textarea>
+   <div class="pf-btns"><button class="button button-fill button-large" id="pf-go">Buscar no app</button><button class="button button-tonal button-large" id="pf-paste">📋 Colar</button><button class="button button-tonal button-large" id="pf-clear">Limpar</button></div>
+   <div id="pf-meta" class="ax-meta"></div>
+   <input class="axq" id="pf-q" type="search" placeholder="Buscar na lâmina (nome, EAN ou código)" style="display:none">
+   <div id="pf-sum" class="ax-meta"></div>
+   <div id="pf-list"></div>
+  </div>
+
+  <!-- ⭐ Oferta do dia: planilha de ofertas × planograma -->
+  <div class="pad" id="ax-dia" style="display:none">
+   <div class="sec-h"><h2>Oferta do dia</h2></div>
+   <details class="help"><summary>Escolha o dia e carregue a planilha. <u>Como funciona?</u></summary><p>Escolha o dia e carregue a planilha de ofertas (.xlsx, .csv). Cada dia da semana guarda a sua (segunda a domingo); ao carregar outra no mesmo dia da semana, a mais antiga é substituída. A coluna de preço é opcional.</p></details>
+   <div class="ofdays" id="of-days"></div>
+   <div class="enc-drop" id="of-drop"><div class="dz-ic">⭐</div><div id="of-droptxt">📂 Toque para carregar a planilha da oferta</div><small><b>.xlsx</b> ou <b>.csv</b> · colunas EAN · Código · Descrição (preço opcional)</small></div>
+   <input type="file" id="of-input" accept=".xlsx,.xls,.csv,.ods" style="display:none">
+   <div id="of-title" class="ax-meta" style="display:none"></div>
+   <div id="of-warn" class="ax-warn" style="display:none"></div>
+   <button class="lnk" id="of-del" type="button" style="display:none">🗑 Limpar a planilha deste dia</button>
+   <div class="row2" id="of-sortbar" style="display:none"><span>Ordenar por</span><select id="of-sort"><option value="arq">Ordem da planilha</option><option value="sev">Situação (pior primeiro)</option></select></div>
+   <input class="axq" id="of-q" type="search" placeholder="Buscar na oferta (nome, EAN ou código)" style="display:none">
+   <div id="of-sum" class="ax-meta"></div>
+   <div id="of-list"></div>
+  </div>
+  </div>
+ </section>
+
+ <!-- ═══ DADOS E CONFIGURAÇÕES (engrenagem do topo) ═══ -->
+ <section id="s-data" class="page-content tab">
+  <div class="wrap">
+  <div class="block-title">Relatórios</div>
+  <div class="list list-strong list-outline-ios list-dividers inset data-list"><ul>
+   <li><div class="item-content"><div class="item-media"><span class="dic" style="--c:var(--f7-theme-color)">P</span></div><div class="item-inner"><div class="item-title">Planograma<div class="item-footer" id="d-plano">Nenhum relatório carregado</div></div><div class="item-after"><label class="button button-small button-tonal" for="f-plano">Escolher</label></div></div></div><input type="file" id="f-plano" accept=".txt,.json"></li>
+   <li><div class="item-content"><div class="item-media"><span class="dic" style="--c:var(--ok)">C</span></div><div class="item-inner"><div class="item-title">Cobertura<div class="item-footer" id="cob-status">Não carregado</div></div><div class="item-after"><label class="button button-small button-tonal" for="cob-input">Escolher</label></div></div></div><input type="file" id="cob-input" accept=".txt"></li>
+   <li><div class="item-content"><div class="item-media"><span class="dic" style="--c:var(--in)">T</span></div><div class="item-inner"><div class="item-title">Trânsito<div class="item-footer" id="d-trans">Não carregado</div></div><div class="item-after"><label class="button button-small button-tonal" for="f-trans">Escolher</label></div></div></div><input type="file" id="f-trans" accept=".txt"></li>
+  </ul></div>
+  <div class="block-footer">O Planograma aceita o .txt do sistema ou o arquivo <b>planograma_nuvem_*.json</b> baixado da nuvem.</div>
+
+  <div class="block-title">Aparência</div>
+  <div class="block block-strong inset">
+   <div class="segmented segmented-strong" id="theme-seg"><button class="button" type="button" data-t="auto">Automático</button><button class="button" type="button" data-t="light">☀ Claro</button><button class="button" type="button" data-t="dark">☾ Escuro</button></div>
+   <p class="ln">Automático segue o tema do celular. Claro funciona melhor sob luz forte.</p>
+  </div>
+
+  <div class="block-title">Nuvem</div>
+  <div class="block block-strong inset">
+   <div class="kv kv0"><span>🔑 Código</span><span><b id="d-code">não definido</b></span></div>
+   <div class="ln" id="d-cloud">—</div>
+   <div class="btn-col">
+    <button class="button button-tonal" id="b-code">Definir / alterar código</button>
+    <button class="button button-fill" id="b-up">⬆ Enviar para a nuvem</button>
+    <button class="button button-tonal" id="b-cloudjson">⬇ Baixar tudo da nuvem (.json)</button>
+   </div>
+  </div>
+
+  <div class="block-title">Arquivos e progresso</div>
+  <div class="block block-strong inset">
+   <div class="grid grid-cols-2 grid-gap"><button class="button button-tonal" id="b-json">Backup .json</button><button class="button button-tonal" id="b-csv">Exportar .csv</button></div>
+   <button class="button button-outline color-red btn-sp" id="b-clear">Zerar itens concluídos</button>
+  </div>
+  <div class="block-footer ver">Planograma Mobile · interface Framework7</div>
+  </div>
+ </section>
+ </div>
+</div>
+</div>
+
+<!-- ═══ FICHA DO PRODUTO (sobe de baixo) ═══ -->
+<div class="sheet-modal sheet-ficha" id="sheet">
+ <div class="swipe-handler"></div>
+ <div class="sheet-modal-inner"><div id="sheetc"></div></div>
+</div>
+<!-- ═══ FILTROS (uma folha só): Situação · Sistemática · Categoria · F/CD ═══ -->
+<div class="sheet-modal sheet-pick" id="flt-sheet">
+ <div class="swipe-handler"></div>
+ <div class="sheet-modal-inner">
+  <div class="cs-hd"><span>Filtros</span><button id="flt-clear" class="lnk" type="button">Limpar</button><button id="flt-sheet-x" class="shx" type="button" aria-label="Fechar">✕</button></div>
+  <div class="fs-body page-content" id="flt-list"></div>
+  <div class="fs-foot"><button id="flt-cancel" class="button button-tonal button-large" type="button">Cancelar</button><button id="flt-apply" class="button button-fill button-large" type="button">Ver itens</button></div>
+ </div>
+</div>
+<!-- ═══ CATEGORIA EM ÁRVORE ═══ -->
+<div class="sheet-modal sheet-pick" id="cat-sheet">
+ <div class="swipe-handler"></div>
+ <div class="sheet-modal-inner">
+  <div class="cs-hd">
+   <div class="cs-hd-top"><span id="cs-title">Categoria</span><button id="cat-sheet-x" class="shx" type="button" aria-label="Fechar">✕</button></div>
+   <div id="cs-bread"></div>
+  </div>
+  <div id="cs-back-row"><button id="cs-back-btn" class="button button-small button-tonal" type="button">← Voltar</button></div>
+  <div id="cs-apply-row"><button id="cs-apply-btn" class="button button-fill" type="button">Filtrar esta categoria →</button></div>
+  <div class="cs-list list list-dividers links-list" id="cat-list"></div>
+ </div>
+</div>
+
+<!-- pergunta "Para qual dia é esta lâmina?" (fora das abas, para ficar por cima do menu flutuante) -->
+<div id="pf-ask" style="display:none">
+    <div class="card ask-card">
+     <div class="ask-t">Para qual dia é esta lâmina?</div>
+     <div class="ask-s">Fica salvo nesse dia e sincroniza com os outros aparelhos. Dia com ● já tem lâmina e ela será substituída.</div>
+     <div class="ofdays" id="pf-ask-days"></div>
+     <button class="button button-tonal button-large" id="pf-ask-x" type="button">Cancelar</button>
+    </div>
+</div>
+<div id="scan"><video id="sv" playsinline muted></video><div class="sframe"></div><div class="sbar"><b>Aponte para o código de barras</b>A câmera desliga sozinha ao ler ou em 30 s, para poupar bateria<button class="button button-fill button-large" id="scan-x">Fechar câmera</button></div></div>
+<div id="toast" role="status" aria-live="polite"></div>
+<div id="load"><div class="spin"></div><div id="lmsg">Carregando…</div><div id="lhint"></div></div>
+
+</div><!-- #app -->
+<script src="lib/framework7/framework7.min.js"></script>
+<script src="js/leitura.js"></script>
+<script src="js/estado.js"></script>
+<script src="js/base.js"></script>
+<script src="js/telas.js"></script>
+<script src="js/encarte.js"></script>
+<script src="js/oferta.js"></script>
+<script src="js/pedido.js"></script>
+<script src="js/arquivos.js"></script>
+<script src="js/nuvem.js"></script>
+</body></html>
