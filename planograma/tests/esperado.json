@@ -1,0 +1,146 @@
+{
+ "f9416bd92dcf9a73": {
+  "arquivo": "cobertura.txt",
+  "tipo": "cobertura",
+  "resumo": {
+   "total": 9152,
+   "realign": 0,
+   "skip": 0,
+   "meta": {
+    "date": "28/10/2026",
+    "hora": "16:31:59"
+   },
+   "somaEstoque": 788267,
+   "somaMDV": 24785,
+   "somaCob": 2888495,
+   "bloqueados": 28,
+   "porSist": {
+    "1": 6939,
+    "10": 4,
+    "20": 2209
+   },
+   "primeiro": [
+    "02022671",
+    {
+     "estq": 27,
+     "compra": 0,
+     "bloq": false,
+     "mdv": 0,
+     "cob": 103,
+     "cl": "CB",
+     "vda12": 1577,
+     "sist": "1",
+     "d": "OLEO DE ALGODAO LIZA 900ML",
+     "r": "130010599",
+     "f": "00107778 CARGILL AGRICOLA",
+     "c": "MERCEARIA->SECA PESADA->OLEOS",
+     "ue": "02/10/26",
+     "uv": "27/10/26"
+    }
+   ],
+   "ultimo": [
+    "02302388",
+    {
+     "estq": 0,
+     "compra": 0,
+     "bloq": false,
+     "mdv": 0,
+     "cob": 0,
+     "cl": "CC",
+     "vda12": 200,
+     "sist": "1",
+     "d": "RICE CRACKER NATURAL LIFE ORIG.VEG.",
+     "r": "4290",
+     "f": "11568240 MWA COMERCIO DE P",
+     "c": "MERCEARIA->SAUDAVEIS - MERCEARIA->VEGANO",
+     "ue": "05/03/26",
+     "uv": "15/08/26"
+    }
+   ]
+  }
+ },
+ "e9e3b5aacd442cdf": {
+  "arquivo": "planograma_24-10.txt",
+  "tipo": "planograma",
+  "resumo": {
+   "total": 6943,
+   "realign": 0,
+   "skip": 0,
+   "meta": {
+    "date": "24/10/2026",
+    "filial": "038 - COLOMBO - Produtos COM e SEM Planograma",
+    "hora": "08:50:44"
+   },
+   "somaEstoque": 581982,
+   "somaCapacidade": 192669.22,
+   "categorias": 983,
+   "primeiro": {
+    "st": "A",
+    "automacao": "7896279600538",
+    "produto": "01070655",
+    "descricao": "OLEO DE SOJA COAMO 900ML PET",
+    "emb": "0020",
+    "referencia": "243657",
+    "fornec": "105902",
+    "nome": "COAMO AGROINDUSTRIAL C",
+    "sist": "01",
+    "giro": "A",
+    "corredor": "0",
+    "altura": "1",
+    "largura": "1",
+    "prof": "20",
+    "total": "20",
+    "cobplan": "0",
+    "qtdestoque": "1.813",
+    "pbl": "",
+    "categoria": "MERCEARIA->SECA PESADA->OLEOS->OLEO DE SOJA"
+   },
+   "ultimo": {
+    "st": "A",
+    "automacao": "7896022207625",
+    "produto": "02040384",
+    "descricao": "MASSA RENATA SUP.PROTEIN SPAGHETTI 500G",
+    "emb": "0024",
+    "referencia": "1112604",
+    "fornec": "1090725",
+    "nome": "PASTIFICIO SELMI S/A",
+    "sist": "01",
+    "giro": "CC",
+    "corredor": "0",
+    "altura": "1",
+    "largura": "1",
+    "prof": "24",
+    "total": "24",
+    "cobplan": "999",
+    "qtdestoque": "10",
+    "pbl": "",
+    "categoria": "MERCEARIA->SAUDAVEIS - MERCEARIA->VEGANO->FARINHA E MISTURA"
+   }
+  }
+ },
+ "8b6870a4a99b3156": {
+  "arquivo": "transito_28-10.txt",
+  "tipo": "transito",
+  "resumo": {
+   "total": 2697,
+   "meta": {
+    "date": "28/10/2026",
+    "hora": "16:41:29"
+   },
+   "somaTransito": 38018,
+   "comTransito": 553,
+   "primeiro": [
+    "00826804",
+    {
+     "qt_transito": 20
+    }
+   ],
+   "ultimo": [
+    "02388353",
+    {
+     "qt_transito": 0
+    }
+   ]
+  }
+ }
+}
