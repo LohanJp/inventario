@@ -105,6 +105,13 @@ const srv=http.createServer((q,s)=>{const p=path.join(RAIZ,decodeURIComponent(q.
   await passo('modo claro e escuro',async()=>{await p.click('#theme-seg [data-t=dark]');const d=await p.evaluate(()=>document.documentElement.classList.contains('dark'));
     await p.click('#theme-seg [data-t=light]');const l=await p.evaluate(()=>!document.documentElement.classList.contains('dark'));
     await p.click('#theme-seg [data-t=auto]');if(!d||!l)throw Error('o tema não trocou');return 'ok'});
+  await passo('puxar para atualizar (mantém a aba e os filtros)',async()=>{await p.click('#nav [data-s=prod]');await espera(300);
+    await p.evaluate(()=>{F={chip:'rup',cat:'',q:'',sort:'cobt'};renderList(true);$('s-prod').scrollTop=0});await espera(200);
+    const cdp=await ctx.newCDPSession(p);await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x:200,y:220}]});
+    for(let i=1;i<=20;i++){await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:200,y:220+i*9}]});await espera(16)}
+    await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});await espera(1500);
+    const r=await p.evaluate(()=>({aba:curTab,chip:F.chip,aviso:$('toast').textContent}));
+    if(r.aba!=='prod'||r.chip!=='rup'||!/Atualizado|Sem internet/.test(r.aviso))throw Error(JSON.stringify(r));return r.aviso});
   await passo('botão voltar: fecha a ficha e volta ao Resumo',async()=>{await p.click('#nav [data-s=prod]');await espera(300);await p.click('#list .p .infb');await espera(450);
     await p.goBack();await espera(450);if(await p.evaluate(()=>fichaSheet.opened))throw Error('voltar não fechou a ficha');
     await p.goBack();await espera(300);const t=await p.evaluate(()=>curTab);if(t!=='home')throw Error('voltar foi para '+t);return 'ok'});
