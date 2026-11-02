@@ -1,0 +1,10 @@
+import Framework7 from 'framework7/lite';
+import Sheet from 'framework7/components/sheet';
+import Tabs from 'framework7/components/tabs';
+import VirtualList from 'framework7/components/virtual-list';
+import Swipeout from 'framework7/components/swipeout';
+import Preloader from 'framework7/components/preloader';
+import PullToRefresh from 'framework7/components/pull-to-refresh';
+Framework7.use([Sheet, Tabs, VirtualList, Swipeout, Preloader, PullToRefresh]);
+Framework7.version = '9.3.0';
+window.Framework7 = Framework7;
