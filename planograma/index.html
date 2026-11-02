@@ -42,7 +42,8 @@
 
  <div class="tabs">
  <!-- ═══ RESUMO ═══ -->
- <section id="s-home" class="page-content tab tab-active on">
+ <section id="s-home" class="page-content ptr-content tab tab-active on">
+  <div class="ptr-preloader"><div class="preloader"></div><div class="ptr-arrow"></div></div>
   <div class="wrap">
   <div id="pban"></div>
   <div class="card hero-card"><div class="card-content card-content-padding">
@@ -56,7 +57,7 @@
    <div class="card" id="sug"></div>
    <div class="block-title">Categorias com mais alertas</div>
    <div class="card"><div class="card-content card-content-padding">
-    <div class="segmented segmented-strong cssw" id="cats-sw" role="group" aria-label="Sistemática"><button class="button" type="button" data-cs="1">Sist. 1 · CD</button><button class="button" type="button" data-cs="10">Sist. 10</button><button class="button" type="button" data-cs="20">Sist. 20</button></div>
+    <div class="segmented segmented-strong cssw" id="cats-sw" role="group" aria-label="Sistemática"><button class="button" type="button" data-cs="1">Sist. 1</button><button class="button" type="button" data-cs="10">Sist. 10</button><button class="button" type="button" data-cs="20">Sist. 20</button><span class="segmented-highlight"></span></div>
     <div id="cats"></div>
    </div></div>
   </div>
@@ -64,7 +65,8 @@
  </section>
 
  <!-- ═══ PRODUTOS ═══ -->
- <section id="s-prod" class="page-content tab">
+ <section id="s-prod" class="page-content ptr-content tab">
+  <div class="ptr-preloader"><div class="preloader"></div><div class="ptr-arrow"></div></div>
   <div class="prod-top">
    <form class="searchbar sb-f7" onsubmit="return false" role="search">
     <div class="searchbar-inner">
@@ -88,7 +90,8 @@
  </section>
 
  <!-- ═══ PEDIDO ═══ -->
- <section id="s-ped" class="page-content tab">
+ <section id="s-ped" class="page-content ptr-content tab">
+  <div class="ptr-preloader"><div class="preloader"></div><div class="ptr-arrow"></div></div>
   <div class="wrap">
   <div class="card ped-head"><div class="card-content card-content-padding" id="phead"></div></div>
   <div class="block-title">Adicionar produto</div>
@@ -105,9 +108,10 @@
  </section>
 
  <!-- ═══ ANEXOS: Encarte · Panfleto · Oferta do dia ═══ -->
- <section id="s-enc" class="page-content tab">
+ <section id="s-enc" class="page-content ptr-content tab">
+  <div class="ptr-preloader"><div class="preloader"></div><div class="ptr-arrow"></div></div>
   <div class="axbar">
-   <div class="segmented segmented-strong" id="ax-seg"><button class="button" type="button" data-axs="enc">📋 Panfleto</button><button class="button" type="button" data-axs="pan">🧾 Lâmina</button><button class="button" type="button" data-axs="dia">⭐ Oferta</button></div>
+   <div class="segmented segmented-strong" id="ax-seg"><button class="button" type="button" data-axs="enc">📋 Panfleto</button><button class="button" type="button" data-axs="pan">🧾 Lâmina</button><button class="button" type="button" data-axs="dia">⭐ Oferta</button><span class="segmented-highlight"></span></div>
    <!-- seletor antigo (o oferta.js continua usando estes ids; fica escondido) -->
    <div class="axw" hidden><button id="ax-btn" type="button"><b id="ax-lbl">Panfleto</b></button>
     <div id="ax-menu" style="display:none"><button class="axi" data-ax="enc" type="button">📋 Panfleto</button><button class="axi" data-ax="pan" type="button">🧾 Lâmina</button><button class="axi" data-ax="dia" type="button">⭐ Oferta do dia</button></div></div>
@@ -157,7 +161,8 @@
  </section>
 
  <!-- ═══ DADOS E CONFIGURAÇÕES (engrenagem do topo) ═══ -->
- <section id="s-data" class="page-content tab">
+ <section id="s-data" class="page-content ptr-content tab">
+  <div class="ptr-preloader"><div class="preloader"></div><div class="ptr-arrow"></div></div>
   <div class="wrap">
   <div class="block-title">Relatórios</div>
   <div class="list list-strong list-outline-ios list-dividers inset data-list"><ul>
@@ -169,7 +174,7 @@
 
   <div class="block-title">Aparência</div>
   <div class="block block-strong inset">
-   <div class="segmented segmented-strong" id="theme-seg"><button class="button" type="button" data-t="auto">Automático</button><button class="button" type="button" data-t="light">☀ Claro</button><button class="button" type="button" data-t="dark">☾ Escuro</button></div>
+   <div class="segmented segmented-strong" id="theme-seg"><button class="button" type="button" data-t="auto">Automático</button><button class="button" type="button" data-t="light">☀ Claro</button><button class="button" type="button" data-t="dark">☾ Escuro</button><span class="segmented-highlight"></span></div>
    <p class="ln">Automático segue o tema do celular. Claro funciona melhor sob luz forte.</p>
   </div>
 
