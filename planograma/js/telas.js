@@ -9,7 +9,9 @@ const app=new Framework7({el:'#app',theme:'auto',name:'Planograma',
   colors:{primary:'#0b63ce'},
   touch:{tapHold:false,touchClicksDistanceThreshold:8},
   swipeout:{actionsNoFold:false,removeElements:false},
-  sheet:{backdrop:true,closeByBackdropClick:true,swipeToClose:true}});
+  sheet:{backdrop:true,closeByBackdropClick:true,swipeToClose:true},init:false});
+app.colors={primary:'#0b63ce',red:'#ff3b30'};   // ⚡ o F7 calcula um esquema Material (HCT) por cor: só as 2 usadas (antes 16 → ~0,7 s no boot com CPU 4×)
+app.init();
 
 /* ═══ TEMA ═══ substitui o applyTheme do base.js (mesma assinatura): Automático · Claro · Escuro */
 const mqDark=matchMedia('(prefers-color-scheme: dark)');let themePref='auto';
@@ -33,6 +35,28 @@ const mkSheet=(id,o)=>app.sheet.create({el:'#'+id,swipeToClose:true,backdrop:tru
 let D=null,sheetSwap=false;   // D = rascunho dos filtros enquanto a folha está aberta (só vale ao tocar em "Ver N itens")
 const fichaSheet=mkSheet('sheet'),fltSheet=mkSheet('flt-sheet'),catSheet=mkSheet('cat-sheet');
 
+/* ═══ PUXAR PARA ATUALIZAR (em todas as abas) ═══ as abas rolam por dentro, então o "puxar para baixo" do navegador
+   (que antes recarregava a página) não acontece mais: o do Framework7 busca a nuvem de novo e redesenha a aba atual,
+   mantendo a aba, a busca e os filtros. Sem internet/código: só recalcula e redesenha com os dados do aparelho. */
+let ptrBusy=false;
+async function puxarAtualizar(){
+  if(ptrBusy)return;ptrBusy=true;
+  const aba=curTab,f={...F},q=$('q').value,c=code(),realGo=go;
+  let nuvemOk=false;
+  try{
+    if(c&&navigator.onLine!==false){
+      go=()=>{};                                                 // loadRecords() voltaria para o Resumo e limparia os filtros: segura enquanto baixa
+      try{nuvemOk=await loadFromCloud(c);if(nuvemOk)startSSE(c)}finally{go=realGo}}
+    if(allRecords.length){if(!nuvemOk)derive();F=f;$('q').value=q}
+    go(aba,true);
+    toast(nuvemOk?'Atualizado com a nuvem ✓':c&&navigator.onLine===false?'Sem internet — mostrando os dados do aparelho':'Atualizado ✓');
+  }catch(e){toast('⚠ Não consegui atualizar: '+(e&&e.message||e))}
+  finally{ptrBusy=false}}
+document.querySelectorAll('.tabs>section.ptr-content').forEach(el=>{
+  el.querySelectorAll('.preloader').forEach(p=>app.preloader.init(p));
+  const ptr=app.ptr.create(el);
+  ptr.on('refresh',(el2,done)=>{puxarAtualizar().finally(()=>{if(typeof done==='function')done();else ptr.done()})})});
+
 /* navegação */
 /* ═══ BOTÃO/GESTO VOLTAR ═══ cada tela e cada janela (ficha, leitor) vira uma entrada do histórico:
    voltar fecha a janela → volta ao Resumo → (só aí) sai do app. Pilha máxima: Resumo → aba → janela. */
@@ -42,7 +66,7 @@ function popOv(){if(ovHist){ovHist=false;skipPop=true;history.back()}}
 function closeSheet(){if(fichaSheet.opened)fichaSheet.close();else{shOn('sheet',false);popOv()}}
 addEventListener('popstate',e=>{
   if(skipPop){skipPop=false;return}                           // voltar disparado pelo próprio app
-  if(ovHist){ovHist=false;[fichaSheet,fltSheet,catSheet].forEach(s=>{if(s.opened)s.close()});if(scanStream)scanStop(true);return}   // 1º voltar: fecha ficha/leitor
+  if(ovHist){ovHist=false;[fichaSheet,fltSheet,catSheet].forEach(s=>{if(s.opened)s.close()});if(scanStream)scanStop(true);if($('pf-ask').style.display!=='none')pfAskClose(true);return}   // 1º voltar: fecha ficha/leitor
   const st=e.state||{s:'home'};if(st.o)return;
   tabPushed=st.s!=='home';if(st.s&&st.s!==curTab)go(st.s,true) // 2º voltar: volta à aba anterior
 });
@@ -53,16 +77,18 @@ function go(s,fromPop){
  document.querySelectorAll('.tabs>section').forEach(e=>e.classList.toggle('on',e===el));
  if(!el.classList.contains('tab-active')){inGo=true;try{app.tab.show(el,false)}finally{inGo=false}}
  document.querySelectorAll('#nav .tab-link').forEach(b=>b.classList.toggle('tab-link-active',b.dataset.s===s));
- $('tab-title').textContent=TITLES[s]||'';el.scrollTop=0;
+ $('tab-title').textContent=TITLES[s]||'';
  if(s==='home')renderHome();if(s==='prod')renderList(true);if(s==='data')renderData();if(s==='ped')renderPed();
- if(s==='enc'){axSeg();if(axCur==='pan')pfOpen();if(axCur==='dia')ofOpen()}
+ if(s==='enc'){axSeg();if(axCur==='pan')pfOpen();if(axCur==='dia')ofOpen();if(axCur==='enc'&&encDirty)renderEnc()}
+ el.scrollTop=0;
  if(!fromPop&&s!==curTab){                                      // registra no histórico (home → aba; entre abas não empilha)
    if(s==='home'){if(tabPushed){tabPushed=false;skipPop=true;history.back()}else history.replaceState({s:'home'},'')}
    else if(curTab==='home'){history.pushState({s},'');tabPushed=true}
    else history.replaceState({s},'')}
  curTab=s;renderFresh()}
-app.on('tabShow',el=>{if(inGo||!el||!el.id)return;const s=el.id.slice(2);if(s!==curTab)go(s)});   // toque na aba de baixo
-$('nav').addEventListener('click',e=>{const b=e.target.closest('.tab-link');if(b&&b.dataset.s===curTab)go(curTab)});   // tocar na aba atual: atualiza e volta ao topo (igual à versão anterior)
+let tabJust=false;   // ⚡ o tabShow do F7 roda ANTES deste click: sem a marca, a aba nova era desenhada 2 vezes
+app.on('tabShow',el=>{if(inGo||!el||!el.id)return;const s=el.id.slice(2);if(s!==curTab){tabJust=true;setTimeout(()=>{tabJust=false},0);go(s)}});   // toque na aba de baixo
+$('nav').addEventListener('click',e=>{if(tabJust)return;const b=e.target.closest('.tab-link');if(b&&b.dataset.s===curTab)go(curTab)});   // tocar na aba atual: atualiza e volta ao topo (igual à versão anterior)
 
 /* ═══ RESUMO ═══ */
 const KORD=['rup','crit','aten','ok','sg','nd'];
@@ -72,19 +98,23 @@ function ring(c,n){let off=25,s='';
     s+=`<circle r="15.9155" cx="18" cy="18" fill="none" stroke="${COLOR[k]}" stroke-width="4.2" stroke-dasharray="${p.toFixed(3)} ${(100-p).toFixed(3)}" stroke-dashoffset="${off.toFixed(3)}"/>`;off-=p}
   const ok=Math.round((c.ok||0)/n*100);
   return `<svg viewBox="0 0 36 36" width="92" height="92" role="img" aria-label="${ok}% saudável"><circle r="15.9155" cx="18" cy="18" fill="none" stroke="var(--trk)" stroke-width="4.2"/>${s}<text x="18" y="18.2" text-anchor="middle" class="rg-n">${ok}%</text><text x="18" y="23.6" text-anchor="middle" class="rg-l">saudável</text></svg>`}
-function renderHome(){const n=allRecords.length;renderBan();renderSug();
+let hS1=false;   // Resumo só da Sistemática 1 (liga/desliga tocando no círculo)
+function renderHome(){let n=allRecords.length;renderBan();renderSug();
  $('home-dados').hidden=!n;$('h-load').hidden=!!n;                            // sem dados: só o cartão com o botão de carregar (nada de "—" soltos)
  if(!n){$('h-fil').textContent='Nenhum relatório carregado';$('h-sub').textContent='Carregue o relatório de Planograma para ver a situação dos produtos e a sugestão de pedido.';$('h-ring').innerHTML='';$('h-health').innerHTML='';$('kpis').innerHTML='';$('cats').innerHTML='';return}
+ const R=hS1?allRecords.filter(isCD):allRecords,N=n;n=R.length||1;   // toque no círculo: só a Sistemática 1 (isCD, igual ao filtro "1")
  const c={rup:0,crit:0,aten:0,ok:0,nd:0,sg:0,tr:0};
- for(const r of allRecords){c[r._k]++;if(r._t>0)c.tr++}
+ for(const r of R){c[r._k]++;if(r._t>0)c.tr++}
  $('h-fil').textContent=(currentMeta.filial||'Filial').replace(/ - Produtos.*/i,'');
- $('h-sub').textContent=`${currentMeta.date||''} ${currentMeta.hora||''} · ${f0(n)} produtos`;
+ $('h-sub').innerHTML=hS1?`<b class="s1t">Só Sistemática 1</b> · ${f0(R.length)} de ${f0(N)} produtos`:`${esc(currentMeta.date||'')} ${esc(currentMeta.hora||'')} · ${f0(N)} produtos`;
+ $('h-ring').classList.toggle('s1',hS1);$('h-ring').title=hS1?'Toque para voltar a todos os produtos':'Toque para ver só a Sistemática 1';
  $('h-ring').innerHTML=ring(c,n);
  const pc=k=>Math.round(c[k]/n*1000)/10;
  $('h-health').innerHTML=`<span style="--c:var(--cr)">${GLY.rup} ${f1(pc('rup'))}% ruptura</span><span style="--c:var(--crit)">${GLY.crit} ${f1(pc('crit'))}% crítico</span>`;
- const K=[['rup','Ruptura','estoque zerado/negativo','var(--cr)'],['crit','Crítico','cobertura total < 7 dias','var(--crit)'],['aten','Atenção','cobertura total de 7 a 15 dias','var(--am)'],['ok','Saudável','cobertura total de 15 dias ou mais','var(--ok)'],['sg','Sem giro',`com estoque, MDV 0 e sem venda há mais de ${SG_DIAS} dias`,'var(--sg)']];
- if(transitLoaded)K.push(['tr','Em trânsito','itens com entrada a caminho','var(--in)']);else K.push(['nd','Sem MDV','sem MDV para calcular a cobertura','var(--mu)']);
- $('kpis').innerHTML=K.map(k=>`<button class="kpi" data-k="${k[0]}" style="--c:${k[3]}" title="${k[2]}" type="button"><span class="kg">${k[0]==='tr'?'⇢':GLY[k[0]]}</span><div class="n num">${f0(c[k[0]])}</div><div class="l"><b>${k[1]}</b></div><i class="kb"><u style="width:${Math.max(2,c[k[0]]/n*100).toFixed(1)}%"></u></i></button>`).join('');
+ const K=[['rup','Ruptura','estoque zerado/negativo','var(--cr)'],['crit','Crítico','cobertura total < 7 dias','var(--crit)'],['aten','Atenção','cobertura total de 7 a 15 dias','var(--am)'],['ok','Saudável','cobertura total de 15 dias ou mais','var(--ok)'],['sg','Sem giro',`com estoque, MDV 0 e sem venda há mais de ${SG_DIAS} dias`,'var(--sg)'],['nd','Sem MDV','sem MDV para calcular a cobertura','var(--mu)']];
+ if(transitLoaded)K.push(['tr','Em trânsito','itens com entrada a caminho','var(--in)']);   // não é situação: faixa larga embaixo
+ const pct=k=>{const v=c[k]/n*100;return v>0&&v<0.1?'&lt;0,1%':f1(v)+'%'};   // % de todos os produtos
+ $('kpis').innerHTML=K.map(k=>`<button class="kpi${k[0]==='tr'?' kw':''}" data-k="${k[0]}" style="--c:${k[3]}" title="${k[2]}" type="button"><div class="n num">${f0(c[k[0]])}</div><div class="l"><b><span class="kg">${k[0]==='tr'?'⇢':GLY[k[0]]}</span>${k[1]}</b></div><span class="kr"><i class="kb"><u style="width:${Math.max(2,c[k[0]]/n*100).toFixed(1)}%"></u></i><span class="pc num">${pct(k[0])}</span></span></button>`).join('');
  renderCats()}
 /* Categorias com mais alertas — por sistemática. Só a Sist. 1 (CD) tem a divisão "dá para pedir" × "sem no CD" */
 function renderCats(){
@@ -97,7 +127,9 @@ function renderCats(){
   $('cats').innerHTML=rows.length?leg+rows.map(([k,v])=>`<button class="bar" data-c="${esc(k)}" type="button"><span class="r"><span>${esc(short(k))}</span><b class="num">${one?`<span style="color:var(--am)">${v.y}</span> · <span style="color:var(--cr)">${v.cd}</span>`:`<span style="color:var(--am)">${v.y}</span>`}</b></span><i><u style="width:${(v.y+v.cd)/mx*100}%">${v.y?`<s style="flex:${v.y}"></s>`:''}${v.cd?`<s class="cd" style="flex:${v.cd}"></s>`:''}</u></i></button>`).join(''):'<div class="empty">Sem alertas nessa sistemática</div>'}
 $('h-load').onclick=()=>$('f-plano').click();                                // Resumo vazio: abre direto o seletor do relatório
 $('cats-sw').onclick=e=>{const b=e.target.closest('button');if(!b||b.dataset.cs===catSist)return;catSist=b.dataset.cs;try{localStorage.setItem('planograma_catsist',catSist)}catch{};renderCats()};
-$('kpis').onclick=e=>{const b=e.target.closest('.kpi');if(!b)return;const k=b.dataset.k;F={chip:k==='tr'?'trans':k,cat:'',q:'',sort:k==='ok'?'nome':'cobt'};$('q').value='';go('prod')};
+$('h-ring').onclick=()=>{if(!allRecords.length)return;hS1=!hS1;renderHome()};
+$('h-ring').setAttribute('role','button');
+$('kpis').onclick=e=>{const b=e.target.closest('.kpi');if(!b)return;const k=b.dataset.k;F={chip:k==='tr'?'trans':k,cat:'',q:'',sort:k==='ok'?'nome':'cobt',ent:hS1?'1':''};$('q').value='';go('prod')};   // a lista bate com o número tocado (todas ou só Sist. 1)
 $('cats').onclick=e=>{const b=e.target.closest('.bar');if(!b)return;F={chip:'alert',cat:b.dataset.c,q:'',sort:'cobt',ent:catSist};$('q').value='';go('prod')};
 function renderSug(){const el=$('sug');
   if(!allRecords.length){el.innerHTML='<div class="empty">—</div>';return}
@@ -114,7 +146,7 @@ $('sug').onclick=e=>{
   const u=e.target.closest('.urg');if(u)return openSheet(byProd.get(u.dataset.p));
   if(e.target.closest('#sg-cd')){F={chip:'cd',cat:'',q:'',sort:'cobt'};$('q').value='';return go('prod')}
   if(e.target.closest('#sg-all')){F={chip:'sug',cat:'',q:'',sort:'cobt'};$('q').value='';return go('prod')}
-  if(e.target.closest('#sg-add')){const f=allRecords.filter(r=>r._sg>0&&!r._d&&!inPed(r.produto));if(!f.length)return;
+  if(e.target.closest('#sg-add')){const P=pedSet(),f=allRecords.filter(r=>r._sg>0&&!r._d&&!P.has(r.produto));if(!f.length)return;
     if(!confirm(`Adicionar ${f0(f.length)} produtos ao pedido?`))return;
     f.forEach(r=>addPed(r,'',true));savePed();renderSug();toast(f0(f.length)+' produtos adicionados ao pedido')}};
 
@@ -126,11 +158,18 @@ const LSDEP='planograma_dep';let depMap={};try{(JSON.parse(localStorage.getItem(
 let DEP=new Set();function refreshDep(){DEP=new Set(Object.keys(depMap))}
 const FLT_SHORT={dep:'🔎 Depósito',all:'Situação'};
 /* lista virtual do Framework7: só os cartões visíveis existem na tela (9 mil itens sem travar) */
-let vl=null;
-function ensureVL(){if(vl)return vl;
-  vl=app.virtualList.create({el:$('list'),items:[],height:'auto',renderItem:(r,i)=>card(r).replace('<li class="swipeout swr"',`<li data-virtual-list-index="${i}" class="swipeout swr"`),
-    scrollableParentEl:$('s-prod'),dynamicHeightBufferSize:1.2,setListHeight:true});   // o índice no <li> deixa o Framework7 medir a altura real de cada cartão (sem ele contava 40 px e o fim da lista ficava embaixo do menu)
+let vl=null,CH=0;
+/* ⚡ altura fixa: todo cartão de Produtos tem a mesma altura (nome em 2 linhas com "…", 1 linha de código/medidas/selos,
+   números sem quebrar). Mede-se UM cartão e o Framework7 posiciona os outros por conta — sem medir 9 mil cartões ao rolar. */
+function medeCartao(){const L=$('list'),r=list[0]||allRecords[0];if(!L||!r||!L.offsetWidth)return 0;
+  const u=document.createElement('ul');u.style.cssText='position:absolute;left:0;right:0;top:0;visibility:hidden;margin:0;padding:0;list-style:none';
+  L.style.removeProperty('--ph');u.innerHTML=card(r);L.appendChild(u);const li=u.firstElementChild,p=li.querySelector('.p');
+  const h=li.offsetHeight,ph=p?p.offsetHeight:0;u.remove();if(ph)L.style.setProperty('--ph',ph+'px');return h}
+function ajustaAltura(){if(!vl)return;const h=medeCartao();if(h&&h!==CH){CH=h;vl.params.height=h;vl.setListSize();vl.render(true)}}
+function ensureVL(){if(vl)return vl;CH=medeCartao();
+  vl=app.virtualList.create({el:$('list'),items:[],height:CH||120,renderItem:r=>card(r),scrollableParentEl:$('s-prod'),setListHeight:true,rowsBefore:10,rowsAfter:5});   // janela menor = cada redesenho troca menos cartões (tranco menor ao rolar rápido)
   return vl}
+window.addEventListener('resize',debounce(ajustaAltura,150));   // girou o celular / mudou o tamanho da letra: mede de novo
 function renderList(reset){const T=toks(F.q);
  refreshDep();{const n=nFiltros(),fb=$('flt-btn');$('flt-n').textContent=n;$('flt-n').hidden=!n;fb.classList.toggle('on',!!n);   // botão "Filtros" com quantos estão ligados
   const nm=F.chip==='all'?'':(FLT_SHORT[F.chip]||(CHIPS.find(c=>c[0]===F.chip)||[])[1]||'');fb.title='Filtros'+(nm?' · '+nm:'');fb.setAttribute('aria-label',fb.title)}
@@ -152,7 +191,7 @@ function renderList(reset){const T=toks(F.q);
  $('q-x').classList.toggle('on',!!F.q);
  $('list-empty').hidden=!!list.length;
  if(!$('s-prod').classList.contains('on')&&!vl)return;                     // a lista virtual nasce quando a aba abre (precisa da altura da tela)
- ensureVL().replaceAllItems(list);
+ ensureVL().replaceAllItems(list);if(!CH)ajustaAltura();   // aba estava escondida na 1ª vez: mede agora
  if(reset&&$('s-prod').scrollTop>0)$('s-prod').scrollTop=0}
 /* escolheu (abriu) um item achado na busca que algum filtro esconderia → desmarca só esse(s) filtro(s), para ele não sumir da lista depois */
 function relaxFiltersFor(r){
@@ -161,7 +200,7 @@ function relaxFiltersFor(r){
   if(!catOk(r)){F.cat='';off.push('categoria')}
   if(!entOk(r)){F.ent='';off.push('sistemática')}
   if(!passesChip(r,F.chip,true)){off.push(FLT_SHORT[F.chip]||(CHIPS.find(c=>c[0]===F.chip)||[])[1]||'filtro');F.chip='all'}
-  if(noCD&&cdRisk(r)&&F.chip!=='cd'&&F.chip!=='dep'){noCD=false;try{localStorage.setItem('planograma_nocd','0')}catch{};off.push('F/CD')}
+  if(hideCD(r)&&F.chip!=='cd'&&F.chip!=='dep'){if(cdRisk(r))noCD=false;else noCDTr=false;salvaCD();off.push(cdRisk(r)?'F/CD':'F/CD em trânsito')}
   if(!off.length)return;
   renderList();toast('Filtro desmarcado: '+off.join(', '))}
 
@@ -182,7 +221,7 @@ function cardBody(r,acts,extra,noPed){
   const sel=(r._sist?`<span class="ent e${esc(r._sist)}">${esc(ENT[r._sist]||'Sist. '+r._sist)}</span>`:'')+(!noPed&&inPed(r.produto)?' '+PEDBADGE:'')+axBadges(r)+neg;
   const cob=r._k==='sg'?(semVendaDias(r)===Infinity?'—':f0(semVendaDias(r))+'<i>d s/ venda</i>'):r._ct===null?'—':dias(r._ct)+(rel||r._c999?`<i class="sep">|</i><i class="rr" title="R = cobertura do relatório de Cobertura de Estoque${r._c999?' (veio 999 = sem cálculo)':''}">R:</i>${rel?dias(r._c):'—'}`:'<i>d</i>');
   return `<div class="hd"><div class="nm">${esc(r.descricao)}</div><div class="acts">${acts}${INFOBTN}</div></div>
- <div class="sb"><span class="cod">${esc(r.produto)}</span> · ${r._np?'Fora do planograma':dimTxt(r)+' · '+embTxt(r)}${sel?' '+sel:''}</div>
+ <div class="sb"><span class="sbt"><span class="cod">${esc(r.produto)}</span> · ${r._np?'Fora do planograma':dimTxt(r)+' · '+embTxt(r)}</span>${sel?`<span class="sbb"> ${sel}</span>`:''}</div>
  <div class="st3">
   <div class="es"><small>Estoque</small><b class="num">${unCx(r._e)}</b></div>
   <div class="es"><small>Trânsito</small><b class="num">${transitLoaded?unCx(r._t):'—'}</b></div>
@@ -205,9 +244,14 @@ $('catx').onclick=e=>{const b=e.target.closest('.catx');if(!b)return;if(b.datase
 
 /* ── Categoria em árvore: toca num nível com filhos → entra; "Filtrar …" aplica aquele nível; folha aplica direto ── */
 let catPath=[];   // caminho atual, ex.: ['MERCEARIA','LIMPEZA']
+/* F/CD em trânsito: estoque menor que 1 caixa, mas com trânsito a caminho (só esconde se a sub-opção estiver ligada) */
+let noCDTr=false;try{noCDTr=localStorage.getItem('planograma_nocdtr')==='1'}catch{}
+const cdTr=r=>isCD(r)&&r._t>0&&r._e<(num(r.emb)||1);
+const hideCD=(r,on=noCD,tr=noCDTr)=>on&&(cdRisk(r)||(tr&&cdTr(r)));
+const salvaCD=()=>{try{localStorage.setItem('planograma_nocd',noCD?'1':'0');localStorage.setItem('planograma_nocdtr',noCDTr?'1':'0')}catch{}};
 const catOk=r=>!F.cat||r.categoria===F.cat||(r.categoria||'').startsWith(F.cat+'->');   // nível pai inclui os filhos
 function passesChip(r,ch=F.chip,ignNoCD){
-  return (ignNoCD||ch==='cd'||ch==='dep'||!noCD||!cdRisk(r))&&
+  return (ignNoCD||ch==='cd'||ch==='dep'||!hideCD(r))&&
     (ch==='all'||ch===r._k||
     (ch==='alert'&&(r._k==='rup'||r._k==='crit'))||
     (ch==='trans'&&r._t>0)||(ch==='pend'&&!r._d)||
@@ -248,7 +292,7 @@ function closeCat(){if(catSheet.opened)catSheet.close()}
 const setCat=v=>{D.cat=v;closeCat()};                                      // escolheu → volta para Filtros com a categoria marcada
 
 /* ═══ FILTROS (uma folha só): Situação · Sistemática · Categoria · F/CD → toca em "Ver N itens" ═══ */
-const nFiltros=()=>(F.chip!=='all')+(!!F.cat)+(!!F.ent)+(noCD?1:0)+(F.cob?1:0);
+const nFiltros=()=>(F.chip!=='all')+(!!F.cat)+((F.ent||'')!==ENT0)+(noCD?1:0)+(F.cob?1:0);
 /* COBERTURA TOTAL maior/menor que N dias — usa o mesmo número arredondado do cartão; "Sem giro" e item sem MDV/cobertura ficam de fora */
 const cobDia=r=>r._ct!==null&&r._k!=='sg'?Math.max(r._ct,0):null;
 const cobOn=c=>!!(c&&(c.op==='lt'||c.op==='gt')&&Number.isFinite(c.d)&&c.d>=0);
@@ -256,15 +300,18 @@ const cobPass=(r,c)=>{if(!cobOn(c))return true;const v=cobDia(r);return v!==null
 const cobTxt=c=>`Cob. ${c.op==='lt'?'<':'>'} ${f0(c.d)} dias`;
 const dCat=r=>!D.cat||r.categoria===D.cat||(r.categoria||'').startsWith(D.cat+'->');
 const dEnt=r=>!D.ent||(D.ent==='np'?!!r._np:D.ent==='1'?isCD(r):r._sist===D.ent);
-const dChip=(r,ch=D.chip)=>(ch==='cd'||ch==='dep'||!D.noCD||!cdRisk(r))&&passesChip(r,ch,true);
-const ENTS=[['','Todas'],['1','1 · CD'],['10','10'],['20','20'],['np','Sem plano']];
+const dChip=(r,ch=D.chip)=>(ch==='cd'||ch==='dep'||!hideCD(r,D.noCD,D.noCDTr))&&passesChip(r,ch,true);
+const ENT0='1';   // filtro padrão de Sistemática (ao abrir o app e no "Limpar")
+const ENTS=[['','Todas'],['1','1'],['10','10'],['20','20'],['np','Sem plano']];
 const COBOPS=[['','Qualquer'],['lt','Menor que'],['gt','Maior que']];
 /* só os números (contagens e "Ver N itens") — usado enquanto digita os dias, sem redesenhar a folha */
 function fltCounts(){
-  const base=allRecords.filter(r=>dCat(r)&&dEnt(r)&&cobPass(r,D.cob));
-  document.querySelectorAll('#flt-list .fs-s').forEach(b=>{b.querySelector('small').textContent=f0(base.reduce((a,r)=>a+(dChip(r,b.dataset.c)?1:0),0))});
-  $('flt-apply').textContent=`Ver ${f0(base.filter(r=>dChip(r)).length)} itens`;
-  $('flt-clear').style.visibility=(D.chip!=='all'||D.cat||D.ent||D.noCD||cobOn(D.cob))?'':'hidden'}
+  const bs=[...document.querySelectorAll('#flt-list .fs-s')],ch=bs.map(b=>b.dataset.c),n=ch.map(()=>0);let sel=0;
+  for(const r of allRecords){if(!(dCat(r)&&dEnt(r)&&cobPass(r,D.cob)))continue;   // ⚡ 1 passada: conta todas as situações juntas (mesmo dChip de antes)
+    for(let i=0;i<ch.length;i++)if(dChip(r,ch[i]))n[i]++;if(dChip(r))sel++}
+  bs.forEach((b,i)=>{b.querySelector('small').textContent=f0(n[i])});
+  $('flt-apply').textContent=`Ver ${f0(sel)} itens`;
+  $('flt-clear').style.visibility=(D.chip!=='all'||D.cat||(D.ent||'')!==ENT0||D.noCD||cobOn(D.cob))?'':'hidden'}
 function renderFlt(){refreshDep();
   const sit=CHIPS.filter(c=>c[0]!=='trans'||transitLoaded).map(c=>{
     const g=GLY[c[0]]||(c[2]?ic(c[2],13):'');
@@ -275,14 +322,15 @@ function renderFlt(){refreshDep();
    ${op?`<div class="fs-cob"><div class="fs-num"><button type="button" data-cstep="-1" aria-label="Menos 1 dia">−</button><input id="fs-cobd" type="number" inputmode="numeric" min="0" step="1" value="${dd}" aria-label="Dias de cobertura"><span>dias</span><button type="button" data-cstep="1" aria-label="Mais 1 dia">+</button></div><div class="fs-q">${[3,7,15,30].map(n=>`<button type="button" data-cq="${n}" class="${dd===n?'on':''}">${n}</button>`).join('')}</div></div>`:''}
    <h5>Sistemática</h5><div class="fs-seg">${ENTS.map(([v,l])=>`<button type="button" data-ent="${v}" class="${(D.ent||'')===v?'on':''}">${l}</button>`).join('')}</div>
    <h5>Categoria</h5><button type="button" class="fs-ln" id="cat-pick-btn"><span>${D.cat?esc(short(D.cat)):'Todas as categorias'}<small>${D.cat?'Toque para trocar':'Toque para escolher na árvore'}</small></span>${D.cat?'<i class="fs-cx" id="fs-catx" role="button" aria-label="Tirar categoria">✕</i>':'<i class="fs-ar">›</i>'}</button>
-   <label class="fs-ln"><span>Esconder falta no CD (F/CD)<small>Estoque menor que 1 caixa, sem trânsito</small></span><input type="checkbox" id="fs-nocd" class="sw-i"${D.noCD?' checked':''}><span class="sw-t fs-tg"></span></label>`;
+   <label class="fs-ln"><span>Esconder falta no CD (F/CD)<small>Estoque menor que 1 caixa, sem trânsito</small></span><input type="checkbox" id="fs-nocd" class="sw-i"${D.noCD?' checked':''}><span class="sw-t fs-tg"></span></label>${D.noCD?`
+   <label class="fs-ln fs-sub"><span>Esconder também os em trânsito<small>Estoque menor que 1 caixa, com trânsito a caminho</small></span><input type="checkbox" id="fs-nocdtr" class="sw-i"${D.noCDTr?' checked':''}><span class="sw-t fs-tg"></span></label>`:''}`;
   fltCounts()}
-function openFlt(keep){if(!keep||!D)D={chip:F.chip,cat:F.cat||'',ent:F.ent||'',noCD,cob:F.cob?{...F.cob}:null};renderFlt();fltSheet.open();pushOv('flt')}
+function openFlt(keep){if(!keep||!D)D={chip:F.chip,cat:F.cat||'',ent:F.ent||'',noCD,noCDTr,cob:F.cob?{...F.cob}:null};renderFlt();fltSheet.open();pushOv('flt')}
 function closeFlt(){if(fltSheet.opened)fltSheet.close()}
 $('flt-btn').onclick=()=>openFlt();
 $('flt-sheet-x').onclick=closeFlt;$('flt-cancel').onclick=closeFlt;
-$('flt-clear').onclick=()=>{D={chip:'all',cat:'',ent:'',noCD:false,cob:null};renderFlt()};
-$('flt-apply').onclick=()=>{F.chip=D.chip;F.cat=D.cat;F.ent=D.ent;F.cob=cobOn(D.cob)?{op:D.cob.op,d:D.cob.d}:null;noCD=D.noCD;try{localStorage.setItem('planograma_nocd',noCD?'1':'0')}catch{};closeFlt();renderList(true)};
+$('flt-clear').onclick=()=>{D={chip:'all',cat:'',ent:ENT0,noCD:false,noCDTr:false,cob:null};renderFlt()};
+$('flt-apply').onclick=()=>{F.chip=D.chip;F.cat=D.cat;F.ent=D.ent;F.cob=cobOn(D.cob)?{op:D.cob.op,d:D.cob.d}:null;noCD=D.noCD;noCDTr=!!D.noCDTr;salvaCD();closeFlt();renderList(true)};
 $('flt-list').onclick=e=>{
   const b=e.target.closest('.fs-s');if(b){D.chip=b.dataset.c;return renderFlt()}
   const co=e.target.closest('[data-cop]');if(co){const v=co.dataset.cop;D.cob=v?{op:v,d:D.cob&&Number.isFinite(D.cob.d)?D.cob.d:7}:null;return renderFlt()}
@@ -291,7 +339,7 @@ $('flt-list').onclick=e=>{
   const g=e.target.closest('[data-ent]');if(g){D.ent=g.dataset.ent;return renderFlt()}
   if(e.target.closest('#fs-catx')){D.cat='';return renderFlt()}
   if(e.target.closest('#cat-pick-btn'))openCatPicker()};
-$('flt-list').onchange=e=>{if(e.target.id==='fs-nocd'){D.noCD=e.target.checked;renderFlt()}};
+$('flt-list').onchange=e=>{if(e.target.id==='fs-nocd'){D.noCD=e.target.checked;renderFlt()}if(e.target.id==='fs-nocdtr'){D.noCDTr=e.target.checked;renderFlt()}};
 $('flt-list').addEventListener('input',e=>{if(e.target.id!=='fs-cobd'||!D.cob)return;const v=parseInt(e.target.value,10);D.cob.d=Number.isFinite(v)&&v>=0?v:NaN;
   document.querySelectorAll('#flt-list [data-cq]').forEach(b=>b.classList.toggle('on',+b.dataset.cq===D.cob.d));fltCounts()});   // digitando: só atualiza os números
 $('cat-sheet-x').onclick=closeCat;

@@ -4,17 +4,14 @@
 
 /* ═══ INTERFACE ═══ */
 const $=id=>document.getElementById(id);
-function applyTheme(t){const r=document.documentElement;if(t==='light'||t==='dark')r.dataset.theme=t;else{delete r.dataset.theme;t='auto'}
-  try{localStorage.setItem('planograma_theme',t)}catch{}
-  document.querySelectorAll('#theme-seg button').forEach(b=>b.classList.toggle('on',b.dataset.t===t));
-  const m=document.querySelector('meta[name=theme-color]');if(m)m.content=getComputedStyle(r).getPropertyValue('--bg').trim()||'#0b0f14'}
 const num=v=>parseFloat(String(v||'0').replace(/\./g,'').replace(',','.'))||0;
-const f0=v=>(+v||0).toLocaleString('pt-BR',{maximumFractionDigits:0}),f1=v=>(+v||0).toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1});   // +v: sempre número (dado vindo da nuvem nunca vira HTML)
+const NF0=new Intl.NumberFormat('pt-BR',{maximumFractionDigits:0}),NF1=new Intl.NumberFormat('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1});
+const f0=v=>NF0.format(+v||0),f1=v=>NF1.format(+v||0);   // +v: sempre número (dado vindo da nuvem nunca vira HTML)
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const COLOR={rup:'var(--cr)',crit:'var(--crit)',aten:'var(--am)',ok:'var(--ok)',nd:'var(--mu)',sg:'var(--sg)'};   // Crítico (laranja) ≠ Ruptura (vermelho), igual ao Resumo
 const LBL={rup:'Ruptura',crit:'Crítico',aten:'Atenção',ok:'OK',nd:'Sem MDV',sg:'Sem giro'};
 /* aviso (toast): máx. 2 linhas (texto inteiro no title); com janela/folha aberta aparece no TOPO, para não cobrir os botões */
-const overlayOn=()=>$('sheet').classList.contains('on')||$('scan').classList.contains('on')||['cat-sheet','flt-sheet','pf-ask'].some(i=>{const e=$(i);return !!e&&!!e.style.display&&e.style.display!=='none'});
+const overlayOn=()=>['sheet','scan','flt-sheet','cat-sheet'].some(i=>{const e=$(i);return !!e&&e.classList.contains('on')})||(()=>{const e=$('pf-ask');return !!e&&!!e.style.display&&e.style.display!=='none'})();   // folhas do F7 marcam aberta com .on
 let tmr;function showToast(html,act,ms){const t=$('toast');t.innerHTML=html;t.title=t.textContent;t.classList.toggle('act',act);t.classList.toggle('top',overlayOn());t.classList.add('on');clearTimeout(tmr);tmr=setTimeout(()=>t.classList.remove('on','act'),ms)}
 function toastUndo(msg,fn){showToast(`<span class="tt">${esc(msg)}</span><button class="tu" id="tu">Desfazer</button>`,true,5000);$('tu').onclick=()=>{fn();$('toast').classList.remove('on','act')}}
 function toast(m){showToast(`<span class="tt">${esc(m)}</span>`,false,3200)}
@@ -57,7 +54,7 @@ function score(r,T,rel){const h=r._h;let sc=0;
       while(j>=0){if((j===0||!AN.test(h[j-1]))&&!AN.test(h[j+k]||' ')){w=1;break}j=h.indexOf(q,j+1)}}
     if(w)sc+=wt*w;else if(!rel)return 0}                                              // modo parcial (rel) aceita palavras faltando
   return sc}
-let currentMeta={},savedInfo=null,F={chip:'all',cat:'',q:'',sort:'cobt'},shown=40,list=[];
+let currentMeta={},savedInfo=null,F={chip:'all',cat:'',q:'',sort:'cobt',ent:'1'},shown=40,list=[];
 let catSist='1';try{const v=localStorage.getItem('planograma_catsist');if(v==='10'||v==='20')catSist=v}catch{}   // ⚠ declarado aqui no topo: renderCats() roda dentro de renderHome()
 const key=r=>r.automacao||r.produto;
 
@@ -75,9 +72,6 @@ const isCD=r=>!r._sist||r._sist==='1';   // falta no CD só vale p/ sistemática
 const cdRisk=r=>isCD(r)&&!(r._t>0)&&r._e<(num(r.emb)||1);   // com trânsito o CD TEM o item (só não chegou) → não é falta no CD
 let noCD=false;try{noCD=localStorage.getItem('planograma_nocd')==='1'}catch{}
 /* 40% da capacidade do planograma (alt × larg × prof), em unidades e em caixas (Emb) */
-const p40=r=>{const cap=capOf(r);if(cap<=0)return '40%: —';
-  const un=Math.round(cap*0.4),e=num(r.emb)||1,cx=un/e;
-  return `40%: ${f0(un)} un`+(e>1?` · ${Number.isInteger(cx)?f0(cx):f1(cx)} cx`:'')};
 const sugCx=r=>{const e=num(r.emb)||1;return e>1?`${f0(r._sg/e)} cx de ${f0(e)}`:''};
 const sugTxt=r=>`${f0(r._sg)} un`+(num(r.emb)>1?` · ${sugCx(r)}`:'');
 const addMsg=r=>transitLoaded&&r&&r._t>0?'Adicionado — aguardando chegada do trânsito':'Adicionado ao pedido';
@@ -125,7 +119,7 @@ function derive(){mergeRecs();byProd=new Map(allRecords.map(r=>[r.produto,r]));f
  // SITUAÇÃO pela cobertura TOTAL: item com mercadoria a caminho não fica "Crítico" à toa. Ruptura continua sendo estoque ≤ 0 (gôndola vazia agora).
  r._k=r._e<=0?'rup':semGiro(r)?'sg':r._ct===null?'nd':r._ct<7?'crit':r._ct<15?'aten':'ok';r._d=doneSet.has(key(r));if(!r._h)r._h=norm(r.descricao+' '+r.produto+' '+r.automacao+' '+String(r.produto||'').replace(/^0+(?=\d)/,'')+' '+String(r.automacao||'').replace(/^0+(?=\d)/,''));r._sg=sugQty(r)}
   updBadge();
-  if(encItems.length)setTimeout(renderEnc,0);   // reatualiza o Encarte quando o planograma/trânsito mudam
+  if(encItems.length){encDirty=true;if(curTab==='enc'&&axCur==='enc')setTimeout(renderEnc,0)}   // ⚡ Encarte escondido: só marca (redesenha ao abrir)
   if($('pf-txt'))setTimeout(pfSync,0);            // e o Panfleto
   if($('of-list'))setTimeout(ofSync,0)}            // e a Oferta do dia
 const short=c=>(c||'Sem categoria').split('->').slice(-2).join(' › ');

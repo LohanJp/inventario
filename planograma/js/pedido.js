@@ -8,6 +8,7 @@ pedido.forEach(x=>{if(!x.added)x.added=ymd0()});function ymd0(){const d=new Date
 const ymd=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
 const today=()=>ymd(new Date()),tomorrow=()=>{const d=new Date();d.setDate(d.getDate()+1);return ymd(d)};
 const inPed=p=>pedido.find(x=>x.p===p&&!x.done);
+const pedSet=()=>{const s=new Set();for(const x of pedido)if(!x.done)s.add(x.p);return s};   // ⚡ p/ filtrar 9 mil itens: inPed() varre o pedido inteiro a cada item
 const inTransit=x=>{const r=byProd.get(x.p);return !!(transitLoaded&&r&&r._t>0)};   // mercadoria a caminho: não dá para pedir até chegar
 const pend=()=>pedido.filter(x=>!x.done&&!inTransit(x));
 addEventListener('pagehide',()=>{try{localStorage.setItem(LSP,JSON.stringify(pedido))}catch{}});   // não perde o que está pendente
@@ -98,12 +99,12 @@ bindLP($('plist'),'.pedc,.pi');bindLP($('list'),'.p');bindLP($('pf-list'),'.pfc'
 $('plist').onclick=e=>{if(Date.now()<swBlock)return;
   if(e.target.closest('#hint-x')){hintN=99;try{localStorage.setItem(LSHINT,hintN)}catch{}renderPed();return}
   if(e.target.closest('#pc-dep')){depOnly=!depOnly;renderPed();return}
-  if(e.target.closest('#pe-sug')){const f=allRecords.filter(r=>r._sg>0&&!r._d&&!inPed(r.produto));if(!f.length)return toast('Nenhuma sugestão no momento');f.forEach(r=>addPed(r,'',true));savePed();renderPed();return toast(f0(f.length)+' produtos adicionados')}
+  if(e.target.closest('#pe-sug')){const P=pedSet(),f=allRecords.filter(r=>r._sg>0&&!r._d&&!P.has(r.produto));if(!f.length)return toast('Nenhuma sugestão no momento');f.forEach(r=>addPed(r,'',true));savePed();renderPed();return toast(f0(f.length)+' produtos adicionados')}
   if(e.target.closest('#pe-scan'))return $('b-scan2').click();
 const c=e.target.closest('.pedc,.pi');if(!c||(c.classList.contains('pedc')&&!e.target.closest('.infb')))return;openSheet(byProd.get(c.dataset.p))};
 $('pq').oninput=debounce(e=>{const T=toks(e.target.value);if(!T.length||T.join('').length<2){$('pres').innerHTML='';return}
- let m=allRecords.filter(r=>!inPed(r.produto)&&(r._s=score(r,T))>0);
- if(!m.length&&T.length>1)m=allRecords.filter(r=>!inPed(r.produto)&&(r._s=score(r,T,true))>0);
+ const P=pedSet();let m=allRecords.filter(r=>!P.has(r.produto)&&(r._s=score(r,T))>0);
+ if(!m.length&&T.length>1)m=allRecords.filter(r=>!P.has(r.produto)&&(r._s=score(r,T,true))>0);
  m=m.sort((a,b)=>b._s-a._s).slice(0,8);
  $('pres').innerHTML=m.length?'<div class="list list-strong list-dividers inset pres-l"><ul>'+m.map(r=>`<li><a class="item-link item-content pr" data-p="${esc(r.produto)}"><div class="item-media"><i class="pdot" style="--c:${COLOR[r._k]}"></i></div><div class="item-inner"><div class="item-title">${esc(r.descricao)}<div class="item-footer">${esc(r.produto)} · estoque ${f0(r._e)} · ${SLBL[r._k]}</div></div><div class="item-after"><b class="pr-add">+</b></div></div></a></li>`).join('')+'</ul></div>':'<div class="empty">Nenhum produto</div>'},180);
 $('pres').onclick=e=>{const c=e.target.closest('.pr');if(!c)return;addS(byProd.get(c.dataset.p));$('pq').value='';$('pres').innerHTML='';renderPed();toast(addMsg(byProd.get(c.dataset.p)))};
@@ -141,4 +142,4 @@ function openSheet(r){if(!r)return;const kv=([a,b])=>`<div class="kv"><span>${a}
  shOn('sheet',true);if(!fichaSheet.opened)fichaSheet.open();pushOv('sheet');$('sh-x').onclick=closeSheet;
  $('sh-ped').onclick=()=>{if(inPed(r.produto)){pedido=pedido.filter(x=>x.p!==r.produto);savePed();toast('Removido do pedido')}else{addS(r);toast(addMsg(r))}closeSheet();go(document.querySelector('section.on').id.slice(2))};
  $('sh-dep').onclick=()=>{const v=!depMap[r.produto];setDep(r.produto,v);toast(v?'🔎 Procurar no depósito':'Saiu de "Procurar no depósito"');closeSheet()};
- $('sh-done').onclick=()=>{const marking=!r._d;r._d?doneSet.delete(key(r)):doneSet.add(key(r));r._d=!r._d;lsSave();if(marking)copyEAN(r.automacao||r.produto);closeSheet();go($('s-home').classList.contains('on')?'home':'prod')}}
+ $('sh-done').onclick=()=>{const marking=!r._d;r._d?doneSet.delete(key(r)):doneSet.add(key(r));r._d=!r._d;lsSave();if(marking)copyEAN(r.automacao||r.produto);closeSheet();go(document.querySelector('section.on').id.slice(2))}}   // ✓ Marcar feito: fica na aba em que estava (antes ia sempre para Produtos)

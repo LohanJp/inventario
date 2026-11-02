@@ -35,8 +35,11 @@ function encPeriodo(rows){
     const ds=[];while((m=re.exec(t))&&ds.length<2){const x={d:+(m[1]||m[4]),mo:m[2]?+m[2]:MES(m[5]),y:Y(m[3]||m[6])};if(ok(x))ds.push(x)}
     if(ds.length){a=ds[0];b=ds[1]||ds[0]}}
   if(!a||!ok(a)||!ok(b))return prz?{prazo:prz}:null;
+  const real=(x,y)=>{const d=mk(x,y);return d.getDate()===x.d&&d.getMonth()===x.mo-1};   // 31/11, 29/02 sem ano bissexto → não é data
   if(!a.y&&b.y)a.y=mk(a,b.y)<=mk(b,b.y)?b.y:b.y-1;                       // "02 a 08/11/2026": o início herda o ano do fim
+  if(!real(a,ano(a)))return prz?{prazo:prz}:null;
   const ini=mk(a,ano(a));let fim=mk(b,b.y||ini.getFullYear());
+  if(fim.getDate()!==b.d)return prz?{prazo:prz}:null;
   if(fim<ini&&!b.y)fim=mk(b,ini.getFullYear()+1);
   if(fim<ini)return prz?{prazo:prz}:null;
   const o={ini:iso(ini),fim:iso(fim)};if(prz)o.prazo=prz;return o}
@@ -82,11 +85,12 @@ function encMatch(){
   return encItems.map((it,i)=>({it,i,r:(zeros(it.ean)&&byEAN[zeros(it.ean)])||(zeros(it.host)&&byHost[zeros(it.host)])||null}));
 }
 
-let encSort='arq';
-function renderEnc(){
+let encSort='arq',encDirty=false;
+function renderEnc(){encDirty=false;
   const has=encItems.length>0;
   $('enc-sortbar').style.display=has?'flex':'none';$('enc-export').style.display=has?'':'none';$('enc-q').style.display=has?'':'none';
   if(!has){$('enc-list').innerHTML='';$('enc-summary-box').innerHTML='';return}
+  if(!allRecords.length){$('enc-summary-box').innerHTML='';$('enc-list').innerHTML='<div class="empty">Carregue o planograma primeiro (aba Dados).</div>';return}   // antes dizia "não encontrado" em todos
   const ents=encMatch().map(e=>({...e,k:encStatus(e.r)}));
   const rank={cd:0,ok:1,miss:2};
   const cobN=e=>e.r&&e.r._ct!==null?Math.max(e.r._ct,0):Infinity;   // cobertura total = (estoque + trânsito) ÷ MDV
@@ -207,11 +211,17 @@ const PF_PR='(\\d+(?:\\.\\d{3})*,\\d{2}|\\d+\\.\\d{2})';
 /* 📅 LÂMINA COM PERÍODO: uma linha sem preço com a data ("Lâmina 30/10 a 05/11", "Válido de 02 a 08/11", "30/10") vira o período da lista
    e NÃO é procurada como produto. Para não confundir com produto ("1/2 kg"), a linha precisa ter palavra de período, 2 datas, ano ou ser só a data. */
 const pfLineHasP=l=>new RegExp('[·|]\\s*(?:R\\$\\s*)?'+PF_PR).test(l)||/R\$\s*\d/.test(l);
+const pfLimpa=l=>l.replace(/[*_#`>]/g,'').replace(/^\s*(?:[-•–—▪●○]|\d+[.)])\s+/,'').trim();   // mesma limpeza de marcadores (-, •, 1)) do pfParse
 function pfPerLine(l){if(pfLineHasP(l))return null;const p=encPeriodo([[l]]);if(!p||!p.ini)return null;
-  const n=norm(l);return(/l[aâ]mina|valid|vigen|periodo|semana|oferta|\bde\s+\d|\bate\b/.test(n)||p.ini!==p.fim||/\d{4}/.test(l)||/^\W*\d{1,2}\s*[\/-]\s*\d{1,2}(?:\s*[\/-]\s*\d{2,4})?\W*$/.test(l))?p:null}
-const pfPer=txt=>{for(const l of String(txt||'').split(/\r?\n/)){const p=pfPerLine(l.trim());if(p)return{ini:p.ini,fim:p.fim}}return null};
+  const n=norm(l);   // precisa de palavra de período ou ser SÓ a data (ou "data a data") — "QBOA 2/1 1000ML" e "leve 2 margarinas" não viram período
+  return(/l[aâ]mina|valid|vigen|periodo|semana|\bde\s+\d|\bate\b/.test(n)||/^\W*\d{1,2}\s*[\/-]\s*\d{1,2}(?:\s*[\/-]\s*\d{2,4})?(?:\s*(?:a|ate|até|-|–)\s*\d{1,2}\s*[\/-]\s*\d{1,2}(?:\s*[\/-]\s*\d{2,4})?)?\W*$/i.test(l))?pfAte(p,n):null}
+/* "Válido até 05/11" (uma data só, depois de "até"): vale de HOJE (dia em que colou) até essa data — antes virava um dia só */
+function pfAte(p,n){if(p.ini!==p.fim||!/\bate\b[^\d]*\d{1,2}\s*(?:[\/-]|de\s)/.test(n))return p;
+  const d=new Date(),h=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+  return h<p.fim?{...p,ini:h}:p}
+const pfPer=txt=>{for(const l of String(txt||'').split(/\r?\n/)){const p=pfPerLine(pfLimpa(l));if(p)return{ini:p.ini,fim:p.fim}}return null};
 function pfParse(txt){
-  const raw=txt.split(/\r?\n/).map(l=>l.replace(/[*_#`>]/g,'').replace(/^\s*(?:[-•–—▪●○]|\d+[.)])\s+/,'').trim()).filter(Boolean).filter(l=>!pfPerLine(l));   // a linha do período não é produto
+  const raw=txt.split(/\r?\n/).map(pfLimpa).filter(Boolean).filter(l=>!pfPerLine(l));   // a linha do período não é produto
   const hasP=pfLineHasP;
   const skipHead=raw.length&&raw.filter(hasP).length/raw.length>=.5;     // se a maioria das linhas tem preço, linha sem preço é título de seção
   const out=[];
@@ -225,7 +235,11 @@ function pfParse(txt){
   }
   return out}
 const pfToks=q=>toks(q.replace(/(\d)([a-zà-ú])/gi,'$1 $2')).filter(t=>t.length>1&&!PF_STOP.has(t));
+let pfMemo={r:null,m:new Map()};   // ⚡ Lâmina, Oferta e selos chamavam pfMatch com as mesmas linhas (2-3× o trabalho)
 function pfMatch(q,top){
+  if(pfMemo.r!==allRecords)pfMemo={r:allRecords,m:new Map()};const mk=top+'|'+q,hit=pfMemo.m.get(mk);if(hit)return hit.slice();
+  const out=pfMatch0(q,top);pfMemo.m.set(mk,out);return out.slice()}
+function pfMatch0(q,top){
   const T=pfToks(q);if(!T.length)return[];
   const alpha=T.filter(t=>!NUM.test(t)),max=T.reduce((a,t)=>a+(NUM.test(t)?1:3)*2,0);
   let res=[];
@@ -258,27 +272,33 @@ function renderPf(){
   const nmHtml=nm.length?`<details class="trd" id="pfnm"${pfNmOpen?' open':''} style="margin-top:14px"><summary><span>❔ Sem correspondência<small>Não achei no planograma</small></span><span class="cnt">${nm.length}</span><svg class="ch" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></summary>${nm.map(g=>`<div class="pfn" data-q="${esc(g.q||g.nome)}"><span>🔍 ${esc(g.nome)}</span>${g.preco?`<b>R$ ${esc(g.preco)}</b>`:''}</div>`).join('')}</details>`:'';
   box.innerHTML=(qOn&&!vis&&!nm.length?'<div class="empty">Nenhum item da lâmina com essa busca</div>':'')+found+pedHtml+nmHtml;
   sum.textContent=(qOn?`🔍 ${vis} com essa busca · `:'')+`${pfGroups.length} itens · ${ok} encontrados${pedH.length?` · ${pedH.length} já no pedido`:''} · ${pfGroups.length-ok} sem correspondência${al?` · ${al} em ruptura/crítico`:''}`}
+let pfRunTok=0;
 function pfRun(){
   const txt=$('pf-txt').value;try{localStorage.setItem(LSPF,txt)}catch{}
   if(!allRecords.length){pfGroups=[];$('pf-list').innerHTML='';$('pf-sum').textContent='Carregue o planograma primeiro (aba Dados).';return}
   const items=pfParse(txt);
   if(!items.length){pfGroups=[];$('pf-list').innerHTML='';$('pf-sum').textContent='Cole a lista da lâmina (um produto por linha).';return}
   $('pf-sum').textContent='Procurando…';
-  setTimeout(()=>{pfGroups=items.map(it=>{const seen=new Set(),codes=[];
+  const tok=++pfRunTok;   // ⚡ procura em blocos de 6 linhas com uma pausa entre eles: a tela não congela numa lâmina grande (mesmo resultado)
+  setTimeout(async()=>{const out=[];
+    for(let i=0;i<items.length;i++){const it=items[i],seen=new Set(),codes=[];
       it.parts.forEach(pt=>pfMatch(pt,it.parts.length>1?2:3).forEach(r=>{if(!seen.has(r.produto)){seen.add(r.produto);codes.push(r.produto)}}));
-      return{nome:it.nome,preco:it.preco,codes,q:it.parts[0]||it.nome}});renderPf()},30)}   // q = texto que vai para a busca de Produtos (com "A ou B" usa o 1º)
+      out.push({nome:it.nome,preco:it.preco,codes,q:it.parts[0]||it.nome});
+      if(i%6===5){await new Promise(r=>setTimeout(r,0));if(tok!==pfRunTok)return}}   // outra busca começou: esta para
+    if(tok!==pfRunTok)return;pfGroups=out;renderPf()},30)}   // q = texto que vai para a busca de Produtos (com "A ou B" usa o 1º)
 function pfOpen(){const hoje=ofISO(new Date());
   if(pfSelOn!==hoje){pfSelOn=hoje;pfSelDay=new Date().getDay();pfApplyDay(false)}      // virou o dia com o app aberto → volta para hoje
   pfDayBar();if(pfGroups.length)renderPf();else if($('pf-txt').value.trim()&&allRecords.length)pfRun()}
-function pfSync(){if(!allRecords.length)return;if(pfGroups.length)renderPf();else if(axCur==='pan'&&curTab==='enc'&&$('pf-txt').value.trim())pfRun()}
+function pfSync(){if(!allRecords.length)return;if(pfGroups.length){if(curTab==='enc'&&axCur==='pan')renderPf();return}else if(axCur==='pan'&&curTab==='enc'&&$('pf-txt').value.trim())pfRun()}
 $('pf-list').addEventListener('toggle',e=>{if(e.target.id==='pfnm')pfNmOpen=e.target.open;if(e.target.id==='pfped')pfPedOpen=e.target.open},true);   // lembra se está aberto
 $('pf-go').onclick=()=>pfSubmit();
 $('pf-paste').onclick=async()=>{try{const t=await navigator.clipboard.readText();if(!t.trim())return toast('Área de transferência vazia');$('pf-txt').value=t;pfSubmit()}catch{toast('Não consegui colar sozinho — toque no campo e cole')}};
 $('pf-clear').onclick=()=>{const t=$('pf-txt').value,sl=pfDays[pfSelDay],del=!!(sl&&sl.text&&sl.text===t);   // só apaga o panfleto SALVO do dia se o campo ainda é ele (rascunho solto só limpa o campo)
   if(del&&!confirm('Limpar a lâmina de '+OF_DN[pfSelDay]+' '+ofShort(sl.date)+'? (apaga também nos outros aparelhos)'))return;
   $('pf-txt').value='';pfGroups=[];try{localStorage.removeItem(LSPF)}catch{}$('pf-list').innerHTML='';$('pf-sum').textContent='';
-  if(del){const w=pfSelDay,c=code();pfDays[w]=null;if(idb)idbSave({id:'panfleto-d'+w,w,text:''}).catch(()=>{});
-    if(c){lastLocal=Date.now();put(c,'pf/d'+w,null);patch(c,'live/pf',{['d'+w]:null}).catch(()=>{})}}
+  if(del){const w=pfSelDay;
+    if(code()){pfDays[w]={id:'panfleto-d'+w,w,text:'',del:true,pending:true};if(idb)idbSave(pfDays[w]).catch(()=>{});delNuvem('pf',w)}   // ⏳ apagada: pendente até a nuvem confirmar (sem internet não "volta" depois)
+    else{pfDays[w]=null;if(idb)idbSave({id:'panfleto-d'+w,w,text:''}).catch(()=>{})}}
   pfDayBar()};
 $('pf-txt').oninput=debounce(()=>{try{localStorage.setItem(LSPF,$('pf-txt').value)}catch{}},500);
 function pfSearch(q){F.q=q;F.chip='all';F.cat='';$('q').value=q;go('prod')}   // abre Produtos já pesquisando o texto do panfleto
@@ -325,6 +345,7 @@ async function syncEnc(c,le){
   if(!d||!Array.isArray(d.items)||!d.items.length)return;
   encItems=d.items;encPer=d.per||null;encSavedAt=d.savedAt||new Date().toLocaleString('pt-BR');
   encSrc=d.kind==='xlsx'?{kind:'xlsx',name:d.name,buf:b642ab(d.b64||''),hdr:d.hdr}:{...parseEncCSV(d.text||''),name:d.name,text:d.text||''};
+  if(!encPer&&encSrc.per)encPer=encSrc.per;   // enviado pela versão antiga (sem o campo per): lê a data do título do .csv
   encCloudAt=le.at;encPending=false;await encSaveLocal();
   $('enc-title').style.display='';$('enc-title').textContent=`${d.name} · ${encItems.length} itens${encPerMeta()} · da nuvem`;
 }
@@ -353,7 +374,9 @@ async function loadCobFile(file){
   busy(true,'Lendo cobertura…');
   try{
     const text=await readReport(file);
-    estoqueMap=parseEstoqueFile(text);
+    if(!/Vda 12 meses/i.test(text.slice(0,6000))){busy(false);return toast('Este arquivo não é o relatório de Cobertura — nada foi trocado')}   // relatório no lugar errado sobrescrevia a Cobertura boa
+    const em=parseEstoqueFile(text);if(!Object.keys(em).length){busy(false);return toast('Nenhum produto lido na Cobertura — confira o arquivo')}
+    estoqueMap=em;
     estoqueLoaded=true;
     const total=Object.keys(estoqueMap).length;
     // Update status

@@ -8,7 +8,7 @@ async function loadRecords(records,meta,name,transit,persist,savedAt){
  if(transit){transitMap=transit;transitLoaded=true}
  savedInfo={name,savedAt:savedAt||new Date().toLocaleString('pt-BR')};
  if(persist&&idb)await idbSave({id:'current',name,records,meta,savedAt:savedInfo.savedAt,filial:meta.filial,date:meta.date,transit:transitLoaded?transitMap:undefined}).catch(()=>{});
- derive();F={chip:'all',cat:'',q:'',sort:'cobt'};$('q').value='';go('home')}
+ derive();F={chip:'all',cat:'',q:'',sort:'cobt',ent:ENT0};$('q').value='';go('home')}
 /* Os relatórios do sistema são UTF-8 (cada acento ocupa 1 coluna). Ler como latin1 transformava Ç, Ã, º… em 2 caracteres e
    DESLOCAVA as colunas dessas linhas (≈2% do planograma): Cob.Plan 999 virava "6 9", estoque 0 virava 9, etc.
    Agora tenta UTF-8 e só cai para Windows-1252 se o arquivo realmente não for UTF-8. */
@@ -21,16 +21,19 @@ $('f-plano').onchange=e=>{const f=e.target.files[0];if(!f)return;e.target.value=
   await loadRecords(p.records,p.meta,f.name,null,true);const had=doneSet.size;if(had){lsClear();derive();renderHome()}   // relatório novo: concluídos recomeçam do zero
   busy(false);toast(f0(p.records.length)+' produtos carregados'+(had?' · concluídos zerados':'')+warnTxt())},'latin1')};
 $('f-trans').onchange=e=>{const f=e.target.files[0];if(!f)return;e.target.value='';busy(true,'Lendo trânsito…');
- readFile(f,async t=>{transitMap=parseTransitFile(t);transitLoaded=true;if(idb&&transitMeta)idbSave({id:'transitmeta',meta:transitMeta}).catch(()=>{});derive();
+ readFile(f,async t=>{if(!/Qt\.Transito/i.test(t.slice(0,6000))){busy(false);return toast('Este arquivo não é o relatório de Trânsito — nada foi trocado')}   // relatório no lugar errado estragava os números em silêncio
+  const tm=parseTransitFile(t);if(!Object.keys(tm).length){busy(false);return toast('Nenhum produto lido no Trânsito — confira o arquivo')}
+  transitMap=tm;transitLoaded=true;if(idb&&transitMeta)idbSave({id:'transitmeta',meta:transitMeta}).catch(()=>{});derive();
   if(idb){try{const rec=await idbGet('current');if(rec){rec.transit=transitMap;await idbSave(rec)}}catch{}}
   busy(false);renderData();toast('Trânsito carregado — '+f0(Object.keys(transitMap).length)+' itens')},'latin1')};
+const NARROW=matchMedia('(max-width:379.98px)');   // ⚡ innerWidth forçava o layout da aba inteira (1,6 s no Pedido com 345 itens)
 function renderFresh(){
   const el=$('fresh-t'),F_=$('fresh');
   if(!allRecords.length){el.textContent='Nenhum relatório carregado';F_.classList.remove('warn');return}
   const base=String(currentMeta.date||'').trim();let warn=false;
   const item=(nome,ok,m)=>{if(!ok)return `<span class="off">${nome} —</span>`;const dt=m&&m.date?String(m.date):'',diff=dt&&base&&dt!==base;if(diff)warn=true;
     return `<span${diff?' class="diff"':''} title="${m&&m.hora?esc(dt+' '+m.hora):''}">${nome} ${dt?esc(dt.slice(0,5)):'✓'}</span>`};   // datas podem vir da nuvem: sempre escapadas
-  const curto=innerWidth<380;                                                   // tela estreita: nomes curtos para as 3 datas caberem
+  const curto=NARROW.matches;                                                   // tela estreita: nomes curtos para as 3 datas caberem
   el.innerHTML=[item('Plano',planoRecs.length>0,currentMeta),item(curto?'Cob.':'Cobertura',estoqueLoaded,estoqueMeta),item(curto?'Trâns.':'Trânsito',transitLoaded,transitMeta)].join(' · ')+(warn?' ⚠':'');
   F_.classList.toggle('warn',warn);F_.title=warn?'Os relatórios são de dias diferentes — confira antes de pedir':'';
 }

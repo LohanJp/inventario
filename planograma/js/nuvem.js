@@ -149,7 +149,7 @@ async function loadFromCloud(c){
     const loc=idb?await idbGet('current').catch(()=>null):null;   // já tem esta versão neste aparelho?
     if(loc&&loc.records&&loc.cloudAt===pi.exportedAt&&(!ti||loc.transAt===ti.exportedAt)){
       await loadRecords(loc.records,loc.meta||{},loc.name,loc.transit||null,false,loc.savedAt);
-      await applyLive(c);derive();renderHome();busy(false);return true;
+      await applyLive(c);renderHome();busy(false);return true;   // ⚡ applyLive já roda o derive()
     }
 
     const [records,transData]=await Promise.all([gj('plano/records'),ti?gj('trans/data'):Promise.resolve(null)]);
@@ -161,7 +161,7 @@ async function loadFromCloud(c){
       transData&&typeof transData==='object'?transData:null,
       true /* persist to IDB */);
     try{const r=await idbGet('current');if(r){r.cloudAt=pi.exportedAt;r.transAt=ti?ti.exportedAt:undefined;await idbSave(r)}}catch{}
-    await applyLive(c);derive();renderHome();
+    await applyLive(c);renderHome();   // ⚡ applyLive já roda o derive()
     busy(false);
     return true;
   }catch(e){busy(false);toast(e.message);return false}
@@ -336,19 +336,20 @@ async function boot(){
   try{const en=await idbGet('encarte');                       // restaura o último Encarte carregado (aparece após o planograma abrir)
     if(en&&en.items&&en.items.length){encItems=en.items;encPer=en.per||null;   // 📅 dia do Panfleto (título da planilha)
       encSrc=en.kind==='xlsx'?{kind:'xlsx',name:en.name,buf:en.buf,hdr:en.hdr}:{...parseEncCSV(en.text||''),name:en.name,text:en.text||''};
+      if(!encPer&&encSrc.per)encPer=encSrc.per;   // salvo antes do campo per: lê a data do título do .csv
       encCloudAt=en.cloudAt||0;encPending=!!en.pending;encSavedAt=en.savedAt||'';
       $('enc-title').style.display='';$('enc-title').textContent=`${en.name} · ${encItems.length} itens${encPerMeta()} · salvo em ${en.savedAt||''}`}
   }catch{}
-  try{for(let w=0;w<7;w++){const o=await idbGet('oferta-d'+w);if(o&&o.items&&o.items.length)ofDays[w]=o}      // restaura as planilhas da semana (1 por dia)
+  try{for(let w=0;w<7;w++){const o=await idbGet('oferta-d'+w);if(o&&((o.items&&o.items.length)||(o.del&&o.pending)))ofDays[w]=o}      // restaura as planilhas da semana (1 por dia)
     if(!ofDays.some(Boolean)){                                    // versão antiga guardava só 1 planilha: vai para o dia da semana em que foi salva
       const o=await idbGet('oferta'),m=o&&o.items&&o.items.length&&String(o.savedAt||'').match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
       if(m){const d=new Date(+m[3],+m[2]-1,+m[1],12),w=d.getDay();ofDays[w]={...o,id:'oferta-d'+w,w,date:ofISO(d)};idbSave(ofDays[w]).catch(()=>{})}}
     ofSelOn=ofISO(new Date());ofSelDay=new Date().getDay();ofApplyDay();if(axCur==='dia'&&curTab==='enc'){ofShowMeta();renderOf()}
   }catch{}
-  try{for(let w=0;w<7;w++){const o=await idbGet('panfleto-d'+w);if(o&&o.text&&o.text.trim())pfDays[w]=o}       // restaura os panfletos da semana (1 por dia)
+  try{for(let w=0;w<7;w++){const o=await idbGet('panfleto-d'+w);if(o&&((o.text&&o.text.trim())||(o.del&&o.pending)))pfDays[w]=o}       // restaura os panfletos da semana (1 por dia)
     if(!pfDays.some(Boolean)&&pfTxt().trim()){const w=new Date().getDay(),t=new Date();                          // versão antiga guardava só 1 texto: vira o panfleto de hoje
       pfDays[w]={id:'panfleto-d'+w,w,text:pfTxt(),date:ofISO(t),at:Date.now(),savedAt:t.toLocaleString('pt-BR'),cloudAt:0,pending:false};if(idb)idbSave(pfDays[w]).catch(()=>{})}
-    pfSelOn=ofISO(new Date());pfSelDay=new Date().getDay();const po=pfDays[pfSelDay];if(po&&po.text){$('pf-txt').value=po.text;try{localStorage.setItem(LSPF,po.text)}catch{}}
+    pfSelOn=ofISO(new Date());pfSelDay=new Date().getDay();pfApplyDay(false);   // carrega a lista do dia certo (antes ficava o texto do último dia visto)
     pfDayBar();if(axCur==='pan'&&curTab==='enc')pfOpen();
   }catch{}
   const c=code();cloudBadge();

@@ -138,10 +138,16 @@ async function pushOf(w){
   finally{ofBusy[w]=false;if(ofSelDay===w&&axCur==='dia'&&curTab==='enc')ofShowMeta()}
 }
 /* chamado pelo applyLive: baixa os dias que a nuvem tem mais novos, envia os que só existem aqui e apaga os que foram apagados em outro aparelho */
+/* 🗑 apagar na nuvem (Oferta do dia / Lâmina): só tira a marca "pendente" quando a nuvem confirmar */
+async function delNuvem(k,w){const c=code(),days=k==='pf'?pfDays:ofDays,id=(k==='pf'?'panfleto-d':'oferta-d')+w;if(!c)return;
+  try{const H={'Content-Type':'application/json'};let r=await cf(cu(c,k+'/d'+w),{method:'PUT',headers:H,body:'null'});if(!r.ok)throw 0;
+    lastLocal=Date.now();r=await cf(cu(c,'live/'+k),{method:'PATCH',headers:H,body:JSON.stringify({['d'+w]:null})});if(!r.ok)throw 0;
+    if(days[w]&&days[w].del){days[w]=null;if(idb)idbSave(k==='pf'?{id,w,text:''}:{id,w,items:[]}).catch(()=>{})}}catch{}}
 async function syncOf(c,lof){
   let ch=false;
   for(let w=0;w<7;w++){
     const loc=ofDays[w],ca=lof&&lof['d'+w];
+    if(loc&&loc.del){if(loc.pending)delNuvem('of',w);continue}              // apagada aqui sem internet: manda apagar, não baixa de volta
     if(loc&&loc.pending){pushOf(w);continue}
     if(!ca){
       if(loc&&loc.cloudAt){ofDays[w]=null;ch=true;if(idb)idbSave({id:'oferta-d'+w,w,items:[]}).catch(()=>{})}     // apagada em outro aparelho
@@ -159,8 +165,9 @@ function ofOpen(){const hoje=ofISO(new Date());
   ofShowMeta();renderOf()}
 $('of-days').onclick=e=>{const b=e.target.closest('button[data-w]');if(!b)return;ofSelDay=+b.dataset.w;ofApplyDay();ofShowMeta();renderOf()};
 $('of-del').onclick=()=>{if(!ofItems.length||!confirm('Limpar a planilha de '+OF_DN[ofSelDay]+' '+ofShort(ofMeta.date||ofDateFor(ofSelDay))+'?'))return;
-  const w=ofSelDay,c=code();ofDays[w]=null;if(idb)idbSave({id:'oferta-d'+w,w,items:[]}).catch(()=>{});
-  if(c){lastLocal=Date.now();put(c,'of/d'+w,null);patch(c,'live/of',{['d'+w]:null}).catch(()=>{})}              // some dos outros aparelhos também
+  const w=ofSelDay;
+  if(code()){ofDays[w]={id:'oferta-d'+w,w,items:[],del:true,pending:true};if(idb)idbSave(ofDays[w]).catch(()=>{});delNuvem('of',w)}   // ⏳ some dos outros aparelhos também — pendente até a nuvem confirmar
+  else{ofDays[w]=null;if(idb)idbSave({id:'oferta-d'+w,w,items:[]}).catch(()=>{})}
   ofApplyDay();ofShowMeta();renderOf()};
 function ofSync(){if(curTab==='enc'&&axCur==='dia')renderOf()}
 $('of-drop').onclick=()=>$('of-input').click();
@@ -192,16 +199,18 @@ $('pf-days').onclick=e=>{const b=e.target.closest('button[data-w]');if(!b)return
 function pfSubmit(){const t=pfTxt();if(!t.trim()){pfRun();return}
   const sl=pfDays[pfSelDay];if(sl&&sl.text===t){pfRun();return}
   const per=pfPer(t);                                                          // a lista já traz o período → não pergunta o dia: guarda no dia da semana do início
-  if(per){const[y,mo,d]=per.ini.split('-').map(Number),w=new Date(y,mo-1,d,12).getDay();pfSelDay=w;pfSave(w,t);pfRun();
+  if(per){const[y,mo,d]=per.ini.split('-').map(Number),w=new Date(y,mo-1,d,12).getDay(),old=pfDays[w];
+    if(old&&old.text&&old.text!==t&&!confirm('Substituir a lâmina de '+(old.per?encPerTxt(old.per):OF_DN[w]+' '+ofShort(old.date))+' pela de '+encPerTxt(per)+'? (vale também nos outros aparelhos)'))return;
+    pfSelDay=w;pfSave(w,t);pfRun();
     toast('🧾 Lâmina de '+encPerTxt(per)+' salva');return}
   pfAsk(w=>{pfSelDay=w;pfSave(w,t);pfRun()})}
-function pfAskClose(){$('pf-ask').style.display='none';pfAskCb=null}
+function pfAskClose(fromPop){const on=$('pf-ask').style.display!=='none';$('pf-ask').style.display='none';pfAskCb=null;if(on&&!fromPop)popOv()}   // voltar do celular fecha a pergunta
 function pfAsk(cb){const tw=new Date().getDay();
   $('pf-ask-days').innerHTML=OF_ORD.map(w=>{const o=pfDays[w],has=!!(o&&o.text);
     return `<button type="button" data-w="${w}" class="${w===pfSelDay?'on ':''}${has?'has ':''}${w===tw?'tdy':''}">${OF_DN[w]}<small>${ofShort(ofDateFor(w))}</small></button>`}).join('');
-  pfAskCb=cb;$('pf-ask').style.display='flex'}
+  pfAskCb=cb;$('pf-ask').style.display='flex';pushOv('ask')}
 $('pf-ask-days').onclick=e=>{const b=e.target.closest('button[data-w]');if(!b)return;const cb=pfAskCb;pfAskClose();if(cb)cb(+b.dataset.w)};
-$('pf-ask-x').onclick=pfAskClose;$('pf-ask').onclick=e=>{if(e.target.id==='pf-ask')pfAskClose()};
+$('pf-ask-x').onclick=()=>pfAskClose();$('pf-ask').onclick=e=>{if(e.target.id==='pf-ask')pfAskClose()};
 function pfSave(w,t){const per=pfPer(t),rec={id:'panfleto-d'+w,w,text:t,date:per?per.ini:ofDateFor(w),per:per||undefined,at:Date.now(),savedAt:new Date().toLocaleString('pt-BR'),cloudAt:0,pending:!!code()};
   pfDays[w]=rec;(idb?idbSave(rec):Promise.resolve()).catch(()=>toast('⚠ Não consegui salvar a lâmina neste aparelho')).then(()=>pushPf(w));pfDayBar()}
 async function pushPf(w){
@@ -221,10 +230,11 @@ async function syncPf(c,lpf){
   let apply=false;
   for(let w=0;w<7;w++){
     const loc=pfDays[w],ca=lpf&&lpf['d'+w];
+    if(loc&&loc.del){if(loc.pending)delNuvem('pf',w);continue}              // apagada aqui sem internet: manda apagar, não baixa de volta
     if(loc&&loc.pending){pushPf(w);continue}
     if(!ca){
       if(loc&&loc.cloudAt){                                                  // apagado em outro aparelho
-        if(w===pfSelDay&&pfTxt()===loc.text)apply=true;
+        if(w===pfSelDay&&pfTxt()===loc.text){apply=true;$('pf-txt').value='';try{localStorage.removeItem(LSPF)}catch{}pfGroups=[];$('pf-list').innerHTML='';$('pf-sum').textContent=''}   // some também da tela (antes o texto ficava e a lista era refeita)
         pfDays[w]=null;if(idb)idbSave({id:'panfleto-d'+w,w,text:''}).catch(()=>{});apply=apply||w===pfSelDay}
       else if(loc){loc.at=loc.at||Date.now();loc.pending=true;if(idb)idbSave(loc).catch(()=>{});pushPf(w)}   // só existe neste aparelho → envia
       continue}
@@ -244,7 +254,7 @@ function axShow(k){
   $('ax-lbl').textContent=AXL[k];
   document.querySelectorAll('#ax-menu .axi').forEach(b=>b.classList.toggle('on',b.dataset.ax===k));
   $('ax-menu').style.display='none';
-  if(k==='pan')pfOpen();if(k==='dia')ofOpen()}
+  if(k==='pan')pfOpen();if(k==='dia')ofOpen();if(k==='enc'&&encDirty)renderEnc()}
 $('ax-btn').onclick=e=>{e.stopPropagation();const m=$('ax-menu');m.style.display=m.style.display==='none'?'block':'none'};
 $('ax-menu').onclick=e=>{const b=e.target.closest('.axi');if(b)axShow(b.dataset.ax)};
 document.addEventListener('click',e=>{if(!e.target.closest('.axw'))$('ax-menu').style.display='none'});
