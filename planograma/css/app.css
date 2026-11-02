@@ -99,7 +99,7 @@ html,body{background:var(--bg)}
   mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='M20 20l-3.5-3.5'/%3E%3C/svg%3E") center/contain no-repeat;background-color:var(--mu)}
 .sb-f7 .searchbar-icon::after{display:none}
 .sb-f7 .input-clear-button{position:absolute;right:10px;top:50%;margin-top:-11px;width:22px;height:22px;border-radius:50%;background:var(--mu);opacity:0;pointer-events:none;transition:opacity .15s;display:block}
-.sb-f7 .input-clear-button.on{opacity:.55;pointer-events:auto}
+.sb-f7 .input-clear-button.on{opacity:.55;pointer-events:auto;visibility:visible}
 .sb-f7 .input-clear-button::after{content:'✕';display:flex;align-items:center;justify-content:center;color:var(--card);font:700 11px/22px var(--num);width:22px;height:22px;position:static;transform:none;background:none;-webkit-mask:none;mask:none}
 .sb-f7 .scanb{flex:none;width:46px;height:46px;border-radius:14px;background:var(--f7-theme-color);color:#fff;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow)}
 .sb-card{margin:0 16px}
@@ -110,7 +110,6 @@ html,body{background:var(--bg)}
 .chip-sel{position:relative;padding-right:26px}
 .chip-sel::after{content:'';position:absolute;right:11px;top:50%;width:6px;height:6px;margin-top:-5px;border-right:2px solid currentColor;border-bottom:2px solid currentColor;transform:rotate(45deg);opacity:.6;pointer-events:none}
 .chip-sel select{appearance:none;-webkit-appearance:none;background:none;border:0;color:inherit;font:inherit;padding:0;margin:0;outline:0;cursor:pointer;height:100%}
-.mtg .sw-i{position:absolute;opacity:0;pointer-events:none}
 .sw-t{position:relative;flex:none;width:30px;height:18px;border-radius:9px;background:var(--trk);transition:background-color .2s}
 .sw-t::after{content:'';position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.3);transition:transform .2s}
 .sw-i:checked+.sw-t{background:var(--f7-theme-color)}.sw-i:checked+.sw-t::after{transform:translateX(12px)}
@@ -135,7 +134,6 @@ html,body{background:var(--bg)}
 .infb::before{content:'';position:absolute;inset:-9px}.infb:active{background:color-mix(in srgb,var(--f7-theme-color) 25%,transparent)}
 .depi{font-size:15px;line-height:1}
 .sb{color:var(--mu);font-size:12.5px;margin-top:3px;font-family:var(--num);font-variant-numeric:tabular-nums}.sb b{color:var(--tx);font-weight:650}.sb .cod{color:var(--tx);font-weight:600}
-.tags{display:flex;flex-wrap:wrap;gap:4px;margin-top:5px}
 .ent{display:inline-flex;align-items:center;gap:3px;font:700 11.5px/18px var(--num);padding:0 7px;border-radius:9px;color:var(--mu);background:var(--card2);white-space:nowrap}
 .ent.e1{color:var(--in);background:var(--in-bg)}.ent.e10{color:var(--e10);background:color-mix(in srgb,var(--e10) 12%,transparent)}.ent.e20{color:var(--e20);background:color-mix(in srgb,var(--e20) 12%,transparent)}
 .ent.ped{color:var(--am);background:var(--am-bg)}
@@ -150,7 +148,6 @@ html,body{background:var(--bg)}
 .st3 b i.sep{margin:0 4px;opacity:.5;font-weight:400}
 .st3 b i.rr{margin:0 2px 0 0;font-weight:700;color:inherit;opacity:.75}
 .st3 .es b{white-space:normal}.st3 .es .cx{white-space:nowrap}
-.st3 .sub{display:block;font:500 11.5px/1.25 var(--num);color:var(--mu);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .st3 .cv{background:color-mix(in srgb,var(--c) 13%,var(--card));box-shadow:inset 0 0 0 1.5px color-mix(in srgb,var(--c) 55%,transparent)}
 .st3 .cv small,.st3 .cv b{color:var(--c)}.st3 .cv small{font-weight:700}
 .sg{display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:650;border-radius:10px;padding:5px 10px;margin-top:7px;color:var(--am);background:var(--am-bg)}
@@ -279,7 +276,6 @@ html,body{background:var(--bg)}
 .cs-item.on .item-title{color:var(--f7-theme-color);font-weight:700}
 .cs-count{font-size:13px;color:var(--mu);font-family:var(--num)}
 .cs-arrow{display:none}
-.fg{flex:none;display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:8px;font-style:normal;font-size:13px;color:var(--c,var(--mu));background:color-mix(in srgb,var(--c,var(--mu)) 13%,transparent)}
 
 /* ═══ LEITOR, AVISO E CARREGANDO ═══ */
 #scan{position:fixed;inset:0;padding-top:env(safe-area-inset-top,0px);background:#000;z-index:14000;display:none;flex-direction:column}#scan.on{display:flex}
@@ -403,3 +399,24 @@ html,body{background:var(--bg)}
 .ent .axe{font-style:normal;position:relative;display:inline-block;line-height:1}
 .ent.ax-p .axe{opacity:.55;filter:grayscale(.6)}
 .ent.ax-p .axe::after{content:'';position:absolute;left:-2px;right:-2px;top:50%;height:2px;margin-top:-1px;border-radius:1px;background:var(--cr);transform:rotate(-38deg);box-shadow:0 0 0 1px var(--card)}
+
+/* ⚡ listas que NÃO são virtuais (Pedido, Panfleto, Lâmina, Oferta): o navegador pula layout/pintura dos cartões fora da tela */
+
+/* ═══ Produtos: cartão de ALTURA FIXA (nov/2026) — a lista virtual mede 1 cartão e usa a mesma altura para todos: rolagem sem trancos ═══ */
+#list .p .nm{height:2.5em}                                                    /* sempre 2 linhas; nome maior termina em "…" (nome inteiro na ficha) */
+#list .sb{display:flex;align-items:center;white-space:nowrap;height:20px;overflow:hidden}
+#list .sb .sbt{flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis}   /* se faltar espaço, corta as medidas… */
+#list .sb .sbb{flex:0 .001 auto;min-width:0;overflow:hidden;display:flex;align-items:center;margin-left:2px}   /* …e quase nunca os selos */
+#list .st3 .es b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#list .p{height:var(--ph,auto);overflow:hidden;box-sizing:border-box}
+
+/* Resumo: % de cada situação (nov/2026) — ao lado da barrinha; o ícone vai antes do nome */
+.kpi .l b .kg{position:static;transform:none;font-size:11px;margin-right:4px;color:var(--c);opacity:.9}
+.kpi .kr{display:flex;align-items:center;gap:6px;margin-top:6px}.kpi .kr .kb{flex:1;margin-top:0}
+.kpi .kr .pc{font-size:12px;font-weight:700;color:var(--c);white-space:nowrap;line-height:1}
+.kpi.kw{grid-column:1/-1;padding:9px 12px}
+
+/* Resumo: tocar no círculo mostra só a Sistemática 1 (nov/2026) */
+.ring{cursor:pointer;border-radius:50%;transition:transform .12s,box-shadow .15s}.ring:active{transform:scale(.95)}
+.ring.s1{box-shadow:0 0 0 3px var(--card),0 0 0 5px var(--f7-theme-color)}
+.s1t{color:var(--f7-theme-color);font-weight:700}
