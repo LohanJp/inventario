@@ -5,7 +5,8 @@
    ⚠ Os cálculos (cobertura, situação, sugestão) continuam só no base.js — aqui é só desenho da tela. */
 
 /* ═══ FRAMEWORK7 ═══ tema "auto": visual de iPhone no iOS e Material no Android */
-const app=new Framework7({el:'#app',theme:'auto',name:'Planograma',
+const app=new Framework7({el:'#app',theme:'auto',name:'Planograma',clicks:{externalLinks:'.external, a[download]'},   // ⚠ sem isso o F7 cancela os links de download (.txt, .csv, .json, .xlsx)
+ 
   colors:{primary:'#0b63ce'},
   touch:{tapHold:false,touchClicksDistanceThreshold:8},
   swipeout:{actionsNoFold:false,removeElements:false},
