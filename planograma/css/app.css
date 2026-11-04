@@ -420,3 +420,13 @@ html,body{background:var(--bg)}
 .ring{cursor:pointer;border-radius:50%;transition:transform .12s,box-shadow .15s}.ring:active{transform:scale(.95)}
 .ring.s1{box-shadow:0 0 0 3px var(--card),0 0 0 5px var(--f7-theme-color)}
 .s1t{color:var(--f7-theme-color);font-weight:700}
+
+/* 1×1×1 + nova cobertura · botão Exportar TXT (nov/2026) */
+.fs-nova{margin:2px 0 6px;padding:10px 0 4px 18px;position:relative}.fs-nova::before{content:"↳";position:absolute;left:2px;top:10px;color:var(--mu)}
+.fs-nl{display:block;font-size:14px;color:var(--tx)}.fs-nl small{display:block;color:var(--mu);font-size:12.5px;margin-top:1px}
+.sb .nv{color:var(--f7-theme-color);font-weight:700}.sb .nv0{color:var(--mu);font-weight:600}
+.expb{margin-left:auto;flex:none;width:auto;height:28px;padding:0 10px;border:1px solid var(--bd);border-radius:14px;background:var(--card);color:var(--f7-theme-color);font:700 12.5px var(--num);cursor:pointer}
+.expb[hidden]{display:none}
+/* modo 1×1 + nova cobertura: a medida nova nunca é cortada — quem encolhe são os selos */
+#list .sb:has(.nv) .sbt{flex-shrink:0}
+#list .sb:has(.nv) .sbb{flex-shrink:1}

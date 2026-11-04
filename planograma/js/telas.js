@@ -176,7 +176,7 @@ function renderList(reset){const T=toks(F.q);
  $('sort').value=F.sort;
  $('catx').innerHTML=(F.cat?`<button class="catx" data-x="cat" type="button">✕ ${esc(short(F.cat))}</button>`:'')+(F.cob?`<button class="catx" data-x="cob" type="button">✕ ${cobTxt(F.cob)}</button>`:'');
  const fAct=F.chip!=='all'||!!F.cat||!!F.ent||noCD;   // algum filtro ligado?
- const base=T.length?(()=>true):r=>catOk(r)&&entOk(r)&&passesChip(r)&&cobPass(r,F.cob);   // BUSCANDO: os filtros (chip, categoria, sistemática, F/CD) não escondem nada
+ const base=T.length?(()=>true):r=>catOk(r)&&entOk(r)&&passesChip(r)&&cobPass(r,F.cob)&&(!F.d111||is111(r));   // BUSCANDO: os filtros (chip, categoria, sistemática, F/CD) não escondem nada
  let rel=false;
  list=allRecords.filter(r=>base(r)&&(!T.length||(r._s=score(r,T))>0));
  if(T.length>1&&!list.length){rel=true;list=allRecords.filter(r=>base(r)&&(r._s=score(r,T,true))>0)}   // nada tem TODAS as palavras → mostra os que têm parte
@@ -186,10 +186,13 @@ function renderList(reset){const T=toks(F.q);
  /* mesmas ordens do Pedido: maior cobertura · maior MDV · menor MDV (item sem número vai para o fim; empate → nome A–Z) */
  const cobV=r=>r._ct!==null&&r._k!=='sg'?Math.max(r._ct,0):null,mdvV=r=>r._m||null;
  const by=(f,dir)=>(a,b)=>{const va=f(a),vb=f(b);if(va===null||vb===null)return(va===null)-(vb===null)||S.nome(a,b);return(va-vb)*dir||S.nome(a,b)};
- S.cob_d=by(cobV,-1);S.mdv_d=by(mdvV,-1);S.mdv_a=by(mdvV,1);if(!S[F.sort])F.sort='cobt';
+ S.cob_d=by(cobV,-1);S.mdv_d=by(mdvV,-1);S.mdv_a=by(mdvV,1);
+ /* Altura × Largura: sem medidas cadastradas primeiro, depois 1×1, 1×2, 1×3… 2×1, 2×2…; empate → profundidade, depois nome A–Z */
+ S.dim=(a,b)=>{const A=num(a.altura),B=num(b.altura),la=num(a.largura),lb=num(b.largura),sa=!(A&&la),sb=!(B&&lb);
+  return (sb-sa)||(sa?S.nome(a,b):A-B||la-lb||num(a.prof)-num(b.prof)||S.nome(a,b))};if(!S[F.sort])F.sort='cobt';
  list.sort(T.length?(a,b)=>b._s-a._s||S[F.sort](a,b):S[F.sort]);$('cnt').textContent=f0(list.length)+(rel?' itens parciais — nenhum tem todas as palavras':' itens')+(T.length?(fAct?' · busca ignora os filtros':''):noCD?' · ocultando '+f0(allRecords.filter(r=>cdRisk(r)&&catOk(r)&&entOk(r)&&cobPass(r,F.cob)&&passesChip(r,F.chip,true)).length)+' (falta no CD)':'');
  $('q-x').classList.toggle('on',!!F.q);
- $('list-empty').hidden=!!list.length;
+ $('list-empty').hidden=!!list.length;$('exp-txt').hidden=!list.length;
  if(!$('s-prod').classList.contains('on')&&!vl)return;                     // a lista virtual nasce quando a aba abre (precisa da altura da tela)
  ensureVL().replaceAllItems(list);if(!CH)ajustaAltura();   // aba estava escondida na 1ª vez: mede agora
  if(reset&&$('s-prod').scrollTop>0)$('s-prod').scrollTop=0}
@@ -197,6 +200,7 @@ function renderList(reset){const T=toks(F.q);
 function relaxFiltersFor(r){
   const off=[];
   if(!cobPass(r,F.cob)){F.cob=null;off.push('cobertura')}
+  if(F.d111&&!is111(r)){F.d111=false;off.push('1×1')}
   if(!catOk(r)){F.cat='';off.push('categoria')}
   if(!entOk(r)){F.ent='';off.push('sistemática')}
   if(!passesChip(r,F.chip,true)){off.push(FLT_SHORT[F.chip]||(CHIPS.find(c=>c[0]===F.chip)||[])[1]||'filtro');F.chip='all'}
@@ -212,7 +216,7 @@ const INFOBTN='<button type="button" class="infb" aria-label="Mais informações
 const PEDBADGE='<span class="ent ped" title="No pedido"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px"><circle cx="9" cy="20" r="1.4"/><circle cx="18" cy="20" r="1.4"/><path d="M2 3h3l2.6 12.4a1 1 0 0 0 .98.8h9.2a1 1 0 0 0 .98-.8L21 7H6"/></svg></span>';   // só o símbolo 🛒
 const DEPI='<span class="depi" title="Procurar no depósito">🔎</span>';
 const embTxt=r=>{const e=num(r.emb);return e?`emb ${f0(e)}`:'emb —'};
-function cardBody(r,acts,extra,noPed){
+function cardBody(r,acts,extra,noPed,nova){
   const dias=v=>v>999?'+999':f0(Math.max(v,0));   // coberturas já vêm arredondadas (dias inteiros)
   const rel=r._c!==null;                                                        // sempre mostra também a cobertura do relatório de Cobertura
   const ebx=num(r.emb)||1;
@@ -221,7 +225,7 @@ function cardBody(r,acts,extra,noPed){
   const sel=(r._sist?`<span class="ent e${esc(r._sist)}">${esc(ENT[r._sist]||'Sist. '+r._sist)}</span>`:'')+(!noPed&&inPed(r.produto)?' '+PEDBADGE:'')+axBadges(r)+neg;
   const cob=r._k==='sg'?(semVendaDias(r)===Infinity?'—':f0(semVendaDias(r))+'<i>d s/ venda</i>'):r._ct===null?'—':dias(r._ct)+(rel||r._c999?`<i class="sep">|</i><i class="rr" title="R = cobertura do relatório de Cobertura de Estoque${r._c999?' (veio 999 = sem cálculo)':''}">R:</i>${rel?dias(r._c):'—'}`:'<i>d</i>');
   return `<div class="hd"><div class="nm">${esc(r.descricao)}</div><div class="acts">${acts}${INFOBTN}</div></div>
- <div class="sb"><span class="sbt"><span class="cod">${esc(r.produto)}</span> · ${r._np?'Fora do planograma':dimTxt(r)+' · '+embTxt(r)}</span>${sel?`<span class="sbb"> ${sel}</span>`:''}</div>
+ <div class="sb"><span class="sbt"><span class="cod">${esc(r.produto)}</span> · ${r._np?'Fora do planograma':(nova===undefined?dimTxt(r):nova?`<b class="nv" title="Medida nova (era ${dimTxt(r).replace(/<[^>]+>/g,'')}): ${F.nova} dias × MDV = ${f0(nova)}">➜ 1×${f0(nova)}×${f0(porCx(r))}</b>`:`<b class="nv nv0" title="Sem MDV: não dá para calcular (fica fora do TXT)">${dimTxt(r).replace(/<[^>]+>/g,'')} · sem MDV</b>`)+' · '+embTxt(r)}</span>${sel?`<span class="sbb"> ${sel}</span>`:''}</div>
  <div class="st3">
   <div class="es"><small>Estoque</small><b class="num">${unCx(r._e)}</b></div>
   <div class="es"><small>Trânsito</small><b class="num">${transitLoaded?unCx(r._t):'—'}</b></div>
@@ -234,8 +238,21 @@ const swli=(inner,done,cls,txt,ico)=>`<li class="swipeout swr"><div class="swipe
 const swrap=(inner,done,cls,txt,ico)=>`<div class="swl"><ul>${swli(inner,done,cls,txt,ico)}</ul></div>`;   // fora da lista virtual (Pedido, Encarte, Panfleto, Oferta)
 function toggleDone(r,c){r._d?doneSet.delete(key(r)):doneSet.add(key(r));r._d=!r._d;lsSave();c.classList.toggle('done',r._d);
   const g=c.closest('.swr');if(g){const a=g.querySelector('[data-sw=ok]');if(a)a.innerHTML=swOk(r._d)}if(r._d)copyEAN(r.automacao||r.produto)}
-function card(r){const dp=DEP.has(r.produto);return swli(`<div class="p ${r._d?'done':''}${dp?' dep':''}" data-p="${esc(r.produto)}" style="--c:${COLOR[r._k]}">${cardBody(r,dp?DEPI:'')}</div>`,r._d,'add',inPed(r.produto)?'Já no pedido':'Pedido','🛒')}
+function card(r){const dp=DEP.has(r.produto);return swli(`<div class="p ${r._d?'done':''}${dp?' dep':''}" data-p="${esc(r.produto)}" style="--c:${COLOR[r._k]}">${cardBody(r,dp?DEPI:'',undefined,undefined,F.d111&&F.nova>0&&is111(r)?novaDim(r):undefined)}</div>`,r._d,'add',inPed(r.produto)?'Já no pedido':'Pedido','🛒')}
 
+/* ═══ Exportar a lista da tela (filtros + ordem) para o script de cadastro: lista_cadastro.txt = produto;altura;largura;profundidade ═══ */
+function exportaCadastro(){if(!list.length)return toast('Nenhum item na lista');
+  const L=[],sem=[];
+  for(const r of list){let a=num(r.altura),l=num(r.largura),p=num(r.prof);
+    if(F.d111&&F.nova>0&&is111(r)){const n=novaLarg(r,F.nova);if(!n){sem.push(r.produto);continue}a=1;l=n;p=porCx(r)}   // 1 × (dias × MDV) × itens por caixa
+    else if(!(a&&l&&p)){a=1;l=1;p=num(r.emb)||1}                                                           // sem medidas: 1 × 1 × embalagem (igual ao script antigo)
+    L.push(`${r.produto};${a};${l};${p}`)}
+  if(!L.length)return toast('Nenhum item para exportar (todos sem MDV)');
+  const d=new Date(),dt=d.toLocaleString('pt-BR');
+  const H=[`# Lista para cadastro - ${dt} - ${L.length} itens`,`# ${(currentMeta.filial||'').replace(/ - Produtos.*/i,'')}${F.d111&&F.nova>0?` - 1x1 com nova cobertura de ${F.nova} dias`:''}`,'# produto;1;dias x MDV;itens por caixa'];
+  downloadBlob(new Blob(['\ufeff'+[...H,...L].join('\r\n')+'\r\n'],{type:'text/plain;charset=utf-8'}),'lista_cadastro.txt');
+  toast(`${f0(L.length)} itens exportados`+(sem.length?` · ${f0(sem.length)} sem MDV ficaram de fora`:''))}
+$('exp-txt').onclick=exportaCadastro;
 const qGo=debounce(()=>renderList(true),180);
 $('q').oninput=e=>{F.q=e.target.value;qGo()};
 $('q-x').onclick=()=>{$('q').value='';F.q='';renderList(true);$('q').focus()};
@@ -249,6 +266,13 @@ let noCDTr=false;try{noCDTr=localStorage.getItem('planograma_nocdtr')==='1'}catc
 const cdTr=r=>isCD(r)&&r._t>0&&r._e<(num(r.emb)||1);
 const hideCD=(r,on=noCD,tr=noCDTr)=>on&&(cdRisk(r)||(tr&&cdTr(r)));
 const salvaCD=()=>{try{localStorage.setItem('planograma_nocd',noCD?'1':'0');localStorage.setItem('planograma_nocdtr',noCDTr?'1':'0')}catch{}};
+/* ═══ 1×1 + nova cobertura (nov/2026). No sistema: 1º campo = 1 · campo do meio = dias × MDV · 3º campo = itens por caixa.
+   Filtro "Só 1×1" (olha só os 2 primeiros campos) e, com dias informados, medida proposta 1 × (dias × MDV) × itens por caixa ═══ */
+const is111=r=>num(r.altura)===1&&num(r.largura)===1;
+const porCx=r=>num(r.prof)||num(r.emb)||1;   // 3º campo = itens na caixa (sem ele, usa a embalagem)
+const novaLarg=(r,d)=>r._m>0&&d>0?Math.max(1,Math.ceil(d*r._m)):null;   // dias × MDV, arredondado para cima (mín. 1)
+const novaDim=r=>F.d111&&F.nova>0&&is111(r)?novaLarg(r,F.nova):null;
+try{const v=parseInt(localStorage.getItem('planograma_cobnova'),10);if(v>0)F.nova=v}catch{}
 const catOk=r=>!F.cat||r.categoria===F.cat||(r.categoria||'').startsWith(F.cat+'->');   // nível pai inclui os filhos
 function passesChip(r,ch=F.chip,ignNoCD){
   return (ignNoCD||ch==='cd'||ch==='dep'||!hideCD(r))&&
@@ -292,7 +316,7 @@ function closeCat(){if(catSheet.opened)catSheet.close()}
 const setCat=v=>{D.cat=v;closeCat()};                                      // escolheu → volta para Filtros com a categoria marcada
 
 /* ═══ FILTROS (uma folha só): Situação · Sistemática · Categoria · F/CD → toca em "Ver N itens" ═══ */
-const nFiltros=()=>(F.chip!=='all')+(!!F.cat)+((F.ent||'')!==ENT0)+(noCD?1:0)+(F.cob?1:0);
+const nFiltros=()=>(F.chip!=='all')+(F.d111?1:0)+(!!F.cat)+((F.ent||'')!==ENT0)+(noCD?1:0)+(F.cob?1:0);
 /* COBERTURA TOTAL maior/menor que N dias — usa o mesmo número arredondado do cartão; "Sem giro" e item sem MDV/cobertura ficam de fora */
 const cobDia=r=>r._ct!==null&&r._k!=='sg'?Math.max(r._ct,0):null;
 const cobOn=c=>!!(c&&(c.op==='lt'||c.op==='gt')&&Number.isFinite(c.d)&&c.d>=0);
@@ -307,11 +331,11 @@ const COBOPS=[['','Qualquer'],['lt','Menor que'],['gt','Maior que']];
 /* só os números (contagens e "Ver N itens") — usado enquanto digita os dias, sem redesenhar a folha */
 function fltCounts(){
   const bs=[...document.querySelectorAll('#flt-list .fs-s')],ch=bs.map(b=>b.dataset.c),n=ch.map(()=>0);let sel=0;
-  for(const r of allRecords){if(!(dCat(r)&&dEnt(r)&&cobPass(r,D.cob)))continue;   // ⚡ 1 passada: conta todas as situações juntas (mesmo dChip de antes)
+  for(const r of allRecords){if(!(dCat(r)&&dEnt(r)&&cobPass(r,D.cob)&&(!D.d111||is111(r))))continue;   // ⚡ 1 passada: conta todas as situações juntas (mesmo dChip de antes)
     for(let i=0;i<ch.length;i++)if(dChip(r,ch[i]))n[i]++;if(dChip(r))sel++}
   bs.forEach((b,i)=>{b.querySelector('small').textContent=f0(n[i])});
   $('flt-apply').textContent=`Ver ${f0(sel)} itens`;
-  $('flt-clear').style.visibility=(D.chip!=='all'||D.cat||(D.ent||'')!==ENT0||D.noCD||cobOn(D.cob))?'':'hidden'}
+  $('flt-clear').style.visibility=(D.chip!=='all'||D.cat||(D.ent||'')!==ENT0||D.noCD||D.d111||cobOn(D.cob))?'':'hidden'}
 function renderFlt(){refreshDep();
   const sit=CHIPS.filter(c=>c[0]!=='trans'||transitLoaded).map(c=>{
     const g=GLY[c[0]]||(c[2]?ic(c[2],13):'');
@@ -320,18 +344,23 @@ function renderFlt(){refreshDep();
   $('flt-list').innerHTML=`<h5>Situação</h5><div class="fs-grid">${sit}</div>
    <h5>Cobertura total <span class="fs-hint">(estoque + trânsito) ÷ MDV</span></h5><div class="fs-seg">${COBOPS.map(([v,l])=>`<button type="button" data-cop="${v}" class="${op===v?'on':''}">${l}</button>`).join('')}</div>
    ${op?`<div class="fs-cob"><div class="fs-num"><button type="button" data-cstep="-1" aria-label="Menos 1 dia">−</button><input id="fs-cobd" type="number" inputmode="numeric" min="0" step="1" value="${dd}" aria-label="Dias de cobertura"><span>dias</span><button type="button" data-cstep="1" aria-label="Mais 1 dia">+</button></div><div class="fs-q">${[3,7,15,30].map(n=>`<button type="button" data-cq="${n}" class="${dd===n?'on':''}">${n}</button>`).join('')}</div></div>`:''}
+   <h5>Medidas</h5>
+   <label class="fs-ln"><span>Só 1×1<small>Os dois primeiros campos = 1 (qualquer quantidade por caixa)</small></span><input type="checkbox" id="fs-111" class="sw-i"${D.d111?' checked':''}><span class="sw-t fs-tg"></span></label>${D.d111?`
+   <div class="fs-nova"><span class="fs-nl">Nova cobertura<small>campo do meio = dias × MDV (arredondado para cima)</small></span><div class="fs-cob"><div class="fs-num"><button type="button" data-nstep="-1" aria-label="Menos 1 dia">−</button><input id="fs-nova" type="number" inputmode="numeric" min="0" step="1" value="${D.nova>0?D.nova:''}" placeholder="—" aria-label="Dias da nova cobertura"><span>dias</span><button type="button" data-nstep="1" aria-label="Mais 1 dia">+</button></div><div class="fs-q">${[7,15,21,30].map(n=>`<button type="button" data-nq="${n}" class="${D.nova===n?'on':''}">${n}</button>`).join('')}</div></div></div>`:''}
    <h5>Sistemática</h5><div class="fs-seg">${ENTS.map(([v,l])=>`<button type="button" data-ent="${v}" class="${(D.ent||'')===v?'on':''}">${l}</button>`).join('')}</div>
    <h5>Categoria</h5><button type="button" class="fs-ln" id="cat-pick-btn"><span>${D.cat?esc(short(D.cat)):'Todas as categorias'}<small>${D.cat?'Toque para trocar':'Toque para escolher na árvore'}</small></span>${D.cat?'<i class="fs-cx" id="fs-catx" role="button" aria-label="Tirar categoria">✕</i>':'<i class="fs-ar">›</i>'}</button>
    <label class="fs-ln"><span>Esconder falta no CD (F/CD)<small>Estoque menor que 1 caixa, sem trânsito</small></span><input type="checkbox" id="fs-nocd" class="sw-i"${D.noCD?' checked':''}><span class="sw-t fs-tg"></span></label>${D.noCD?`
    <label class="fs-ln fs-sub"><span>Esconder também os em trânsito<small>Estoque menor que 1 caixa, com trânsito a caminho</small></span><input type="checkbox" id="fs-nocdtr" class="sw-i"${D.noCDTr?' checked':''}><span class="sw-t fs-tg"></span></label>`:''}`;
   fltCounts()}
-function openFlt(keep){if(!keep||!D)D={chip:F.chip,cat:F.cat||'',ent:F.ent||'',noCD,noCDTr,cob:F.cob?{...F.cob}:null};renderFlt();fltSheet.open();pushOv('flt')}
+function openFlt(keep){if(!keep||!D)D={chip:F.chip,cat:F.cat||'',ent:F.ent||'',noCD,noCDTr,d111:!!F.d111,nova:F.nova||null,cob:F.cob?{...F.cob}:null};renderFlt();fltSheet.open();pushOv('flt')}
 function closeFlt(){if(fltSheet.opened)fltSheet.close()}
 $('flt-btn').onclick=()=>openFlt();
 $('flt-sheet-x').onclick=closeFlt;$('flt-cancel').onclick=closeFlt;
-$('flt-clear').onclick=()=>{D={chip:'all',cat:'',ent:ENT0,noCD:false,noCDTr:false,cob:null};renderFlt()};
-$('flt-apply').onclick=()=>{F.chip=D.chip;F.cat=D.cat;F.ent=D.ent;F.cob=cobOn(D.cob)?{op:D.cob.op,d:D.cob.d}:null;noCD=D.noCD;noCDTr=!!D.noCDTr;salvaCD();closeFlt();renderList(true)};
+$('flt-clear').onclick=()=>{D={chip:'all',cat:'',ent:ENT0,noCD:false,noCDTr:false,d111:false,nova:D.nova,cob:null};renderFlt()};
+$('flt-apply').onclick=()=>{F.chip=D.chip;F.cat=D.cat;F.ent=D.ent;F.cob=cobOn(D.cob)?{op:D.cob.op,d:D.cob.d}:null;noCD=D.noCD;noCDTr=!!D.noCDTr;salvaCD();F.d111=!!D.d111;F.nova=D.nova>0?D.nova:null;try{localStorage.setItem('planograma_cobnova',F.nova||'')}catch{};closeFlt();renderList(true)};
 $('flt-list').onclick=e=>{
+  const nq=e.target.closest('[data-nq]');if(nq){D.nova=+nq.dataset.nq;return renderFlt()}
+  const ns=e.target.closest('[data-nstep]');if(ns){D.nova=Math.max(0,(D.nova>0?D.nova:0)+ +ns.dataset.nstep)||null;return renderFlt()}
   const b=e.target.closest('.fs-s');if(b){D.chip=b.dataset.c;return renderFlt()}
   const co=e.target.closest('[data-cop]');if(co){const v=co.dataset.cop;D.cob=v?{op:v,d:D.cob&&Number.isFinite(D.cob.d)?D.cob.d:7}:null;return renderFlt()}
   const st=e.target.closest('[data-cstep]');if(st&&D.cob){D.cob.d=Math.max(0,(Number.isFinite(D.cob.d)?D.cob.d:0)+ +st.dataset.cstep);return renderFlt()}
@@ -339,8 +368,10 @@ $('flt-list').onclick=e=>{
   const g=e.target.closest('[data-ent]');if(g){D.ent=g.dataset.ent;return renderFlt()}
   if(e.target.closest('#fs-catx')){D.cat='';return renderFlt()}
   if(e.target.closest('#cat-pick-btn'))openCatPicker()};
-$('flt-list').onchange=e=>{if(e.target.id==='fs-nocd'){D.noCD=e.target.checked;renderFlt()}if(e.target.id==='fs-nocdtr'){D.noCDTr=e.target.checked;renderFlt()}};
-$('flt-list').addEventListener('input',e=>{if(e.target.id!=='fs-cobd'||!D.cob)return;const v=parseInt(e.target.value,10);D.cob.d=Number.isFinite(v)&&v>=0?v:NaN;
+$('flt-list').onchange=e=>{if(e.target.id==='fs-nocd'){D.noCD=e.target.checked;renderFlt()}if(e.target.id==='fs-nocdtr'){D.noCDTr=e.target.checked;renderFlt()}if(e.target.id==='fs-111'){D.d111=e.target.checked;renderFlt()}};
+$('flt-list').addEventListener('input',e=>{if(e.target.id==='fs-nova'){const v=parseInt(e.target.value,10);D.nova=v>0?v:null;
+  document.querySelectorAll('#flt-list [data-nq]').forEach(b=>b.classList.toggle('on',+b.dataset.nq===D.nova));return}
+  if(e.target.id!=='fs-cobd'||!D.cob)return;const v=parseInt(e.target.value,10);D.cob.d=Number.isFinite(v)&&v>=0?v:NaN;
   document.querySelectorAll('#flt-list [data-cq]').forEach(b=>b.classList.toggle('on',+b.dataset.cq===D.cob.d));fltCounts()});   // digitando: só atualiza os números
 $('cat-sheet-x').onclick=closeCat;
 $('cs-bread').onclick=e=>{const b=e.target.closest('.cs-crumb');if(!b||b.classList.contains('active'))return;
