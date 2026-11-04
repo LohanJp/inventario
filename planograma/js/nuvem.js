@@ -373,5 +373,16 @@ async function boot(){
 (async()=>{busy(true,'Abrindo seus dados…');try{await boot()}finally{busy(false)}})();
 updBadge();
 /* PWA: service worker (funciona offline depois da 1ª abertura) */
-if('serviceWorker' in navigator&&/^https?:/.test(location.protocol))/* ⚡ registro do SW em tempo ocioso: não compete com a 1ª pintura */
-addEventListener('load',()=>idle(()=>navigator.serviceWorker.register('./sw.js').catch(()=>{})));
+if('serviceWorker' in navigator&&/^https?:/.test(location.protocol)){/* ⚡ registro do SW em tempo ocioso: não compete com a 1ª pintura */
+  /* Versão nova publicada: o SW novo assume o controle → recarrega UMA vez para já mostrar a versão nova
+     (antes a 1ª abertura depois de publicar ainda mostrava a versão antiga guardada no aparelho).
+     Não recarrega na 1ª instalação nem com uma folha/pergunta aberta (aí só avisa). */
+  const tinhaSW=!!navigator.serviceWorker.controller;let recarregou=false;
+  navigator.serviceWorker.addEventListener('controllerchange',()=>{if(!tinhaSW||recarregou)return;recarregou=true;
+    if(typeof overlayOn==='function'&&overlayOn()){toast('Versão nova do app pronta — feche e abra o app para usar');return}
+    location.reload()});
+  addEventListener('load',()=>idle(()=>navigator.serviceWorker.register('./sw.js').then(reg=>reg.update()).catch(()=>{})))}
+/* versão do app na aba Dados (nome do cache do SW, ex.: v34) — para conferir se o aparelho já pegou a atualização */
+function mostraVersao(){const el=$('app-ver');if(!el||!('caches' in window))return;
+  caches.keys().then(ks=>{const k=ks.filter(x=>x.startsWith('planograma-condor-')).sort().pop();el.textContent=k?'Versão do app: '+k.replace('planograma-condor-','').replace('-f7',''):''}).catch(()=>{})}
+addEventListener('load',()=>setTimeout(mostraVersao,3000));
