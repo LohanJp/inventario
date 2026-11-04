@@ -3,7 +3,7 @@
    - Não mantém conexões abertas: Firebase (SSE/REST) passa direto, sem interceptação.
    - Ao mudar o app, troque o número da versão (V) para renovar o cache.
    - Versão Framework7: a biblioteca (lib/framework7) é guardada junto com o app → abre sem internet, sem CDN. */
-const V='planograma-condor-v32-f7';  // único por app — mude só o sufixo ao atualizar
+const V='planograma-condor-v33-f7';  // único por app — mude só o sufixo ao atualizar
 const JS=['leitura','estado','base','telas','encarte','oferta','pedido','arquivos','nuvem'].map(n=>'./js/'+n+'.js');
 const LIB=['./lib/framework7/framework7.min.js','./lib/framework7/framework7.min.css'];
 const SHELL=['./','./index.html','./css/app.css',...LIB,...JS,'./manifest.webmanifest','./icon-192.png','./icon-512.png','./icon-maskable-512.png','./apple-touch-icon.png'];
