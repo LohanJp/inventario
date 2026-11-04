@@ -227,7 +227,7 @@ function cardBody(r,acts,extra,noPed,nova){
   const sel=(r._sist?`<span class="ent e${esc(r._sist)}">${esc(ENT[r._sist]||'Sist. '+r._sist)}</span>`:'')+(!noPed&&inPed(r.produto)?' '+PEDBADGE:'')+axBadges(r)+neg;
   const cob=r._k==='sg'?(semVendaDias(r)===Infinity?'—':f0(semVendaDias(r))+'<i>d s/ venda</i>'):r._ct===null?'—':dias(r._ct)+(rel||r._c999?`<i class="sep">|</i><i class="rr" title="R = cobertura do relatório de Cobertura de Estoque${r._c999?' (veio 999 = sem cálculo)':''}">R:</i>${rel?dias(r._c):'—'}`:'<i>d</i>');
   return `<div class="hd"><div class="nm">${esc(r.descricao)}</div><div class="acts">${acts}${INFOBTN}</div></div>
- <div class="sb"><span class="sbt"><span class="cod">${esc(r.produto)}</span> · ${r._np?'Fora do planograma':(nova===undefined?dimTxt(r):nova?`<b class="nv" title="Medida nova (era ${dimTxt(r).replace(/<[^>]+>/g,'')}): ${NOVA} dias × MDV = ${f0(nova)}">➜ 1×${nova}×${porCx(r)}</b>`:`<b class="nv nv0" title="Sem MDV: não dá para calcular (fica fora do TXT)">${dimTxt(r).replace(/<[^>]+>/g,'')} · sem MDV</b>`)+' · '+embTxt(r)}</span>${sel?`<span class="sbb"> ${sel}</span>`:''}</div>
+ <div class="sb"><span class="sbt"><span class="cod">${esc(r.produto)}</span> · ${r._np?'Fora do planograma':(nova===undefined?dimTxt(r):nova?`<b class="nv" title="Medida nova (era ${dimTxt(r).replace(/<[^>]+>/g,'')}): ${NOVA} dias × MDV ${f1(r._m)} ÷ emb ${f0(num(r.emb)||1)} = ${nova}">➜ 1×${nova}×${porCx(r)}</b>`:`<b class="nv nv0" title="Sem MDV: não dá para calcular (fica fora do TXT)">${dimTxt(r).replace(/<[^>]+>/g,'')} · sem MDV</b>`)+' · '+embTxt(r)}</span>${sel?`<span class="sbb"> ${sel}</span>`:''}</div>
  <div class="st3">
   <div class="es"><small>Estoque</small><b class="num">${unCx(r._e)}</b></div>
   <div class="es"><small>Trânsito</small><b class="num">${transitLoaded?unCx(r._t):'—'}</b></div>
@@ -246,12 +246,12 @@ function card(r){const dp=DEP.has(r.produto);return swli(`<div class="p ${r._d?'
 function exportaCadastro(){if(!list.length)return toast('Nenhum item na lista');
   const L=[],sem=[];
   for(const r of list){let a=num(r.altura),l=num(r.largura),p=num(r.prof);
-    if(F.d111&&NOVA>0&&is111(r)){const n=novaLarg(r,NOVA);if(!n){sem.push(r.produto);continue}a=1;l=n;p=porCx(r)}   // 1 × (dias × MDV) × itens por caixa
+    if(F.d111&&NOVA>0&&is111(r)){const n=novaLarg(r,NOVA);if(!n){sem.push(r.produto);continue}a=1;l=n;p=porCx(r)}   // 1 × (dias × MDV ÷ emb) × itens por caixa
     else if(!(a&&l&&p)){a=1;l=1;p=num(r.emb)||1}                                                           // sem medidas: 1 × 1 × embalagem (igual ao script antigo)
     L.push(`${r.produto};${a};${l};${p}`)}
   if(!L.length)return toast('Nenhum item para exportar (todos sem MDV)');
   const d=new Date(),dt=d.toLocaleString('pt-BR');
-  const H=[`# Lista para cadastro - ${dt} - ${L.length} itens`,`# ${(currentMeta.filial||'').replace(/ - Produtos.*/i,'')}${F.d111&&NOVA>0?` - 1x1 com nova cobertura de ${NOVA} dias`:''}`,'# produto;1;dias x MDV;itens por caixa'];
+  const H=[`# Lista para cadastro - ${dt} - ${L.length} itens`,`# ${(currentMeta.filial||'').replace(/ - Produtos.*/i,'')}${F.d111&&NOVA>0?` - 1x1 com nova cobertura de ${NOVA} dias`:''}`,'# produto;1;dias x MDV / emb;itens por caixa'];
   downloadBlob(new Blob(['\ufeff'+[...H,...L].join('\r\n')+'\r\n'],{type:'text/plain;charset=utf-8'}),'lista_cadastro.txt');
   toast(`${f0(L.length)} itens exportados`+(sem.length?` · ${f0(sem.length)} sem MDV ficaram de fora`:''))}
 $('exp-txt').onclick=exportaCadastro;
@@ -268,11 +268,11 @@ let noCDTr=false;try{noCDTr=localStorage.getItem('planograma_nocdtr')==='1'}catc
 const cdTr=r=>isCD(r)&&r._t>0&&r._e<(num(r.emb)||1);
 const hideCD=(r,on=noCD,tr=noCDTr)=>on&&(cdRisk(r)||(tr&&cdTr(r)));
 const salvaCD=()=>{try{localStorage.setItem('planograma_nocd',noCD?'1':'0');localStorage.setItem('planograma_nocdtr',noCDTr?'1':'0')}catch{}};
-/* ═══ 1×1 + nova cobertura (nov/2026). No sistema: 1º campo = 1 · campo do meio = dias × MDV · 3º campo = itens por caixa.
-   Filtro "Só 1×1" (olha só os 2 primeiros campos) e, com dias informados, medida proposta 1 × (dias × MDV) × itens por caixa ═══ */
+/* ═══ 1×1 + nova cobertura (nov/2026). No sistema: 1º campo = 1 · campo do meio = dias × MDV ÷ embalagem · 3º campo = itens por caixa.
+   Filtro "Só 1×1" (olha só os 2 primeiros campos) e, com dias informados, medida proposta 1 × (dias × MDV ÷ emb) × itens por caixa ═══ */
 const is111=r=>num(r.altura)===1&&num(r.largura)===1;
 const porCx=r=>num(r.prof)||num(r.emb)||1;   // 3º campo = itens na caixa (sem ele, usa a embalagem)
-const novaLarg=(r,d)=>r._m>0&&d>0?Math.max(1,Math.ceil(d*r._m)):null;   // dias × MDV, arredondado para cima (mín. 1)
+const novaLarg=(r,d)=>r._m>0&&d>0?Math.max(1,Math.ceil(d*r._m/(num(r.emb)||1))):null;   // dias × MDV ÷ embalagem, arredondado para cima (mín. 1)
 const novaDim=r=>F.d111&&NOVA>0&&is111(r)?novaLarg(r,NOVA):null;
 const catOk=r=>!F.cat||r.categoria===F.cat||(r.categoria||'').startsWith(F.cat+'->');   // nível pai inclui os filhos
 function passesChip(r,ch=F.chip,ignNoCD){
@@ -347,7 +347,7 @@ function renderFlt(){refreshDep();
    ${op?`<div class="fs-cob"><div class="fs-num"><button type="button" data-cstep="-1" aria-label="Menos 1 dia">−</button><input id="fs-cobd" type="number" inputmode="numeric" min="0" step="1" value="${dd}" aria-label="Dias de cobertura"><span>dias</span><button type="button" data-cstep="1" aria-label="Mais 1 dia">+</button></div><div class="fs-q">${[3,7,15,30].map(n=>`<button type="button" data-cq="${n}" class="${dd===n?'on':''}">${n}</button>`).join('')}</div></div>`:''}
    <h5>Planograma</h5>
    <label class="fs-ln"><span>Só 1×1<small>Os dois primeiros campos = 1 (qualquer quantidade por caixa)</small></span><input type="checkbox" id="fs-111" class="sw-i"${D.d111?' checked':''}><span class="sw-t fs-tg"></span></label>${D.d111?`
-   <div class="fs-nova"><span class="fs-nl">Nova cobertura<small>campo do meio = dias × MDV (arredondado para cima)</small></span><div class="fs-cob"><div class="fs-num"><button type="button" data-nstep="-1" aria-label="Menos 1 dia">−</button><input id="fs-nova" type="number" inputmode="numeric" min="0" step="1" value="${D.nova>0?D.nova:''}" placeholder="—" aria-label="Dias da nova cobertura"><span>dias</span><button type="button" data-nstep="1" aria-label="Mais 1 dia">+</button></div><div class="fs-q">${[7,15,21,30].map(n=>`<button type="button" data-nq="${n}" class="${D.nova===n?'on':''}">${n}</button>`).join('')}</div></div></div>`:''}
+   <div class="fs-nova"><span class="fs-nl">Nova cobertura<small>campo do meio = dias × MDV ÷ embalagem (arredondado para cima)</small></span><div class="fs-cob"><div class="fs-num"><button type="button" data-nstep="-1" aria-label="Menos 1 dia">−</button><input id="fs-nova" type="number" inputmode="numeric" min="0" step="1" value="${D.nova>0?D.nova:''}" placeholder="—" aria-label="Dias da nova cobertura"><span>dias</span><button type="button" data-nstep="1" aria-label="Mais 1 dia">+</button></div><div class="fs-q">${[7,15,21,30].map(n=>`<button type="button" data-nq="${n}" class="${D.nova===n?'on':''}">${n}</button>`).join('')}</div></div></div>`:''}
    <h5>Sistemática</h5><div class="fs-seg">${ENTS.map(([v,l])=>`<button type="button" data-ent="${v}" class="${(D.ent||'')===v?'on':''}">${l}</button>`).join('')}</div>
    <h5>Categoria</h5><button type="button" class="fs-ln" id="cat-pick-btn"><span>${D.cat?esc(short(D.cat)):'Todas as categorias'}<small>${D.cat?'Toque para trocar':'Toque para escolher na árvore'}</small></span>${D.cat?'<i class="fs-cx" id="fs-catx" role="button" aria-label="Tirar categoria">✕</i>':'<i class="fs-ar">›</i>'}</button>
    <label class="fs-ln"><span>Esconder falta no CD (F/CD)<small>Estoque menor que 1 caixa, sem trânsito</small></span><input type="checkbox" id="fs-nocd" class="sw-i"${D.noCD?' checked':''}><span class="sw-t fs-tg"></span></label>${D.noCD?`
