@@ -125,8 +125,10 @@ $('enc-list').onclick=e=>{if(Date.now()<swBlock)return;if(!e.target.closest('.in
    margens mínimas, 1 página de largura, SEM cabeçalho e SEM rodapé (nada para formatar no LibreOffice). */
 function ensureJSZip(){
   if(typeof JSZip!=='undefined')return Promise.resolve();
-  return new Promise((ok,no)=>{const s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
-    s.onload=ok;s.onerror=()=>no(new Error('sem internet para carregar o JSZip'));document.head.appendChild(s)})}
+  const tenta=src=>new Promise((ok,no)=>{const s=document.createElement('script');s.src=src;s.onload=ok;s.onerror=()=>{s.remove();no()};document.head.appendChild(s)});
+  return tenta('./lib/jszip/jszip.min.js')                                                   // guardado no app: funciona sem internet
+    .catch(()=>tenta('https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js'))   // reserva: CDN
+    .catch(()=>{throw new Error('não consegui carregar o JSZip')})}
 const xlCol=n=>{let s='';for(n++;n>0;n=Math.floor((n-1)/26))s=String.fromCharCode(65+(n-1)%26)+s;return s};      // 0 → A
 const xlNum=a=>a.split('').reduce((n,ch)=>n*26+ch.charCodeAt(0)-64,0)-1;                                          // A → 0
 async function exportEncStyled(buf,hdr,st){

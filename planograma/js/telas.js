@@ -255,7 +255,91 @@ function exportaCadastro(){if(!list.length)return toast('Nenhum item na lista');
   const H=[`# Lista para cadastro - ${dt} - ${L.length} itens`,`# ${(currentMeta.filial||'').replace(/ - Produtos.*/i,'')}${F.d111&&NOVA>0?` - 1x1 com nova cobertura de ${NOVA} dias`:''}`,'# produto;1;dias x MDV / emb;itens por caixa'];
   downloadBlob(new Blob(['\ufeff'+[...H,...L].join('\r\n')+'\r\n'],{type:'text/plain;charset=utf-8'}),'lista_cadastro.txt');
   toast(`${f0(L.length)} itens exportados`+(sem.length?` · ${f0(sem.length)} sem MDV ficaram de fora`:''))}
-$('exp-txt').onclick=exportaCadastro;
+/* ═══ BAIXAR (nov/2026): botão "⤓ Baixar" com 2 opções — Planograma (.txt p/ o script) ou Relatório (planilha .xlsx) ═══ */
+function fechaBaixar(){const m=$('exp-menu');if(m)m.remove();document.removeEventListener('click',foraBaixar,true)}
+function foraBaixar(e){if(!e.target.closest('#exp-menu')&&!e.target.closest('#exp-txt'))fechaBaixar()}
+$('exp-txt').onclick=()=>{if($('exp-menu'))return fechaBaixar();
+  const b=$('exp-txt'),m=document.createElement('div');m.id='exp-menu';m.className='exp-menu';
+  m.innerHTML=`<button type="button" data-exp="txt"><b>📄 Planograma (.txt)</b><small>Lista para o script de cadastro</small></button>
+   <button type="button" data-exp="xlsx"><b>📊 Relatório (planilha)</b><small>Os ${f0(list.length)} itens da tela, como nos cartões, pronto para imprimir</small></button>`;
+  b.parentNode.style.position='relative';b.parentNode.appendChild(m);
+  m.onclick=e=>{const x=e.target.closest('[data-exp]');if(!x)return;fechaBaixar();x.dataset.exp==='txt'?exportaCadastro():exportaRelatorio()};
+  setTimeout(()=>document.addEventListener('click',foraBaixar,true),0)};
+
+/* Relatório .xlsx montado do zero (JSZip): cada produto = bloco de 3 linhas igual ao cartão
+   (nome · código/medidas/emb/selos · Estoque | Trânsito | MDV | Situação), faixa com a cor da situação à esquerda,
+   e a folha pronta para imprimir igual à exportação do Panfleto: A4 retrato, 1 página de largura,
+   margens mínimas, sem cabeçalho/rodapé — e sem cortar um bloco entre duas páginas. */
+const REL_COR={rup:['E03131','FDECEC'],crit:['E8590C','FFF0E6'],aten:['B7791F','FFF6DB'],ok:['2F9E44','E9F7EC'],nd:['6B7280','F1F3F5'],sg:['7048E8','F1ECFE']};
+const REL_K=['rup','crit','aten','ok','nd','sg'];
+const xEsc=s=>String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const semTag=h=>{const d=document.createElement('div');d.innerHTML=h;return d.textContent.replace(/\s+/g,' ').trim()};
+function relFiltros(){const p=[];
+  if(F.chip!=='all')p.push(FLT_SHORT[F.chip]||(CHIPS.find(c=>c[0]===F.chip)||[])[1]||F.chip);
+  if(F.ent)p.push('Sistemática '+((ENTS.find(e=>e[0]===F.ent)||[])[1]||F.ent));
+  if(F.giro)p.push('Giro '+F.giro);if(F.cat)p.push(short(F.cat));if(F.cob)p.push('Cobertura '+cobTxt(F.cob));
+  if(F.d111)p.push('Só 1×1'+(NOVA>0?` · nova cobertura ${NOVA} dias`:''));if(noCD)p.push('sem falta no CD'+(noCDTr?' (nem em trânsito)':''));
+  if(F.q)p.push('busca "'+F.q+'"');return p.join(' · ')}
+function relLinha(r){
+  const ebx=num(r.emb)||1,unCx=n=>`${f0(n)} un`+(ebx>1&&n>=0?` | ${n>0&&n<ebx?'<1':f0(Math.floor(n/ebx))} cx`:'');
+  const dias=v=>v>999?'+999':f0(Math.max(v,0)),rel=r._c!==null;
+  const cob=r._k==='sg'?(semVendaDias(r)===Infinity?'—':f0(semVendaDias(r))+' d s/ venda'):r._ct===null?'—':dias(r._ct)+(rel||r._c999?' | R: '+(rel?dias(r._c):'—'):' d');
+  const nova=F.d111&&NOVA>0&&is111(r)?novaDim(r):undefined;
+  const dim=r._np?'Fora do planograma':nova===undefined?semTag(dimTxt(r)):nova?`➜ 1×${nova}×${porCx(r)} (nova)`:'1×1 · sem MDV';
+  const selos=[r._sist?(ENT[r._sist]||'Sist. '+r._sist):'',inPed(r.produto)?'🛒 no pedido':'',semTag(axBadges(r)),
+    r._e<0?'▼ negativo · '+(r._t>0?'em trânsito':isCD(r)?'falta no CD':'falta pedir'):''].filter(Boolean).join(' · ');
+  return {k:REL_K.includes(r._k)?r._k:'nd',nome:r.descricao||'',sb:[r.produto,dim,embTxt(r),selos].filter(Boolean).join(' · '),
+    est:unCx(r._e),tr:transitLoaded?unCx(r._t):'—',mdv:r._m?f1(r._m):'—',sit:`${GLY[r._k]||''} ${SLBL[r._k]||''}`.trim(),cob}}
+async function exportaRelatorio(){
+  if(!list.length)return toast('Nenhum item na lista');
+  try{await ensureJSZip()}catch(e){return toast('Não consegui montar a planilha — '+e.message)}
+  toast('Montando a planilha…');await new Promise(r=>setTimeout(r,30));
+  const fil=(currentMeta.filial||'').replace(/ - Produtos.*/i,''),hoje=new Date().toLocaleDateString('pt-BR');
+  /* estilos: fontes · preenchimentos · bordas · formatos de célula */
+  const fonts=['<font><sz val="11"/><name val="Calibri"/></font>','<font><b/><sz val="12"/><name val="Calibri"/></font>','<font><sz val="9"/><color rgb="FF6B7280"/><name val="Calibri"/></font>',
+    '<font><b/><sz val="15"/><name val="Calibri"/></font>','<font><sz val="10"/><color rgb="FF6B7280"/><name val="Calibri"/></font>'];
+  const fills=['<fill><patternFill patternType="none"/></fill>','<fill><patternFill patternType="gray125"/></fill>','<fill><patternFill patternType="solid"><fgColor rgb="FFF1F3F5"/><bgColor indexed="64"/></patternFill></fill>'];
+  REL_K.forEach(k=>fills.push(`<fill><patternFill patternType="solid"><fgColor rgb="FF${REL_COR[k][1]}"/><bgColor indexed="64"/></patternFill></fill>`));   // 3..8
+  const W='<right style="thin"><color rgb="FFFFFFFF"/></right>';
+  const borders=['<border><left/><right/><top/><bottom/><diagonal/></border>',`<border><left/>${W}<top/><bottom/><diagonal/></border>`];
+  REL_K.forEach(k=>borders.push(`<border><left style="thick"><color rgb="FF${REL_COR[k][0]}"/></left>${W}<top/><bottom/><diagonal/></border>`));                // 2..7
+  const xf=(f,fi,b,al)=>`<xf numFmtId="0" fontId="${f}" fillId="${fi}" borderId="${b}" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment ${al}/></xf>`;
+  const L='horizontal="left" vertical="center" wrapText="1" indent="1"',C='horizontal="left" vertical="center" wrapText="1" indent="1"';
+  const xfs=[xf(0,0,0,'vertical="center"'),xf(3,0,0,'vertical="center"'),xf(4,0,0,'vertical="center" wrapText="1"')];   // 0 padrão · 1 título · 2 subtítulo
+  const S={};REL_K.forEach((k,i)=>{S[k]={nome:xfs.push(xf(1,0,2+i,L))-1,sb:xfs.push(xf(2,0,2+i,L))-1,box1:xfs.push(xf(0,2,2+i,C))-1,sit:xfs.push(xf(0,3+i,1,C))-1}});
+  const BOX=xfs.push(xf(0,2,1,C))-1;
+  const styles=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><fonts count="${fonts.length}">${fonts.join('')}</fonts><fills count="${fills.length}">${fills.join('')}</fills><borders count="${borders.length}">${borders.join('')}</borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="${xfs.length}">${xfs.join('')}</cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>`;
+  /* células */
+  const run=(t,o)=>`<r><rPr>${o.b?'<b/>':''}<sz val="${o.sz}"/><color rgb="FF${o.c}"/><rFont val="Calibri"/></rPr><t xml:space="preserve">${xEsc(t)}</t></r>`;
+  const caixa=(ref,s,rot,val,cor)=>`<c r="${ref}" s="${s}" t="inlineStr"><is>${run(rot,{sz:8,c:cor||'6B7280'})}${run('\n'+val,{b:1,sz:12,c:cor||'111827'})}</is></c>`;
+  const txt=(ref,s,t)=>`<c r="${ref}" s="${s}" t="inlineStr"><is><t xml:space="preserve">${xEsc(t)}</t></is></c>`;
+  const vazio=(ref,s)=>`<c r="${ref}" s="${s}"/>`;
+  const rows=[],merges=[],breaks=[];let n=1;
+  rows.push(`<row r="${n}" ht="24" customHeight="1">${txt('A'+n,1,`Relatório do Planograma${fil?' — '+fil:''}`)}</row>`);merges.push(`A${n}:D${n}`);n++;
+  const flt=relFiltros();
+  rows.push(`<row r="${n}" ht="30" customHeight="1">${txt('A'+n,2,`${hoje} · ${f0(list.length)} itens${currentMeta.date?' · planograma de '+currentMeta.date:''}${flt?' · filtros: '+flt:''}`)}</row>`);merges.push(`A${n}:D${n}`);n++;
+  rows.push(`<row r="${n}" ht="8" customHeight="1"/>`);n++;
+  const POR_PAG=10;let naPag=1;   // 1ª página já tem o título (conta como 1 bloco)
+  for(const r of list){const x=relLinha(r),s=S[x.k],cor=REL_COR[x.k][0];
+    if(naPag>=POR_PAG){breaks.push(n-1);naPag=0}naPag++;
+    rows.push(`<row r="${n}" ht="20" customHeight="1">${txt('A'+n,s.nome,x.nome)}${vazio('B'+n,0)}${vazio('C'+n,0)}${vazio('D'+n,0)}</row>`);merges.push(`A${n}:D${n}`);n++;
+    rows.push(`<row r="${n}" ht="16" customHeight="1">${txt('A'+n,s.sb,x.sb)}${vazio('B'+n,0)}${vazio('C'+n,0)}${vazio('D'+n,0)}</row>`);merges.push(`A${n}:D${n}`);n++;
+    rows.push(`<row r="${n}" ht="34" customHeight="1">${caixa('A'+n,s.box1,'Estoque',x.est)}${caixa('B'+n,BOX,'Trânsito',x.tr)}${caixa('C'+n,BOX,'MDV',x.mdv)}${caixa('D'+n,s.sit,x.sit,x.cob,cor)}</row>`);n++;
+    rows.push(`<row r="${n}" ht="9" customHeight="1"/>`);n++}
+  const NS='http://schemas.openxmlformats.org/spreadsheetml/2006/main';
+  const sheet=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<worksheet xmlns="${NS}" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheetPr><pageSetUpPr fitToPage="1"/></sheetPr><dimension ref="A1:D${n-1}"/><sheetViews><sheetView workbookViewId="0" showGridLines="0"/></sheetViews><sheetFormatPr defaultRowHeight="15"/><cols><col min="1" max="1" width="26" customWidth="1"/><col min="2" max="2" width="24" customWidth="1"/><col min="3" max="3" width="12" customWidth="1"/><col min="4" max="4" width="26" customWidth="1"/></cols><sheetData>${rows.join('')}</sheetData><mergeCells count="${merges.length}">${merges.map(m=>`<mergeCell ref="${m}"/>`).join('')}</mergeCells><pageMargins left="0.2" right="0.2" top="0.2" bottom="0.2" header="0" footer="0"/><pageSetup paperSize="9" orientation="portrait" fitToWidth="1" fitToHeight="0"/><headerFooter/>${breaks.length?`<rowBreaks count="${breaks.length}" manualBreakCount="${breaks.length}">${breaks.map(b=>`<brk id="${b}" max="16383" man="1"/>`).join('')}</rowBreaks>`:''}</worksheet>`;
+  const zip=new JSZip();
+  zip.file('[Content_Types].xml','<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/></Types>');
+  zip.file('_rels/.rels','<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>');
+  zip.file('xl/workbook.xml',`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<workbook xmlns="${NS}" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="Relatório" sheetId="1" r:id="rId1"/></sheets></workbook>`);
+  zip.file('xl/_rels/workbook.xml.rels','<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>');
+  zip.file('xl/styles.xml',styles);zip.file('xl/worksheets/sheet1.xml',sheet);
+  const out=await zip.generateAsync({type:'arraybuffer',compression:'DEFLATE'});
+  const d=new Date(),dt=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  downloadBlob(new Blob([out],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}),`relatorio_planograma_${dt}.xlsx`);
+  toast(`Relatório com ${f0(list.length)} itens baixado · pronto para imprimir`)}
 const qGo=debounce(()=>renderList(true),180);
 $('q').oninput=e=>{F.q=e.target.value;qGo()};
 $('q-x').onclick=()=>{$('q').value='';F.q='';renderList(true);$('q').focus()};

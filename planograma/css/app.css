@@ -430,3 +430,9 @@ html,body{background:var(--bg)}
 /* modo 1×1 + nova cobertura: a medida nova nunca é cortada — quem encolhe são os selos */
 #list .sb:has(.nv) .sbt{flex-shrink:0}
 #list .sb:has(.nv) .sbb{flex-shrink:1}
+
+/* menu do "⤓ Baixar" (nov/2026) */
+.exp-menu{position:absolute;right:0;top:calc(100% + 6px);z-index:30;width:min(290px,86vw);background:var(--card);border:1px solid var(--bd);border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,.18);padding:6px;display:flex;flex-direction:column;gap:4px}
+.exp-menu button{display:block;width:100%;text-align:left;border:0;border-radius:12px;background:none;padding:10px 12px;color:var(--tx);font:inherit;cursor:pointer}
+.exp-menu button:active,.exp-menu button:hover{background:var(--card2)}
+.exp-menu b{display:block;font-size:14.5px}.exp-menu small{display:block;color:var(--mu);font-size:12.5px;margin-top:2px;white-space:normal}
