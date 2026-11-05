@@ -251,19 +251,28 @@ function pfMatch0(q,top){
 try{localStorage.removeItem('planograma_axlay')}catch{}   // limpeza: preferência do antigo seletor Resumo/Card (removido)
 /* item do Panfleto / Oferta do dia: o mesmo cartão da lista de Produtos */
 const pfRowHtml=r=>{const dp=DEP.has(r.produto);return swrap(`<div class="p pfc${r._d?' done':''}${dp?' dep':''}" data-p="${esc(r.produto)}" style="--c:${COLOR[r._k]}">${cardBody(r,dp?'<span class="depi" title="Procurar no depósito">🔎</span>':'')}</div>`,r._d,'add',inPed(r.produto)?'Já no pedido':'Pedido','🛒')};
+let pfSortV='arq';try{pfSortV=localStorage.getItem('planograma_pfsort')||'arq'}catch{}   // ordem da Lâmina — lembrada no aparelho
 function renderPf(){
   const box=$('pf-list'),sum=$('pf-sum');refreshDep();
-  $('pf-q').style.display=pfGroups.length?'':'none';
+  $('pf-q').style.display=pfGroups.length?'':'none';$('pf-sortbar').style.display=pfGroups.length?'flex':'none';
   if(!pfGroups.length){box.innerHTML='';return}
   let ok=0,al=0,vis=0;const qOn=!!axQ.pf.trim();
   const row=pfRowHtml;
   const nm=[];                                                   // sem correspondência → dropdown no fim da lista
-  const mainH=[],pedH=[];
-  pfGroups.forEach(g=>{
+  const mainH=[],pedH=[],ents=[];
+  pfGroups.forEach((g,i)=>{
     let rs=g.codes.map(c=>byProd.get(c)).filter(Boolean);
     if(!rs.length){if(axHit('pf',null,g.nome))nm.push(g);return}
     ok++;if(rs[0]._k==='rup'||rs[0]._k==='crit')al++;
     if(qOn&&!axHit('pf',null,g.nome)){rs=rs.filter(r=>axHit('pf',r));if(!rs.length)return}vis++;   // 🔍 busca: nome do panfleto ou do produto
+    ents.push({g,rs,i})});
+  /* ordenar por (o item da lâmina vale pelo 1º produto achado; empate → ordem colada) */
+  const R0=e=>e.rs[0],SEV={rup:0,sg:1,crit:2,aten:3,ok:4,nd:5},cobN=r=>r._ct!==null&&r._k!=='sg'?Math.max(r._ct,0):Infinity;
+  const PFS={arq:(a,b)=>a.i-b.i,sev:(a,b)=>SEV[R0(a)._k]-SEV[R0(b)._k]||cobN(R0(a))-cobN(R0(b))||a.i-b.i,cob:(a,b)=>cobN(R0(a))-cobN(R0(b))||a.i-b.i,
+    est:(a,b)=>R0(a)._e-R0(b)._e||a.i-b.i,mdv:(a,b)=>(R0(b)._m||0)-(R0(a)._m||0)||a.i-b.i,nome:(a,b)=>String(a.g.nome||'').localeCompare(String(b.g.nome||''))||a.i-b.i};
+  ents.sort(PFS[pfSortV]||PFS.arq);
+  $('pf-sort').value=PFS[pfSortV]?pfSortV:'arq';
+  ents.forEach(({g,rs})=>{
     const hd=`<div class="pfh" data-q="${esc(g.q||g.nome)}"><span>🔍 ${esc(g.nome)}</span>${g.preco?`<b>R$ ${esc(g.preco)}</b>`:''}</div>`,
       rm=rs.filter(r=>!inPed(r.produto)),rp=rs.filter(r=>inPed(r.produto));
     if(rm.length)mainH.push(hd+rm.map(row).join(''));if(rp.length)pedH.push(hd+rp.map(row).join(''))});   // produtos que já estão no pedido (e não concluídos) vão para um dropdown à parte
@@ -399,3 +408,4 @@ $('enc-drop').addEventListener('drop',e=>{e.preventDefault();$('enc-drop').class
   if(e.dataTransfer.files[0])loadEncFile(e.dataTransfer.files[0])});
 
 /* ══ END ANÁLISE DE ENCARTE ══════════════════════════════════════════════ */
+$('pf-sort').onchange=e=>{pfSortV=e.target.value;try{localStorage.setItem('planograma_pfsort',pfSortV)}catch{}renderPf()};
