@@ -32,8 +32,6 @@ $('pban').onclick=e=>{if(e.target.closest('[data-go]'))go('ped')};
 const PED_ORD=[['nome','Nome A–Z'],['cob_a','Menor cobertura'],['cob_d','Maior cobertura'],['mdv_d','Maior MDV'],['mdv_a','Menor MDV']];
 let pedSort='nome';try{const v=localStorage.getItem('planograma_pedsort');if(PED_ORD.some(o=>o[0]===v))pedSort=v}catch{}
 let depOnly=false;   // filtro "🔎 Procurar no depósito" ligado?
-let pedGiro='';try{pedGiro=localStorage.getItem('planograma_pedgiro')||''}catch{}   // filtro de giro do pedido ('' = todos) — lembrado no aparelho
-const giroDe=x=>{const r=byProd.get(x.p);return r&&r.giro?String(r.giro).trim().toUpperCase():''};
 const dropOpen={pnd:true,trd:false,dnd:false};   // lembra quais grupos do pedido estão abertos ("Para pedir" já começa aberto)
 /* dica de gestos: aparece nas 3 primeiras vezes que o Pedido é aberto (ou até tocar no ✕) */
 const LSHINT='planograma_dica_gestos';let hintN=0,hintCounted=false;try{hintN=+localStorage.getItem(LSHINT)||0}catch{}
@@ -45,9 +43,7 @@ function renderPed(){
  $('phead').innerHTML=`<div class="ph-row"><div class="ph-n num">${n}</div><div><div class="t">${n?`${n} ${n>1?'itens':'item'} para pedir`:(pedido.length?'Nada para pedir agora':'Pedido vazio')}</div><div class="s">${tr.length?`${tr.length} aguardando chegada do trânsito`:(pedido.length?'Itens fora do trânsito aparecem na lista abaixo':'Adicione abaixo ou pelo 🛒 nos produtos.')}</div></div></div>`
   +(pedido.length?`<div class="ph-st"><span><b class="num">${n}</b> para pedir</span><span><b class="num">${tr.length}</b> em trânsito</span><span><b class="num">${dn.length}</b> concluídos</span></div>`:'');
  const nd=pedido.filter(x=>depMap[x.p]&&!x.done).length;if(depOnly&&!nd)depOnly=false;   // tirou o último: desliga o filtro
- const giros={};for(const x of pedido){const g=giroDe(x);if(g)giros[g]=(giros[g]||0)+1}   // giros que existem no pedido (com quantos itens)
- if(pedGiro&&!giros[pedGiro])pedGiro='';                                                    // o giro escolhido sumiu do pedido: volta para Todos
- const fl=l=>{if(depOnly)l=l.filter(x=>depMap[x.p]);if(pedGiro)l=l.filter(x=>giroDe(x)===pedGiro);return l};
+ const fl=l=>depOnly?l.filter(x=>depMap[x.p]):l;
  const row0=x=>{const r=byProd.get(x.p),di=depMap[x.p]?DEPI:'';
   if(!r)return `<div class="pi ${x.done?'done':''}${depMap[x.p]?' dep':''}" data-p="${esc(x.p)}"><div class="hd"><div class="nm">${esc(x.d)}</div><div class="acts">${di}</div></div><div class="sb">${esc(x.p)} · fora do planograma carregado</div></div>`;
   return `<div class="p pedc ${x.done?'done':''}${depMap[x.p]?' dep':''}" data-p="${esc(x.p)}" style="--c:${COLOR[r._k]}">${cardBody(r,di,'',true)}</div>`};
@@ -60,12 +56,9 @@ function renderPed(){
  const drop=(id,title,sub,l)=>l.length?`<details class="trd" id="${id}"${dropOpen[id]?' open':''}><summary><span>${title}<small>${sub}</small></span><span class="cnt">${l.length}</span>${CHEV}</summary><div class="trd-b">${ord(l).map(row).join('')}</div></details>`:'';
  const trHtml=drop('pnd','📋 Para pedir','Ainda falta pedir',fl(act))+drop('trd','⏳ Aguardando trânsito','Ficam aqui até a mercadoria chegar',fl(tr))+drop('dnd','✓ Concluídos','Deslize → para reabrir',fl(dn));
  const chip=(nd||depOnly)?`<button class="chip-btn ${depOnly?'on':''}" id="pc-dep" type="button" style="--c:var(--in)">🔎 Procurar no depósito (${nd})</button>`:'';
- const gk=Object.keys(giros).sort();
- const giroSel=gk.length?`<label class="chip-btn chip-sel ps-sel pg${pedGiro?' on':''}"><span class="gl">Giro</span><select id="ped-giro" aria-label="Filtrar pedido por giro"><option value="">Todos</option>${gk.map(g=>`<option value="${esc(g)}"${pedGiro===g?' selected':''}>${esc(g)} (${giros[g]})</option>`).join('')}</select></label>`:'';
- const sortBar=`<div class="row2 pedsort">${chip}${giroSel}<label class="chip-btn chip-sel ps-sel"><svg class="ic" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4v16M3 16l4 4 4-4M17 20V4M13 8l4-4 4 4"/></svg><select id="ped-sort" aria-label="Ordenar lista de pedido">${PED_ORD.map(([v,t])=>`<option value="${v}"${v===pedSort?' selected':''}>${t}</option>`).join('')}</select></label></div>`;
+ const sortBar=`<div class="row2 pedsort">${chip}<label class="chip-btn chip-sel ps-sel"><svg class="ic" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4v16M3 16l4 4 4-4M17 20V4M13 8l4-4 4 4"/></svg><select id="ped-sort" aria-label="Ordenar lista de pedido">${PED_ORD.map(([v,t])=>`<option value="${v}"${v===pedSort?' selected':''}>${t}</option>`).join('')}</select></label></div>`;
  $('plist').innerHTML=pedido.length?hintHtml()+sortBar+trHtml:'<div class="empty"><div class="em-ic">🛒</div><p>Sua lista está vazia</p><div class="grid grid-cols-2 grid-gap" style="margin-top:14px"><button class="button button-fill button-large" id="pe-sug" type="button">Adicionar sugestões</button><button class="button button-tonal button-large" id="pe-scan" type="button">Ler código</button></div></div>'}
-$('plist').addEventListener('change',e=>{if(e.target.id==='ped-giro'){pedGiro=e.target.value;try{localStorage.setItem('planograma_pedgiro',pedGiro)}catch{}return renderPed()}
-  if(e.target.id!=='ped-sort')return;pedSort=e.target.value;try{localStorage.setItem('planograma_pedsort',pedSort)}catch{}renderPed()});
+$('plist').addEventListener('change',e=>{if(e.target.id!=='ped-sort')return;pedSort=e.target.value;try{localStorage.setItem('planograma_pedsort',pedSort)}catch{}renderPed()});
 $('plist').addEventListener('toggle',e=>{if(e.target.id in dropOpen)dropOpen[e.target.id]=e.target.open},true);   // lembra se o grupo está aberto
 function swAddPed(r,li,c){
   if(inPed(r.produto))return toast('Já está no pedido');

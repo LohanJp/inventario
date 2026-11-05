@@ -176,9 +176,9 @@ function renderList(reset){const T=toks(F.q);
  refreshDep();{const n=nFiltros(),fb=$('flt-btn');$('flt-n').textContent=n;$('flt-n').hidden=!n;fb.classList.toggle('on',!!n);   // botão "Filtros" com quantos estão ligados
   const nm=F.chip==='all'?'':(FLT_SHORT[F.chip]||(CHIPS.find(c=>c[0]===F.chip)||[])[1]||'');fb.title='Filtros'+(nm?' · '+nm:'');fb.setAttribute('aria-label',fb.title)}
  $('sort').value=F.sort;
- $('catx').innerHTML=(F.cat?`<button class="catx" data-x="cat" type="button">✕ ${esc(short(F.cat))}</button>`:'')+(F.cob?`<button class="catx" data-x="cob" type="button">✕ ${cobTxt(F.cob)}</button>`:'');
+ $('catx').innerHTML=(F.cat?`<button class="catx" data-x="cat" type="button">✕ ${esc(short(F.cat))}</button>`:'')+(F.cob?`<button class="catx" data-x="cob" type="button">✕ ${cobTxt(F.cob)}</button>`:'')+(F.giro?`<button class="catx" data-x="giro" type="button">✕ Giro ${esc(F.giro)}</button>`:'');
  const fAct=F.chip!=='all'||!!F.cat||!!F.ent||noCD;   // algum filtro ligado?
- const base=T.length?(()=>true):r=>catOk(r)&&entOk(r)&&passesChip(r)&&cobPass(r,F.cob)&&(!F.d111||is111(r));   // BUSCANDO: os filtros (chip, categoria, sistemática, F/CD) não escondem nada
+ const base=T.length?(()=>true):r=>catOk(r)&&entOk(r)&&passesChip(r)&&cobPass(r,F.cob)&&(!F.d111||is111(r))&&giroOk(r);   // BUSCANDO: os filtros (chip, categoria, sistemática, F/CD) não escondem nada
  let rel=false;
  list=allRecords.filter(r=>base(r)&&(!T.length||(r._s=score(r,T))>0));
  if(T.length>1&&!list.length){rel=true;list=allRecords.filter(r=>base(r)&&(r._s=score(r,T,true))>0)}   // nada tem TODAS as palavras → mostra os que têm parte
@@ -203,6 +203,7 @@ function relaxFiltersFor(r){
   const off=[];
   if(!cobPass(r,F.cob)){F.cob=null;off.push('cobertura')}
   if(F.d111&&!is111(r)){F.d111=false;off.push('1×1')}
+  if(!giroOk(r)){F.giro='';off.push('giro')}
   if(!catOk(r)){F.cat='';off.push('categoria')}
   if(!entOk(r)){F.ent='';off.push('sistemática')}
   if(!passesChip(r,F.chip,true)){off.push(FLT_SHORT[F.chip]||(CHIPS.find(c=>c[0]===F.chip)||[])[1]||'filtro');F.chip='all'}
@@ -259,7 +260,7 @@ const qGo=debounce(()=>renderList(true),180);
 $('q').oninput=e=>{F.q=e.target.value;qGo()};
 $('q-x').onclick=()=>{$('q').value='';F.q='';renderList(true);$('q').focus()};
 $('sort').onchange=e=>{F.sort=e.target.value;renderList(true)};
-$('catx').onclick=e=>{const b=e.target.closest('.catx');if(!b)return;if(b.dataset.x==='cob')F.cob=null;else F.cat='';renderList(true)};
+$('catx').onclick=e=>{const b=e.target.closest('.catx');if(!b)return;if(b.dataset.x==='cob')F.cob=null;else if(b.dataset.x==='giro')F.giro='';else F.cat='';renderList(true)};
 
 /* ── Categoria em árvore: toca num nível com filhos → entra; "Filtrar …" aplica aquele nível; folha aplica direto ── */
 let catPath=[];   // caminho atual, ex.: ['MERCEARIA','LIMPEZA']
@@ -274,6 +275,9 @@ const is111=r=>num(r.altura)===1&&num(r.largura)===1;
 const porCx=r=>num(r.prof)||num(r.emb)||1;   // 3º campo = itens na caixa (sem ele, usa a embalagem)
 const novaLarg=(r,d)=>r._m>0&&d>0?Math.max(1,Math.ceil(d*r._m/(num(r.emb)||1))):null;   // dias × MDV ÷ embalagem, arredondado para cima (mín. 1)
 const novaDim=r=>F.d111&&NOVA>0&&is111(r)?novaLarg(r,NOVA):null;
+/* GIRO (nov/2026): filtro da folha de Filtros de Produtos ('' = todos) */
+const giroR=r=>String(r.giro||'').trim().toUpperCase();
+const giroOk=(r,g=F.giro)=>!g||giroR(r)===g;
 const catOk=r=>!F.cat||r.categoria===F.cat||(r.categoria||'').startsWith(F.cat+'->');   // nível pai inclui os filhos
 function passesChip(r,ch=F.chip,ignNoCD){
   return (ignNoCD||ch==='cd'||ch==='dep'||!hideCD(r))&&
@@ -317,7 +321,7 @@ function closeCat(){if(catSheet.opened)catSheet.close()}
 const setCat=v=>{D.cat=v;closeCat()};                                      // escolheu → volta para Filtros com a categoria marcada
 
 /* ═══ FILTROS (uma folha só): Situação · Sistemática · Categoria · F/CD → toca em "Ver N itens" ═══ */
-const nFiltros=()=>(F.chip!=='all')+(F.d111?1:0)+(!!F.cat)+((F.ent||'')!==ENT0)+(noCD?1:0)+(F.cob?1:0);
+const nFiltros=()=>(F.chip!=='all')+(F.d111?1:0)+(F.giro?1:0)+(!!F.cat)+((F.ent||'')!==ENT0)+(noCD?1:0)+(F.cob?1:0);
 /* COBERTURA TOTAL maior/menor que N dias — usa o mesmo número arredondado do cartão; "Sem giro" e item sem MDV/cobertura ficam de fora */
 const cobDia=r=>r._ct!==null&&r._k!=='sg'?Math.max(r._ct,0):null;
 const cobOn=c=>!!(c&&(c.op==='lt'||c.op==='gt')&&Number.isFinite(c.d)&&c.d>=0);
@@ -332,11 +336,11 @@ const COBOPS=[['','Qualquer'],['lt','Menor que'],['gt','Maior que']];
 /* só os números (contagens e "Ver N itens") — usado enquanto digita os dias, sem redesenhar a folha */
 function fltCounts(){
   const bs=[...document.querySelectorAll('#flt-list .fs-s')],ch=bs.map(b=>b.dataset.c),n=ch.map(()=>0);let sel=0;
-  for(const r of allRecords){if(!(dCat(r)&&dEnt(r)&&cobPass(r,D.cob)&&(!D.d111||is111(r))))continue;   // ⚡ 1 passada: conta todas as situações juntas (mesmo dChip de antes)
+  for(const r of allRecords){if(!(dCat(r)&&dEnt(r)&&cobPass(r,D.cob)&&(!D.d111||is111(r))&&giroOk(r,D.giro)))continue;   // ⚡ 1 passada: conta todas as situações juntas (mesmo dChip de antes)
     for(let i=0;i<ch.length;i++)if(dChip(r,ch[i]))n[i]++;if(dChip(r))sel++}
   bs.forEach((b,i)=>{b.querySelector('small').textContent=f0(n[i])});
   $('flt-apply').textContent=`Ver ${f0(sel)} itens`;
-  $('flt-clear').style.visibility=(D.chip!=='all'||D.cat||(D.ent||'')!==ENT0||D.noCD||D.d111||cobOn(D.cob))?'':'hidden'}
+  $('flt-clear').style.visibility=(D.chip!=='all'||D.cat||(D.ent||'')!==ENT0||D.noCD||D.d111||D.giro||cobOn(D.cob))?'':'hidden'}
 function renderFlt(){refreshDep();
   const sit=CHIPS.filter(c=>c[0]!=='trans'||transitLoaded).map(c=>{
     const g=GLY[c[0]]||(c[2]?ic(c[2],13):'');
@@ -348,17 +352,18 @@ function renderFlt(){refreshDep();
    <h5>Planograma</h5>
    <label class="fs-ln"><span>Só 1×1<small>Os dois primeiros campos = 1 (qualquer quantidade por caixa)</small></span><input type="checkbox" id="fs-111" class="sw-i"${D.d111?' checked':''}><span class="sw-t fs-tg"></span></label>${D.d111?`
    <div class="fs-nova"><span class="fs-nl">Nova cobertura<small>campo do meio = dias × MDV ÷ embalagem (arredondado para cima)</small></span><div class="fs-cob"><div class="fs-num"><button type="button" data-nstep="-1" aria-label="Menos 1 dia">−</button><input id="fs-nova" type="number" inputmode="numeric" min="0" step="1" value="${D.nova>0?D.nova:''}" placeholder="—" aria-label="Dias da nova cobertura"><span>dias</span><button type="button" data-nstep="1" aria-label="Mais 1 dia">+</button></div><div class="fs-q">${[7,15,21,30].map(n=>`<button type="button" data-nq="${n}" class="${D.nova===n?'on':''}">${n}</button>`).join('')}</div></div></div>`:''}
+   ${(()=>{const gs=[...new Set(allRecords.map(giroR).filter(Boolean))].sort();return gs.length?`<h5>Giro</h5><div class="fs-seg">${[['','Todos'],...gs.map(g=>[g,g])].map(([v,l])=>`<button type="button" data-giro="${esc(v)}" class="${(D.giro||'')===v?'on':''}">${esc(l)}</button>`).join('')}</div>`:''})()}
    <h5>Sistemática</h5><div class="fs-seg">${ENTS.map(([v,l])=>`<button type="button" data-ent="${v}" class="${(D.ent||'')===v?'on':''}">${l}</button>`).join('')}</div>
    <h5>Categoria</h5><button type="button" class="fs-ln" id="cat-pick-btn"><span>${D.cat?esc(short(D.cat)):'Todas as categorias'}<small>${D.cat?'Toque para trocar':'Toque para escolher na árvore'}</small></span>${D.cat?'<i class="fs-cx" id="fs-catx" role="button" aria-label="Tirar categoria">✕</i>':'<i class="fs-ar">›</i>'}</button>
    <label class="fs-ln"><span>Esconder falta no CD (F/CD)<small>Estoque menor que 1 caixa, sem trânsito</small></span><input type="checkbox" id="fs-nocd" class="sw-i"${D.noCD?' checked':''}><span class="sw-t fs-tg"></span></label>${D.noCD?`
    <label class="fs-ln fs-sub"><span>Esconder também os em trânsito<small>Estoque menor que 1 caixa, com trânsito a caminho</small></span><input type="checkbox" id="fs-nocdtr" class="sw-i"${D.noCDTr?' checked':''}><span class="sw-t fs-tg"></span></label>`:''}`;
   fltCounts()}
-function openFlt(keep){if(!keep||!D)D={chip:F.chip,cat:F.cat||'',ent:F.ent||'',noCD,noCDTr,d111:!!F.d111,nova:NOVA||null,cob:F.cob?{...F.cob}:null};renderFlt();fltSheet.open();pushOv('flt')}
+function openFlt(keep){if(!keep||!D)D={chip:F.chip,cat:F.cat||'',ent:F.ent||'',giro:F.giro||'',noCD,noCDTr,d111:!!F.d111,nova:NOVA||null,cob:F.cob?{...F.cob}:null};renderFlt();fltSheet.open();pushOv('flt')}
 function closeFlt(){if(fltSheet.opened)fltSheet.close()}
 $('flt-btn').onclick=()=>openFlt();
 $('flt-sheet-x').onclick=closeFlt;$('flt-cancel').onclick=closeFlt;
-$('flt-clear').onclick=()=>{D={chip:'all',cat:'',ent:ENT0,noCD:false,noCDTr:false,d111:false,nova:D.nova,cob:null};renderFlt()};
-$('flt-apply').onclick=()=>{F.chip=D.chip;F.cat=D.cat;F.ent=D.ent;F.cob=cobOn(D.cob)?{op:D.cob.op,d:D.cob.d}:null;noCD=D.noCD;noCDTr=!!D.noCDTr;salvaCD();F.d111=!!D.d111;NOVA=D.nova>0?D.nova:null;try{localStorage.setItem('planograma_cobnova',NOVA||'')}catch{};closeFlt();renderList(true)};
+$('flt-clear').onclick=()=>{D={chip:'all',cat:'',ent:ENT0,giro:'',noCD:false,noCDTr:false,d111:false,nova:D.nova,cob:null};renderFlt()};
+$('flt-apply').onclick=()=>{F.chip=D.chip;F.cat=D.cat;F.ent=D.ent;F.giro=D.giro||'';F.cob=cobOn(D.cob)?{op:D.cob.op,d:D.cob.d}:null;noCD=D.noCD;noCDTr=!!D.noCDTr;salvaCD();F.d111=!!D.d111;NOVA=D.nova>0?D.nova:null;try{localStorage.setItem('planograma_cobnova',NOVA||'')}catch{};closeFlt();renderList(true)};
 $('flt-list').onclick=e=>{
   const nq=e.target.closest('[data-nq]');if(nq){D.nova=+nq.dataset.nq;return renderFlt()}
   const ns=e.target.closest('[data-nstep]');if(ns){D.nova=Math.max(0,(D.nova>0?D.nova:0)+ +ns.dataset.nstep)||null;return renderFlt()}
@@ -367,6 +372,7 @@ $('flt-list').onclick=e=>{
   const st=e.target.closest('[data-cstep]');if(st&&D.cob){D.cob.d=Math.max(0,(Number.isFinite(D.cob.d)?D.cob.d:0)+ +st.dataset.cstep);return renderFlt()}
   const q=e.target.closest('[data-cq]');if(q&&D.cob){D.cob.d=+q.dataset.cq;return renderFlt()}
   const g=e.target.closest('[data-ent]');if(g){D.ent=g.dataset.ent;return renderFlt()}
+  const gi=e.target.closest('[data-giro]');if(gi){D.giro=gi.dataset.giro;return renderFlt()}
   if(e.target.closest('#fs-catx')){D.cat='';return renderFlt()}
   if(e.target.closest('#cat-pick-btn'))openCatPicker()};
 $('flt-list').onchange=e=>{if(e.target.id==='fs-nocd'){D.noCD=e.target.checked;renderFlt()}if(e.target.id==='fs-nocdtr'){D.noCDTr=e.target.checked;renderFlt()}if(e.target.id==='fs-111'){D.d111=e.target.checked;renderFlt()}};

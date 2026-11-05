@@ -430,7 +430,3 @@ html,body{background:var(--bg)}
 /* modo 1×1 + nova cobertura: a medida nova nunca é cortada — quem encolhe são os selos */
 #list .sb:has(.nv) .sbt{flex-shrink:0}
 #list .sb:has(.nv) .sbb{flex-shrink:1}
-
-/* Pedido: filtro de giro (nov/2026) */
-.ps-sel .gl{font:650 13px var(--num);color:var(--mu);margin-right:2px}.ps-sel.on{border-color:var(--f7-theme-color);color:var(--f7-theme-color)}.ps-sel.on .gl{color:var(--f7-theme-color)}
-.pedsort .ps-sel.pg{margin-left:0}
