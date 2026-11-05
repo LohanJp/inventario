@@ -384,5 +384,25 @@ if('serviceWorker' in navigator&&/^https?:/.test(location.protocol)){/* ⚡ regi
   addEventListener('load',()=>idle(()=>navigator.serviceWorker.register('./sw.js').then(reg=>reg.update()).catch(()=>{})))}
 /* versão do app na aba Dados (nome do cache do SW, ex.: v34) — para conferir se o aparelho já pegou a atualização */
 function mostraVersao(){const el=$('app-ver');if(!el||!('caches' in window))return;
-  caches.keys().then(ks=>{const k=ks.filter(x=>x.startsWith('planograma-condor-')).sort().pop();el.textContent=k?'Versão do app: '+k.replace('planograma-condor-','').replace('-f7',''):''}).catch(()=>{})}
+  caches.keys().then(ks=>{const k=ks.filter(x=>x.startsWith('planograma-condor-')).sort().pop();el.textContent=k?'Versão do app: '+k.replace('planograma-condor-','').replace('-f7',''):'Versão do app: —'}).catch(()=>{})}
 addEventListener('load',()=>setTimeout(mostraVersao,3000));
+/* 🔄 Procurar atualização (aba Dados): pergunta ao servidor se há versão nova do app.
+   Se houver, o SW novo instala, assume o controle e o app recarrega sozinho (controllerchange acima). */
+const verAtual=()=>{const t=($('app-ver')||{}).textContent||'';const m=/v\d+/.exec(t);return m?m[0]:''};
+$('b-upd').onclick=async()=>{const b=$('b-upd');
+  if(!('serviceWorker' in navigator)||!/^https?:/.test(location.protocol))return location.reload();
+  if(!navigator.onLine)return toast('Sem internet — conecte para procurar atualização');
+  b.disabled=true;b.textContent='Procurando…';
+  const volta=()=>{b.disabled=false;b.textContent='🔄 Procurar atualização'};
+  try{
+    const reg=await navigator.serviceWorker.getRegistration();
+    if(!reg){volta();return location.reload()}
+    await reg.update();                                            // baixa o sw.js do servidor e compara com o atual
+    const nova=reg.installing||reg.waiting;
+    if(!nova){volta();mostraVersao();return toast('Você já está na versão mais nova'+(verAtual()?` (${verAtual()})`:''))}
+    b.textContent='Atualizando…';toast('Versão nova encontrada — atualizando…');
+    const fim=()=>location.reload();
+    if(nova.state==='activated')return fim();
+    nova.addEventListener('statechange',()=>{if(nova.state==='activated')setTimeout(fim,300)});   // reserva, se o controllerchange não recarregar
+    setTimeout(fim,20000);                                         // reserva final: rede lenta
+  }catch(e){volta();toast('Não consegui procurar atualização — confira a internet')}};
