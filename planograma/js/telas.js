@@ -228,7 +228,7 @@ function cardBody(r,acts,extra,noPed,nova){
   const sel=(r._sist?`<span class="ent e${esc(r._sist)}">${esc(ENT[r._sist]||'Sist. '+r._sist)}</span>`:'')+(!noPed&&inPed(r.produto)?' '+PEDBADGE:'')+axBadges(r)+neg;
   const cob=r._k==='sg'?(semVendaDias(r)===Infinity?'—':f0(semVendaDias(r))+'<i>d s/ venda</i>'):r._ct===null?'—':dias(r._ct)+(rel||r._c999?`<i class="sep">|</i><i class="rr" title="R = cobertura do relatório de Cobertura de Estoque${r._c999?' (veio 999 = sem cálculo)':''}">R:</i>${rel?dias(r._c):'—'}`:'<i>d</i>');
   return `<div class="hd"><div class="nm">${esc(r.descricao)}</div><div class="acts">${acts}${INFOBTN}</div></div>
- <div class="sb"><span class="sbt"><span class="cod">${esc(r.produto)}</span> · ${r._np?'Fora do planograma':(nova===undefined?dimTxt(r):nova?`<b class="nv" title="Medida nova (era ${dimTxt(r).replace(/<[^>]+>/g,'')}): ${NOVA} dias × MDV ${f1(r._m)} ÷ emb ${f0(num(r.emb)||1)} = ${nova}">➜ 1×${nova}×${porCx(r)}</b>`:`<b class="nv nv0" title="Sem MDV: não dá para calcular (fica fora do TXT)">${dimTxt(r).replace(/<[^>]+>/g,'')} · sem MDV</b>`)+' · '+embTxt(r)}</span>${sel?`<span class="sbb"> ${sel}</span>`:''}</div>
+ <div class="sb"><span class="sbt"><span class="cod">${esc(r.produto)}</span> · ${r._np?'Fora do planograma':(nova===undefined?dimTxt(r):nova?(()=>{const i=novaInfo(r,NOVA)||{};return `<b class="nv" title="Medida nova (era ${dimTxt(r).replace(/<[^>]+>/g,'')}): ${NOVA} dias × MDV ${f1(r._m)} ÷ emb ${f0(num(r.emb)||1)} = ${i.quer}${i.cap?` · cortado no máximo do sistema (${LIMITE} dias ≈ ${f0(i.q)} un)`:''}">➜ 1×${nova}×${porCx(r)}${i.cap?' <small class="nvx">máx.</small>':''}</b>`})():`<b class="nv nv0" title="Sem MDV: não dá para calcular (fica fora do TXT)">${dimTxt(r).replace(/<[^>]+>/g,'')} · sem MDV</b>`)+' · '+embTxt(r)}</span>${sel?`<span class="sbb"> ${sel}</span>`:''}</div>
  <div class="st3">
   <div class="es"><small>Estoque</small><b class="num">${unCx(r._e)}</b></div>
   <div class="es"><small>Trânsito</small><b class="num">${transitLoaded?unCx(r._t):'—'}</b></div>
@@ -285,7 +285,7 @@ function relLinha(r){
   const dias=v=>v>999?'+999':f0(Math.max(v,0)),rel=r._c!==null;
   const cob=r._k==='sg'?(semVendaDias(r)===Infinity?'—':f0(semVendaDias(r))+' d s/ venda'):r._ct===null?'—':dias(r._ct)+(rel||r._c999?' | R: '+(rel?dias(r._c):'—'):' d');
   const nova=F.d111&&NOVA>0&&is111(r)?novaDim(r):undefined;
-  const dim=r._np?'Fora do planograma':nova===undefined?semTag(dimTxt(r)):nova?`➜ 1×${nova}×${porCx(r)} (nova)`:'1×1 · sem MDV';
+  const dim=r._np?'Fora do planograma':nova===undefined?semTag(dimTxt(r)):nova?`➜ 1×${nova}×${porCx(r)} (nova${(novaInfo(r,NOVA)||{}).cap?', máx. do sistema':''})`:'1×1 · sem MDV';
   const selos=[r._sist?(ENT[r._sist]||'Sist. '+r._sist):'',inPed(r.produto)?'🛒 no pedido':'',semTag(axBadges(r)),
     r._e<0?'▼ negativo · '+(r._t>0?'em trânsito':isCD(r)?'falta no CD':'falta pedir'):''].filter(Boolean).join(' · ');
   return {k:REL_K.includes(r._k)?r._k:'nd',nome:r.descricao||'',sb:[r.produto,dim,embTxt(r),selos].filter(Boolean).join(' · '),
@@ -357,7 +357,16 @@ const salvaCD=()=>{try{localStorage.setItem('planograma_nocd',noCD?'1':'0');loca
    Filtro "Só 1×1" (olha só os 2 primeiros campos) e, com dias informados, medida proposta 1 × (dias × MDV ÷ emb) × itens por caixa ═══ */
 const is111=r=>num(r.altura)===1&&num(r.largura)===1;
 const porCx=r=>num(r.prof)||num(r.emb)||1;   // 3º campo = itens na caixa (sem ele, usa a embalagem)
-const novaLarg=(r,d)=>r._m>0&&d>0?Math.max(1,Math.ceil(d*r._m/(num(r.emb)||1))):null;   // dias × MDV ÷ embalagem, arredondado para cima (mín. 1)
+/* TETO DO SISTEMA: ele recusa se a quantidade do planograma passar de LIMITE dias de cobertura, calculada com o MDV DELE
+   (que não é o MDV da tela). O MDV dele sai do próprio relatório de planograma: total ÷ Cob.Plan. Como o sistema TRUNCA
+   a cobertura (37,6 → "37"), usa-se total ÷ (Cob.Plan + 1): o MDV mais baixo possível → o teto nunca passa do limite. */
+let LIMITE=30;try{const v=parseInt(localStorage.getItem('planograma_limcob'),10);if(v>0)LIMITE=v}catch{}
+const qMaxSis=r=>{const cp=num(r.cobplan),tot=capOf(r);if(!(tot>0)||String(r.cobplan??'').trim()===''||cp>=999)return null;return Math.floor(LIMITE*tot/(cp+1))};
+function novaInfo(r,d){if(!(r._m>0&&d>0))return null;
+  const quer=Math.max(1,Math.ceil(d*r._m/(num(r.emb)||1)));                         // a sua conta: dias × MDV ÷ embalagem, para cima
+  const q=qMaxSis(r),lMax=q===null?Infinity:Math.max(1,Math.floor(q/porCx(r)));     // o máximo que o sistema aceita (para baixo)
+  return {l:Math.min(quer,lMax),quer,cap:quer>lMax,q}}
+const novaLarg=(r,d)=>{const i=novaInfo(r,d);return i?i.l:null};
 const novaDim=r=>F.d111&&NOVA>0&&is111(r)?novaLarg(r,NOVA):null;
 /* GIRO (nov/2026): filtro da folha de Filtros de Produtos ('' = todos) */
 const giroR=r=>String(r.giro||'').trim().toUpperCase();
@@ -435,7 +444,8 @@ function renderFlt(){refreshDep();
    ${op?`<div class="fs-cob"><div class="fs-num"><button type="button" data-cstep="-1" aria-label="Menos 1 dia">−</button><input id="fs-cobd" type="number" inputmode="numeric" min="0" step="1" value="${dd}" aria-label="Dias de cobertura"><span>dias</span><button type="button" data-cstep="1" aria-label="Mais 1 dia">+</button></div><div class="fs-q">${[3,7,15,30].map(n=>`<button type="button" data-cq="${n}" class="${dd===n?'on':''}">${n}</button>`).join('')}</div></div>`:''}
    <h5>Planograma</h5>
    <label class="fs-ln"><span>Só 1×1<small>Os dois primeiros campos = 1 (qualquer quantidade por caixa)</small></span><input type="checkbox" id="fs-111" class="sw-i"${D.d111?' checked':''}><span class="sw-t fs-tg"></span></label>${D.d111?`
-   <div class="fs-nova"><span class="fs-nl">Nova cobertura<small>campo do meio = dias × MDV ÷ embalagem (arredondado para cima)</small></span><div class="fs-cob"><div class="fs-num"><button type="button" data-nstep="-1" aria-label="Menos 1 dia">−</button><input id="fs-nova" type="number" inputmode="numeric" min="0" step="1" value="${D.nova>0?D.nova:''}" placeholder="—" aria-label="Dias da nova cobertura"><span>dias</span><button type="button" data-nstep="1" aria-label="Mais 1 dia">+</button></div><div class="fs-q">${[7,15,21,30].map(n=>`<button type="button" data-nq="${n}" class="${D.nova===n?'on':''}">${n}</button>`).join('')}</div></div></div>`:''}
+   <div class="fs-nova"><span class="fs-nl">Nova cobertura<small>campo do meio = dias × MDV ÷ embalagem (arredondado para cima)</small></span><div class="fs-cob"><div class="fs-num"><button type="button" data-nstep="-1" aria-label="Menos 1 dia">−</button><input id="fs-nova" type="number" inputmode="numeric" min="0" step="1" value="${D.nova>0?D.nova:''}" placeholder="—" aria-label="Dias da nova cobertura"><span>dias</span><button type="button" data-nstep="1" aria-label="Mais 1 dia">+</button></div><div class="fs-q">${[7,15,21,30].map(n=>`<button type="button" data-nq="${n}" class="${D.nova===n?'on':''}">${n}</button>`).join('')}</div></div>
+   <span class="fs-nl fs-lim">Limite do sistema<small>Cob. Limite da tela do sistema — corta no máximo aceito (sem o alerta)</small></span><div class="fs-cob"><div class="fs-num"><input id="fs-lim" type="number" inputmode="numeric" min="1" step="1" value="${D.lim||LIMITE}" aria-label="Limite de cobertura do sistema em dias"><span>dias</span></div></div></div>`:''}
    ${(()=>{const gs=[...new Set(allRecords.map(giroR).filter(Boolean))].sort();return gs.length?`<h5>Giro</h5><div class="fs-seg">${[['','Todos'],...gs.map(g=>[g,g])].map(([v,l])=>`<button type="button" data-giro="${esc(v)}" class="${(D.giro||'')===v?'on':''}">${esc(l)}</button>`).join('')}</div>`:''})()}
    <h5>Sistemática</h5><div class="fs-seg">${ENTS.map(([v,l])=>`<button type="button" data-ent="${v}" class="${(D.ent||'')===v?'on':''}">${l}</button>`).join('')}</div>
    <h5>Categoria</h5><button type="button" class="fs-ln" id="cat-pick-btn"><span>${D.cat?esc(short(D.cat)):'Todas as categorias'}<small>${D.cat?'Toque para trocar':'Toque para escolher na árvore'}</small></span>${D.cat?'<i class="fs-cx" id="fs-catx" role="button" aria-label="Tirar categoria">✕</i>':'<i class="fs-ar">›</i>'}</button>
@@ -447,7 +457,7 @@ function closeFlt(){if(fltSheet.opened)fltSheet.close()}
 $('flt-btn').onclick=()=>openFlt();
 $('flt-sheet-x').onclick=closeFlt;$('flt-cancel').onclick=closeFlt;
 $('flt-clear').onclick=()=>{D={chip:'all',cat:'',ent:ENT0,giro:'',noCD:false,noCDTr:false,d111:false,nova:D.nova,cob:null};renderFlt()};
-$('flt-apply').onclick=()=>{F.chip=D.chip;F.cat=D.cat;F.ent=D.ent;F.giro=D.giro||'';F.cob=cobOn(D.cob)?{op:D.cob.op,d:D.cob.d}:null;noCD=D.noCD;noCDTr=!!D.noCDTr;salvaCD();F.d111=!!D.d111;NOVA=D.nova>0?D.nova:null;try{localStorage.setItem('planograma_cobnova',NOVA||'')}catch{};closeFlt();renderList(true)};
+$('flt-apply').onclick=()=>{F.chip=D.chip;F.cat=D.cat;F.ent=D.ent;F.giro=D.giro||'';F.cob=cobOn(D.cob)?{op:D.cob.op,d:D.cob.d}:null;noCD=D.noCD;noCDTr=!!D.noCDTr;salvaCD();if(D.lim>0){LIMITE=D.lim;try{localStorage.setItem('planograma_limcob',LIMITE)}catch{}}F.d111=!!D.d111;NOVA=D.nova>0?D.nova:null;try{localStorage.setItem('planograma_cobnova',NOVA||'')}catch{};closeFlt();renderList(true)};
 $('flt-list').onclick=e=>{
   const nq=e.target.closest('[data-nq]');if(nq){D.nova=+nq.dataset.nq;return renderFlt()}
   const ns=e.target.closest('[data-nstep]');if(ns){D.nova=Math.max(0,(D.nova>0?D.nova:0)+ +ns.dataset.nstep)||null;return renderFlt()}
@@ -460,7 +470,8 @@ $('flt-list').onclick=e=>{
   if(e.target.closest('#fs-catx')){D.cat='';return renderFlt()}
   if(e.target.closest('#cat-pick-btn'))openCatPicker()};
 $('flt-list').onchange=e=>{if(e.target.id==='fs-nocd'){D.noCD=e.target.checked;renderFlt()}if(e.target.id==='fs-nocdtr'){D.noCDTr=e.target.checked;renderFlt()}if(e.target.id==='fs-111'){D.d111=e.target.checked;renderFlt()}};
-$('flt-list').addEventListener('input',e=>{if(e.target.id==='fs-nova'){const v=parseInt(e.target.value,10);D.nova=v>0?v:null;
+$('flt-list').addEventListener('input',e=>{if(e.target.id==='fs-lim'){const v=parseInt(e.target.value,10);D.lim=v>0?v:null;return}
+  if(e.target.id==='fs-nova'){const v=parseInt(e.target.value,10);D.nova=v>0?v:null;
   document.querySelectorAll('#flt-list [data-nq]').forEach(b=>b.classList.toggle('on',+b.dataset.nq===D.nova));return}
   if(e.target.id!=='fs-cobd'||!D.cob)return;const v=parseInt(e.target.value,10);D.cob.d=Number.isFinite(v)&&v>=0?v:NaN;
   document.querySelectorAll('#flt-list [data-cq]').forEach(b=>b.classList.toggle('on',+b.dataset.cq===D.cob.d));fltCounts()});   // digitando: só atualiza os números
