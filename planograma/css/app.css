@@ -451,3 +451,19 @@ html,body{background:var(--bg)}
 .shu{display:flex;align-items:center;gap:10px;margin-bottom:8px}.shu>span{font:650 13px var(--num);color:var(--mu);flex:none}.shu-seg{flex:1;margin:0}
 .shr{margin-bottom:8px}.shr.on{color:#e03131}
 .ph-st span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* conferência do cadastro (nov/2026) */
+.cadb{margin:10px 16px 0;padding:12px 14px;border-radius:16px;background:var(--card);border:1px solid var(--bd);display:flex;flex-direction:column;gap:6px;font-size:13.5px;line-height:1.35}
+.cadb>b{font-size:14.5px}.cadb-b{display:flex;gap:8px;flex-wrap:wrap;margin-top:2px}.cadb-b .button{width:auto}
+
+/* para fazer hoje (nov/2026) */
+.todo-l .td-ic{width:26px;justify-content:center;font-size:17px}.todo-l .item-title{white-space:normal;font-size:14.5px;line-height:1.25}.todo-l .item-after b{font-size:16px;color:var(--tx)}
+
+/* histórico leve no Resumo (nov/2026) */
+.hist{display:flex;align-items:center;gap:10px;margin-top:12px;padding-top:10px;border-top:1px solid var(--bd);font-size:13px;color:var(--mu)}.hist b{color:var(--tx)}.hist svg{flex:none}
+
+/* novidades da versão (nov/2026) */
+.novb{margin:0;padding:12px 14px;border-radius:16px;background:color-mix(in srgb,var(--f7-theme-color) 10%,var(--card));border:1px solid color-mix(in srgb,var(--f7-theme-color) 35%,transparent);font-size:13.5px;line-height:1.4}
+.novb>b{font-size:14.5px}.novb ul{margin:6px 0 10px;padding-left:18px}.novb li{margin:3px 0}.novb .button{width:auto}
+#novban{position:fixed;left:12px;right:12px;top:calc(env(safe-area-inset-top,0px) + 70px);z-index:12000;max-width:560px;margin:0 auto;box-shadow:0 12px 40px rgba(0,0,0,.25);border-radius:16px}
+#novban .novb{background:var(--card)}

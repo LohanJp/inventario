@@ -1,0 +1,27 @@
+# Testa o app Planograma a cada envio para o GitHub (só quando algo da pasta planograma/ muda).
+# 1) confere se todos os arquivos .js estão sem erro de digitação (node --check)
+# 2) abre o app num celular simulado com produtos FICTÍCIOS e passa por todas as telas (tests/fumaca.js)
+# Se falhar, aparece um X vermelho no commit e o GitHub manda e-mail. (Não impede a publicação: é um alarme.)
+name: Planograma - testes
+on:
+  push:
+    paths: ['planograma/**', '.github/workflows/planograma.yml']
+  workflow_dispatch:
+jobs:
+  testes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: planograma
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Sintaxe dos arquivos .js
+        run: for f in js/*.js sw.js tests/*.js; do node --check "$f" || exit 1; done; echo "✓ sintaxe ok"
+      - name: Instalar Playwright (Chromium)
+        run: npm i --no-save playwright@1 && npx playwright install --with-deps chromium
+      - name: Teste de fumaça (abre o app e passa por todas as telas)
+        run: node tests/fumaca.js

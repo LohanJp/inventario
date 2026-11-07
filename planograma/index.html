@@ -47,11 +47,14 @@
   <div class="wrap">
   <div id="pban"></div>
   <div id="dtban" hidden></div>
+  <div id="cadban" hidden></div>
   <div class="card hero-card"><div class="card-content card-content-padding">
    <div class="hero-row"><div id="h-ring" class="ring"></div><div class="hero-tx"><div class="t" id="h-fil">Sem dados</div><div class="s" id="h-sub">Abra a aba Dados para carregar o relatório</div><div class="hl" id="h-health"></div></div></div>
+   <div id="h-hist"></div>
    <button class="button button-fill button-large button-round" id="h-load" type="button" hidden>Carregar relatório de Planograma</button>
   </div></div>
   <div id="home-dados">
+   <div id="todo"></div>
    <div class="block-title">Situação dos produtos</div>
    <div class="kpis" id="kpis"></div>
    <div class="block-title">Sugestão de pedido</div>
@@ -250,6 +253,7 @@
 <div id="load"><div class="spin"></div><div id="lmsg">Carregando…</div><div id="lhint"></div></div>
 
 </div><!-- #app -->
+<div id="novban" hidden></div>
 <script src="lib/framework7/framework7.min.js"></script>
 <script src="js/leitura.js"></script>
 <script src="js/estado.js"></script>

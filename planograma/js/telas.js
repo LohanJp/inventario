@@ -113,12 +113,55 @@ function renderHome(){let n=allRecords.length;renderBan();renderSug();
  $('h-ring').innerHTML=ring(c,n);
  const pc=k=>Math.round(c[k]/n*1000)/10;
  $('h-health').innerHTML=`<span style="--c:var(--cr)">${GLY.rup} ${f1(pc('rup'))}% ruptura</span><span style="--c:var(--crit)">${GLY.crit} ${f1(pc('crit'))}% crítico</span>`;
+ histGrava();renderHist();
  const K=[['rup','Ruptura','estoque zerado/negativo','var(--cr)'],['crit','Crítico','cobertura total < 7 dias','var(--crit)'],['aten','Atenção','cobertura total de 7 a 15 dias','var(--am)'],['ok','Saudável','cobertura total de 15 dias ou mais','var(--ok)'],['sg','Sem giro',`com estoque, MDV 0 e sem venda há mais de ${SG_DIAS} dias`,'var(--sg)'],['nd','Sem MDV','sem MDV para calcular a cobertura','var(--mu)']];
  if(transitLoaded)K.push(['tr','Em trânsito','itens com entrada a caminho','var(--in)']);   // não é situação: faixa larga embaixo
  const pct=k=>{const v=c[k]/n*100;return v>0&&v<0.1?'&lt;0,1%':f1(v)+'%'};   // % de todos os produtos
  $('kpis').innerHTML=K.map(k=>`<button class="kpi${k[0]==='tr'?' kw':''}" data-k="${k[0]}" style="--c:${k[3]}" title="${k[2]}" type="button"><div class="n num">${f0(c[k[0]])}</div><div class="l"><b><span class="kg">${k[0]==='tr'?'⇢':GLY[k[0]]}</span>${k[1]}</b></div><span class="kr"><i class="kb"><u style="width:${Math.max(2,c[k[0]]/n*100).toFixed(1)}%"></u></i><span class="pc num">${pct(k[0])}</span></span></button>`).join('');
- renderCats()}
+ renderCats();renderTodo()}
 /* Categorias com mais alertas — por sistemática. Só a Sist. 1 (CD) tem a divisão "dá para pedir" × "sem no CD" */
+/* ═══ PARA FAZER HOJE (nov/2026): o Resumo mostra o próximo passo, não só o estado. Cada linha só aparece se tiver itens
+   e abre Produtos já filtrado (F.todo). Conta só a Sistemática padrão (ENT0), como a lista abre. ═══ */
+const hojeISO=()=>ofISO(new Date());
+const axHoje=(e,t)=>!!e&&(t==='pf'?(e.pf.includes(hojeISO())||(e.pfp||[]).some(p=>hojeISO()>=p.ini&&hojeISO()<=p.fim)):e[t].includes(hojeISO()));
+const TODO={
+  rupf:{ic:'🔴',t:'Rupturas sem trânsito e fora do pedido',f:(r,P)=>r._k==='rup'&&!(transitLoaded&&r._t>0)&&!P.has(r.produto)&&!r._d},
+  critf:{ic:'🟠',t:'Críticos sem trânsito e fora do pedido',f:(r,P)=>r._k==='crit'&&!(transitLoaded&&r._t>0)&&!P.has(r.produto)&&!r._d},
+  enc:{ic:'📋',t:'Panfleto com falta no CD',f:r=>{const e=axBuild().get(r.produto);return !!(e&&e.enc)&&cdRisk(r)&&!(encPer&&encPer.fim&&hojeISO()>encPer.fim)}},
+  lam:{ic:'🧾',t:'Lâmina de hoje com ruptura ou crítico',f:r=>(r._k==='rup'||r._k==='crit')&&axHoje(axBuild().get(r.produto),'pf')},
+  of:{ic:'⭐',t:'Oferta de hoje com ruptura ou crítico',f:r=>(r._k==='rup'||r._k==='crit')&&axHoje(axBuild().get(r.produto),'of')},
+  neg:{ic:'▼',t:'Estoque negativo (conferir)',f:r=>r._e<0&&!r._d}};
+const todoOk=r=>{if(!F.todo)return true;const T=TODO[F.todo];return !T||T.f(r,todoP||(todoP=pedSet()))};let todoP=null;
+function renderTodo(){const el=$('todo');if(!el)return;if(!allRecords.length){el.innerHTML='';return}
+  const P=pedSet(),c={};for(const k in TODO)c[k]=0;
+  const entPad=r=>ENT0==='1'?isCD(r):!ENT0||r._sist===ENT0;
+  for(const r of allRecords){if(!entPad(r))continue;for(const k in TODO)if(TODO[k].f(r,P))c[k]++}
+  const urg=pedido.filter(x=>!x.done&&x.u==='a'&&!inTransit(x)&&!x.rcd).length;
+  const L=Object.keys(TODO).filter(k=>c[k]).map(k=>`<li><a class="item-link item-content" data-todo="${k}"><div class="item-media td-ic">${TODO[k].ic}</div><div class="item-inner"><div class="item-title">${TODO[k].t}</div><div class="item-after"><b class="num">${f0(c[k])}</b></div></div></a></li>`);
+  if(urg)L.unshift(`<li><a class="item-link item-content" data-todo="urg"><div class="item-media td-ic">🔥</div><div class="item-inner"><div class="item-title">Urgentes no pedido para pedir</div><div class="item-after"><b class="num">${f0(urg)}</b></div></div></a></li>`);
+  el.innerHTML=L.length?`<div class="block-title">Para fazer hoje</div><div class="list list-strong inset list-dividers todo-l"><ul>${L.join('')}</ul></div>`:''}
+$('todo').onclick=e=>{const a=e.target.closest('[data-todo]');if(!a)return;const k=a.dataset.todo;
+  if(k==='urg')return go('ped');
+  todoP=null;F={chip:'all',cat:'',q:'',sort:'cobt',ent:ENT0,todo:k};$('q').value='';go('prod')};
+/* ═══ HISTÓRICO LEVE (nov/2026): 1 resumo por data de planograma (% por situação, todos e só Sist. 1), últimos 60 dias.
+   O Resumo mostra a tendência da ruptura com uma linha pequena — dá para ver se o trabalho está fazendo efeito. ═══ */
+const LSH='planograma_hist';let HIST={};try{HIST=JSON.parse(localStorage.getItem(LSH)||'{}')||{}}catch{HIST={}}
+const isoDe=s=>{const d=dmy(s);return d?d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'):''};
+function histGrava(){const k=isoDe(currentMeta&&currentMeta.date);if(!k||!allRecords.length)return;
+  const conta=R=>{const c={n:R.length,rup:0,crit:0,aten:0,ok:0};for(const r of R)if(r._k in c)c[r._k]++;return c};
+  const novo={t:conta(allRecords),s1:conta(allRecords.filter(isCD))},velho=HIST[k];
+  if(velho&&JSON.stringify(velho)===JSON.stringify(novo))return;
+  HIST[k]=novo;const ks=Object.keys(HIST).sort();while(ks.length>60)delete HIST[ks.shift()];
+  try{localStorage.setItem(LSH,JSON.stringify(HIST))}catch{}}
+function renderHist(){const el=$('h-hist');if(!el)return;const ks=Object.keys(HIST).sort().slice(-30),m=hS1?'s1':'t';
+  const pts=ks.map(k=>{const c=HIST[k][m];return c&&c.n?{k,v:c.rup/c.n*100}:null}).filter(Boolean);
+  if(pts.length<2){el.innerHTML='';return}
+  const a=pts[pts.length-2],b=pts[pts.length-1],d=b.v-a.v,dd=k=>k.slice(8,10)+'/'+k.slice(5,7);
+  const W=84,H=22,mx=Math.max(...pts.map(p=>p.v)),mn=Math.min(...pts.map(p=>p.v)),sp=mx-mn||1;
+  const xy=pts.map((p,i)=>`${(i/(pts.length-1)*W).toFixed(1)},${(H-2-(p.v-mn)/sp*(H-4)).toFixed(1)}`).join(' ');
+  const cor=d<-0.05?'var(--ok)':d>0.05?'var(--cr)':'var(--mu)';
+  el.innerHTML=`<div class="hist" title="Ruptura por data de planograma (${pts.length} dias guardados)"><svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" aria-hidden="true"><polyline points="${xy}" fill="none" stroke="${cor}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/></svg>
+   <span>Ruptura <b>${f1(b.v)}%</b> · <b style="color:${cor}">${Math.abs(d)<0.05?'igual':(d<0?'▼ ':'▲ ')+f1(Math.abs(d))+' p.p.'}</b> desde ${dd(a.k)}</span></div>`}
 function renderCats(){
   document.querySelectorAll('#cats-sw button').forEach(b=>{const on=b.dataset.cs===catSist;b.classList.toggle('on',on);b.classList.toggle('button-active',on)});
   if(!allRecords.length){$('cats').innerHTML='<div class="empty">—</div>';return}
@@ -176,9 +219,9 @@ function renderList(reset){const T=toks(F.q);
  refreshDep();{const n=nFiltros(),fb=$('flt-btn');$('flt-n').textContent=n;$('flt-n').hidden=!n;fb.classList.toggle('on',!!n);   // botão "Filtros" com quantos estão ligados
   const nm=F.chip==='all'?'':(FLT_SHORT[F.chip]||(CHIPS.find(c=>c[0]===F.chip)||[])[1]||'');fb.title='Filtros'+(nm?' · '+nm:'');fb.setAttribute('aria-label',fb.title)}
  $('sort').value=F.sort;
- $('catx').innerHTML=(F.cat?`<button class="catx" data-x="cat" type="button">✕ ${esc(short(F.cat))}</button>`:'')+(F.cob?`<button class="catx" data-x="cob" type="button">✕ ${cobTxt(F.cob)}</button>`:'')+(F.giro?`<button class="catx" data-x="giro" type="button">✕ Giro ${esc(F.giro)}</button>`:'');
+ $('catx').innerHTML=(F.cat?`<button class="catx" data-x="cat" type="button">✕ ${esc(short(F.cat))}</button>`:'')+(F.cob?`<button class="catx" data-x="cob" type="button">✕ ${cobTxt(F.cob)}</button>`:'')+(F.giro?`<button class="catx" data-x="giro" type="button">✕ Giro ${esc(F.giro)}</button>`:'')+(F.cadx?`<button class="catx" data-x="cadx" type="button">✕ Não entraram no cadastro</button>`:'')+(F.todo&&TODO[F.todo]?`<button class="catx" data-x="todo" type="button">✕ ${TODO[F.todo].t}</button>`:'');
  const fAct=F.chip!=='all'||!!F.cat||!!F.ent||noCD;   // algum filtro ligado?
- const base=T.length?(()=>true):r=>catOk(r)&&entOk(r)&&passesChip(r)&&cobPass(r,F.cob)&&(!F.d111||is111(r))&&giroOk(r);   // BUSCANDO: os filtros (chip, categoria, sistemática, F/CD) não escondem nada
+ const base=T.length?(()=>true):r=>catOk(r)&&entOk(r)&&passesChip(r)&&cobPass(r,F.cob)&&(!F.d111||is111(r))&&giroOk(r)&&(!F.cadx||cadNao.has(r.produto))&&todoOk(r);   // BUSCANDO: os filtros (chip, categoria, sistemática, F/CD) não escondem nada
  let rel=false;
  list=allRecords.filter(r=>base(r)&&(!T.length||(r._s=score(r,T))>0));
  if(T.length>1&&!list.length){rel=true;list=allRecords.filter(r=>base(r)&&(r._s=score(r,T,true))>0)}   // nada tem TODAS as palavras → mostra os que têm parte
@@ -251,6 +294,7 @@ function exportaCadastro(){if(!list.length)return toast('Nenhum item na lista');
     else if(!(a&&l&&p)){a=1;l=1;p=num(r.emb)||1}                                                           // sem medidas: 1 × 1 × embalagem (igual ao script antigo)
     L.push(`${r.produto};${a};${l};${p}`)}
   if(!L.length)return toast('Nenhum item para exportar (todos sem MDV)');
+  cadGuarda(L);   // guarda o que foi mandado para conferir com o planograma de amanhã
   const d=new Date(),dt=d.toLocaleString('pt-BR');
   const H=[`# Lista para cadastro - ${dt} - ${L.length} itens`,`# ${(currentMeta.filial||'').replace(/ - Produtos.*/i,'')}${F.d111&&NOVA>0?` - 1x1 com nova cobertura de ${NOVA} dias`:''}`,'# produto;1;dias x MDV / emb;itens por caixa'];
   downloadBlob(new Blob(['\ufeff'+[...H,...L].join('\r\n')+'\r\n'],{type:'text/plain;charset=utf-8'}),'lista_cadastro.txt');
@@ -340,11 +384,34 @@ async function exportaRelatorio(){
   const d=new Date(),dt=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
   downloadBlob(new Blob([out],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}),`relatorio_planograma_${dt}.xlsx`);
   toast(`Relatório com ${f0(list.length)} itens baixado · pronto para imprimir`)}
+/* ═══ CONFERÊNCIA DO CADASTRO (nov/2026) ═══
+   Ao baixar o TXT, guarda produto → medidas mandadas (+ quando). Quando entra um planograma gerado DEPOIS desse envio,
+   compara: medidas iguais = entrou certo (sai da lista) · diferentes = NÃO entrou (fica para recadastrar).
+   Fica no aparelho (planograma_cadconf) até entrar certo ou você limpar. */
+const LSCAD='planograma_cadconf';let CAD={};try{CAD=JSON.parse(localStorage.getItem(LSCAD)||'{}')||{}}catch{CAD={}}
+let CADOK=0,cadNao=new Set();try{CADOK=+localStorage.getItem('planograma_cadok')||0}catch{}   // CADOK = quantos entraram certo na última conferência · cadNao = códigos que não entraram
+const cadSalva=()=>{try{localStorage.setItem(LSCAD,JSON.stringify(CAD))}catch{}};
+function cadGuarda(L){const ts=Date.now();for(const ln of L){const [p,a,l,f]=ln.split(';');CAD[p]=[+a,+l,+f,ts]}cadSalva();cadConfere()}
+const planoTs=()=>{const d=dmy(currentMeta&&currentMeta.date);if(!d)return 0;const h=/(\d\d):(\d\d)/.exec(currentMeta.hora||'');if(h)d.setHours(+h[1],+h[2]);else d.setHours(23,59);return +d};
+function cadConfere(){cadNao=new Set();const pt=planoTs();let ok=0,mud=false;
+  if(pt&&allRecords.length)for(const p in CAD){const [a,l,f,ts]=CAD[p];if(pt<=ts)continue;              // planograma é de antes do envio: ainda não dá para saber
+    const r=byProd.get(p);if(!r)continue;
+    if(num(r.altura)===a&&num(r.largura)===l&&num(r.prof)===f){delete CAD[p];ok++;mud=true}else cadNao.add(p)}
+  if(mud){CADOK+=ok;cadSalva();try{localStorage.setItem('planograma_cadok',CADOK)}catch{}}}
+const cadEspera=()=>{const pt=planoTs();let n=0;for(const p in CAD)if(!(pt>CAD[p][3]))n++;return n};
+function renderCadBan(){const el=$('cadban');if(!el)return;const n=cadNao.size,ag=cadEspera();
+  if(!n&&!CADOK&&!ag){el.hidden=true;el.innerHTML='';return}el.hidden=false;
+  el.innerHTML=`<div class="cadb"><b>📋 Conferência do cadastro</b><span>${CADOK?`✅ <b>${f0(CADOK)}</b> entraram certo`:''}${CADOK&&n?' · ':''}${n?`❌ <b>${f0(n)}</b> não entraram`:''}${(CADOK||n)&&ag?' · ':''}${ag?`⏳ ${f0(ag)} aguardando o planograma de amanhã`:''}</span>
+   <div class="cadb-b">${n?'<button type="button" class="button button-small button-fill" id="cad-ver">Ver os que não entraram</button>':''}<button type="button" class="button button-small button-tonal" id="cad-limpa">${n||ag?'Limpar conferência':'Ok, entendi'}</button></div></div>`}
+$('cadban').onclick=e=>{
+  if(e.target.closest('#cad-ver')){F={chip:'all',cat:'',q:'',sort:F.sort||'cobt',ent:'',cadx:true};$('q').value='';go('prod');return}
+  if(e.target.closest('#cad-limpa')){const tudo=cadNao.size||cadEspera();if(tudo&&!confirm('Limpar a conferência? Os itens deixam de ser acompanhados.'))return;
+    if(tudo){CAD={};cadSalva();cadNao=new Set()}CADOK=0;try{localStorage.setItem('planograma_cadok',0)}catch{}if(F.cadx)F.cadx=false;renderCadBan();toast('Conferência limpa')}};
 const qGo=debounce(()=>renderList(true),180);
 $('q').oninput=e=>{F.q=e.target.value;qGo()};
 $('q-x').onclick=()=>{$('q').value='';F.q='';renderList(true);$('q').focus()};
 $('sort').onchange=e=>{F.sort=e.target.value;renderList(true)};
-$('catx').onclick=e=>{const b=e.target.closest('.catx');if(!b)return;if(b.dataset.x==='cob')F.cob=null;else if(b.dataset.x==='giro')F.giro='';else F.cat='';renderList(true)};
+$('catx').onclick=e=>{const b=e.target.closest('.catx');if(!b)return;if(b.dataset.x==='cob')F.cob=null;else if(b.dataset.x==='giro')F.giro='';else if(b.dataset.x==='cadx')F.cadx=false;else if(b.dataset.x==='todo')F.todo='';else F.cat='';renderList(true)};
 
 /* ── Categoria em árvore: toca num nível com filhos → entra; "Filtrar …" aplica aquele nível; folha aplica direto ── */
 let catPath=[];   // caminho atual, ex.: ['MERCEARIA','LIMPEZA']
@@ -414,7 +481,7 @@ function closeCat(){if(catSheet.opened)catSheet.close()}
 const setCat=v=>{D.cat=v;closeCat()};                                      // escolheu → volta para Filtros com a categoria marcada
 
 /* ═══ FILTROS (uma folha só): Situação · Sistemática · Categoria · F/CD → toca em "Ver N itens" ═══ */
-const nFiltros=()=>(F.chip!=='all')+(F.d111?1:0)+(F.giro?1:0)+(!!F.cat)+((F.ent||'')!==ENT0)+(noCD?1:0)+(F.cob?1:0);
+const nFiltros=()=>(F.chip!=='all')+(F.d111?1:0)+(F.giro?1:0)+(F.cadx?1:0)+(F.todo?1:0)+(!!F.cat)+((F.ent||'')!==ENT0)+(noCD?1:0)+(F.cob?1:0);
 /* COBERTURA TOTAL maior/menor que N dias — usa o mesmo número arredondado do cartão; "Sem giro" e item sem MDV/cobertura ficam de fora */
 const cobDia=r=>r._ct!==null&&r._k!=='sg'?Math.max(r._ct,0):null;
 const cobOn=c=>!!(c&&(c.op==='lt'||c.op==='gt')&&Number.isFinite(c.d)&&c.d>=0);

@@ -36,7 +36,7 @@ function renderFresh(){
   const curto=NARROW.matches;                                                   // tela estreita: nomes curtos para as 3 datas caberem
   el.innerHTML=[item('Plano',planoRecs.length>0,currentMeta),item(curto?'Cob.':'Cobertura',estoqueLoaded,estoqueMeta),item(curto?'Trâns.':'Trânsito',transitLoaded,transitMeta)].join(' · ')+(warn?' ⚠':'');
   F_.classList.toggle('warn',warn);F_.title=warn?'Os relatórios são de dias diferentes — confira antes de pedir':'';
-  renderDtBan();
+  renderDtBan();if(typeof renderCadBan==='function'){cadConfere();renderCadBan()}
 }
 $('fresh-gear').onclick=()=>go('data');
 
@@ -68,13 +68,36 @@ $('b-clear').onclick=()=>{if(confirm('Zerar todos os itens concluídos?')){lsCle
 function buildBackup(){return{app:'planograma',version:2,exportedAt:new Date().toISOString(),name:savedInfo?.name||'planograma',meta:currentMeta,
  records:planoRecs.map(rawRec),transit:transitLoaded?transitMap:null,transitMeta:transitMeta||null,
  estoque:estoqueLoaded?{map:estoqueMap,meta:estoqueMeta||null}:null,
- done:[...doneSet],pedido,dep:Object.keys(depMap),prefs:{}}}
+ done:[...doneSet],pedido,dep:Object.keys(depMap),prefs:{},anexos:anexosBackup()}}
+/* anexos no backup (nov/2026): Panfleto, Ofertas e Lâminas dos 7 dias — antes o .json voltava sem eles */
+function anexosBackup(){const a={of:{},pf:{}};
+  if(encSrc&&encItems.length){a.enc={name:encSrc.name,kind:encSrc.kind,items:encItems,hdr:encSrc.hdr??-1,savedAt:encSavedAt,per:encPer};
+    if(encSrc.kind==='xlsx'&&encSrc.buf)a.enc.b64=ab2b64(encSrc.buf);else a.enc.text=encSrc.text||''}
+  for(let w=0;w<7;w++){const o=ofDays[w],p=pfDays[w];
+    if(o&&!o.del&&Array.isArray(o.items)&&o.items.length)a.of['d'+w]=o;
+    if(p&&!p.del&&typeof p.text==='string'&&p.text.trim())a.pf['d'+w]=p}
+  return a}
+/* restaura os anexos de um backup (local ou "Baixar tudo da nuvem") — mesmo caminho de quando chegam da nuvem */
+async function restauraAnexos(a){if(!a||typeof a!=='object')return 0;let n=0;const lv=a.live||{};
+  const d=a.enc;
+  if(d&&Array.isArray(d.items)&&d.items.length){
+    encItems=d.items;encPer=d.per||null;encSavedAt=d.savedAt||new Date().toLocaleString('pt-BR');
+    encSrc=d.kind==='xlsx'?{kind:'xlsx',name:d.name,buf:b642ab(d.b64||''),hdr:d.hdr}:{...parseEncCSV(d.text||''),name:d.name,text:d.text||''};
+    if(!encPer&&encSrc.per)encPer=encSrc.per;encCloudAt=(lv.enc&&lv.enc.at)||0;encPending=false;await encSaveLocal().catch(()=>{});n++}
+  for(let w=0;w<7;w++){
+    const o=a.of&&a.of['d'+w];
+    if(o&&Array.isArray(o.items)&&o.items.length){const rec={...o,id:'oferta-d'+w,w,cloudAt:(lv.of&&lv.of['d'+w])||o.cloudAt||0,pending:false,del:false};ofDays[w]=rec;if(idb)await idbSave(rec).catch(()=>{});n++}
+    const p=a.pf&&a.pf['d'+w];
+    if(p&&typeof p.text==='string'&&p.text.trim()){const rec={...p,id:'panfleto-d'+w,w,cloudAt:(lv.pf&&lv.pf['d'+w])||p.cloudAt||0,pending:false,del:false};pfDays[w]=rec;if(idb)await idbSave(rec).catch(()=>{});n++}}
+  if(n){try{ofApplyDay()}catch{}try{pfApplyDay(false)}catch{}}
+  return n}
 /* arquivo "Baixar tudo da nuvem" (app:'planograma-nuvem') → mesmo formato do backup, para abrir pelo botão do Planograma */
 function nuvemToBackup(n){const D=n.dados||{},P=D.plano||{},E=D.estq||{},T=D.trans||{},L=D.live||{};
   return{app:'planograma',version:2,name:(P.info&&P.info.name)||'nuvem',meta:(P.info&&(P.info.meta||{filial:P.info.filial,date:P.info.date}))||{},
     records:Array.isArray(P.records)?P.records:[],transit:T.data||null,transitMeta:(T.info&&T.info.meta)||null,
     estoque:E.data?{map:E.data,meta:(E.info&&E.info.meta)||null}:null,
-    done:L.done?Object.keys(L.done).filter(k=>L.done[k]===true):[],pedido:Array.isArray(L.pedido)?L.pedido:[],dep:Array.isArray(L.dep)?L.dep:[]}}
+    done:L.done?Object.keys(L.done).filter(k=>L.done[k]===true):[],pedido:Array.isArray(L.pedido)?L.pedido:[],dep:Array.isArray(L.dep)?L.dep:[],
+    anexos:{enc:D.enc&&D.enc.data,of:D.of||{},pf:D.pf||{},live:{enc:L.enc,of:L.of,pf:L.pf}}}}
 async function importBackup(text,fname){try{let b=JSON.parse(text);if(b&&b.app==='planograma-nuvem')b=nuvemToBackup(b);if(b.app!=='planograma'||!Array.isArray(b.records))throw 0;
  const meta=b.meta||{};
  if(b.transitMeta&&typeof b.transitMeta==='object'){transitMeta=b.transitMeta;if(idb)idbSave({id:'transitmeta',meta:transitMeta}).catch(()=>{})}
@@ -84,7 +107,8 @@ async function importBackup(text,fname){try{let b=JSON.parse(text);if(b&&b.app==
    $('cob-status').innerHTML=`<b>✓ ${esc(fname)}</b> · ${f0(Object.keys(estoqueMap).length)} produtos · do backup`}
  await loadRecords(b.records,meta,b.name||fname,b.transit||null,true);
  try{localStorage.setItem(lsKeyFor(meta.filial||'',meta.date||''),JSON.stringify(b.done||[]));lsLoad();cloudWriteDone();derive();if(Array.isArray(b.pedido)){pedido=b.pedido;savePed()}if(Array.isArray(b.dep)){depMap={};b.dep.forEach(k=>{if(k)depMap[k]=true});saveDep()}renderHome()}catch{}
- busy(false);toast(f0(b.records.length)+' produtos importados'+(b.estoque?' · com Cobertura':''));return true}catch{busy(false);toast('Arquivo .json inválido');return false}}
+ let nax=0;try{nax=await restauraAnexos(b.anexos);if(nax){derive();renderHome()}}catch{}
+ busy(false);toast(f0(b.records.length)+' produtos importados'+(b.estoque?' · com Cobertura':'')+(nax?` · ${nax} anexo${nax>1?'s':''} (Panfleto/Lâmina/Oferta)`:''));return true}catch{busy(false);toast('Arquivo .json inválido');return false}}
 $('b-json').onclick=()=>{if(!allRecords.length)return toast('Nada para exportar');const s=((currentMeta.filial||'')+'_'+(currentMeta.date||'')).replace(/[^a-zA-Z0-9]+/g,'_').replace(/^_|_$/g,'');
  downloadBlob(new Blob([JSON.stringify(buildBackup())],{type:'application/json;charset=utf-8'}),`planograma_${s||'dados'}.json`)};
 $('b-csv').onclick=()=>{if(!allRecords.length)return toast('Nada para exportar');const H=['Produto','EAN','Descrição','Categoria','Corredor','Estoque','Trânsito','MDV','Cob.Plan','Cobertura','Cob. total','Situação','Entrega','Últ. entrada','Últ. venda','Feito'];

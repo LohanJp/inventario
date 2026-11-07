@@ -386,6 +386,24 @@ if('serviceWorker' in navigator&&/^https?:/.test(location.protocol)){/* ⚡ regi
 function mostraVersao(){const el=$('app-ver');if(!el||!('caches' in window))return;
   caches.keys().then(ks=>{const k=ks.filter(x=>x.startsWith('planograma-condor-')).sort().pop();el.textContent=k?'Versão do app: '+k.replace('planograma-condor-','').replace('-f7',''):'Versão do app: —'}).catch(()=>{})}
 addEventListener('load',()=>setTimeout(mostraVersao,3000));
+/* ═══ NOVIDADES (nov/2026): depois de atualizar, o Resumo mostra o que mudou (1 vez por versão). Na 1ª instalação não aparece.
+   Ao publicar uma versão com mudança visível, acrescente aqui a chave da versão (a mesma do sw.js, ex.: 'v43'). ═══ */
+const NOVIDADES={
+  v42:['🔥 <b>Urgência no pedido</b>: na ficha, marque Urgente ou Baixa — urgentes ficam no topo do Pedido em qualquer ordenação',
+       '⛔ <b>Ruptura no CD</b>: na ficha, tira o item de "Para pedir" e põe num grupo próprio até aparecer trânsito',
+       '✅ <b>Para fazer hoje</b> no Resumo: rupturas e críticos sem trânsito e fora do pedido, Panfleto/Lâmina/Oferta com falta e mais',
+       '📋 <b>Conferência do cadastro</b>: o planograma do dia seguinte mostra o que entrou certo e o que não entrou',
+       '📈 Linha de <b>tendência da ruptura</b> no Resumo (aparece a partir do 2º dia)',
+       '⚠ Aviso quando os <b>relatórios são de dias diferentes</b>, com opção de descartar o Trânsito antigo',
+       '💾 O backup e o .json da nuvem agora trazem também <b>Panfleto, Lâmina e Oferta</b>']};
+function mostraNovidades(){const el=$('novban');if(!el||!('caches' in window))return;
+  caches.keys().then(ks=>{const k=ks.filter(x=>x.startsWith('planograma-condor-')).sort().pop();if(!k)return;
+    const v=k.replace('planograma-condor-','').replace('-f7','');let vista='';try{vista=localStorage.getItem('planograma_vista')||''}catch{}
+    if(!vista){try{localStorage.setItem('planograma_vista',v)}catch{}return}                  // 1ª vez neste aparelho: não mostra
+    if(vista===v||!NOVIDADES[v])return;
+    el.hidden=false;el.innerHTML=`<div class="novb"><b>✨ Novidades da versão ${esc(v)}</b><ul>${NOVIDADES[v].map(t=>`<li>${t}</li>`).join('')}</ul><button type="button" class="button button-small button-fill" id="nov-ok">Entendi</button></div>`;
+    $('nov-ok').onclick=()=>{try{localStorage.setItem('planograma_vista',v)}catch{}el.hidden=true;el.innerHTML=''}}).catch(()=>{})}
+addEventListener('load',()=>setTimeout(mostraNovidades,3500));
 /* 🔄 Procurar atualização (aba Dados): pergunta ao servidor se há versão nova do app.
    Se houver, o SW novo instala, assume o controle e o app recarrega sozinho (controllerchange acima). */
 const verAtual=()=>{const t=($('app-ver')||{}).textContent||'';const m=/v\d+/.exec(t);return m?m[0]:''};
