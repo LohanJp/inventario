@@ -267,7 +267,8 @@ function cardBody(r,acts,extra,noPed,nova){
   const rel=r._c!==null;                                                        // sempre mostra também a cobertura do relatório de Cobertura
   const ebx=num(r.emb)||1;
   const unCx=n=>`${f0(n)}<i>un</i>${ebx>1&&n>=0?`<wbr><span class="cx"><i class="sep">|</i>${n>0&&n<ebx?'<span style="color:var(--cr)">&lt;1</span>':f0(Math.floor(n/ebx))}<i>cx</i></span>`:''}`;   // "276un | 46cx" (Estoque e Trânsito iguais)
-  const neg=r._e<0?` <span class="neg" title="Estoque negativo">▼ ${r._t>0?'negativo · em trânsito':isCD(r)?'negativo · falta no CD':'negativo · falta pedir'}</span>`:'';
+  const neg=r._e<0?` <span class="neg" title="Estoque negativo">▼ ${r._t>0?'negativo · em trânsito':isCD(r)?'negativo · falta no CD':'negativo · falta pedir'}</span>`
+    :cdRisk(r)?` <span class="neg cdw" title="Sistemática 1, menos de 1 caixa e sem trânsito: o pedido automático não mandou — provável falta no CD">⚠ falta no CD</span>`:'';   // estoque 0 ou positivo também (nov/2026)
   const sel=(r._sist?`<span class="ent e${esc(r._sist)}">${esc(ENT[r._sist]||'Sist. '+r._sist)}</span>`:'')+(!noPed&&inPed(r.produto)?' '+PEDBADGE:'')+pedTag(r.produto)+axBadges(r)+neg;
   const cob=r._k==='sg'?(semVendaDias(r)===Infinity?'—':f0(semVendaDias(r))+'<i>d s/ venda</i>'):r._ct===null?'—':dias(r._ct)+(rel||r._c999?`<i class="sep">|</i><i class="rr" title="R = cobertura do relatório de Cobertura de Estoque${r._c999?' (veio 999 = sem cálculo)':''}">R:</i>${rel?dias(r._c):'—'}`:'<i>d</i>');
   return `<div class="hd"><div class="nm">${esc(r.descricao)}</div><div class="acts">${acts}${INFOBTN}</div></div>
@@ -331,7 +332,7 @@ function relLinha(r){
   const nova=F.d111&&NOVA>0&&is111(r)?novaDim(r):undefined;
   const dim=r._np?'Fora do planograma':nova===undefined?semTag(dimTxt(r)):nova?`➜ 1×${nova}×${porCx(r)} (nova${(novaInfo(r,NOVA)||{}).cap?', máx. do sistema':''})`:'1×1 · sem MDV';
   const selos=[r._sist?(ENT[r._sist]||'Sist. '+r._sist):'',inPed(r.produto)?'🛒 no pedido':'',semTag(axBadges(r)),
-    r._e<0?'▼ negativo · '+(r._t>0?'em trânsito':isCD(r)?'falta no CD':'falta pedir'):''].filter(Boolean).join(' · ');
+    r._e<0?'▼ negativo · '+(r._t>0?'em trânsito':isCD(r)?'falta no CD':'falta pedir'):cdRisk(r)?'⚠ falta no CD':''].filter(Boolean).join(' · ');
   return {k:REL_K.includes(r._k)?r._k:'nd',nome:r.descricao||'',sb:[r.produto,dim,embTxt(r),selos].filter(Boolean).join(' · '),
     est:unCx(r._e),tr:transitLoaded?unCx(r._t):'—',mdv:r._m?f1(r._m):'—',sit:`${GLY[r._k]||''} ${SLBL[r._k]||''}`.trim(),cob}}
 async function exportaRelatorio(){
