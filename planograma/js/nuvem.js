@@ -389,6 +389,8 @@ addEventListener('load',()=>setTimeout(mostraVersao,3000));
 /* ═══ NOVIDADES (nov/2026): depois de atualizar, o Resumo mostra o que mudou (1 vez por versão). Na 1ª instalação não aparece.
    Ao publicar uma versão com mudança visível, acrescente aqui a chave da versão (a mesma do sw.js, ex.: 'v43'). ═══ */
 const NOVIDADES={
+  v44:['⚠ <b>Pedido</b>: ao entrar, a falta no CD já vem escondida — esses itens saem de "Para pedir" e ficam no grupo <b>Falta no CD</b> (o botão mostra/esconde)',
+       '✅ <b>Para fazer hoje</b> conta sem a falta no CD e abre a lista com "Esconder falta no CD" ligado'],
   v43:['⚠ Selo <b>falta no CD</b> no cartão também para itens com estoque positivo (Sistemática 1, menos de 1 caixa e sem trânsito) — antes só aparecia nos negativos'],
   v42:['🔥 <b>Urgência no pedido</b>: na ficha, marque Urgente ou Baixa — urgentes ficam no topo do Pedido em qualquer ordenação',
        '⛔ <b>Ruptura no CD</b>: na ficha, tira o item de "Para pedir" e põe num grupo próprio até aparecer trânsito',

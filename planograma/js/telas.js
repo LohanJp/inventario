@@ -74,7 +74,8 @@ addEventListener('popstate',e=>{
 });
 try{history.replaceState({s:'home'},'')}catch{}
 const TITLES={home:'Resumo',prod:'Produtos',ped:'Pedido',enc:'Anexos',data:'Dados'};
-function go(s,fromPop){
+function go(s,fromPop){if(s==='ped'&&curTab!=='ped')pedNoCD=true;   // ⚠ toda vez que ENTRA no Pedido: falta no CD escondida (nov/2026)
+
  const el=$('s-'+s);
  document.querySelectorAll('.tabs>section').forEach(e=>e.classList.toggle('on',e===el));
  if(!el.classList.contains('tab-active')){inGo=true;try{app.tab.show(el,false)}finally{inGo=false}}
@@ -135,14 +136,15 @@ const todoOk=r=>{if(!F.todo)return true;const T=TODO[F.todo];return !T||T.f(r,to
 function renderTodo(){const el=$('todo');if(!el)return;if(!allRecords.length){el.innerHTML='';return}
   const P=pedSet(),c={};for(const k in TODO)c[k]=0;
   const entPad=r=>ENT0==='1'?isCD(r):!ENT0||r._sist===ENT0;
-  for(const r of allRecords){if(!entPad(r))continue;for(const k in TODO)if(TODO[k].f(r,P))c[k]++}
+  for(const r of allRecords){if(!entPad(r))continue;const esc_=hideCD(r,true,noCDTr);for(const k in TODO)if((k==='enc'||!esc_)&&TODO[k].f(r,P))c[k]++}   // falta no CD fora (é o que a lista mostra)
   const urg=pedido.filter(x=>!x.done&&x.u==='a'&&!inTransit(x)&&!x.rcd).length;
   const L=Object.keys(TODO).filter(k=>c[k]).map(k=>`<li><a class="item-link item-content" data-todo="${k}"><div class="item-media td-ic">${TODO[k].ic}</div><div class="item-inner"><div class="item-title">${TODO[k].t}</div><div class="item-after"><b class="num">${f0(c[k])}</b></div></div></a></li>`);
   if(urg)L.unshift(`<li><a class="item-link item-content" data-todo="urg"><div class="item-media td-ic">🔥</div><div class="item-inner"><div class="item-title">Urgentes no pedido para pedir</div><div class="item-after"><b class="num">${f0(urg)}</b></div></div></a></li>`);
   el.innerHTML=L.length?`<div class="block-title">Para fazer hoje</div><div class="list list-strong inset list-dividers todo-l"><ul>${L.join('')}</ul></div>`:''}
 $('todo').onclick=e=>{const a=e.target.closest('[data-todo]');if(!a)return;const k=a.dataset.todo;
   if(k==='urg')return go('ped');
-  todoP=null;F={chip:'all',cat:'',q:'',sort:'cobt',ent:ENT0,todo:k};$('q').value='';go('prod')};
+  todoP=null;if(!noCD){noCD=true;salvaCD()}   // do Resumo sempre com "Esconder falta no CD" ligado
+  F={chip:k==='enc'?'cd':'all',cat:'',q:'',sort:'cobt',ent:ENT0,todo:k};$('q').value='';go('prod')};
 /* ═══ HISTÓRICO LEVE (nov/2026): 1 resumo por data de planograma (% por situação, todos e só Sist. 1), últimos 60 dias.
    O Resumo mostra a tendência da ruptura com uma linha pequena — dá para ver se o trabalho está fazendo efeito. ═══ */
 const LSH='planograma_hist';let HIST={};try{HIST=JSON.parse(localStorage.getItem(LSH)||'{}')||{}}catch{HIST={}}
