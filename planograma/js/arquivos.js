@@ -36,8 +36,26 @@ function renderFresh(){
   const curto=NARROW.matches;                                                   // tela estreita: nomes curtos para as 3 datas caberem
   el.innerHTML=[item('Plano',planoRecs.length>0,currentMeta),item(curto?'Cob.':'Cobertura',estoqueLoaded,estoqueMeta),item(curto?'Trâns.':'Trânsito',transitLoaded,transitMeta)].join(' · ')+(warn?' ⚠':'');
   F_.classList.toggle('warn',warn);F_.title=warn?'Os relatórios são de dias diferentes — confira antes de pedir':'';
+  renderDtBan();
 }
 $('fresh-gear').onclick=()=>go('data');
+
+/* ⚠ RELATÓRIOS DE DIAS DIFERENTES (nov/2026): aviso claro no topo do Resumo (o ⚠ do cabeçalho passava batido).
+   Trânsito MAIS ANTIGO que o planograma: oferece descartar (senão itens que já chegaram aparecem "a caminho"). */
+function renderDtBan(){const el=$('dtban');if(!el)return;
+  const pd=dmy(currentMeta&&currentMeta.date),diz=[];let velhoTr=false;
+  if(allRecords.length&&pd){
+    const ver=(nome,ok,m)=>{if(!ok||!m||!m.date)return;const d=dmy(m.date);if(!d||+d===+pd)return;
+      const dias=Math.round((pd-d)/864e5);diz.push(`${nome} de <b>${esc(String(m.date).slice(0,5))}</b> (${dias>0?dias+' dia'+(dias>1?'s':'')+' antes':(-dias)+' dia'+(-dias>1?'s':'')+' depois'} do planograma)`);
+      if(nome==='Trânsito'&&dias>0)velhoTr=true};
+    ver('Cobertura',estoqueLoaded,estoqueMeta);ver('Trânsito',transitLoaded,transitMeta)}
+  el.hidden=!diz.length;if(!diz.length)return el.innerHTML='';
+  el.innerHTML=`<div class="dtb"><b>⚠ Relatórios de dias diferentes</b><span>Planograma de <b>${esc(String(currentMeta.date).slice(0,5))}</b> · ${diz.join(' · ')}. Confira antes de pedir.</span>${velhoTr?'<button type="button" class="button button-small button-tonal" id="dt-tr">Descartar o Trânsito antigo</button>':''}</div>`}
+$('dtban').onclick=async e=>{if(!e.target.closest('#dt-tr'))return;
+  if(!confirm('Descartar o Trânsito antigo? Os números de trânsito somem até você carregar o relatório novo.'))return;
+  transitMap={};transitLoaded=false;transitMeta=null;
+  if(idb){try{await idbSave({id:'transitmeta',meta:null});const rec=await idbGet('current');if(rec){delete rec.transit;await idbSave(rec)}}catch{}}
+  derive();renderData();toast('Trânsito antigo descartado')};
 $('theme-seg').onclick=e=>{const b=e.target.closest('button');if(b)applyTheme(b.dataset.t)};
 let _th='auto';try{_th=localStorage.getItem('planograma_theme')||'auto'}catch{}applyTheme(_th);
 function renderData(){renderFresh();if(typeof mostraVersao==='function')mostraVersao();const n=planoRecs.length;

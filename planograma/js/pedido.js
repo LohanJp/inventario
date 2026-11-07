@@ -10,7 +10,17 @@ const today=()=>ymd(new Date()),tomorrow=()=>{const d=new Date();d.setDate(d.get
 const inPed=p=>pedido.find(x=>x.p===p&&!x.done);
 const pedSet=()=>{const s=new Set();for(const x of pedido)if(!x.done)s.add(x.p);return s};   // ⚡ p/ filtrar 9 mil itens: inPed() varre o pedido inteiro a cada item
 const inTransit=x=>{const r=byProd.get(x.p);return !!(transitLoaded&&r&&r._t>0)};   // mercadoria a caminho: não dá para pedir até chegar
-const pend=()=>pedido.filter(x=>!x.done&&!inTransit(x));
+const pend=()=>pedido.filter(x=>!x.done&&!inTransit(x)&&!x.rcd);   // ⛔ ruptura no CD não conta como "para pedir"
+/* ═══ URGÊNCIA e ⛔ RUPTURA NO CD (nov/2026) — ficam no próprio item do pedido (x.u = 'a' urgente | 'b' baixa · x.rcd = data),
+   então vão para a nuvem junto com o pedido. Urgência manda na ordem: urgentes no topo, baixa no fim, em qualquer ordenação. */
+const pedItem=p=>pedido.find(x=>x.p===p&&!x.done);
+const URG={a:{t:'🔥 Urgente',c:'urg'},b:{t:'⬇ Baixa',c:'baixa'}};
+function pedTag(p){const x=pedItem(p);if(!x)return'';
+  return (x.rcd?' <span class="ent rcd" title="Você marcou: o CD está sem o produto">⛔ Rupt. CD</span>':'')+(URG[x.u]?` <span class="ent ${URG[x.u].c}">${URG[x.u].t}</span>`:'')}
+function setUrg(r,u){let x=pedItem(r.produto);if(!x){if(!u)return;addPed(r,'',true);x=pedItem(r.produto)}
+  if(u)x.u=u;else delete x.u;savePed()}
+function setRcd(r,v){let x=pedItem(r.produto);if(!x){if(!v)return;addPed(r,'',true);x=pedItem(r.produto)}
+  if(v)x.rcd=today();else delete x.rcd;savePed()}
 addEventListener('pagehide',()=>{try{localStorage.setItem(LSP,JSON.stringify(pedido))}catch{}});   // não perde o que está pendente
 function updBadge(){const n=pend().length,b=$('pbadge');b.textContent=n;b.style.display=n?'':'none'}
 /* 🔎 PROCURAR NO DEPÓSITO: marca por produto (independe do pedido). Guardada no aparelho e na nuvem em live/dep */
@@ -32,16 +42,16 @@ $('pban').onclick=e=>{if(e.target.closest('[data-go]'))go('ped')};
 const PED_ORD=[['nome','Nome A–Z'],['cob_a','Menor cobertura'],['cob_d','Maior cobertura'],['mdv_d','Maior MDV'],['mdv_a','Menor MDV']];
 let pedSort='nome';try{const v=localStorage.getItem('planograma_pedsort');if(PED_ORD.some(o=>o[0]===v))pedSort=v}catch{}
 let depOnly=false;   // filtro "🔎 Procurar no depósito" ligado?
-const dropOpen={pnd:true,trd:false,dnd:false};   // lembra quais grupos do pedido estão abertos ("Para pedir" já começa aberto)
+const dropOpen={pnd:true,trd:false,rcd:false,dnd:false};   // lembra quais grupos do pedido estão abertos ("Para pedir" já começa aberto)
 /* dica de gestos: aparece nas 3 primeiras vezes que o Pedido é aberto (ou até tocar no ✕) */
 const LSHINT='planograma_dica_gestos';let hintN=0,hintCounted=false;try{hintN=+localStorage.getItem(LSHINT)||0}catch{}
 const hintHtml=()=>hintN<=3?'<div class="hint"><span>👉 Deslize → concluir · 👈 excluir · segure o cartão = 🔎 depósito</span><button type="button" id="hint-x" aria-label="Fechar dica">✕</button></div>':'';
 const CHEV='<svg class="ch" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>';
 function renderPed(){
  if(pedido.length&&!hintCounted){hintCounted=true;hintN++;try{localStorage.setItem(LSHINT,hintN)}catch{}}   // conta 1 vez por abertura do app
- const act=pedido.filter(x=>!x.done&&!inTransit(x)),tr=pedido.filter(x=>!x.done&&inTransit(x)),dn=pedido.filter(x=>x.done),n=act.length;
+ const act=pedido.filter(x=>!x.done&&!inTransit(x)&&!x.rcd),tr=pedido.filter(x=>!x.done&&inTransit(x)),rc=pedido.filter(x=>!x.done&&!inTransit(x)&&x.rcd),dn=pedido.filter(x=>x.done),n=act.length;
  $('phead').innerHTML=`<div class="ph-row"><div class="ph-n num">${n}</div><div><div class="t">${n?`${n} ${n>1?'itens':'item'} para pedir`:(pedido.length?'Nada para pedir agora':'Pedido vazio')}</div><div class="s">${tr.length?`${tr.length} aguardando chegada do trânsito`:(pedido.length?'Itens fora do trânsito aparecem na lista abaixo':'Adicione abaixo ou pelo 🛒 nos produtos.')}</div></div></div>`
-  +(pedido.length?`<div class="ph-st"><span><b class="num">${n}</b> para pedir</span><span><b class="num">${tr.length}</b> em trânsito</span><span><b class="num">${dn.length}</b> concluídos</span></div>`:'');
+  +(pedido.length?`<div class="ph-st">${rc.length?`<span><b class="num">${n}</b> pedir</span><span><b class="num">${tr.length}</b> trânsito</span><span><b class="num">${rc.length}</b> rupt. CD</span><span><b class="num">${dn.length}</b> feitos</span>`:`<span><b class="num">${n}</b> para pedir</span><span><b class="num">${tr.length}</b> em trânsito</span><span><b class="num">${dn.length}</b> concluídos</span>`}</div>`:'');
  const nd=pedido.filter(x=>depMap[x.p]&&!x.done).length;if(depOnly&&!nd)depOnly=false;   // tirou o último: desliga o filtro
  const fl=l=>depOnly?l.filter(x=>depMap[x.p]):l;
  const row0=x=>{const r=byProd.get(x.p),di=depMap[x.p]?DEPI:'';
@@ -52,9 +62,10 @@ function renderPed(){
  const cob=x=>{const r=R(x);return r&&r._ct!==null&&r._k!=='sg'?Math.max(r._ct,0):null},mdv=x=>{const r=R(x);return r&&r._m?r._m:null};
  const by=(f,dir)=>(a,b)=>{const va=f(a),vb=f(b);if(va===null||vb===null)return(va===null)-(vb===null)||nome(a,b);return(va-vb)*dir||nome(a,b)};   // sem número vai pro fim
  const ORD={nome,cob_a:by(cob,1),cob_d:by(cob,-1),mdv_d:by(mdv,-1),mdv_a:by(mdv,1)};
- const ord=l=>l.slice().sort(ORD[pedSort]||nome);
+ const UO=x=>x.u==='a'?0:x.u==='b'?2:1;   // urgência primeiro, depois a ordenação escolhida
+ const ord=l=>l.slice().sort((a,b)=>UO(a)-UO(b)||(ORD[pedSort]||nome)(a,b));
  const drop=(id,title,sub,l)=>l.length?`<details class="trd" id="${id}"${dropOpen[id]?' open':''}><summary><span>${title}<small>${sub}</small></span><span class="cnt">${l.length}</span>${CHEV}</summary><div class="trd-b">${ord(l).map(row).join('')}</div></details>`:'';
- const trHtml=drop('pnd','📋 Para pedir','Ainda falta pedir',fl(act))+drop('trd','⏳ Aguardando trânsito','Ficam aqui até a mercadoria chegar',fl(tr))+drop('dnd','✓ Concluídos','Deslize → para reabrir',fl(dn));
+ const trHtml=drop('pnd','📋 Para pedir','Ainda falta pedir',fl(act))+drop('trd','⏳ Aguardando trânsito','Ficam aqui até a mercadoria chegar',fl(tr))+drop('rcd','⛔ Ruptura no CD','Você marcou: o CD está sem — saem daqui quando aparecer trânsito',fl(rc))+drop('dnd','✓ Concluídos','Deslize → para reabrir',fl(dn));
  const chip=(nd||depOnly)?`<button class="chip-btn ${depOnly?'on':''}" id="pc-dep" type="button" style="--c:var(--in)">🔎 Procurar no depósito (${nd})</button>`:'';
  const sortBar=`<div class="row2 pedsort">${chip}<label class="chip-btn chip-sel ps-sel"><svg class="ic" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4v16M3 16l4 4 4-4M17 20V4M13 8l4-4 4 4"/></svg><select id="ped-sort" aria-label="Ordenar lista de pedido">${PED_ORD.map(([v,t])=>`<option value="${v}"${v===pedSort?' selected':''}>${t}</option>`).join('')}</select></label></div>`;
  $('plist').innerHTML=pedido.length?hintHtml()+sortBar+trHtml:'<div class="empty"><div class="em-ic">🛒</div><p>Sua lista está vazia</p><div class="grid grid-cols-2 grid-gap" style="margin-top:14px"><button class="button button-fill button-large" id="pe-sug" type="button">Adicionar sugestões</button><button class="button button-tonal button-large" id="pe-scan" type="button">Ler código</button></div></div>'}
@@ -138,8 +149,14 @@ function openSheet(r){if(!r)return;const kv=([a,b])=>`<div class="kv"><span>${a}
  <div class="fts">${tiles}</div></div>
  <div class="shb page-content">${alerta}${rows.map(kv).join('')}<details class="more"><summary>Mais detalhes ${CHEV}</summary>${mais.map(kv).join('')}</details></div>
  <div class="shf"><button class="button button-fill button-large" id="sh-ped" type="button">${inPed(r.produto)?'🛒 Remover do pedido':'🛒 Adicionar ao pedido'+(r._sg>0?' · '+f0(r._sg)+' un':'')}</button>
+  ${(()=>{const x=pedItem(r.produto)||{};return `<div class="shu"><span>Urgência</span><div class="fs-seg shu-seg">${[['a','🔥 Urgente'],['','Normal'],['b','⬇ Baixa']].map(([v,l])=>`<button type="button" data-u="${v}" class="${(x.u||'')===v?'on':''}">${l}</button>`).join('')}</div></div>
+  <button class="button button-tonal button-large shr${x.rcd?' on':''}" id="sh-rcd" type="button">${x.rcd?'↩ Tirar de Ruptura no CD':'⛔ Ruptura no CD'}</button>`})()}
   <div class="grid grid-cols-2 grid-gap"><button class="button button-tonal button-large" id="sh-dep" type="button">${depMap[r.produto]?'🔎 Tirar do depósito':'🔎 Depósito'}</button><button class="button button-tonal button-large" id="sh-done" type="button">${r._d?'↩ Desfazer feito':'✓ Marcar feito'}</button></div></div>`;
  shOn('sheet',true);if(!fichaSheet.opened)fichaSheet.open();pushOv('sheet');$('sh-x').onclick=closeSheet;
  $('sh-ped').onclick=()=>{if(inPed(r.produto)){pedido=pedido.filter(x=>x.p!==r.produto);savePed();toast('Removido do pedido')}else{addS(r);toast(addMsg(r))}closeSheet();go(document.querySelector('section.on').id.slice(2))};
+ document.querySelectorAll('#sheetc [data-u]').forEach(b=>b.onclick=()=>{const u=b.dataset.u,novo=!inPed(r.produto)&&u;setUrg(r,u);
+   toast(u?`${URG[u].t}${novo?' · adicionado ao pedido':''}`:'Urgência normal');closeSheet();go(document.querySelector('section.on').id.slice(2))});
+ $('sh-rcd').onclick=()=>{const v=!(pedItem(r.produto)||{}).rcd,novo=v&&!inPed(r.produto);setRcd(r,v);
+   toast(v?`⛔ Ruptura no CD${novo?' · entrou no pedido':''} — sai de "Para pedir"`:'Saiu de Ruptura no CD');closeSheet();go(document.querySelector('section.on').id.slice(2))};
  $('sh-dep').onclick=()=>{const v=!depMap[r.produto];setDep(r.produto,v);toast(v?'🔎 Procurar no depósito':'Saiu de "Procurar no depósito"');closeSheet()};
  $('sh-done').onclick=()=>{const marking=!r._d;r._d?doneSet.delete(key(r)):doneSet.add(key(r));r._d=!r._d;lsSave();if(marking)copyEAN(r.automacao||r.produto);closeSheet();go(document.querySelector('section.on').id.slice(2))}}   // ✓ Marcar feito: fica na aba em que estava (antes ia sempre para Produtos)
