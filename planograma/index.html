@@ -126,7 +126,7 @@
    <div class="enc-drop" id="enc-drop"><div class="dz-ic">📂</div><div>Toque para carregar ou arraste aqui</div><small><b>.xlsx</b> ou <b>.csv</b> com colunas EAN · Host · Nome</small></div>
    <input type="file" id="enc-input" accept=".xlsx,.xls,.csv,.ods" style="display:none">
    <div id="enc-title" class="ax-meta" style="display:none"></div>
-   <div class="row2" id="enc-sortbar" style="display:none"><span>Ordenar por</span><select id="enc-sort"><option value="arq">Ordem da planilha</option><option value="stat">Falta no CD primeiro</option><option value="cob">Menor cobertura</option><option value="est">Menor estoque</option><option value="mdv">Maior MDV</option><option value="nome">Nome A–Z</option></select></div>
+   <div class="row2 axsort" id="enc-sortbar" style="display:none"><label class="chip-btn chip-sel" title="Ordenar por"><svg class="ic" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4v16M3 16l4 4 4-4M17 20V4M13 8l4-4 4 4"/></svg><select id="enc-sort" aria-label="Ordenar por"><option value="arq">Ordem da planilha</option><option value="stat">Falta no CD primeiro</option><option value="cob">Menor cobertura</option><option value="est">Menor estoque</option><option value="mdv">Maior MDV</option><option value="nome">Nome A–Z</option></select></label></div>
    <button class="button button-tonal" id="enc-export" style="display:none">⬇ Exportar planilha com situação</button>
    <input class="axq" id="enc-q" type="search" placeholder="Buscar no panfleto (nome, EAN ou código)" style="display:none">
    <div id="enc-summary-box"></div>
@@ -141,7 +141,7 @@
    <textarea class="pf-ta" id="pf-txt" rows="6" autocapitalize="off" spellcheck="false" placeholder="Ex.:&#10;Arroz Urbano 5kg Parboilizado · 18,90&#10;Feijão Caldo Bom 1kg Preto · 5,99"></textarea>
    <div class="pf-btns"><button class="button button-fill button-large" id="pf-go">Buscar no app</button><button class="button button-tonal button-large" id="pf-paste">📋 Colar</button><button class="button button-tonal button-large" id="pf-clear">Limpar</button></div>
    <div id="pf-meta" class="ax-meta"></div>
-   <div class="row2" id="pf-sortbar" style="display:none"><span>Ordenar por</span><select id="pf-sort"><option value="arq">Ordem colada</option><option value="sev">Situação (pior primeiro)</option><option value="cob">Menor cobertura</option><option value="est">Menor estoque</option><option value="mdv">Maior MDV</option><option value="nome">Nome A–Z</option></select></div>
+   <div class="row2 axsort" id="pf-sortbar" style="display:none"><label class="chip-btn chip-sel" title="Ordenar por"><svg class="ic" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4v16M3 16l4 4 4-4M17 20V4M13 8l4-4 4 4"/></svg><select id="pf-sort" aria-label="Ordenar por"><option value="arq">Ordem colada</option><option value="sev">Situação (pior primeiro)</option><option value="cob">Menor cobertura</option><option value="est">Menor estoque</option><option value="mdv">Maior MDV</option><option value="nome">Nome A–Z</option></select></label></div>
    <input class="axq" id="pf-q" type="search" placeholder="Buscar na lâmina (nome, EAN ou código)" style="display:none">
    <div id="pf-sum" class="ax-meta"></div>
    <div id="pf-list"></div>
@@ -157,7 +157,7 @@
    <div id="of-title" class="ax-meta" style="display:none"></div>
    <div id="of-warn" class="ax-warn" style="display:none"></div>
    <button class="lnk" id="of-del" type="button" style="display:none">🗑 Limpar a planilha deste dia</button>
-   <div class="row2" id="of-sortbar" style="display:none"><span>Ordenar por</span><select id="of-sort"><option value="arq">Ordem da planilha</option><option value="sev">Situação (pior primeiro)</option></select></div>
+   <div class="row2 axsort" id="of-sortbar" style="display:none"><label class="chip-btn chip-sel" title="Ordenar por"><svg class="ic" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4v16M3 16l4 4 4-4M17 20V4M13 8l4-4 4 4"/></svg><select id="of-sort" aria-label="Ordenar por"><option value="arq">Ordem da planilha</option><option value="sev">Situação (pior primeiro)</option></select></label></div>
    <input class="axq" id="of-q" type="search" placeholder="Buscar na oferta (nome, EAN ou código)" style="display:none">
    <div id="of-sum" class="ax-meta"></div>
    <div id="of-list"></div>

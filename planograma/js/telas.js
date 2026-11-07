@@ -131,18 +131,30 @@ const TODO={
   enc:{ic:'📋',t:'Panfleto com falta no CD',f:r=>{const e=axBuild().get(r.produto);return !!(e&&e.enc)&&cdRisk(r)&&!(encPer&&encPer.fim&&hojeISO()>encPer.fim)}},
   lam:{ic:'🧾',t:'Lâmina de hoje com ruptura ou crítico',f:r=>(r._k==='rup'||r._k==='crit')&&axHoje(axBuild().get(r.produto),'pf')},
   of:{ic:'⭐',t:'Oferta de hoje com ruptura ou crítico',f:r=>(r._k==='rup'||r._k==='crit')&&axHoje(axBuild().get(r.produto),'of')},
-  neg:{ic:'▼',t:'Estoque negativo (conferir)',f:r=>r._e<0&&!r._d}};
+  neg:{ic:'▼',t:'Estoque negativo (conferir)',f:r=>r._e<0&&!r._d},
+  f20:{ic:'🏭',t:'Fornecedores (Sist. 20) com cobertura baixa',f:(r,P)=>r._sist==='20'&&(r._k==='rup'||r._k==='crit')&&!(transitLoaded&&r._t>0)&&!P.has(r.produto)&&!r._d,ent:'20'}};
+/* fornecedor: chave sem zeros à esquerda (o mesmo fornecedor vem como 00543219 e 543219) · nome para mostrar = "código · nome" */
+const fornKey=r=>{const t=fornTxt(r),m=/^0*(\d+)/.exec(t);return m?m[1]:t};
+const fornNome=r=>{const t=fornTxt(r),m=/^0*(\d+)\s*·\s*(.*)$/.exec(t);return m?m[1].padStart(8,'0')+' · '+m[2]:t};   // código sempre com 8 dígitos
+let todoF20=false;   // lista de fornecedores aberta no Resumo?
 const todoOk=r=>{if(!F.todo)return true;const T=TODO[F.todo];return !T||T.f(r,todoP||(todoP=pedSet()))};let todoP=null;
 function renderTodo(){const el=$('todo');if(!el)return;if(!allRecords.length){el.innerHTML='';return}
   const P=pedSet(),c={};for(const k in TODO)c[k]=0;
   const entPad=r=>ENT0==='1'?isCD(r):!ENT0||r._sist===ENT0;
-  for(const r of allRecords){if(!entPad(r))continue;const esc_=hideCD(r,true,noCDTr);for(const k in TODO)if((k==='enc'||!esc_)&&TODO[k].f(r,P))c[k]++}   // falta no CD fora (é o que a lista mostra)
+  const forn={};
+  for(const r of allRecords){if(r._sist==='20'){if(TODO.f20.f(r,P)){c.f20++;const k=fornKey(r);(forn[k]=forn[k]||{n:0,t:fornNome(r)}).n++}continue}
+    if(!entPad(r))continue;const esc_=hideCD(r,true,noCDTr);for(const k in TODO)if(k!=='f20'&&(k==='enc'||!esc_)&&TODO[k].f(r,P))c[k]++}   // falta no CD fora (é o que a lista mostra)
   const urg=pedido.filter(x=>!x.done&&x.u==='a'&&!inTransit(x)&&!x.rcd).length;
-  const L=Object.keys(TODO).filter(k=>c[k]).map(k=>`<li><a class="item-link item-content" data-todo="${k}"><div class="item-media td-ic">${TODO[k].ic}</div><div class="item-inner"><div class="item-title">${TODO[k].t}</div><div class="item-after"><b class="num">${f0(c[k])}</b></div></div></a></li>`);
+  const FS=Object.entries(forn).sort((a,b)=>b[1].n-a[1].n||a[1].t.localeCompare(b[1].t));
+  const L=Object.keys(TODO).filter(k=>c[k]).map(k=>`<li><a class="item-link item-content${k==='f20'?' td-f20'+(todoF20?' open':''):''}" data-todo="${k}"><div class="item-media td-ic">${TODO[k].ic}</div><div class="item-inner"><div class="item-title">${TODO[k].t}${k==='f20'?`<small>${f0(FS.length)} fornecedores · toque para ${todoF20?'fechar':'ver'}</small>`:''}</div><div class="item-after"><b class="num">${f0(c[k])}</b></div></div></a></li>`
+    +(k==='f20'&&todoF20?FS.map(([fk,v])=>`<li class="td-sub"><a class="item-link item-content" data-forn="${esc(fk)}"><div class="item-inner"><div class="item-title">${esc(v.t)}</div><div class="item-after"><b class="num">${f0(v.n)}</b></div></div></a></li>`).join(''):''));
   if(urg)L.unshift(`<li><a class="item-link item-content" data-todo="urg"><div class="item-media td-ic">🔥</div><div class="item-inner"><div class="item-title">Urgentes no pedido para pedir</div><div class="item-after"><b class="num">${f0(urg)}</b></div></div></a></li>`);
   el.innerHTML=L.length?`<div class="block-title">Para fazer hoje</div><div class="list list-strong inset list-dividers todo-l"><ul>${L.join('')}</ul></div>`:''}
-$('todo').onclick=e=>{const a=e.target.closest('[data-todo]');if(!a)return;const k=a.dataset.todo;
+$('todo').onclick=e=>{const fa=e.target.closest('[data-forn]');
+  if(fa){todoP=null;F={chip:'all',cat:'',q:'',sort:'cobt',ent:'20',todo:'f20',forn:fa.dataset.forn};$('q').value='';return go('prod')}
+  const a=e.target.closest('[data-todo]');if(!a)return;const k=a.dataset.todo;
   if(k==='urg')return go('ped');
+  if(k==='f20'){todoF20=!todoF20;return renderTodo()}
   todoP=null;if(!noCD){noCD=true;salvaCD()}   // do Resumo sempre com "Esconder falta no CD" ligado
   F={chip:k==='enc'?'cd':'all',cat:'',q:'',sort:'cobt',ent:ENT0,todo:k};$('q').value='';go('prod')};
 /* ═══ HISTÓRICO LEVE (nov/2026): 1 resumo por data de planograma (% por situação, todos e só Sist. 1), últimos 60 dias.
@@ -221,9 +233,9 @@ function renderList(reset){const T=toks(F.q);
  refreshDep();{const n=nFiltros(),fb=$('flt-btn');$('flt-n').textContent=n;$('flt-n').hidden=!n;fb.classList.toggle('on',!!n);   // botão "Filtros" com quantos estão ligados
   const nm=F.chip==='all'?'':(FLT_SHORT[F.chip]||(CHIPS.find(c=>c[0]===F.chip)||[])[1]||'');fb.title='Filtros'+(nm?' · '+nm:'');fb.setAttribute('aria-label',fb.title)}
  $('sort').value=F.sort;
- $('catx').innerHTML=(F.cat?`<button class="catx" data-x="cat" type="button">✕ ${esc(short(F.cat))}</button>`:'')+(F.cob?`<button class="catx" data-x="cob" type="button">✕ ${cobTxt(F.cob)}</button>`:'')+(F.giro?`<button class="catx" data-x="giro" type="button">✕ Giro ${esc(F.giro)}</button>`:'')+(F.cadx?`<button class="catx" data-x="cadx" type="button">✕ Não entraram no cadastro</button>`:'')+(F.todo&&TODO[F.todo]?`<button class="catx" data-x="todo" type="button">✕ ${TODO[F.todo].t}</button>`:'');
+ $('catx').innerHTML=(F.cat?`<button class="catx" data-x="cat" type="button">✕ ${esc(short(F.cat))}</button>`:'')+(F.cob?`<button class="catx" data-x="cob" type="button">✕ ${cobTxt(F.cob)}</button>`:'')+(F.giro?`<button class="catx" data-x="giro" type="button">✕ Giro ${esc(F.giro)}</button>`:'')+(F.cadx?`<button class="catx" data-x="cadx" type="button">✕ Não entraram no cadastro</button>`:'')+(F.todo&&TODO[F.todo]&&!F.forn?`<button class="catx" data-x="todo" type="button">✕ ${TODO[F.todo].t}</button>`:'')+(F.forn?`<button class="catx" data-x="forn" type="button">✕ ${esc((()=>{const r=allRecords.find(x=>fornKey(x)===F.forn);return r?fornNome(r):'Fornecedor '+F.forn})())} · cobertura baixa</button>`:'');
  const fAct=F.chip!=='all'||!!F.cat||!!F.ent||noCD;   // algum filtro ligado?
- const base=T.length?(()=>true):r=>catOk(r)&&entOk(r)&&passesChip(r)&&cobPass(r,F.cob)&&(!F.d111||is111(r))&&giroOk(r)&&(!F.cadx||cadNao.has(r.produto))&&todoOk(r);   // BUSCANDO: os filtros (chip, categoria, sistemática, F/CD) não escondem nada
+ const base=T.length?(()=>true):r=>catOk(r)&&entOk(r)&&passesChip(r)&&cobPass(r,F.cob)&&(!F.d111||is111(r))&&giroOk(r)&&(!F.cadx||cadNao.has(r.produto))&&todoOk(r)&&(!F.forn||fornKey(r)===F.forn);   // BUSCANDO: os filtros (chip, categoria, sistemática, F/CD) não escondem nada
  let rel=false;
  list=allRecords.filter(r=>base(r)&&(!T.length||(r._s=score(r,T))>0));
  if(T.length>1&&!list.length){rel=true;list=allRecords.filter(r=>base(r)&&(r._s=score(r,T,true))>0)}   // nada tem TODAS as palavras → mostra os que têm parte
@@ -414,7 +426,7 @@ const qGo=debounce(()=>renderList(true),180);
 $('q').oninput=e=>{F.q=e.target.value;qGo()};
 $('q-x').onclick=()=>{$('q').value='';F.q='';renderList(true);$('q').focus()};
 $('sort').onchange=e=>{F.sort=e.target.value;renderList(true)};
-$('catx').onclick=e=>{const b=e.target.closest('.catx');if(!b)return;if(b.dataset.x==='cob')F.cob=null;else if(b.dataset.x==='giro')F.giro='';else if(b.dataset.x==='cadx')F.cadx=false;else if(b.dataset.x==='todo')F.todo='';else F.cat='';renderList(true)};
+$('catx').onclick=e=>{const b=e.target.closest('.catx');if(!b)return;if(b.dataset.x==='cob')F.cob=null;else if(b.dataset.x==='giro')F.giro='';else if(b.dataset.x==='cadx')F.cadx=false;else if(b.dataset.x==='todo')F.todo='';else if(b.dataset.x==='forn'){F.forn='';F.todo=''}else F.cat='';renderList(true)};
 
 /* ── Categoria em árvore: toca num nível com filhos → entra; "Filtrar …" aplica aquele nível; folha aplica direto ── */
 let catPath=[];   // caminho atual, ex.: ['MERCEARIA','LIMPEZA']
@@ -484,7 +496,7 @@ function closeCat(){if(catSheet.opened)catSheet.close()}
 const setCat=v=>{D.cat=v;closeCat()};                                      // escolheu → volta para Filtros com a categoria marcada
 
 /* ═══ FILTROS (uma folha só): Situação · Sistemática · Categoria · F/CD → toca em "Ver N itens" ═══ */
-const nFiltros=()=>(F.chip!=='all')+(F.d111?1:0)+(F.giro?1:0)+(F.cadx?1:0)+(F.todo?1:0)+(!!F.cat)+((F.ent||'')!==ENT0)+(noCD?1:0)+(F.cob?1:0);
+const nFiltros=()=>(F.chip!=='all')+(F.d111?1:0)+(F.giro?1:0)+(F.cadx?1:0)+(F.todo?1:0)+(F.forn?1:0)+(!!F.cat)+((F.ent||'')!==ENT0)+(noCD?1:0)+(F.cob?1:0);
 /* COBERTURA TOTAL maior/menor que N dias — usa o mesmo número arredondado do cartão; "Sem giro" e item sem MDV/cobertura ficam de fora */
 const cobDia=r=>r._ct!==null&&r._k!=='sg'?Math.max(r._ct,0):null;
 const cobOn=c=>!!(c&&(c.op==='lt'||c.op==='gt')&&Number.isFinite(c.d)&&c.d>=0);
