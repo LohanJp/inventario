@@ -379,16 +379,25 @@ if('serviceWorker' in navigator&&/^https?:/.test(location.protocol)){/* ⚡ regi
      Não recarrega na 1ª instalação nem com uma folha/pergunta aberta (aí só avisa). */
   const tinhaSW=!!navigator.serviceWorker.controller;let recarregou=false;
   navigator.serviceWorker.addEventListener('controllerchange',()=>{if(!tinhaSW||recarregou)return;recarregou=true;
-    if(typeof overlayOn==='function'&&overlayOn()){toast('Versão nova do app pronta — feche e abra o app para usar');return}
-    location.reload()});
+    /* espera o app ficar livre: sem folha/pergunta aberta, sem carregamento em andamento (#load) e sem digitação recente */
+    const livre=()=>!(typeof overlayOn==='function'&&overlayOn())&&!$('load').classList.contains('on')&&Date.now()-ultTecla>1500;
+    if(livre())return location.reload();
+    toast('Versão nova do app pronta — ela entra assim que você terminar o que está fazendo');
+    const t=setInterval(()=>{if(livre()){clearInterval(t);try{const pt=$('pf-txt');if(pt)localStorage.setItem(LSPF,pt.value)}catch{}location.reload()}},2000)});
+  let ultTecla=0;addEventListener('input',()=>{ultTecla=Date.now()},true);
   addEventListener('load',()=>idle(()=>navigator.serviceWorker.register('./sw.js').then(reg=>reg.update()).catch(()=>{})))}
 /* versão do app na aba Dados (nome do cache do SW, ex.: v34) — para conferir se o aparelho já pegou a atualização */
-function mostraVersao(){const el=$('app-ver');if(!el||!('caches' in window))return;
-  caches.keys().then(ks=>{const k=ks.filter(x=>x.startsWith('planograma-condor-')).sort().pop();el.textContent=k?'Versão do app: '+k.replace('planograma-condor-','').replace('-f7',''):'Versão do app: —'}).catch(()=>{})}
+/* APP_VER = versão do CÓDIGO que está rodando. ⚠ Mantenha igual ao V do sw.js (o teste de fumaça confere). */
+const APP_VER='v46';
+const verNum=v=>parseInt(String(v||'').replace(/\D/g,''),10)||0;   // 'v9' < 'v45' < 'v100' (comparação numérica, não alfabética)
+function mostraVersao(){const el=$('app-ver');if(el)el.textContent='Versão do app: '+APP_VER}
 addEventListener('load',()=>setTimeout(mostraVersao,3000));
 /* ═══ NOVIDADES (nov/2026): depois de atualizar, o Resumo mostra o que mudou (1 vez por versão). Na 1ª instalação não aparece.
    Ao publicar uma versão com mudança visível, acrescente aqui a chave da versão (a mesma do sw.js, ex.: 'v43'). ═══ */
 const NOVIDADES={
+  v46:['♿ Revisão completa: abas e botões com nome para leitor de tela, foco visível no teclado, contraste melhor e folhas que fecham com Esc',
+       '✓ Na ficha: <b>Concluir no pedido</b> sem precisar deslizar, e <b>Desfazer</b> ao remover do pedido',
+       '🔧 Correções: Ruptura no CD sai sozinha quando aparece trânsito · Limpar nos Filtros tira também os filtros do Resumo · importar backup não apaga anexos mais novos'],
   v45:['🏭 <b>Para fazer hoje</b>: fornecedores da Sist. 20 com cobertura baixa, separados por fornecedor (código e nome)',
        '🎨 Visual revisado: avisos, buscas, botões de ordenar e cores do modo escuro iguais em todas as abas'],
   v44:['⚠ <b>Pedido</b>: ao entrar, a falta no CD já vem escondida — esses itens saem de "Para pedir" e ficam no grupo <b>Falta no CD</b> (o botão mostra/esconde)',
@@ -401,13 +410,16 @@ const NOVIDADES={
        '📈 Linha de <b>tendência da ruptura</b> no Resumo (aparece a partir do 2º dia)',
        '⚠ Aviso quando os <b>relatórios são de dias diferentes</b>, com opção de descartar o Trânsito antigo',
        '💾 O backup e o .json da nuvem agora trazem também <b>Panfleto, Lâmina e Oferta</b>']};
-function mostraNovidades(){const el=$('novban');if(!el||!('caches' in window))return;
-  caches.keys().then(ks=>{const k=ks.filter(x=>x.startsWith('planograma-condor-')).sort().pop();if(!k)return;
-    const v=k.replace('planograma-condor-','').replace('-f7','');let vista='';try{vista=localStorage.getItem('planograma_vista')||''}catch{}
-    if(!vista){try{localStorage.setItem('planograma_vista',v)}catch{}return}                  // 1ª vez neste aparelho: não mostra
-    if(vista===v||!NOVIDADES[v])return;
-    el.hidden=false;el.innerHTML=`<div class="novb"><b>✨ Novidades da versão ${esc(v)}</b><ul>${NOVIDADES[v].map(t=>`<li>${t}</li>`).join('')}</ul><button type="button" class="button button-small button-fill" id="nov-ok">Entendi</button></div>`;
-    $('nov-ok').onclick=()=>{try{localStorage.setItem('planograma_vista',v)}catch{}el.hidden=true;el.innerHTML=''}}).catch(()=>{})}
+function mostraNovidades(){const el=$('novban');if(!el)return;const v=APP_VER;let vista='';
+  try{vista=localStorage.getItem('planograma_vista')||'';
+    if(!vista){const jaUsava=!!localStorage.getItem('planograma_pedido')||Object.keys(localStorage).some(k=>/^planograma_(nocd|pedsort|pfsort|cobnova|limcob)/.test(k));
+      if(!jaUsava){localStorage.setItem('planograma_vista',v);return}                                  // instalou agora: nada de novidades
+      vista='v41'}}catch{return}                                                                          // já usava antes das novidades existirem
+  const vs=Object.keys(NOVIDADES).filter(k=>verNum(k)>verNum(vista)&&verNum(k)<=verNum(v)).sort((a,b)=>verNum(b)-verNum(a)).slice(0,4);
+  if(!vs.length)return;
+  el.hidden=false;el.innerHTML=`<div class="novb" role="dialog" aria-label="Novidades"><b>✨ Novidades${vs.length>1?'':' da versão '+esc(vs[0])}</b>${vs.map(k=>`${vs.length>1?`<small class="novv">Versão ${esc(k)}</small>`:''}<ul>${NOVIDADES[k].map(t=>`<li>${t}</li>`).join('')}</ul>`).join('')}<button type="button" class="button button-small button-fill" id="nov-ok">Entendi</button></div>`;
+  const fecha=()=>{try{localStorage.setItem('planograma_vista',v)}catch{}el.hidden=true;el.innerHTML='';removeEventListener('keydown',esc_)};
+  const esc_=e=>{if(e.key==='Escape')fecha()};addEventListener('keydown',esc_);$('nov-ok').onclick=fecha}
 addEventListener('load',()=>setTimeout(mostraNovidades,3500));
 /* 🔄 Procurar atualização (aba Dados): pergunta ao servidor se há versão nova do app.
    Se houver, o SW novo instala, assume o controle e o app recarrega sozinho (controllerchange acima). */

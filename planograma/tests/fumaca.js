@@ -6,7 +6,12 @@ const RAIZ=path.join(__dirname,'..');
 const TIPOS={'.html':'text/html','.js':'text/javascript','.css':'text/css','.json':'application/json','.webmanifest':'application/manifest+json','.png':'image/png','.svg':'image/svg+xml'};
 const srv=http.createServer((q,r)=>{let f=path.join(RAIZ,decodeURIComponent(q.url.split('?')[0]));if(f.endsWith('/'))f+='index.html';
   if(!f.startsWith(RAIZ)||!fs.existsSync(f)){r.writeHead(404);return r.end()}r.writeHead(200,{'Content-Type':TIPOS[path.extname(f)]||'application/octet-stream'});fs.createReadStream(f).pipe(r)});
-(async()=>{await new Promise(ok=>srv.listen(0,ok));const url=`http://127.0.0.1:${srv.address().port}/index.html`;
+(async()=>{
+  // a versão do código (APP_VER em js/nuvem.js) tem que ser igual à do cache (V em sw.js)
+  const vSw=(/const V='planograma-condor-(v\d+)/.exec(fs.readFileSync(path.join(RAIZ,'sw.js'),'utf8'))||[])[1],vJs=(/const APP_VER='(v\d+)'/.exec(fs.readFileSync(path.join(RAIZ,'js/nuvem.js'),'utf8'))||[])[1];
+  if(!vSw||vSw!==vJs){console.error(`✗ Versões diferentes: sw.js=${vSw} · APP_VER=${vJs} — atualize as duas juntas`);process.exit(1)}
+  console.log('versão '+vSw+' (sw.js = APP_VER)');
+  await new Promise(ok=>srv.listen(0,ok));const url=`http://127.0.0.1:${srv.address().port}/index.html`;
   const br=await chromium.launch(),erros=[];let falhou=false;
   for(const dev of ['Pixel 7','iPhone 14']){
     const ctx=await br.newContext({...devices[dev],serviceWorkers:'block'}),p=await ctx.newPage();

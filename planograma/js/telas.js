@@ -23,17 +23,18 @@ function applyTheme(t){if(t!=='light'&&t!=='dark')t='auto';themePref=t;
   if(t==='auto')delete r.dataset.theme;else r.dataset.theme=t;
   r.classList.toggle('dark',dark);
   document.querySelectorAll('#theme-seg button').forEach(b=>{const on=b.dataset.t===t;b.classList.toggle('on',on);b.classList.toggle('button-active',on)});
-  const m=document.querySelector('meta[name=theme-color]');if(m)m.content=dark?'#121417':'#f4f6f9'}
+  const m=document.querySelector('meta[name=theme-color]');if(m)m.content=dark?'#0e1013':'#f3f5f8'}   // igual ao fundo (--bg)
 try{mqDark.addEventListener('change',()=>{if(themePref==='auto')applyTheme('auto')})}catch{}
 
 /* ═══ FOLHAS QUE SOBEM DE BAIXO (ficha, filtro, categoria) ═══ */
 const shOn=(id,on)=>$(id).classList.toggle('on',on);
-const mkSheet=(id,o)=>app.sheet.create({el:'#'+id,swipeToClose:true,backdrop:true,closeByBackdropClick:true,...(o||{}),
-  on:{open(){shOn(id,true)},closed(){shOn(id,false);
+const mkSheet=(id,o)=>{const el=$(id);if(el){el.setAttribute('role','dialog');el.setAttribute('aria-modal','true')}   // leitor de tela: é uma janela por cima
+ return app.sheet.create({el:'#'+id,swipeToClose:true,backdrop:true,closeByBackdropClick:true,closeOnEscape:true,...(o||{}),
+  on:{open(){shOn(id,true)},opened(){const f=el&&el.querySelector('button:not([disabled]),[href],input,select,textarea,[tabindex="0"]');if(f&&matchMedia('(pointer:fine)').matches)f.focus({preventScroll:true})},closed(){shOn(id,false);
     if(sheetSwap){sheetSwap=false;return}                                   // trocando de folha (Filtros ⇄ Categoria): a entrada do histórico continua
     if(id==='flt-sheet')D=null;
     if(id==='cat-sheet'&&D){openFlt(true);return}                           // fechou a Categoria: volta para a folha de Filtros
-    popOv()}}});
+    popOv()}}})};
 let D=null,sheetSwap=false;   // D = rascunho dos filtros enquanto a folha está aberta (só vale ao tocar em "Ver N itens")
 const fichaSheet=mkSheet('sheet'),fltSheet=mkSheet('flt-sheet'),catSheet=mkSheet('cat-sheet');
 
@@ -118,7 +119,7 @@ function renderHome(){let n=allRecords.length;renderBan();renderSug();
  const K=[['rup','Ruptura','estoque zerado/negativo','var(--cr)'],['crit','Crítico','cobertura total < 7 dias','var(--crit)'],['aten','Atenção','cobertura total de 7 a 15 dias','var(--am)'],['ok','Saudável','cobertura total de 15 dias ou mais','var(--ok)'],['sg','Sem giro',`com estoque, MDV 0 e sem venda há mais de ${SG_DIAS} dias`,'var(--sg)'],['nd','Sem MDV','sem MDV para calcular a cobertura','var(--mu)']];
  if(transitLoaded)K.push(['tr','Em trânsito','itens com entrada a caminho','var(--in)']);   // não é situação: faixa larga embaixo
  const pct=k=>{const v=c[k]/n*100;return v>0&&v<0.1?'&lt;0,1%':f1(v)+'%'};   // % de todos os produtos
- $('kpis').innerHTML=K.map(k=>`<button class="kpi${k[0]==='tr'?' kw':''}" data-k="${k[0]}" style="--c:${k[3]}" title="${k[2]}" type="button"><div class="n num">${f0(c[k[0]])}</div><div class="l"><b><span class="kg">${k[0]==='tr'?'⇢':GLY[k[0]]}</span>${k[1]}</b></div><span class="kr"><i class="kb"><u style="width:${Math.max(2,c[k[0]]/n*100).toFixed(1)}%"></u></i><span class="pc num">${pct(k[0])}</span></span></button>`).join('');
+ $('kpis').innerHTML=K.map(k=>`<button class="kpi${k[0]==='tr'?' kw':''}" data-k="${k[0]}" style="--c:${k[3]}" title="${k[2]}" type="button"><span class="n num">${f0(c[k[0]])}</span><span class="l"><b><span class="kg" aria-hidden="true">${k[0]==='tr'?'⇢':GLY[k[0]]}</span>${k[1]}</b></span><span class="kr"><i class="kb"><u style="width:${Math.max(2,c[k[0]]/n*100).toFixed(1)}%"></u></i><span class="pc num">${pct(k[0])}</span></span></button>`).join('');
  renderCats();renderTodo()}
 /* Categorias com mais alertas — por sistemática. Só a Sist. 1 (CD) tem a divisão "dá para pedir" × "sem no CD" */
 /* ═══ PARA FAZER HOJE (nov/2026): o Resumo mostra o próximo passo, não só o estado. Cada linha só aparece se tiver itens
@@ -144,7 +145,7 @@ function renderTodo(){const el=$('todo');if(!el)return;if(!allRecords.length){el
   const forn={};
   for(const r of allRecords){if(r._sist==='20'){if(TODO.f20.f(r,P)){c.f20++;const k=fornKey(r);(forn[k]=forn[k]||{n:0,t:fornNome(r)}).n++}continue}
     if(!entPad(r))continue;const esc_=hideCD(r,true,noCDTr);for(const k in TODO)if(k!=='f20'&&(k==='enc'||!esc_)&&TODO[k].f(r,P))c[k]++}   // falta no CD fora (é o que a lista mostra)
-  const urg=pedido.filter(x=>!x.done&&x.u==='a'&&!inTransit(x)&&!x.rcd).length;
+  const urg=pedido.filter(x=>!x.done&&x.u==='a'&&!inTransit(x)&&!x.rcd&&!(pedNoCD&&pedFaltaCD(x))).length;   // igual ao que o Pedido mostra
   const FS=Object.entries(forn).sort((a,b)=>b[1].n-a[1].n||a[1].t.localeCompare(b[1].t));
   const L=Object.keys(TODO).filter(k=>c[k]).map(k=>`<li><a class="item-link item-content${k==='f20'?' td-f20'+(todoF20?' open':''):''}" data-todo="${k}"><div class="item-media td-ic">${TODO[k].ic}</div><div class="item-inner"><div class="item-title">${TODO[k].t}${k==='f20'?`<small>${f0(FS.length)} fornecedores · toque para ${todoF20?'fechar':'ver'}</small>`:''}</div><div class="item-after"><b class="num">${f0(c[k])}</b></div></div></a></li>`
     +(k==='f20'&&todoF20?FS.map(([fk,v])=>`<li class="td-sub"><a class="item-link item-content" data-forn="${esc(fk)}"><div class="item-inner"><div class="item-title">${esc(v.t)}</div><div class="item-after"><b class="num">${f0(v.n)}</b></div></div></a></li>`).join(''):''));
@@ -161,7 +162,7 @@ $('todo').onclick=e=>{const fa=e.target.closest('[data-forn]');
    O Resumo mostra a tendência da ruptura com uma linha pequena — dá para ver se o trabalho está fazendo efeito. ═══ */
 const LSH='planograma_hist';let HIST={};try{HIST=JSON.parse(localStorage.getItem(LSH)||'{}')||{}}catch{HIST={}}
 const isoDe=s=>{const d=dmy(s);return d?d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'):''};
-function histGrava(){const k=isoDe(currentMeta&&currentMeta.date);if(!k||!allRecords.length)return;
+function histGrava(){const k=isoDe(currentMeta&&currentMeta.date);if(!k||!allRecords.length||!estoqueLoaded)return;   // sem Cobertura a base de cálculo é outra: não grava
   const conta=R=>{const c={n:R.length,rup:0,crit:0,aten:0,ok:0};for(const r of R)if(r._k in c)c[r._k]++;return c};
   const novo={t:conta(allRecords),s1:conta(allRecords.filter(isCD))},velho=HIST[k];
   if(velho&&JSON.stringify(velho)===JSON.stringify(novo))return;
@@ -229,7 +230,8 @@ function ensureVL(){if(vl)return vl;CH=medeCartao();
   vl=app.virtualList.create({el:$('list'),items:[],height:CH||120,renderItem:r=>card(r),scrollableParentEl:$('s-prod'),setListHeight:true,rowsBefore:10,rowsAfter:5});   // janela menor = cada redesenho troca menos cartões (tranco menor ao rolar rápido)
   return vl}
 window.addEventListener('resize',debounce(ajustaAltura,150));   // girou o celular / mudou o tamanho da letra: mede de novo
-function renderList(reset){const T=toks(F.q);
+function renderList(reset){todoP=null;   // o conjunto do pedido do "Para fazer hoje" é refeito a cada lista
+const T=toks(F.q);
  refreshDep();{const n=nFiltros(),fb=$('flt-btn');$('flt-n').textContent=n;$('flt-n').hidden=!n;fb.classList.toggle('on',!!n);   // botão "Filtros" com quantos estão ligados
   const nm=F.chip==='all'?'':(FLT_SHORT[F.chip]||(CHIPS.find(c=>c[0]===F.chip)||[])[1]||'');fb.title='Filtros'+(nm?' · '+nm:'');fb.setAttribute('aria-label',fb.title)}
  $('sort').value=F.sort;
@@ -331,7 +333,7 @@ $('exp-txt').onclick=()=>{if($('exp-menu'))return fechaBaixar();
    margens mínimas, sem cabeçalho/rodapé — e sem cortar um bloco entre duas páginas. */
 const REL_COR={rup:['E03131','FDECEC'],crit:['E8590C','FFF0E6'],aten:['B7791F','FFF6DB'],ok:['2F9E44','E9F7EC'],nd:['6B7280','F1F3F5'],sg:['7048E8','F1ECFE']};
 const REL_K=['rup','crit','aten','ok','nd','sg'];
-const xEsc=s=>String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const xEsc=s=>String(s??'').replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g,'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 const semTag=h=>{const d=document.createElement('div');d.innerHTML=h;return d.textContent.replace(/\s+/g,' ').trim()};
 function relFiltros(){const p=[];
   if(F.chip!=='all')p.push(FLT_SHORT[F.chip]||(CHIPS.find(c=>c[0]===F.chip)||[])[1]||F.chip);
@@ -406,7 +408,9 @@ async function exportaRelatorio(){
 const LSCAD='planograma_cadconf';let CAD={};try{CAD=JSON.parse(localStorage.getItem(LSCAD)||'{}')||{}}catch{CAD={}}
 let CADOK=0,cadNao=new Set();try{CADOK=+localStorage.getItem('planograma_cadok')||0}catch{}   // CADOK = quantos entraram certo na última conferência · cadNao = códigos que não entraram
 const cadSalva=()=>{try{localStorage.setItem(LSCAD,JSON.stringify(CAD))}catch{}};
-function cadGuarda(L){const ts=Date.now();for(const ln of L){const [p,a,l,f]=ln.split(';');CAD[p]=[+a,+l,+f,ts]}cadSalva();cadConfere()}
+function cadGuarda(L){const ts=Date.now();for(const ln of L){const [p,a,l,f]=ln.split(';'),r=byProd.get(p);
+    if(r&&num(r.altura)===+a&&num(r.largura)===+l&&num(r.prof)===+f)continue;   // medida igual à atual: não é cadastro novo, não entra na conferência
+    CAD[p]=[+a,+l,+f,ts]}cadSalva();cadConfere()}
 const planoTs=()=>{const d=dmy(currentMeta&&currentMeta.date);if(!d)return 0;const h=/(\d\d):(\d\d)/.exec(currentMeta.hora||'');if(h)d.setHours(+h[1],+h[2]);else d.setHours(23,59);return +d};
 function cadConfere(){cadNao=new Set();const pt=planoTs();let ok=0,mud=false;
   if(pt&&allRecords.length)for(const p in CAD){const [a,l,f,ts]=CAD[p];if(pt<=ts)continue;              // planograma é de antes do envio: ainda não dá para saber
@@ -511,11 +515,12 @@ const COBOPS=[['','Qualquer'],['lt','Menor que'],['gt','Maior que']];
 /* só os números (contagens e "Ver N itens") — usado enquanto digita os dias, sem redesenhar a folha */
 function fltCounts(){
   const bs=[...document.querySelectorAll('#flt-list .fs-s')],ch=bs.map(b=>b.dataset.c),n=ch.map(()=>0);let sel=0;
-  for(const r of allRecords){if(!(dCat(r)&&dEnt(r)&&cobPass(r,D.cob)&&(!D.d111||is111(r))&&giroOk(r,D.giro)))continue;   // ⚡ 1 passada: conta todas as situações juntas (mesmo dChip de antes)
+  const ext=r=>D.limpou||(todoOk(r)&&(!F.forn||fornKey(r)===F.forn)&&(!F.cadx||cadNao.has(r.produto)));   // filtros que vêm do Resumo (todo/fornecedor/conferência)
+  for(const r of allRecords){if(!(dCat(r)&&dEnt(r)&&cobPass(r,D.cob)&&(!D.d111||is111(r))&&giroOk(r,D.giro)&&ext(r)))continue;   // ⚡ 1 passada: conta todas as situações juntas (mesmo dChip de antes)
     for(let i=0;i<ch.length;i++)if(dChip(r,ch[i]))n[i]++;if(dChip(r))sel++}
   bs.forEach((b,i)=>{b.querySelector('small').textContent=f0(n[i])});
   $('flt-apply').textContent=`Ver ${f0(sel)} itens`;
-  $('flt-clear').style.visibility=(D.chip!=='all'||D.cat||(D.ent||'')!==ENT0||D.noCD||D.d111||D.giro||cobOn(D.cob))?'':'hidden'}
+  $('flt-clear').style.visibility=(D.chip!=='all'||D.cat||(D.ent||'')!==ENT0||D.noCD||D.d111||D.giro||cobOn(D.cob)||(!D.limpou&&(F.todo||F.forn||F.cadx)))?'':'hidden'}
 function renderFlt(){refreshDep();
   const sit=CHIPS.filter(c=>c[0]!=='trans'||transitLoaded).map(c=>{
     const g=GLY[c[0]]||(c[2]?ic(c[2],13):'');
@@ -538,8 +543,9 @@ function openFlt(keep){if(!keep||!D)D={chip:F.chip,cat:F.cat||'',ent:F.ent||'',g
 function closeFlt(){if(fltSheet.opened)fltSheet.close()}
 $('flt-btn').onclick=()=>openFlt();
 $('flt-sheet-x').onclick=closeFlt;$('flt-cancel').onclick=closeFlt;
-$('flt-clear').onclick=()=>{D={chip:'all',cat:'',ent:ENT0,giro:'',noCD:false,noCDTr:false,d111:false,nova:D.nova,cob:null};renderFlt()};
-$('flt-apply').onclick=()=>{F.chip=D.chip;F.cat=D.cat;F.ent=D.ent;F.giro=D.giro||'';F.cob=cobOn(D.cob)?{op:D.cob.op,d:D.cob.d}:null;noCD=D.noCD;noCDTr=!!D.noCDTr;salvaCD();if(D.lim>0){LIMITE=D.lim;try{localStorage.setItem('planograma_limcob',LIMITE)}catch{}}F.d111=!!D.d111;NOVA=D.nova>0?D.nova:null;try{localStorage.setItem('planograma_cobnova',NOVA||'')}catch{};closeFlt();renderList(true)};
+$('flt-clear').onclick=()=>{D={chip:'all',cat:'',ent:ENT0,giro:'',noCD:false,noCDTr:false,d111:false,nova:D.nova,cob:null,limpou:true};renderFlt()};
+$('flt-apply').onclick=()=>{if(D.limpou){F.todo='';F.forn='';F.cadx=false;todoP=null}   // Limpar também tira os filtros que vieram do Resumo
+  F.chip=D.chip;F.cat=D.cat;F.ent=D.ent;F.giro=D.giro||'';F.cob=cobOn(D.cob)?{op:D.cob.op,d:D.cob.d}:null;noCD=D.noCD;noCDTr=!!D.noCDTr;salvaCD();if(D.lim>0){LIMITE=D.lim;try{localStorage.setItem('planograma_limcob',LIMITE)}catch{}}F.d111=!!D.d111;NOVA=D.nova>0?D.nova:null;try{localStorage.setItem('planograma_cobnova',NOVA||'')}catch{};closeFlt();renderList(true)};
 $('flt-list').onclick=e=>{
   const nq=e.target.closest('[data-nq]');if(nq){D.nova=+nq.dataset.nq;return renderFlt()}
   const ns=e.target.closest('[data-nstep]');if(ns){D.nova=Math.max(0,(D.nova>0?D.nova:0)+ +ns.dataset.nstep)||null;return renderFlt()}
@@ -574,3 +580,22 @@ if(r&&toks(F.q).length)relaxFiltersFor(r);openSheet(r)};
 /* ═══ ANEXOS: botões Encarte · Panfleto · Oferta (usa o axShow do oferta.js) ═══ */
 function axSeg(){document.querySelectorAll('#ax-seg button').forEach(b=>{const on=b.dataset.axs===axCur;b.classList.toggle('button-active',on);b.classList.toggle('on',on)})}
 $('ax-seg').onclick=e=>{const b=e.target.closest('button[data-axs]');if(!b)return;axShow(b.dataset.axs);axSeg()};
+
+/* ═══ TECLADO E LEITOR DE TELA (revisão nov/2026) ═══
+   1) Tudo que é clicável mas não é <button> (links do F7 sem href, cartões de lista, itens do "Para fazer hoje"…) ganha
+      tabindex="0" + role="button" e passa a funcionar com Enter/Espaço.
+   2) Botões de escolha (segmentados, situação, giro, dias, urgência, chips) anunciam se estão ligados (aria-pressed).
+   Um único observador cuida das telas que são redesenhadas pelo JS. */
+const A11Y_CLICK='a.item-link:not([href]),a.link:not([href]),.urg,.pfh,.pfn,#h-ring,.enc-drop,[data-todo],[data-forn]';
+const A11Y_PRESS='.fs-s,.fs-seg button,.ofdays button,#theme-seg .button,#ax-seg .button,#cats-sw .button,[data-u],#pc-dep,#pc-fcd';
+function a11yFix(root){if(!root||!root.querySelectorAll)return;
+  const all=sel=>[...(root.matches&&root.matches(sel)?[root]:[]),...root.querySelectorAll(sel)];
+  for(const e of all(A11Y_CLICK)){if(!e.hasAttribute('tabindex'))e.setAttribute('tabindex','0');if(!e.hasAttribute('role'))e.setAttribute('role','button')}
+  for(const e of all(A11Y_PRESS)){const on=e.classList.contains('on')||e.classList.contains('button-active');if(e.getAttribute('aria-pressed')!==String(on))e.setAttribute('aria-pressed',String(on))}}
+a11yFix(document.body);
+new MutationObserver(ms=>{for(const m of ms){if(m.type==='attributes')a11yFix(m.target);else for(const n of m.addedNodes)if(n.nodeType===1)a11yFix(n)}})
+  .observe(document.body,{subtree:true,childList:true,attributes:true,attributeFilter:['class']});
+document.addEventListener('keydown',e=>{if(e.key!=='Enter'&&e.key!==' ')return;const t=e.target;
+  if(!t||!t.matches||t.matches('button,input,textarea,select,a[href]'))return;
+  if(t.matches('[role=button],[tabindex="0"]')){e.preventDefault();t.click()}});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&$('exp-menu')){fechaBaixar();$('exp-txt').focus()}});

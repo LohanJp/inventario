@@ -9,7 +9,7 @@
   --cr:#d92d20;--crit:#d9620b;--am:#a86a00;--ok:#13843d;--in:#0b63ce;--sg:#7c3aed;
   --cr-bg:#fdecea;--am-bg:#fff5df;--ok-bg:#e8f6ee;--in-bg:#e8f1fc;
   --e10:#0f7f78;--e20:#7a4fc9;--ax-p:#1a7f37;--ax-t:#9a6700;--ax-f:#bc4c00;--ax-e:#0969da;
-  --sw-ok:#1f9d55;--sw-del:#d92d20;--sw-add:#0b63ce;--shadow:0 1px 2px rgba(16,24,40,.05),0 1px 3px rgba(16,24,40,.06);
+  --sw-ok:#15803d;--sw-del:#d92d20;--sw-add:#0b63ce;--shadow:0 1px 2px rgba(16,24,40,.05),0 1px 3px rgba(16,24,40,.06);
   --f7-page-bg-color:var(--bg);
   --f7-card-bg-color:var(--card);
   --f7-list-strong-bg-color:var(--card);
@@ -28,7 +28,9 @@
 html,body{background:var(--bg)}
 .num{font-family:var(--num);font-variant-numeric:tabular-nums}
 .ic{vertical-align:-3px;flex:none}
-[hidden],input[type=file]{display:none!important}
+[hidden]{display:none!important}
+/* campos de arquivo: escondidos só visualmente (antes display:none tirava do teclado e do leitor de tela) */
+input[type=file]{position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip:rect(0 0 0 0)!important;white-space:nowrap!important;border:0!important;opacity:0}
 .wrap{max-width:640px;margin:0 auto;padding:4px 0 24px}
 .empty{text-align:center;color:var(--mu);padding:36px 16px;font-size:14px}.empty .em-ic{font-size:40px;margin-bottom:6px}
 .block-title{color:var(--mu)}
@@ -72,7 +74,7 @@ html,body{background:var(--bg)}
 .urgs>.urg{display:flex;align-items:center;gap:12px;padding:10px 16px 10px 13px;border-left:3px solid var(--c);margin:0 0 0 3px;cursor:pointer}
 .urgs>.urg+.urg{border-top:1px solid var(--bd)}
 .urgs>.urg:active{background:var(--card2)}
-.urgs>.urg .d{flex:1;min-width:0;font-size:14px;font-weight:600;line-height:1.3}.urg .d small{display:block;color:var(--mu);font-size:12.5px;font-weight:400;margin-top:1px}
+.urgs>.urg .d{flex:1;min-width:0;font-size:14px;font-weight:600;line-height:1.3}.urgs>.urg .d small{display:block;color:var(--mu);font-size:12.5px;font-weight:400;margin-top:1px}
 .uc{flex:none;text-align:right;color:var(--c)}.uc b{display:block;font-size:20px;font-weight:800;line-height:1}.uc small{font-size:11px;color:var(--mu)}
 .sug-b{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:8px 16px 16px}
 /* categorias */
@@ -342,7 +344,7 @@ html,body{background:var(--bg)}
 .fs-ln .sw-i{position:absolute;opacity:0;pointer-events:none}
 
 /* ═══ MENU FLUTUANTE (abas de baixo em pílula) — o nome aparece só na aba aberta ═══ */
-#nav.toolbar{position:fixed!important;left:16px!important;right:16px!important;top:auto!important;bottom:calc(14px + env(safe-area-inset-bottom,0px))!important;height:64px!important;width:auto!important;max-width:520px;margin:0 auto!important;border-radius:32px!important;background:#111316!important;box-shadow:0 12px 32px rgba(0,0,0,.28),0 2px 6px rgba(0,0,0,.18)!important;padding:0!important;z-index:5000;backdrop-filter:none!important;-webkit-backdrop-filter:none!important;overflow:visible!important;transform:none!important}
+#nav.toolbar{position:fixed!important;left:calc(16px + env(safe-area-inset-left,0px))!important;right:calc(16px + env(safe-area-inset-right,0px))!important;top:auto!important;bottom:calc(14px + env(safe-area-inset-bottom,0px))!important;height:64px!important;width:auto!important;max-width:520px;margin:0 auto!important;border-radius:32px!important;background:#111316!important;box-shadow:0 12px 32px rgba(0,0,0,.28),0 2px 6px rgba(0,0,0,.18)!important;padding:0!important;z-index:5000;backdrop-filter:none!important;-webkit-backdrop-filter:none!important;overflow:visible!important;transform:none!important}
 #nav.toolbar::before,#nav.toolbar::after,#nav .toolbar-inner::before,#nav .toolbar-inner::after{display:none!important}
 #nav .toolbar-inner{position:absolute!important;inset:0!important;display:flex!important;align-items:center!important;justify-content:space-around!important;padding:0 8px!important;height:100%!important;width:auto!important;background:none!important;box-shadow:none!important;border:0!important;border-radius:32px!important;overflow:visible!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important;margin:0!important;transform:none!important}
 #nav .tab-link{flex:0 0 auto!important;width:auto!important;height:46px!important;min-width:46px;padding:0 13px!important;border-radius:23px!important;display:flex!important;flex-direction:row!important;align-items:center!important;justify-content:center!important;gap:7px;color:#9aa1ab!important;background:none!important;transition:background-color .2s,color .2s;margin:0!important}
@@ -468,7 +470,7 @@ html,body{background:var(--bg)}
 .novb{margin:0;padding:12px 14px;border-radius:16px;background:color-mix(in srgb,var(--f7-theme-color) 10%,var(--card));border:1px solid color-mix(in srgb,var(--f7-theme-color) 35%,transparent);font-size:13.5px;line-height:1.4}
 .novb>b{font-size:15px}.novb ul{margin:6px 0 10px;padding-left:18px}.novb li{margin:3px 0}.novb .button{width:auto}
 #novban{position:fixed;left:16px;right:16px;top:calc(env(safe-area-inset-top,0px) + 70px);z-index:12000;max-width:560px;margin:0 auto;box-shadow:0 12px 40px rgba(0,0,0,.25);border-radius:16px}
-#novban .novb{background:var(--card)}
+#novban .novb{background:var(--card);max-height:min(62vh,520px);overflow:auto;overscroll-behavior:contain}
 
 /* ⚠ falta no CD com estoque ≥ 0 (nov/2026): âmbar, para diferenciar do negativo (vermelho) */
 .neg.cdw{color:var(--am);background:var(--am-bg)}
@@ -496,3 +498,30 @@ html,body{background:var(--bg)}
 .dark .ft.big small,.dark .ft.big i{color:rgba(17,19,22,.75)}
 /* iOS em tela estreita: o subtítulo do topo era cortado dos dois lados */
 .ios #fresh-t{max-width:100%}
+
+.novb .novv{display:block;margin-top:8px;font:700 12px var(--num);color:var(--mu);text-transform:uppercase;letter-spacing:.04em}
+
+/* ═══ ACESSIBILIDADE (revisão nov/2026 — Web Interface Guidelines) ═══ */
+:root{color-scheme:light}html.dark{color-scheme:dark}
+.kpi .n,.kpi .l{display:block}                                                          /* eram <div> dentro de <button> (HTML inválido) → <span> */
+/* foco visível pelo teclado em tudo que é clicável (o F7 tira o contorno dos .button) */
+.button:focus-visible,.link:focus-visible,.tab-link:focus-visible,a.item-link:focus-visible,[role=button]:focus-visible,.chip-btn:focus-visible,.kpi:focus-visible,.urg:focus-visible,.pfh:focus-visible,.pfn:focus-visible,.enc-drop:focus-visible{outline:2px solid var(--f7-theme-color)!important;outline-offset:2px}
+a.item-link:focus-visible{outline-offset:-2px}
+.chip-sel:focus-within,.sw-i:focus-visible+.sw-t,.fs-num:focus-within{outline:2px solid var(--f7-theme-color);outline-offset:2px}
+li:focus-within>label.button,label.button:focus-within,.list li:has(input[type=file]:focus-visible) label.button{outline:2px solid var(--f7-theme-color);outline-offset:2px}
+/* o menu flutuante e os topos fixos não cobrem o que está com foco */
+.tabs>.page-content{scroll-padding-bottom:calc(110px + env(safe-area-inset-bottom,0px))}
+#s-prod{scroll-padding-top:170px}#s-enc{scroll-padding-top:70px}
+/* a rolagem das folhas não "vaza" para a tela de trás */
+.fs-body.page-content,.cs-list{overscroll-behavior:contain}
+/* área de toque maior em alvos pequenos */
+#q-x{position:relative}#q-x::before{content:'';position:absolute;inset:-11px}
+.expb{min-height:32px}
+/* contraste no escuro: texto escuro sobre o azul claro do tema */
+html.dark .ofdays button.on,html.dark .fbd,html.dark .sb-f7 .scanb,html.dark .pr-add{color:#0b1a33}
+html.dark .button-fill{--f7-button-fill-text-color:#0b1a33}
+/* contraste no claro: selo "Urgente" com texto mais escuro */
+html:not(.dark) .ent.urg{color:color-mix(in srgb,var(--crit) 72%,#000)}
+/* menu flutuante respeita as bordas arredondadas/entalhe em paisagem */
+/* movimento reduzido: quem pede no sistema não vê animações */
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{transition-duration:.01ms!important;animation-duration:.01ms!important;animation-iteration-count:1!important;scroll-behavior:auto!important}}

@@ -30,6 +30,7 @@ const srv=http.createServer((q,s)=>{const p=path.join(RAIZ,decodeURIComponent(q.
 (async()=>{
   await new Promise(r=>srv.listen(0,r));const URL=`http://localhost:${srv.address().port}/`;
   const br=await chromium.launch(),ctx=await br.newContext({serviceWorkers:'block',viewport:{width:390,height:844},deviceScaleFactor:2,hasTouch:true,isMobile:true}),p=await ctx.newPage();
+  await ctx.addInitScript(()=>{try{localStorage.setItem('planograma_vista','v999')}catch{}});   // o aviso de Novidades não cobre a tela durante o teste
   const erros=[];let falhas=0;
   p.on('pageerror',e=>erros.push(e.message));p.on('dialog',d=>d.accept());
   await p.route(/firebaseio\.com/,r=>r.abort());                       // nuvem desligada

@@ -80,15 +80,17 @@ function anexosBackup(){const a={of:{},pf:{}};
 /* restaura os anexos de um backup (local ou "Baixar tudo da nuvem") — mesmo caminho de quando chegam da nuvem */
 async function restauraAnexos(a){if(!a||typeof a!=='object')return 0;let n=0;const lv=a.live||{};
   const d=a.enc;
-  if(d&&Array.isArray(d.items)&&d.items.length){
+  const tsDe=s=>{if(typeof s==='number')return s;const m=/(\d\d)\/(\d\d)\/(\d{4}),?\s*(\d\d):(\d\d)/.exec(String(s||''));return m?+new Date(+m[3],m[2]-1,+m[1],+m[4],+m[5]):0};
+  if(d&&Array.isArray(d.items)&&d.items.length&&(!encItems.length||tsDe(d.savedAt)>tsDe(encSavedAt)||confirm('O backup traz um Panfleto ('+(d.name||'sem nome')+'). Substituir o Panfleto que está no aparelho ('+((encSrc&&encSrc.name)||'atual')+')?'))){
     encItems=d.items;encPer=d.per||null;encSavedAt=d.savedAt||new Date().toLocaleString('pt-BR');
     encSrc=d.kind==='xlsx'?{kind:'xlsx',name:d.name,buf:b642ab(d.b64||''),hdr:d.hdr}:{...parseEncCSV(d.text||''),name:d.name,text:d.text||''};
     if(!encPer&&encSrc.per)encPer=encSrc.per;encCloudAt=(lv.enc&&lv.enc.at)||0;encPending=false;await encSaveLocal().catch(()=>{});n++}
   for(let w=0;w<7;w++){
     const o=a.of&&a.of['d'+w];
-    if(o&&Array.isArray(o.items)&&o.items.length){const rec={...o,id:'oferta-d'+w,w,cloudAt:(lv.of&&lv.of['d'+w])||o.cloudAt||0,pending:false,del:false};ofDays[w]=rec;if(idb)await idbSave(rec).catch(()=>{});n++}
+    const loc=ofDays[w],locP=pfDays[w],novo=(b,l)=>!l||l.del||!(l.at>0)||(b.at||0)>l.at;   // só troca se o aparelho está vazio ou o do backup é mais novo
+    if(o&&Array.isArray(o.items)&&o.items.length&&novo(o,loc&&loc.items&&loc.items.length?loc:null)){const rec={...o,id:'oferta-d'+w,w,cloudAt:(lv.of&&lv.of['d'+w])||o.cloudAt||0,pending:false,del:false};ofDays[w]=rec;if(idb)await idbSave(rec).catch(()=>{});n++}
     const p=a.pf&&a.pf['d'+w];
-    if(p&&typeof p.text==='string'&&p.text.trim()){const rec={...p,id:'panfleto-d'+w,w,cloudAt:(lv.pf&&lv.pf['d'+w])||p.cloudAt||0,pending:false,del:false};pfDays[w]=rec;if(idb)await idbSave(rec).catch(()=>{});n++}}
+    if(p&&typeof p.text==='string'&&p.text.trim()&&novo(p,locP&&locP.text&&locP.text.trim()?locP:null)){const rec={...p,id:'panfleto-d'+w,w,cloudAt:(lv.pf&&lv.pf['d'+w])||p.cloudAt||0,pending:false,del:false};pfDays[w]=rec;if(idb)await idbSave(rec).catch(()=>{});n++}}
   if(n){try{ofApplyDay()}catch{}try{pfApplyDay(false)}catch{}}
   return n}
 /* arquivo "Baixar tudo da nuvem" (app:'planograma-nuvem') → mesmo formato do backup, para abrir pelo botão do Planograma */

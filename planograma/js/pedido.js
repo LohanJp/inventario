@@ -51,7 +51,10 @@ const dropOpen={pnd:true,trd:false,fcd:false,rcd:false,dnd:false};   // lembra q
 const LSHINT='planograma_dica_gestos';let hintN=0,hintCounted=false;try{hintN=+localStorage.getItem(LSHINT)||0}catch{}
 const hintHtml=()=>hintN<=3?'<div class="hint"><span>👉 Deslize → concluir · 👈 excluir · segure o cartão = 🔎 depósito</span><button type="button" id="hint-x" aria-label="Fechar dica">✕</button></div>':'';
 const CHEV='<svg class="ch" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>';
-function renderPed(){updBadge();renderBan();   // badge e faixa acompanham a chave de falta no CD
+function renderPed(){
+ /* ⛔ Ruptura no CD acaba quando o CD manda: apareceu trânsito → tira a marca (o item segue o caminho normal: trânsito → para pedir/concluir) */
+ {let mud=false;for(const x of pedido)if(x.rcd&&!x.done&&inTransit(x)){delete x.rcd;mud=true}if(mud)savePed()}
+ updBadge();renderBan();   // badge e faixa acompanham a chave de falta no CD
  if(pedido.length&&!hintCounted){hintCounted=true;hintN++;try{localStorage.setItem(LSHINT,hintN)}catch{}}   // conta 1 vez por abertura do app
  const act0=pedido.filter(x=>!x.done&&!inTransit(x)&&!x.rcd),fcd=pedNoCD?act0.filter(pedFaltaCD):[],act=pedNoCD?act0.filter(x=>!pedFaltaCD(x)):act0,nfcd=act0.filter(pedFaltaCD).length,
    tr=pedido.filter(x=>!x.done&&inTransit(x)),rc=pedido.filter(x=>!x.done&&!inTransit(x)&&x.rcd),dn=pedido.filter(x=>x.done),n=act.length;
@@ -155,12 +158,18 @@ function openSheet(r){if(!r)return;const kv=([a,b])=>`<div class="kv"><span>${a}
  $('sheetc').innerHTML=`<div class="fh" style="--c:${COLOR[r._k]}"><div class="fh-top"><div class="fh-t"><span class="pill">${GLY[r._k]} ${LBL[r._k]}</span><h3>${esc(r.descricao)}</h3><div class="ln">${esc(r.produto)}${r.automacao?' · EAN '+esc(r.automacao):''} · ${esc(short(r.categoria))}</div></div><button class="shx" id="sh-x" type="button" aria-label="Fechar">✕</button></div>
  <div class="fts">${tiles}</div></div>
  <div class="shb page-content">${alerta}${rows.map(kv).join('')}<details class="more"><summary>Mais detalhes ${CHEV}</summary>${mais.map(kv).join('')}</details></div>
- <div class="shf"><button class="button button-fill button-large" id="sh-ped" type="button">${inPed(r.produto)?'🛒 Remover do pedido':'🛒 Adicionar ao pedido'+(r._sg>0?' · '+f0(r._sg)+' un':'')}</button>
+ <div class="shf">${pedItem(r.produto)?`<div class="grid grid-cols-2 grid-gap"><button class="button button-fill button-large" id="sh-conc" type="button">✓ Concluir no pedido</button><button class="button button-tonal button-large" id="sh-ped" type="button">🗑 Remover do pedido</button></div>`
+   :`<button class="button button-fill button-large" id="sh-ped" type="button">${inPed(r.produto)?'🛒 Remover do pedido':'🛒 Adicionar ao pedido'+(r._sg>0?' · '+f0(r._sg)+' un':'')}</button>`}
   ${(()=>{const x=pedItem(r.produto)||{};return `<div class="shu"><span>Urgência</span><div class="fs-seg shu-seg">${[['a','🔥 Urgente'],['','Normal'],['b','⬇ Baixa']].map(([v,l])=>`<button type="button" data-u="${v}" class="${(x.u||'')===v?'on':''}">${l}</button>`).join('')}</div></div>
   <button class="button button-tonal button-large shr${x.rcd?' on':''}" id="sh-rcd" type="button">${x.rcd?'↩ Tirar de Ruptura no CD':'⛔ Ruptura no CD'}</button>`})()}
   <div class="grid grid-cols-2 grid-gap"><button class="button button-tonal button-large" id="sh-dep" type="button">${depMap[r.produto]?'🔎 Tirar do depósito':'🔎 Depósito'}</button><button class="button button-tonal button-large" id="sh-done" type="button">${r._d?'↩ Desfazer feito':'✓ Marcar feito'}</button></div></div>`;
  shOn('sheet',true);if(!fichaSheet.opened)fichaSheet.open();pushOv('sheet');$('sh-x').onclick=closeSheet;
- $('sh-ped').onclick=()=>{if(inPed(r.produto)){pedido=pedido.filter(x=>x.p!==r.produto);savePed();toast('Removido do pedido')}else{addS(r);toast(addMsg(r))}closeSheet();go(document.querySelector('section.on').id.slice(2))};
+ const aba=()=>go(document.querySelector('section.on').id.slice(2));
+ /* remover pela ficha agora tem "Desfazer" (volta o item inteiro: quantidade, urgência, ruptura no CD) */
+ $('sh-ped').onclick=()=>{if(inPed(r.produto)){const tirados=pedido.map((x,i)=>[i,x]).filter(([,x])=>x.p===r.produto);pedido=pedido.filter(x=>x.p!==r.produto);savePed();
+     toastUndo('Removido do pedido',()=>{for(const [i,x] of tirados)pedido.splice(Math.min(i,pedido.length),0,x);savePed();aba()})}else{addS(r);toast(addMsg(r))}closeSheet();aba()};
+ /* ✓ concluir sem precisar deslizar (o mesmo que deslizar → no Pedido) */
+ if($('sh-conc'))$('sh-conc').onclick=()=>{const x=pedItem(r.produto);if(x){x.done=true;savePed();toastUndo('Concluído no pedido',()=>{x.done=false;savePed();aba()})}closeSheet();aba()};
  document.querySelectorAll('#sheetc [data-u]').forEach(b=>b.onclick=()=>{const u=b.dataset.u,novo=!inPed(r.produto)&&u;setUrg(r,u);
    toast(u?`${URG[u].t}${novo?' · adicionado ao pedido':''}`:'Urgência normal');closeSheet();go(document.querySelector('section.on').id.slice(2))});
  $('sh-rcd').onclick=()=>{const v=!(pedItem(r.produto)||{}).rcd,novo=v&&!inPed(r.produto);setRcd(r,v);
