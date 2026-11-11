@@ -144,34 +144,54 @@ async function applyLive(c){
 const tsMeta=m=>{if(!m||!m.date)return 0;const [d,mo,y]=String(m.date).split('/'),[h,mi,se]=String(m.hora||'00:00:00').split(':');return new Date(+y,+mo-1,+d,+h||0,+mi||0,+se||0).getTime()||0};   // data + HORA do relatório
 const metaTxt=m=>m&&m.date?m.date+(m.hora?' '+String(m.hora).slice(0,5):''):'?';
 /* Cobertura na nuvem: baixa só se a versão for diferente da guardada no aparelho — e nunca sobrescreve um relatório local MAIS NOVO */
+/* MESMO RELATÓRIO? (nov/2026) Além do carimbo do envio, compara a IDENTIDADE do relatório: data + hora de emissão + nº de itens.
+   Antes, se o carimbo guardado no aparelho se perdia (carregar um arquivo depois de enviar, envio parcial…), o app baixava
+   os ~5 MB de novo A CADA ABERTURA mesmo sendo o mesmo relatório do dia. */
+const mesmoRel=(a,b,na,nb)=>!!(a&&b&&a.date&&a.date===b.date&&String(a.hora||'')===String(b.hora||'')&&(!nb||na===nb));
 async function syncEstoque(c,ei){
-  if(!ei||!ei.exportedAt)return;
+  if(!ei||!ei.exportedAt)return false;
   const loc=idb?await idbGet('estoque').catch(()=>null):null;
-  if(loc&&loc.map&&loc.cloudAt===ei.exportedAt){                     // já tenho esta versão
+  if(loc&&loc.map&&(loc.cloudAt===ei.exportedAt||mesmoRel(loc.meta,ei.meta,Object.keys(loc.map).length,ei.total))){   // já tenho esta versão
     if(!estoqueLoaded){estoqueMap=loc.map;estoqueLoaded=true;estoqueMeta=loc.meta||ei.meta||null}
-    return}
-  if(estoqueLoaded&&tsMeta(estoqueMeta)>tsMeta(ei.meta))return;     // o do aparelho é mais novo: mantém (envie para a nuvem se quiser)
+    if(loc.cloudAt!==ei.exportedAt){loc.cloudAt=ei.exportedAt;idbSave(loc).catch(()=>{})}
+    return false}
+  if(estoqueLoaded&&tsMeta(estoqueMeta)>tsMeta(ei.meta))return false;     // o do aparelho é mais novo: mantém (envie para a nuvem se quiser)
   const data=await cf(cu(c,'estq/data')).then(r=>r.json()).catch(()=>null);
-  if(!data||typeof data!=='object')return;
+  if(!data||typeof data!=='object')return false;
   estoqueMap=data;estoqueLoaded=true;estoqueMeta=ei.meta||null;
   const nome=ei.name||'nuvem',quando=new Date().toLocaleString('pt-BR');
   if(idb)idbSave({id:'estoque',map:estoqueMap,meta:estoqueMeta,name:nome,savedAt:quando,cloudAt:ei.exportedAt}).catch(()=>{});
   $('cob-status').innerHTML=`<b>✓ ${esc(nome)}</b> · ${f0(Object.keys(estoqueMap).length)} produtos · da nuvem`;
+  return true;
 }
-async function loadFromCloud(c){
-  busy(true,'Baixando da nuvem…');
+/* fundo=true (abertura do app): o app JÁ abriu com o relatório guardado no aparelho; aqui só confere, sem travar a tela,
+   se a nuvem tem relatório NOVO. Se for o mesmo, baixa apenas o que é em tempo real (pedido, concluídos, depósito, anexos). */
+async function loadFromCloud(c,fundo){
+  if(!fundo)busy(true,'Conferindo a nuvem…');
   let cerr='';                                                       // 1º erro de rede/Firebase (antes ficava escondido e o app só abria os dados locais)
   const gj=p=>cf(cu(c,p)).then(r=>r.json()).catch(e=>{cerr=cerr||e.message;return null});
   try{
     const [pi,ti,ei]=await Promise.all([gj('plano/info'),gj('trans/info'),gj('estq/info')]);
     cloudErr=cerr;cloudBadge();                                       // erro de conexão vira o ícone ⚠ no topo (antes era um aviso no meio da tela)
-    if(!pi||!pi.total){busy(false);return false}
-    await syncEstoque(c,ei);                                         // antes de montar a tela, para o MDV/cobertura já virem certos
+    if(!pi||!pi.total){if(!fundo)busy(false);return false}
+    const sigAntes=fundo?liveSig():'';
+    const estqNovo=await syncEstoque(c,ei);                          // antes de montar a tela, para o MDV/cobertura já virem certos
     const loc=idb?await idbGet('current').catch(()=>null):null;   // já tem esta versão neste aparelho?
-    if(loc&&loc.records&&loc.cloudAt===pi.exportedAt&&(!ti||loc.transAt===ti.exportedAt)){
-      await loadRecords(loc.records,loc.meta||{},loc.name,loc.transit||null,false,loc.savedAt);
-      await applyLive(c);renderHome();busy(false);return true;   // ⚡ applyLive já roda o derive()
+    const pm=pi.meta||{filial:pi.filial,date:pi.date,hora:''};
+    const temLoc=!!(loc&&loc.records),
+      planoIgual=temLoc&&(loc.cloudAt===pi.exportedAt||mesmoRel(loc.meta,pm,loc.records.length,pi.total)),
+      transIgual=temLoc&&(!ti||loc.transAt===ti.exportedAt||(loc.transit&&mesmoRel(transitMeta,ti.meta,Object.keys(loc.transit).length,ti.total))),
+      locNovo=temLoc&&!planoIgual&&tsMeta(loc.meta)>tsMeta(pm);      // o relatório do aparelho é MAIS NOVO que o da nuvem (ainda não enviado): não troca pelo antigo
+    if(temLoc&&((planoIgual&&transIgual)||locNovo)){
+      if(!locNovo&&(loc.cloudAt!==pi.exportedAt||(ti&&loc.transAt!==ti.exportedAt))){loc.cloudAt=pi.exportedAt;if(ti)loc.transAt=ti.exportedAt;idbSave(loc).catch(()=>{})}   // guarda o carimbo: da próxima vez nem compara
+      if(!fundo)await loadRecords(loc.records,loc.meta||{},loc.name,loc.transit||null,false,loc.savedAt);
+      await applyLive(c);   // ⚡ applyLive já roda o derive()
+      if(!fundo){renderHome();busy(false)}
+      else if(estqNovo||liveSig()!==sigAntes){updBadge();const s=document.querySelector('section.on'),id=s?s.id.slice(2):'';   // só redesenha se algo mudou de verdade
+        schedule(()=>{renderFresh();if(id==='home')renderHome();else if(id==='prod')renderList(false);else if(id==='ped')renderPed();else if(id==='data')renderData()})}
+      return true;
     }
+    busy(true,fundo?'Relatório novo na nuvem — baixando…':'Baixando o relatório da nuvem…');
 
     const [records,transData]=await Promise.all([gj('plano/records'),ti?gj('trans/data'):Promise.resolve(null)]);
     if(!Array.isArray(records)||!records.length){busy(false);toast('⚠ Não consegui baixar o planograma'+(cerr?': '+cerr:' (resposta vazia da nuvem)'));return false}
@@ -374,20 +394,20 @@ async function boot(){
     pfDayBar();if(axCur==='pan'&&curTab==='enc')pfOpen();
   }catch{}
   const c=code();cloudBadge();
-  if(c){
-    // Tenta carregar da nuvem primeiro
-    const loaded=await loadFromCloud(c);
-    if(loaded){startSSE(c);return}
-  }
-  // Fallback: dados locais (IDB)
+  /* ABERTURA (nov/2026): abre NA HORA com o relatório guardado no aparelho e confere a nuvem em segundo plano.
+     Antes toda abertura mostrava "Baixando da nuvem…" e esperava a internet responder, mesmo com o relatório do dia já no aparelho. */
   try{
     const s=await idbGet('current');
     if(s&&s.records){
       await loadRecords(s.records,s.meta||{},s.name,s.transit||null,false,s.savedAt);
-      if(c)startSSE(c); // inicia SSE mesmo com dado local, para receber updates
+      if(c){startSSE(c);loadFromCloud(c,true).catch(()=>{})}   // só baixa relatório se a nuvem tiver um NOVO; pedido/concluídos vêm sempre
       return;
     }
   }catch{}
+  if(c){   // aparelho sem relatório guardado: baixa da nuvem
+    const loaded=await loadFromCloud(c);
+    if(loaded){startSSE(c);return}
+  }
   if(estoqueLoaded&&Object.values(estoqueMap).some(x=>x&&x.d)){derive();go('home');return}   // só a Cobertura carregada: já dá para usar
   go('data'); // sem dados em lugar nenhum → vai direto para aba Dados
 }
@@ -409,13 +429,14 @@ if('serviceWorker' in navigator&&/^https?:/.test(location.protocol)){/* ⚡ regi
   addEventListener('load',()=>idle(()=>navigator.serviceWorker.register('./sw.js').then(reg=>reg.update()).catch(()=>{})))}
 /* versão do app na aba Dados (nome do cache do SW, ex.: v34) — para conferir se o aparelho já pegou a atualização */
 /* APP_VER = versão do CÓDIGO que está rodando. ⚠ Mantenha igual ao V do sw.js (o teste de fumaça confere). */
-const APP_VER='v48';
+const APP_VER='v49';
 const verNum=v=>parseInt(String(v||'').replace(/\D/g,''),10)||0;   // 'v9' < 'v45' < 'v100' (comparação numérica, não alfabética)
 function mostraVersao(){const el=$('app-ver');if(el)el.textContent='Versão do app: '+APP_VER}
 addEventListener('load',()=>setTimeout(mostraVersao,3000));
 /* ═══ NOVIDADES (nov/2026): depois de atualizar, o Resumo mostra o que mudou (1 vez por versão). Na 1ª instalação não aparece.
    Ao publicar uma versão com mudança visível, acrescente aqui a chave da versão (a mesma do sw.js, ex.: 'v43'). ═══ */
 const NOVIDADES={
+  v49:['⚡ <b>Abre na hora</b>: o app abre com o relatório guardado no aparelho e só baixa da nuvem se houver relatório novo. Pedido, concluídos, depósito e Ruptura no CD continuam sincronizando em tempo real'],
   v48:['📊 <b>Situação dos produtos por sistemática</b>: botões Todas · Sist. 1 · Sist. 10 · Sist. 20 no Resumo (como nas categorias)',
        '💡 A <b>Sugestão de pedido</b> do Resumo agora é sempre só da Sistemática 1'],
   v47:['📊 <b>Resumo sem a falta no CD</b>: os números não contam mais os itens que o CD não tem (aparecem à parte, em “+ N em falta no CD”) — e o número tocado bate com a lista',
