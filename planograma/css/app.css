@@ -553,3 +553,6 @@ html:not(.dark) .ent.urg{color:color-mix(in srgb,var(--crit) 72%,#000)}
   .fs-s{padding:7px 6px}.fs-s.on{padding:6px 5px}.fs-s b{font-size:12px;gap:3px}
   #fresh-t{font-size:11.5px}
 }
+
+/* v48: seletor de sistemática da Situação dos produtos */
+.kpsw{margin:0 var(--f7-card-margin-horizontal,16px) 10px}

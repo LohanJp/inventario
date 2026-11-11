@@ -409,13 +409,15 @@ if('serviceWorker' in navigator&&/^https?:/.test(location.protocol)){/* ⚡ regi
   addEventListener('load',()=>idle(()=>navigator.serviceWorker.register('./sw.js').then(reg=>reg.update()).catch(()=>{})))}
 /* versão do app na aba Dados (nome do cache do SW, ex.: v34) — para conferir se o aparelho já pegou a atualização */
 /* APP_VER = versão do CÓDIGO que está rodando. ⚠ Mantenha igual ao V do sw.js (o teste de fumaça confere). */
-const APP_VER='v47';
+const APP_VER='v48';
 const verNum=v=>parseInt(String(v||'').replace(/\D/g,''),10)||0;   // 'v9' < 'v45' < 'v100' (comparação numérica, não alfabética)
 function mostraVersao(){const el=$('app-ver');if(el)el.textContent='Versão do app: '+APP_VER}
 addEventListener('load',()=>setTimeout(mostraVersao,3000));
 /* ═══ NOVIDADES (nov/2026): depois de atualizar, o Resumo mostra o que mudou (1 vez por versão). Na 1ª instalação não aparece.
    Ao publicar uma versão com mudança visível, acrescente aqui a chave da versão (a mesma do sw.js, ex.: 'v43'). ═══ */
 const NOVIDADES={
+  v48:['📊 <b>Situação dos produtos por sistemática</b>: botões Todas · Sist. 1 · Sist. 10 · Sist. 20 no Resumo (como nas categorias)',
+       '💡 A <b>Sugestão de pedido</b> do Resumo agora é sempre só da Sistemática 1'],
   v47:['📊 <b>Resumo sem a falta no CD</b>: os números não contam mais os itens que o CD não tem (aparecem à parte, em “+ N em falta no CD”) — e o número tocado bate com a lista',
        '🔧 Correções: “feitos” de ontem não voltam mais ao carregar o planograma do dia · item que vende pouco (MDV 0) sai do Crítico e vai para Sem MDV · selos e medidas não cortam mais no cartão',
        '💡 Sugestão também para item sem capacidade cadastrada (15 dias de venda) e aviso quando a caixa fechada passa da capacidade',

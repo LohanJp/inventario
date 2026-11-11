@@ -34,7 +34,7 @@ const srv=http.createServer((q,r)=>{let f=path.join(RAIZ,decodeURIComponent(q.ur
     const passos=[['Resumo',()=>go('home')],['Produtos',()=>go('prod')],['Ficha',()=>openSheet(list[0])],['Fecha ficha',()=>closeSheet()],
       ['Filtros',()=>{openFlt();renderFlt()}],['Ordenar',()=>{F.sort='dim';renderList(true)}],['1x1 nova cobertura',()=>{F.d111=true;NOVA=15;renderList(true)}],
       ['Pedido',()=>{allRecords.slice(0,15).forEach(r=>addPed(r,'',true));savePed();go('ped')}],['Urgência',()=>{setUrg(allRecords[3],'a');setRcd(allRecords[4],true);renderPed()}],
-      ['Anexos',()=>go('enc')],['Dados',()=>go('data')],['Resumo de novo',()=>{hS1=true;go('home')}]];
+      ['Anexos',()=>go('enc')],['Dados',()=>go('data')],['Resumo de novo',()=>{setHSist('20');setHSist('');go('home')}]];
     for(const [nome,fn] of passos){try{await p.evaluate(fn);await p.waitForTimeout(250)}catch(e){erros.push(`${dev} · ${nome}: ${e.message.split('\n')[0]}`)}}
     const ok=await p.evaluate(()=>typeof app!=='undefined'&&!!document.querySelector('#nav'));
     if(!ok){erros.push(`${dev}: o app não montou a tela`)}

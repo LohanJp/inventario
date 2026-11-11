@@ -125,7 +125,7 @@ $('plist').onclick=e=>{if(Date.now()<swBlock)return;
   if(e.target.closest('#hint-x')){hintN=99;try{localStorage.setItem(LSHINT,hintN)}catch{}renderPed();return}
   if(e.target.closest('#pc-dep')){depOnly=!depOnly;renderPed();return}
   if(e.target.closest('#pc-fcd')){pedNoCD=!pedNoCD;renderPed();updBadge();return}
-  if(e.target.closest('#pe-sug')){const P=pedSet(),f=allRecords.filter(r=>r._sg>0&&!r._d&&!P.has(r.produto));if(!f.length)return toast('Nenhuma sugestão no momento');f.forEach(r=>addPed(r,'',true));savePed();renderPed();return toast(f0(f.length)+' produtos adicionados')}
+  if(e.target.closest('#pe-sug')){const P=pedSet(),f=allRecords.filter(r=>r._sg>0&&!r._d&&isCD(r)&&!P.has(r.produto));if(!f.length)return toast('Nenhuma sugestão no momento');f.forEach(r=>addPed(r,'',true));savePed();renderPed();return toast(f0(f.length)+' produtos adicionados')}
   if(e.target.closest('#pe-scan'))return $('b-scan2').click();
 const c=e.target.closest('.pedc,.pi');if(!c||(c.classList.contains('pedc')&&!e.target.closest('.infb')))return;openSheet(byProd.get(c.dataset.p))};
 $('pq').oninput=debounce(e=>{const T=toks(e.target.value);if(!T.length||T.join('').length<2){$('pres').innerHTML='';return}

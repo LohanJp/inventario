@@ -102,18 +102,23 @@ function ring(c,n){let off=25,s='';
     s+=`<circle r="15.9155" cx="18" cy="18" fill="none" stroke="${COLOR[k]}" stroke-width="4.2" stroke-dasharray="${p.toFixed(3)} ${(100-p).toFixed(3)}" stroke-dashoffset="${off.toFixed(3)}"/>`;off-=p}
   const ok=Math.round((c.ok||0)/n*100);
   return `<svg viewBox="0 0 36 36" width="92" height="92" role="img" aria-label="${ok}% saudável"><circle r="15.9155" cx="18" cy="18" fill="none" stroke="var(--trk)" stroke-width="4.2"/>${s}<text x="18" y="18.2" text-anchor="middle" class="rg-n">${ok}%</text><text x="18" y="23.6" text-anchor="middle" class="rg-l">saudável</text></svg>`}
-let hS1=false;   // Resumo só da Sistemática 1 (liga/desliga tocando no círculo)
+/* Resumo por SISTEMÁTICA (nov/2026): '' = todas · '1' · '10' · '20' — botões acima da "Situação dos produtos" (iguais aos das categorias).
+   Vale para o círculo, os números e a lista que abre ao tocar. Lembrado no aparelho; começa na Sist. 1. Tocar no círculo alterna Todas ↔ Sist. 1. */
+let hSist='1';try{const v=localStorage.getItem('planograma_hsist');if(v===''||v==='10'||v==='20')hSist=v}catch{}
+const hSistOk=r=>!hSist||(hSist==='1'?isCD(r):r._sist===hSist);
+const setHSist=v=>{hSist=v;try{localStorage.setItem('planograma_hsist',v)}catch{}renderHome()};
 function renderHome(){let n=allRecords.length;renderBan();renderSug();
  $('home-dados').hidden=!n;$('h-load').hidden=!!n;                            // sem dados: só o cartão com o botão de carregar (nada de "—" soltos)
  if(!n){$('h-fil').textContent='Nenhum relatório carregado';$('h-sub').textContent='Carregue o relatório de Planograma para ver a situação dos produtos e a sugestão de pedido.';$('h-ring').innerHTML='';$('h-health').innerHTML='';$('kpis').innerHTML='';$('cats').innerHTML='';return}
  /* O Resumo NÃO conta a falta no CD (Sist. 1, menos de 1 caixa, sem trânsito): pedir não resolve e só inflava os números.
     Mesmo critério da lista com "Esconder falta no CD" ligado → o número tocado bate com a lista que abre. */
- const R0=hS1?allRecords.filter(isCD):allRecords,R=R0.filter(r=>!hideCD(r,true,noCDTr)),nF=R0.length-R.length,N=n;n=R.length||1;   // toque no círculo: só a Sistemática 1 (isCD, igual ao filtro "1")
+ const R0=hSist?allRecords.filter(hSistOk):allRecords,R=R0.filter(r=>!hideCD(r,true,noCDTr)),nF=R0.length-R.length,N=n;n=R.length||1;   // toque no círculo: só a Sistemática 1 (isCD, igual ao filtro "1")
  const c={rup:0,crit:0,aten:0,ok:0,nd:0,sg:0,tr:0};
  for(const r of R){c[r._k]++;if(r._t>0)c.tr++}
  $('h-fil').textContent=(currentMeta.filial||'Filial').replace(/ - Produtos.*/i,'');
- $('h-sub').innerHTML=(hS1?`<b class="s1t">Só Sistemática 1</b> · ${f0(R.length)} produtos`:`${esc(currentMeta.date||'')} ${esc(currentMeta.hora||'')} · ${f0(R.length)} produtos`)+(nF?`<button type="button" class="lnk h-fcd" id="h-fcd">+ ${f0(nF)} em falta no CD (fora da conta) ›</button>`:'');
- $('h-ring').classList.toggle('s1',hS1);$('h-ring').title=hS1?'Toque para voltar a todos os produtos':'Toque para ver só a Sistemática 1';
+ $('h-sub').innerHTML=(hSist?`<b class="s1t">Só Sistemática ${esc(hSist)}</b> · ${f0(R.length)} produtos`:`${esc(currentMeta.date||'')} ${esc(currentMeta.hora||'')} · ${f0(R.length)} produtos`)+(nF?`<button type="button" class="lnk h-fcd" id="h-fcd">+ ${f0(nF)} em falta no CD (fora da conta) ›</button>`:'');
+ $('h-ring').classList.toggle('s1',!!hSist);$('h-ring').title=hSist?'Toque para voltar a todos os produtos':'Toque para ver só a Sistemática 1';
+ document.querySelectorAll('#kpis-sw button').forEach(b=>{const on=b.dataset.hs===hSist;b.classList.toggle('on',on);b.classList.toggle('button-active',on)});
  $('h-ring').innerHTML=ring(c,n);
  const pc=k=>Math.round(c[k]/n*1000)/10;
  $('h-health').innerHTML=`<span style="--c:var(--cr)">${GLY.rup} ${f1(pc('rup'))}% ruptura</span><span style="--c:var(--crit)">${GLY.crit} ${f1(pc('crit'))}% crítico</span>`;
@@ -173,7 +178,7 @@ function histGrava(){const k=isoDe(currentMeta&&currentMeta.date);if(!k||!allRec
   if(velho&&JSON.stringify(velho)===JSON.stringify(novo))return;
   HIST[k]=novo;const ks=Object.keys(HIST).sort();while(ks.length>60)delete HIST[ks.shift()];
   try{localStorage.setItem(LSH,JSON.stringify(HIST))}catch{}}
-function renderHist(){const el=$('h-hist');if(!el)return;const ks=Object.keys(HIST).sort().slice(-30),m=hS1?'s1':'t';
+function renderHist(){const el=$('h-hist');if(!el)return;const ks=Object.keys(HIST).sort().slice(-30),m=hSist==='1'?'s1':hSist?'':'t';if(!m){el.innerHTML='';return}
   const pts=ks.map(k=>{const c=HIST[k][m];return c&&c.n?{k,v:c.rup/c.n*100}:null}).filter(Boolean);
   if(pts.length<2){el.innerHTML='';return}
   const a=pts[pts.length-2],b=pts[pts.length-1],d=b.v-a.v,dd=k=>k.slice(8,10)+'/'+k.slice(5,7);
@@ -192,27 +197,28 @@ function renderCats(){
   $('cats').innerHTML=rows.length?leg+rows.map(([k,v])=>`<button class="bar" data-c="${esc(k)}" type="button"><span class="r"><span>${esc(short(k))}</span><b class="num"><span style="color:var(--am)">${v.y}</span></b></span><i><u style="width:${(v.y+v.cd)/mx*100}%">${v.y?`<s style="flex:${v.y}"></s>`:''}${v.cd?`<s class="cd" style="flex:${v.cd}"></s>`:''}</u></i></button>`).join(''):'<div class="empty">Sem alertas nessa sistemática</div>'}
 $('h-load').onclick=()=>$('f-plano').click();                                // Resumo vazio: abre direto o seletor do relatório
 $('cats-sw').onclick=e=>{const b=e.target.closest('button');if(!b||b.dataset.cs===catSist)return;catSist=b.dataset.cs;try{localStorage.setItem('planograma_catsist',catSist)}catch{};renderCats()};
-$('h-ring').onclick=()=>{if(!allRecords.length)return;hS1=!hS1;renderHome()};
+$('h-ring').onclick=()=>{if(!allRecords.length)return;setHSist(hSist?'':'1')};
+$('kpis-sw').onclick=e=>{const b=e.target.closest('button');if(!b||b.dataset.hs===hSist)return;setHSist(b.dataset.hs)};
 $('h-ring').setAttribute('role','button');
-$('h-sub').onclick=e=>{if(!e.target.closest('#h-fcd'))return;F={chip:'cd',cat:'',q:'',sort:'cobt',ent:hS1?'1':''};$('q').value='';go('prod')};
-$('kpis').onclick=e=>{const b=e.target.closest('.kpi');if(!b)return;const k=b.dataset.k;if(!noCD){noCD=true;salvaCD()}F={chip:k==='tr'?'trans':k,cat:'',q:'',sort:k==='ok'?'nome':'cobt',ent:hS1?'1':''};$('q').value='';go('prod')};   // a lista bate com o número tocado (todas ou só Sist. 1)
+$('h-sub').onclick=e=>{if(!e.target.closest('#h-fcd'))return;F={chip:'cd',cat:'',q:'',sort:'cobt',ent:hSist};$('q').value='';go('prod')};
+$('kpis').onclick=e=>{const b=e.target.closest('.kpi');if(!b)return;const k=b.dataset.k;if(!noCD){noCD=true;salvaCD()}F={chip:k==='tr'?'trans':k,cat:'',q:'',sort:k==='ok'?'nome':'cobt',ent:hSist};$('q').value='';go('prod')};   // a lista bate com o número tocado (todas ou só Sist. 1)
 $('cats').onclick=e=>{const b=e.target.closest('.bar');if(!b)return;if(!noCD){noCD=true;salvaCD()}F={chip:'alert',cat:b.dataset.c,q:'',sort:'cobt',ent:catSist};$('q').value='';go('prod')};
 function renderSug(){const el=$('sug');
   if(!allRecords.length){el.innerHTML='<div class="empty">—</div>';return}
   if(!estoqueLoaded){el.innerHTML='<div class="empty" style="padding:18px 12px">Carregue o relatório de <b>Cobertura</b> na aba <b>Dados</b> para ver a sugestão de pedido e as coberturas reais.</div>';return}
-  const all=allRecords.filter(r=>r._sg>0&&!r._d),neg=allRecords.filter(r=>cdRisk(r)&&r._m&&!r._d).length;   // neg: venderiam, mas estão em falta no CD (estoque < 1 caixa, sem trânsito)
+  const all=allRecords.filter(r=>r._sg>0&&!r._d&&isCD(r)),neg=allRecords.filter(r=>cdRisk(r)&&r._m&&!r._d).length;   // neg: venderiam, mas estão em falta no CD (estoque < 1 caixa, sem trânsito)
   const cd=neg?`<div class="sg-cd">${ic('warn',14)} ${f0(neg)} itens em falta no CD ficam fora da sugestão · <button class="lnk" id="sg-cd" type="button">ver</button></div>`:'';
   if(!all.length){el.innerHTML=`<div class="empty" style="padding:20px 12px 8px">Nada para repor agora 🎉</div><div style="padding:0 14px 14px">${cd}</div>`;return}
   const fresh=all.filter(r=>!inPed(r.produto));
   const top=[...fresh].sort((a,b)=>Math.max(a._ct,0)-Math.max(b._ct,0)||b._m-a._m).slice(0,5);   // mais perto de zerar primeiro
-  el.innerHTML=`<div class="sug-h"><div class="sug-n">${ic('bulb',20)}<b>${f0(all.length)}</b><span>produtos para repor</span></div><div class="ln">Repor até a capacidade do planograma, em caixas fechadas (sem capacidade cadastrada: ${SUG_ALVO} dias de venda) · cobertura total &lt; ${SUG_DIAS} dias${transitLoaded?'':' · <b style="color:var(--am)">carregue o Trânsito para descontar o que já está a caminho</b>'}</div>${cd}</div>`
+  el.innerHTML=`<div class="sug-h"><div class="sug-n">${ic('bulb',20)}<b>${f0(all.length)}</b><span>produtos para repor</span></div><div class="ln">Só Sistemática 1 · repor até a capacidade do planograma, em caixas fechadas · cobertura total &lt; ${SUG_DIAS} dias${transitLoaded?'':' · <b style="color:var(--am)">carregue o Trânsito para descontar o que já está a caminho</b>'}</div>${cd}</div>`
    +(top.length?'<div class="urgs">'+top.map(r=>`<div class="urg" data-p="${esc(r.produto)}" style="--c:${COLOR[r._k]}"><div class="d">${esc(r.descricao)}<small>estoque ${f0(r._e)}${r._t>0?' · trânsito '+f0(r._t):''} · MDV ${f1(r._m)}</small></div><div class="uc"><b class="num">${f0(Math.max(r._ct,0))}</b><small>dias</small></div></div>`).join('')+'</div>':'<div class="empty" style="padding:14px">Todas as sugestões já estão no pedido ✓</div>')
    +`<div class="sug-b"><button class="button button-tonal button-large" id="sg-all" type="button">Ver todas (${f0(all.length)})</button><button class="button button-fill button-large" id="sg-add" type="button"${fresh.length?'':' disabled'}>🛒 Adicionar ${f0(fresh.length)}</button></div>`}
 $('sug').onclick=e=>{
   const u=e.target.closest('.urg');if(u)return openSheet(byProd.get(u.dataset.p));
-  if(e.target.closest('#sg-cd')){F={chip:'cd',cat:'',q:'',sort:'cobt'};$('q').value='';return go('prod')}
-  if(e.target.closest('#sg-all')){F={chip:'sug',cat:'',q:'',sort:'cobt'};$('q').value='';return go('prod')}
-  if(e.target.closest('#sg-add')){const P=pedSet(),f=allRecords.filter(r=>r._sg>0&&!r._d&&!P.has(r.produto));if(!f.length)return;
+  if(e.target.closest('#sg-cd')){F={chip:'cd',cat:'',q:'',sort:'cobt',ent:'1'};$('q').value='';return go('prod')}
+  if(e.target.closest('#sg-all')){F={chip:'sug',cat:'',q:'',sort:'cobt',ent:'1'};$('q').value='';return go('prod')}
+  if(e.target.closest('#sg-add')){const P=pedSet(),f=allRecords.filter(r=>r._sg>0&&!r._d&&isCD(r)&&!P.has(r.produto));if(!f.length)return;
     if(!confirm(`Adicionar ${f0(f.length)} produtos ao pedido?`))return;
     f.forEach(r=>addPed(r,'',true));savePed();renderSug();toast(f0(f.length)+' produtos adicionados ao pedido')}};
 
@@ -598,7 +604,7 @@ $('ax-seg').onclick=e=>{const b=e.target.closest('button[data-axs]');if(!b)retur
    2) Botões de escolha (segmentados, situação, giro, dias, urgência, chips) anunciam se estão ligados (aria-pressed).
    Um único observador cuida das telas que são redesenhadas pelo JS. */
 const A11Y_CLICK='a.item-link:not([href]),a.link:not([href]),.urg,.pfh,.pfn,#h-ring,.enc-drop,[data-todo],[data-forn]';
-const A11Y_PRESS='.fs-s,.fs-seg button,.ofdays button,#theme-seg .button,#ax-seg .button,#cats-sw .button,[data-u],#pc-dep,#pc-fcd';
+const A11Y_PRESS='.fs-s,.fs-seg button,.ofdays button,#theme-seg .button,#ax-seg .button,#cats-sw .button,#kpis-sw .button,[data-u],#pc-dep,#pc-fcd';
 function a11yFix(root){if(!root||!root.querySelectorAll)return;
   const all=sel=>[...(root.matches&&root.matches(sel)?[root]:[]),...root.querySelectorAll(sel)];
   for(const e of all(A11Y_CLICK)){if(!e.hasAttribute('tabindex'))e.setAttribute('tabindex','0');if(!e.hasAttribute('role'))e.setAttribute('role','button')}
