@@ -61,17 +61,20 @@ const key=r=>r.automacao||r.produto;
 /* ═══ SUGESTÃO DE PEDIDO ═══ repor até a CAPACIDADE do planograma (alt × larg × prof), descontando estoque e trânsito,
    em caixas fechadas (Emb). Só entra item com MDV e cobertura total < SUG_DIAS dias.
    Item em falta no CD (estoque < 1 caixa — zero ou negativo — e SEM trânsito) → fora da sugestão (pedir não resolve); aparece no filtro "Falta no CD". Com trânsito o CD tem o item → não é falta. */
-const SUG_DIAS=7;
+const SUG_DIAS=7,SUG_ALVO=15;   // SUG_ALVO: item SEM capacidade cadastrada (fora do planograma) → sugere estoque para 15 dias de venda
 const capOf=r=>{const c=num(r.total);return c>0?c:num(r.altura)*num(r.largura)*num(r.prof)};
 function sugQty(r){
   if(cdRisk(r)||!r._m||r._ct===null||r._ct>=SUG_DIAS)return 0;   // em falta no CD (estoque < 1 caixa, sem trânsito) → pedir não resolve   // cobertura TOTAL (estoque + trânsito) ÷ MDV
-  const need=capOf(r)-(Math.max(r._e,0)+r._t);if(need<=0)return 0;
+  const cap=capOf(r),tem=Math.max(r._e,0)+r._t;
+  const need=cap>0?cap-tem:Math.ceil(SUG_ALVO*r._m)-tem;if(need<=0)return 0;   // sem capacidade: completa SUG_ALVO dias de venda (nov/2026)
   const emb=num(r.emb)||1;return Math.ceil(need/emb)*emb}
+const sugDias=r=>r._sg>0&&!(capOf(r)>0);                                                      // sugestão calculada por dias de venda (sem capacidade)
+const sugPassa=r=>{const c=capOf(r);return r._sg>0&&c>0?Math.max(0,r._sg+Math.max(r._e,0)+r._t-c):0};   // quanto a caixa fechada passa da capacidade
 /* possível falta no CD: estoque menor que 1 caixa (inclui zero e negativo) — mesmo critério do Encarte */
 const isCD=r=>!r._sist||r._sist==='1';   // falta no CD só vale p/ sistemática 1; sist 10/20 negativo = só falta pedir ao fornecedor
 const cdRisk=r=>isCD(r)&&!(r._t>0)&&r._e<(num(r.emb)||1);   // com trânsito o CD TEM o item (só não chegou) → não é falta no CD
 let noCD=false;try{noCD=localStorage.getItem('planograma_nocd')==='1'}catch{}
-/* 40% da capacidade do planograma (alt × larg × prof), em unidades e em caixas (Emb) */
+/* sugestão em unidades e em caixas (Emb) */
 const sugCx=r=>{const e=num(r.emb)||1;return e>1?`${f0(r._sg/e)} cx de ${f0(e)}`:''};
 const sugTxt=r=>`${f0(r._sg)} un`+(num(r.emb)>1?` · ${sugCx(r)}`:'');
 const addMsg=r=>transitLoaded&&r&&r._t>0?'Adicionado — aguardando chegada do trânsito':'Adicionado ao pedido';
@@ -113,7 +116,7 @@ function derive(){mergeRecs();byProd=new Map(allRecords.map(r=>[r.produto,r]));f
  // relatório arredonda: 0 com estoque na loja → usa estoque (un) ÷ MDV com casas decimais
  if(r._c===0&&r._e>0&&r._m>0)r._c=r._e/r._m;
  // COBERTURA TOTAL = (estoque + trânsito) ÷ MDV — com casas decimais. A cobertura do relatório (r._c) continua separada.
- r._ct=r._m>0?(Math.max(r._e,0)+(r._t>0?r._t:0))/r._m:r._c;   // sem MDV: só a cobertura do relatório (se ela for 999 = sem cálculo → situação "Sem MDV")
+ r._ct=r._m>0?(Math.max(r._e,0)+(r._t>0?r._t:0))/r._m:(r._c===0&&r._e>0?null:r._c);   // MDV 0 com estoque e "cobertura 0" no relatório = vende pouco → "Sem MDV" (antes virava Crítico · 0 dias)   // sem MDV: só a cobertura do relatório (se ela for 999 = sem cálculo → situação "Sem MDV")
  // ARREDONDA as duas coberturas para dias inteiros: ,5 ou mais sobe · abaixo de ,5 desce (6,4 → 6 · 6,5 → 7). A situação usa o número arredondado, igual ao que aparece na tela.
  const rnd=v=>v===null?null:Math.round(v);r._c=rnd(r._c);r._ct=rnd(r._ct);
  // SITUAÇÃO pela cobertura TOTAL: item com mercadoria a caminho não fica "Crítico" à toa. Ruptura continua sendo estoque ≤ 0 (gôndola vazia agora).

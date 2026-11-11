@@ -3,7 +3,7 @@
    - Não mantém conexões abertas: Firebase (SSE/REST) passa direto, sem interceptação.
    - Ao mudar o app, troque o número da versão (V) para renovar o cache.
    - Versão Framework7: a biblioteca (lib/framework7) é guardada junto com o app → abre sem internet, sem CDN. */
-const V='planograma-condor-v46-f7';  // único por app — mude só o sufixo ao atualizar
+const V='planograma-condor-v47-f7';  // único por app — mude só o sufixo ao atualizar
 const JS=['leitura','estado','base','telas','encarte','oferta','pedido','arquivos','nuvem'].map(n=>'./js/'+n+'.js');
 const LIB=['./lib/framework7/framework7.min.js','./lib/framework7/framework7.min.css','./lib/jszip/jszip.min.js'];   // JSZip: relatório e exportar Panfleto sem internet
 const SHELL=['./','./index.html','./css/app.css',...LIB,...JS,'./manifest.webmanifest','./icon-192.png','./icon-512.png','./icon-maskable-512.png','./apple-touch-icon.png'];
@@ -15,8 +15,11 @@ const CDN=['cdn.sheetjs.com','cdnjs.cloudflare.com'];
    e a versão anterior continua valendo (antes: guardava pela metade e o app quebrava sem internet). Só os ícones podem faltar.
    cache:'reload' = baixa os arquivos novos de verdade (sem misturar com versão antiga guardada no cache HTTP do navegador) */
 const OPCIONAL=u=>/\.png$|manifest/.test(u);
+/* leitor de planilhas (.xlsx) já fica guardado na instalação — antes só depois do 1º uso com internet. Se a rede falhar aqui, tudo bem: guarda no 1º uso. */
+const PRE=['https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js'];
 self.addEventListener('install',e=>e.waitUntil(
-  caches.open(V).then(c=>Promise.all(SHELL.map(u=>{const p=c.add(new Request(u,{cache:'reload'}));return OPCIONAL(u)?p.catch(()=>{}):p})))
+  caches.open(V).then(c=>Promise.all([...SHELL.map(u=>{const p=c.add(new Request(u,{cache:'reload'}));return OPCIONAL(u)?p.catch(()=>{}):p}),
+      ...PRE.map(u=>fetch(new Request(u,{mode:'no-cors'})).then(res=>c.put(u,res)).catch(()=>{}))]))
     .then(()=>self.skipWaiting(),err=>caches.delete(V).then(()=>{throw err}))));
 
 self.addEventListener('activate',e=>e.waitUntil(

@@ -106,11 +106,13 @@ let hS1=false;   // Resumo só da Sistemática 1 (liga/desliga tocando no círcu
 function renderHome(){let n=allRecords.length;renderBan();renderSug();
  $('home-dados').hidden=!n;$('h-load').hidden=!!n;                            // sem dados: só o cartão com o botão de carregar (nada de "—" soltos)
  if(!n){$('h-fil').textContent='Nenhum relatório carregado';$('h-sub').textContent='Carregue o relatório de Planograma para ver a situação dos produtos e a sugestão de pedido.';$('h-ring').innerHTML='';$('h-health').innerHTML='';$('kpis').innerHTML='';$('cats').innerHTML='';return}
- const R=hS1?allRecords.filter(isCD):allRecords,N=n;n=R.length||1;   // toque no círculo: só a Sistemática 1 (isCD, igual ao filtro "1")
+ /* O Resumo NÃO conta a falta no CD (Sist. 1, menos de 1 caixa, sem trânsito): pedir não resolve e só inflava os números.
+    Mesmo critério da lista com "Esconder falta no CD" ligado → o número tocado bate com a lista que abre. */
+ const R0=hS1?allRecords.filter(isCD):allRecords,R=R0.filter(r=>!hideCD(r,true,noCDTr)),nF=R0.length-R.length,N=n;n=R.length||1;   // toque no círculo: só a Sistemática 1 (isCD, igual ao filtro "1")
  const c={rup:0,crit:0,aten:0,ok:0,nd:0,sg:0,tr:0};
  for(const r of R){c[r._k]++;if(r._t>0)c.tr++}
  $('h-fil').textContent=(currentMeta.filial||'Filial').replace(/ - Produtos.*/i,'');
- $('h-sub').innerHTML=hS1?`<b class="s1t">Só Sistemática 1</b> · ${f0(R.length)} de ${f0(N)} produtos`:`${esc(currentMeta.date||'')} ${esc(currentMeta.hora||'')} · ${f0(N)} produtos`;
+ $('h-sub').innerHTML=(hS1?`<b class="s1t">Só Sistemática 1</b> · ${f0(R.length)} produtos`:`${esc(currentMeta.date||'')} ${esc(currentMeta.hora||'')} · ${f0(R.length)} produtos`)+(nF?`<button type="button" class="lnk h-fcd" id="h-fcd">+ ${f0(nF)} em falta no CD (fora da conta) ›</button>`:'');
  $('h-ring').classList.toggle('s1',hS1);$('h-ring').title=hS1?'Toque para voltar a todos os produtos':'Toque para ver só a Sistemática 1';
  $('h-ring').innerHTML=ring(c,n);
  const pc=k=>Math.round(c[k]/n*1000)/10;
@@ -127,7 +129,6 @@ function renderHome(){let n=allRecords.length;renderBan();renderSug();
 const hojeISO=()=>ofISO(new Date());
 const axHoje=(e,t)=>!!e&&(t==='pf'?(e.pf.includes(hojeISO())||(e.pfp||[]).some(p=>hojeISO()>=p.ini&&hojeISO()<=p.fim)):e[t].includes(hojeISO()));
 const TODO={
-  rupf:{ic:'🔴',t:'Rupturas sem trânsito e fora do pedido',f:(r,P)=>r._k==='rup'&&!(transitLoaded&&r._t>0)&&!P.has(r.produto)&&!r._d},
   critf:{ic:'🟠',t:'Críticos sem trânsito e fora do pedido',f:(r,P)=>r._k==='crit'&&!(transitLoaded&&r._t>0)&&!P.has(r.produto)&&!r._d},
   enc:{ic:'📋',t:'Panfleto com falta no CD',f:r=>{const e=axBuild().get(r.produto);return !!(e&&e.enc)&&cdRisk(r)&&!(encPer&&encPer.fim&&hojeISO()>encPer.fim)}},
   lam:{ic:'🧾',t:'Lâmina de hoje com ruptura ou crítico',f:r=>(r._k==='rup'||r._k==='crit')&&axHoje(axBuild().get(r.produto),'pf')},
@@ -149,22 +150,26 @@ function renderTodo(){const el=$('todo');if(!el)return;if(!allRecords.length){el
   const FS=Object.entries(forn).sort((a,b)=>b[1].n-a[1].n||a[1].t.localeCompare(b[1].t));
   const L=Object.keys(TODO).filter(k=>c[k]).map(k=>`<li><a class="item-link item-content${k==='f20'?' td-f20'+(todoF20?' open':''):''}" data-todo="${k}"><div class="item-media td-ic">${TODO[k].ic}</div><div class="item-inner"><div class="item-title">${TODO[k].t}${k==='f20'?`<small>${f0(FS.length)} fornecedores · toque para ${todoF20?'fechar':'ver'}</small>`:''}</div><div class="item-after"><b class="num">${f0(c[k])}</b></div></div></a></li>`
     +(k==='f20'&&todoF20?FS.map(([fk,v])=>`<li class="td-sub"><a class="item-link item-content" data-forn="${esc(fk)}"><div class="item-inner"><div class="item-title">${esc(v.t)}</div><div class="item-after"><b class="num">${f0(v.n)}</b></div></div></a></li>`).join(''):''));
+  const rv=rcdVelhos();
+  if(rv)L.push(`<li><a class="item-link item-content" data-todo="rcdv"><div class="item-media td-ic">⛔</div><div class="item-inner"><div class="item-title">Ruptura no CD há ${RCD_VELHO}+ dias (reconferir)</div><div class="item-after"><b class="num">${f0(rv)}</b></div></div></a></li>`);
   if(urg)L.unshift(`<li><a class="item-link item-content" data-todo="urg"><div class="item-media td-ic">🔥</div><div class="item-inner"><div class="item-title">Urgentes no pedido para pedir</div><div class="item-after"><b class="num">${f0(urg)}</b></div></div></a></li>`);
   el.innerHTML=L.length?`<div class="block-title">Para fazer hoje</div><div class="list list-strong inset list-dividers todo-l"><ul>${L.join('')}</ul></div>`:''}
 $('todo').onclick=e=>{const fa=e.target.closest('[data-forn]');
   if(fa){todoP=null;F={chip:'all',cat:'',q:'',sort:'cobt',ent:'20',todo:'f20',forn:fa.dataset.forn};$('q').value='';return go('prod')}
   const a=e.target.closest('[data-todo]');if(!a)return;const k=a.dataset.todo;
   if(k==='urg')return go('ped');
+  if(k==='rcdv'){dropOpen.rcd=true;return go('ped')}
   if(k==='f20'){todoF20=!todoF20;return renderTodo()}
   todoP=null;if(!noCD){noCD=true;salvaCD()}   // do Resumo sempre com "Esconder falta no CD" ligado
   F={chip:k==='enc'?'cd':'all',cat:'',q:'',sort:'cobt',ent:ENT0,todo:k};$('q').value='';go('prod')};
 /* ═══ HISTÓRICO LEVE (nov/2026): 1 resumo por data de planograma (% por situação, todos e só Sist. 1), últimos 60 dias.
    O Resumo mostra a tendência da ruptura com uma linha pequena — dá para ver se o trabalho está fazendo efeito. ═══ */
-const LSH='planograma_hist';let HIST={};try{HIST=JSON.parse(localStorage.getItem(LSH)||'{}')||{}}catch{HIST={}}
+const LSH='planograma_hist2';try{localStorage.removeItem('planograma_hist')}catch{}   // hist2: a conta mudou (sem falta no CD) — recomeça para não comparar com a conta antiga
+let HIST={};try{HIST=JSON.parse(localStorage.getItem(LSH)||'{}')||{}}catch{HIST={}}
 const isoDe=s=>{const d=dmy(s);return d?d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'):''};
 function histGrava(){const k=isoDe(currentMeta&&currentMeta.date);if(!k||!allRecords.length||!estoqueLoaded)return;   // sem Cobertura a base de cálculo é outra: não grava
   const conta=R=>{const c={n:R.length,rup:0,crit:0,aten:0,ok:0};for(const r of R)if(r._k in c)c[r._k]++;return c};
-  const novo={t:conta(allRecords),s1:conta(allRecords.filter(isCD))},velho=HIST[k];
+  const base=allRecords.filter(r=>!hideCD(r,true,noCDTr)),novo={t:conta(base),s1:conta(base.filter(isCD))},velho=HIST[k];
   if(velho&&JSON.stringify(velho)===JSON.stringify(novo))return;
   HIST[k]=novo;const ks=Object.keys(HIST).sort();while(ks.length>60)delete HIST[ks.shift()];
   try{localStorage.setItem(LSH,JSON.stringify(HIST))}catch{}}
@@ -181,16 +186,17 @@ function renderCats(){
   document.querySelectorAll('#cats-sw button').forEach(b=>{const on=b.dataset.cs===catSist;b.classList.toggle('on',on);b.classList.toggle('button-active',on)});
   if(!allRecords.length){$('cats').innerHTML='<div class="empty">—</div>';return}
   const one=catSist==='1',g={};
-  for(const r of allRecords)if((r._k==='rup'||r._k==='crit')&&(one?isCD(r):r._sist===catSist)){const o=g[r.categoria]||(g[r.categoria]={y:0,cd:0});one&&cdRisk(r)?o.cd++:o.y++}   // y = alertas (dá para pedir) · cd = sem no CD (só Sist. 1)
+  for(const r of allRecords)if((r._k==='rup'||r._k==='crit')&&(one?isCD(r):r._sist===catSist)){if(hideCD(r,true,noCDTr))continue;const o=g[r.categoria]||(g[r.categoria]={y:0,cd:0});o.y++}   // falta no CD fica fora da conta (igual ao resto do Resumo)
   const rows=Object.entries(g).sort((a,b)=>b[1].y+b[1].cd-a[1].y-a[1].cd).slice(0,6).sort((a,b)=>b[1].y-a[1].y||a[1].cd-b[1].cd),mx=Math.max(...rows.map(([,v])=>v.y+v.cd),1);   // 6 com mais alertas
-  const leg=one?`<div class="leg"><span><i style="background:var(--am)"></i>dá para pedir</span><span><i style="background:var(--cr)"></i>sem no CD</span></div>`:'';
-  $('cats').innerHTML=rows.length?leg+rows.map(([k,v])=>`<button class="bar" data-c="${esc(k)}" type="button"><span class="r"><span>${esc(short(k))}</span><b class="num">${one?`<span style="color:var(--am)">${v.y}</span> · <span style="color:var(--cr)">${v.cd}</span>`:`<span style="color:var(--am)">${v.y}</span>`}</b></span><i><u style="width:${(v.y+v.cd)/mx*100}%">${v.y?`<s style="flex:${v.y}"></s>`:''}${v.cd?`<s class="cd" style="flex:${v.cd}"></s>`:''}</u></i></button>`).join(''):'<div class="empty">Sem alertas nessa sistemática</div>'}
+  const leg='';
+  $('cats').innerHTML=rows.length?leg+rows.map(([k,v])=>`<button class="bar" data-c="${esc(k)}" type="button"><span class="r"><span>${esc(short(k))}</span><b class="num"><span style="color:var(--am)">${v.y}</span></b></span><i><u style="width:${(v.y+v.cd)/mx*100}%">${v.y?`<s style="flex:${v.y}"></s>`:''}${v.cd?`<s class="cd" style="flex:${v.cd}"></s>`:''}</u></i></button>`).join(''):'<div class="empty">Sem alertas nessa sistemática</div>'}
 $('h-load').onclick=()=>$('f-plano').click();                                // Resumo vazio: abre direto o seletor do relatório
 $('cats-sw').onclick=e=>{const b=e.target.closest('button');if(!b||b.dataset.cs===catSist)return;catSist=b.dataset.cs;try{localStorage.setItem('planograma_catsist',catSist)}catch{};renderCats()};
 $('h-ring').onclick=()=>{if(!allRecords.length)return;hS1=!hS1;renderHome()};
 $('h-ring').setAttribute('role','button');
-$('kpis').onclick=e=>{const b=e.target.closest('.kpi');if(!b)return;const k=b.dataset.k;F={chip:k==='tr'?'trans':k,cat:'',q:'',sort:k==='ok'?'nome':'cobt',ent:hS1?'1':''};$('q').value='';go('prod')};   // a lista bate com o número tocado (todas ou só Sist. 1)
-$('cats').onclick=e=>{const b=e.target.closest('.bar');if(!b)return;F={chip:'alert',cat:b.dataset.c,q:'',sort:'cobt',ent:catSist};$('q').value='';go('prod')};
+$('h-sub').onclick=e=>{if(!e.target.closest('#h-fcd'))return;F={chip:'cd',cat:'',q:'',sort:'cobt',ent:hS1?'1':''};$('q').value='';go('prod')};
+$('kpis').onclick=e=>{const b=e.target.closest('.kpi');if(!b)return;const k=b.dataset.k;if(!noCD){noCD=true;salvaCD()}F={chip:k==='tr'?'trans':k,cat:'',q:'',sort:k==='ok'?'nome':'cobt',ent:hS1?'1':''};$('q').value='';go('prod')};   // a lista bate com o número tocado (todas ou só Sist. 1)
+$('cats').onclick=e=>{const b=e.target.closest('.bar');if(!b)return;if(!noCD){noCD=true;salvaCD()}F={chip:'alert',cat:b.dataset.c,q:'',sort:'cobt',ent:catSist};$('q').value='';go('prod')};
 function renderSug(){const el=$('sug');
   if(!allRecords.length){el.innerHTML='<div class="empty">—</div>';return}
   if(!estoqueLoaded){el.innerHTML='<div class="empty" style="padding:18px 12px">Carregue o relatório de <b>Cobertura</b> na aba <b>Dados</b> para ver a sugestão de pedido e as coberturas reais.</div>';return}
@@ -199,7 +205,7 @@ function renderSug(){const el=$('sug');
   if(!all.length){el.innerHTML=`<div class="empty" style="padding:20px 12px 8px">Nada para repor agora 🎉</div><div style="padding:0 14px 14px">${cd}</div>`;return}
   const fresh=all.filter(r=>!inPed(r.produto));
   const top=[...fresh].sort((a,b)=>Math.max(a._ct,0)-Math.max(b._ct,0)||b._m-a._m).slice(0,5);   // mais perto de zerar primeiro
-  el.innerHTML=`<div class="sug-h"><div class="sug-n">${ic('bulb',20)}<b>${f0(all.length)}</b><span>produtos para repor</span></div><div class="ln">Repor até a capacidade do planograma, em caixas fechadas · cobertura total &lt; ${SUG_DIAS} dias${transitLoaded?'':' · <b style="color:var(--am)">carregue o Trânsito para descontar o que já está a caminho</b>'}</div>${cd}</div>`
+  el.innerHTML=`<div class="sug-h"><div class="sug-n">${ic('bulb',20)}<b>${f0(all.length)}</b><span>produtos para repor</span></div><div class="ln">Repor até a capacidade do planograma, em caixas fechadas (sem capacidade cadastrada: ${SUG_ALVO} dias de venda) · cobertura total &lt; ${SUG_DIAS} dias${transitLoaded?'':' · <b style="color:var(--am)">carregue o Trânsito para descontar o que já está a caminho</b>'}</div>${cd}</div>`
    +(top.length?'<div class="urgs">'+top.map(r=>`<div class="urg" data-p="${esc(r.produto)}" style="--c:${COLOR[r._k]}"><div class="d">${esc(r.descricao)}<small>estoque ${f0(r._e)}${r._t>0?' · trânsito '+f0(r._t):''} · MDV ${f1(r._m)}</small></div><div class="uc"><b class="num">${f0(Math.max(r._ct,0))}</b><small>dias</small></div></div>`).join('')+'</div>':'<div class="empty" style="padding:14px">Todas as sugestões já estão no pedido ✓</div>')
    +`<div class="sug-b"><button class="button button-tonal button-large" id="sg-all" type="button">Ver todas (${f0(all.length)})</button><button class="button button-fill button-large" id="sg-add" type="button"${fresh.length?'':' disabled'}>🛒 Adicionar ${f0(fresh.length)}</button></div>`}
 $('sug').onclick=e=>{
@@ -235,9 +241,10 @@ const T=toks(F.q);
  refreshDep();{const n=nFiltros(),fb=$('flt-btn');$('flt-n').textContent=n;$('flt-n').hidden=!n;fb.classList.toggle('on',!!n);   // botão "Filtros" com quantos estão ligados
   const nm=F.chip==='all'?'':(FLT_SHORT[F.chip]||(CHIPS.find(c=>c[0]===F.chip)||[])[1]||'');fb.title='Filtros'+(nm?' · '+nm:'');fb.setAttribute('aria-label',fb.title)}
  $('sort').value=F.sort;
- $('catx').innerHTML=(F.cat?`<button class="catx" data-x="cat" type="button">✕ ${esc(short(F.cat))}</button>`:'')+(F.cob?`<button class="catx" data-x="cob" type="button">✕ ${cobTxt(F.cob)}</button>`:'')+(F.giro?`<button class="catx" data-x="giro" type="button">✕ Giro ${esc(F.giro)}</button>`:'')+(F.cadx?`<button class="catx" data-x="cadx" type="button">✕ Não entraram no cadastro</button>`:'')+(F.todo&&TODO[F.todo]&&!F.forn?`<button class="catx" data-x="todo" type="button">✕ ${TODO[F.todo].t}</button>`:'')+(F.forn?`<button class="catx" data-x="forn" type="button">✕ ${esc((()=>{const r=allRecords.find(x=>fornKey(x)===F.forn);return r?fornNome(r):'Fornecedor '+F.forn})())} · cobertura baixa</button>`:'');
+ $('catx').innerHTML=(F.cat?`<button class="catx" data-x="cat" type="button">✕ ${esc(short(F.cat))}</button>`:'')+(F.cob?`<button class="catx" data-x="cob" type="button">✕ ${cobTxt(F.cob)}</button>`:'')+(F.giro?`<button class="catx" data-x="giro" type="button">✕ Giro ${esc(F.giro)}</button>`:'')+(F.capx?`<button class="catx" data-x="capx" type="button">✕ Capacidade &lt; 1 caixa</button>`:'')+(F.cadx?`<button class="catx" data-x="cadx" type="button">✕ Não entraram no cadastro</button>`:'')+(F.todo&&TODO[F.todo]&&!F.forn?`<button class="catx" data-x="todo" type="button">✕ ${TODO[F.todo].t}</button>`:'')+(F.forn?`<button class="catx" data-x="forn" type="button">✕ ${esc((()=>{const r=allRecords.find(x=>fornKey(x)===F.forn);return r?fornNome(r):'Fornecedor '+F.forn})())} · cobertura baixa</button>`:'');
  const fAct=F.chip!=='all'||!!F.cat||!!F.ent||noCD;   // algum filtro ligado?
- const base=T.length?(()=>true):r=>catOk(r)&&entOk(r)&&passesChip(r)&&cobPass(r,F.cob)&&(!F.d111||is111(r))&&giroOk(r)&&(!F.cadx||cadNao.has(r.produto))&&todoOk(r)&&(!F.forn||fornKey(r)===F.forn);   // BUSCANDO: os filtros (chip, categoria, sistemática, F/CD) não escondem nada
+ const semCD=r=>catOk(r)&&entOk(r)&&cobPass(r,F.cob)&&(!F.d111||is111(r))&&(!F.capx||capMenor(r))&&giroOk(r)&&(!F.cadx||cadNao.has(r.produto))&&todoOk(r)&&(!F.forn||fornKey(r)===F.forn);   // todos os filtros, menos o chip e o F/CD
+ const base=T.length?(()=>true):r=>semCD(r)&&passesChip(r);   // BUSCANDO: os filtros (chip, categoria, sistemática, F/CD) não escondem nada
  let rel=false;
  list=allRecords.filter(r=>base(r)&&(!T.length||(r._s=score(r,T))>0));
  if(T.length>1&&!list.length){rel=true;list=allRecords.filter(r=>base(r)&&(r._s=score(r,T,true))>0)}   // nada tem TODAS as palavras → mostra os que têm parte
@@ -251,7 +258,7 @@ const T=toks(F.q);
  /* Altura × Largura: sem medidas cadastradas primeiro, depois 1×1, 1×2, 1×3… 2×1, 2×2…; empate → profundidade, depois nome A–Z */
  S.dim=(a,b)=>{const A=num(a.altura),B=num(b.altura),la=num(a.largura),lb=num(b.largura),sa=!(A&&la),sb=!(B&&lb);
   return (sb-sa)||(sa?S.nome(a,b):A-B||la-lb||num(a.prof)-num(b.prof)||S.nome(a,b))};if(!S[F.sort])F.sort='cobt';
- list.sort(T.length?(a,b)=>b._s-a._s||S[F.sort](a,b):S[F.sort]);$('cnt').textContent=f0(list.length)+(rel?' itens parciais — nenhum tem todas as palavras':' itens')+(T.length?(fAct?' · busca ignora os filtros':''):noCD?' · ocultando '+f0(allRecords.filter(r=>cdRisk(r)&&catOk(r)&&entOk(r)&&cobPass(r,F.cob)&&passesChip(r,F.chip,true)).length)+' (falta no CD)':'');
+ list.sort(T.length?(a,b)=>b._s-a._s||S[F.sort](a,b):S[F.sort]);$('cnt').textContent=f0(list.length)+(rel?' itens parciais — nenhum tem todas as palavras':' itens')+(T.length?(fAct?' · busca ignora os filtros':''):(()=>{if(!noCD||['cd','dep','sug'].includes(F.chip))return '';const n=allRecords.filter(r=>hideCD(r)&&semCD(r)&&passesChip(r,F.chip,true)).length;return n?' · ocultando '+f0(n)+' (falta no CD)':''})());   // conta com TODOS os filtros ligados (antes ignorava giro, 1×1, fornecedor…)
  $('q-x').classList.toggle('on',!!F.q);
  $('list-empty').hidden=!!list.length;$('exp-txt').hidden=!list.length;
  if(!$('s-prod').classList.contains('on')&&!vl)return;                     // a lista virtual nasce quando a aba abre (precisa da altura da tela)
@@ -262,6 +269,7 @@ function relaxFiltersFor(r){
   const off=[];
   if(!cobPass(r,F.cob)){F.cob=null;off.push('cobertura')}
   if(F.d111&&!is111(r)){F.d111=false;off.push('1×1')}
+  if(F.capx&&!capMenor(r)){F.capx=false;off.push('capacidade < 1 caixa')}
   if(!giroOk(r)){F.giro='';off.push('giro')}
   if(!catOk(r)){F.cat='';off.push('categoria')}
   if(!entOk(r)){F.ent='';off.push('sistemática')}
@@ -282,13 +290,13 @@ function cardBody(r,acts,extra,noPed,nova){
   const dias=v=>v>999?'+999':f0(Math.max(v,0));   // coberturas já vêm arredondadas (dias inteiros)
   const rel=r._c!==null;                                                        // sempre mostra também a cobertura do relatório de Cobertura
   const ebx=num(r.emb)||1;
-  const unCx=n=>`${f0(n)}<i>un</i>${ebx>1&&n>=0?`<wbr><span class="cx"><i class="sep">|</i>${n>0&&n<ebx?'<span style="color:var(--cr)">&lt;1</span>':f0(Math.floor(n/ebx))}<i>cx</i></span>`:''}`;   // "276un | 46cx" (Estoque e Trânsito iguais)
-  const neg=r._e<0?` <span class="neg" title="Estoque negativo">▼ ${r._t>0?'negativo · em trânsito':isCD(r)?'negativo · falta no CD':'negativo · falta pedir'}</span>`
+  const unCx=n=>`<span class="un">${f0(n)}<i>un</i></span>${ebx>1&&n>=0?`<wbr><span class="cx"><i class="sep">|</i>${n>0&&n<ebx?'<span style="color:var(--cr)">&lt;1</span>':f0(Math.floor(n/ebx))}<i>cx</i></span>`:''}`;   // "276un | 46cx" (Estoque e Trânsito iguais)
+  const neg=r._e<0?` <span class="neg" title="Estoque negativo${r._t>0?' · já em trânsito':isCD(r)?' · falta no CD':' · falta pedir ao fornecedor'}">▼ ${r._t>0?'negativo':isCD(r)?'falta no CD':'falta pedir'}</span>`
     :cdRisk(r)?` <span class="neg cdw" title="Sistemática 1, menos de 1 caixa e sem trânsito: o pedido automático não mandou — provável falta no CD">⚠ falta no CD</span>`:'';   // estoque 0 ou positivo também (nov/2026)
   const sel=(r._sist?`<span class="ent e${esc(r._sist)}">${esc(ENT[r._sist]||'Sist. '+r._sist)}</span>`:'')+(!noPed&&inPed(r.produto)?' '+PEDBADGE:'')+pedTag(r.produto)+axBadges(r)+neg;
   const cob=r._k==='sg'?(semVendaDias(r)===Infinity?'—':f0(semVendaDias(r))+'<i>d s/ venda</i>'):r._ct===null?'—':dias(r._ct)+(rel||r._c999?`<i class="sep">|</i><i class="rr" title="R = cobertura do relatório de Cobertura de Estoque${r._c999?' (veio 999 = sem cálculo)':''}">R:</i>${rel?dias(r._c):'—'}`:'<i>d</i>');
   return `<div class="hd"><div class="nm">${esc(r.descricao)}</div><div class="acts">${acts}${INFOBTN}</div></div>
- <div class="sb"><span class="sbt"><span class="cod">${esc(r.produto)}</span> · ${r._np?'Fora do planograma':(nova===undefined?dimTxt(r):nova?(()=>{const i=novaInfo(r,NOVA)||{};return `<b class="nv" title="Medida nova (era ${dimTxt(r).replace(/<[^>]+>/g,'')}): ${NOVA} dias × MDV ${f1(r._m)} ÷ emb ${f0(num(r.emb)||1)} = ${i.quer}${i.cap?` · cortado no máximo do sistema (${LIMITE} dias ≈ ${f0(i.q)} un)`:''}">➜ 1×${nova}×${porCx(r)}${i.cap?' <small class="nvx">máx.</small>':''}</b>`})():`<b class="nv nv0" title="Sem MDV: não dá para calcular (fica fora do TXT)">${dimTxt(r).replace(/<[^>]+>/g,'')} · sem MDV</b>`)+' · '+embTxt(r)}</span>${sel?`<span class="sbb"> ${sel}</span>`:''}</div>
+ <div class="sb"><span class="sbt"><span class="cod">${esc(r.produto)}</span> · ${r._np?'<span title="Fora do planograma">s/ plano</span>':(nova===undefined?dimTxt(r):nova?(()=>{const i=novaInfo(r,NOVA)||{};return `<b class="nv" title="Medida nova (era ${dimTxt(r).replace(/<[^>]+>/g,'')}): ${NOVA} dias × MDV ${f1(r._m)} ÷ emb ${f0(num(r.emb)||1)} = ${i.quer}${i.cap?` · cortado no máximo do sistema (${LIMITE} dias ≈ ${f0(i.q)} un)`:''}">➜ 1×${nova}×${porCx(r)}${i.cap?' <small class="nvx">máx.</small>':''}</b>`})():`<b class="nv nv0" title="Sem MDV: não dá para calcular (fica fora do TXT)">${dimTxt(r).replace(/<[^>]+>/g,'')} · sem MDV</b>`)+(nova?'':' · '+embTxt(r))}</span>${sel?`<span class="sbb"> ${sel}</span>`:''}</div>
  <div class="st3">
   <div class="es"><small>Estoque</small><b class="num">${unCx(r._e)}</b></div>
   <div class="es"><small>Trânsito</small><b class="num">${transitLoaded?unCx(r._t):'—'}</b></div>
@@ -430,7 +438,7 @@ const qGo=debounce(()=>renderList(true),180);
 $('q').oninput=e=>{F.q=e.target.value;qGo()};
 $('q-x').onclick=()=>{$('q').value='';F.q='';renderList(true);$('q').focus()};
 $('sort').onchange=e=>{F.sort=e.target.value;renderList(true)};
-$('catx').onclick=e=>{const b=e.target.closest('.catx');if(!b)return;if(b.dataset.x==='cob')F.cob=null;else if(b.dataset.x==='giro')F.giro='';else if(b.dataset.x==='cadx')F.cadx=false;else if(b.dataset.x==='todo')F.todo='';else if(b.dataset.x==='forn'){F.forn='';F.todo=''}else F.cat='';renderList(true)};
+$('catx').onclick=e=>{const b=e.target.closest('.catx');if(!b)return;if(b.dataset.x==='cob')F.cob=null;else if(b.dataset.x==='giro')F.giro='';else if(b.dataset.x==='cadx')F.cadx=false;else if(b.dataset.x==='capx')F.capx=false;else if(b.dataset.x==='todo')F.todo='';else if(b.dataset.x==='forn'){F.forn='';F.todo=''}else F.cat='';renderList(true)};
 
 /* ── Categoria em árvore: toca num nível com filhos → entra; "Filtrar …" aplica aquele nível; folha aplica direto ── */
 let catPath=[];   // caminho atual, ex.: ['MERCEARIA','LIMPEZA']
@@ -442,6 +450,8 @@ const salvaCD=()=>{try{localStorage.setItem('planograma_nocd',noCD?'1':'0');loca
 /* ═══ 1×1 + nova cobertura (nov/2026). No sistema: 1º campo = 1 · campo do meio = dias × MDV ÷ embalagem · 3º campo = itens por caixa.
    Filtro "Só 1×1" (olha só os 2 primeiros campos) e, com dias informados, medida proposta 1 × (dias × MDV ÷ emb) × itens por caixa ═══ */
 const is111=r=>num(r.altura)===1&&num(r.largura)===1;
+/* CAPACIDADE MENOR QUE 1 CAIXA (nov/2026): a caixa fechada não cabe no espaço cadastrado → candidatos a recadastro */
+const capMenor=r=>{if(r._np)return false;const c=capOf(r);return c>0&&c<(num(r.emb)||1)};
 const porCx=r=>num(r.prof)||num(r.emb)||1;   // 3º campo = itens na caixa (sem ele, usa a embalagem)
 /* TETO DO SISTEMA: ele recusa se a quantidade do planograma passar de LIMITE dias de cobertura, calculada com o MDV DELE
    (que não é o MDV da tela). O MDV dele sai do próprio relatório de planograma: total ÷ Cob.Plan. Como o sistema TRUNCA
@@ -459,7 +469,7 @@ const giroR=r=>String(r.giro||'').trim().toUpperCase();
 const giroOk=(r,g=F.giro)=>!g||giroR(r)===g;
 const catOk=r=>!F.cat||r.categoria===F.cat||(r.categoria||'').startsWith(F.cat+'->');   // nível pai inclui os filhos
 function passesChip(r,ch=F.chip,ignNoCD){
-  return (ignNoCD||ch==='cd'||ch==='dep'||!hideCD(r))&&
+  return (ignNoCD||ch==='cd'||ch==='dep'||ch==='sug'||!hideCD(r))&&
     (ch==='all'||ch===r._k||
     (ch==='alert'&&(r._k==='rup'||r._k==='crit'))||
     (ch==='trans'&&r._t>0)||(ch==='pend'&&!r._d)||
@@ -500,7 +510,7 @@ function closeCat(){if(catSheet.opened)catSheet.close()}
 const setCat=v=>{D.cat=v;closeCat()};                                      // escolheu → volta para Filtros com a categoria marcada
 
 /* ═══ FILTROS (uma folha só): Situação · Sistemática · Categoria · F/CD → toca em "Ver N itens" ═══ */
-const nFiltros=()=>(F.chip!=='all')+(F.d111?1:0)+(F.giro?1:0)+(F.cadx?1:0)+(F.todo?1:0)+(F.forn?1:0)+(!!F.cat)+((F.ent||'')!==ENT0)+(noCD?1:0)+(F.cob?1:0);
+const nFiltros=()=>(F.chip!=='all')+(F.d111?1:0)+(F.capx?1:0)+(F.giro?1:0)+(F.cadx?1:0)+(F.todo?1:0)+(F.forn?1:0)+(!!F.cat)+((F.ent||'')!==ENT0)+(noCD?1:0)+(F.cob?1:0);
 /* COBERTURA TOTAL maior/menor que N dias — usa o mesmo número arredondado do cartão; "Sem giro" e item sem MDV/cobertura ficam de fora */
 const cobDia=r=>r._ct!==null&&r._k!=='sg'?Math.max(r._ct,0):null;
 const cobOn=c=>!!(c&&(c.op==='lt'||c.op==='gt')&&Number.isFinite(c.d)&&c.d>=0);
@@ -508,7 +518,7 @@ const cobPass=(r,c)=>{if(!cobOn(c))return true;const v=cobDia(r);return v!==null
 const cobTxt=c=>`Cob. ${c.op==='lt'?'<':'>'} ${f0(c.d)} dias`;
 const dCat=r=>!D.cat||r.categoria===D.cat||(r.categoria||'').startsWith(D.cat+'->');
 const dEnt=r=>!D.ent||(D.ent==='np'?!!r._np:D.ent==='1'?isCD(r):r._sist===D.ent);
-const dChip=(r,ch=D.chip)=>(ch==='cd'||ch==='dep'||!hideCD(r,D.noCD,D.noCDTr))&&passesChip(r,ch,true);
+const dChip=(r,ch=D.chip)=>(ch==='cd'||ch==='dep'||ch==='sug'||!hideCD(r,D.noCD,D.noCDTr))&&passesChip(r,ch,true);
 const ENT0='1';   // filtro padrão de Sistemática (ao abrir o app e no "Limpar")
 const ENTS=[['','Todas'],['1','1'],['10','10'],['20','20'],['np','Sem plano']];
 const COBOPS=[['','Qualquer'],['lt','Menor que'],['gt','Maior que']];
@@ -516,11 +526,11 @@ const COBOPS=[['','Qualquer'],['lt','Menor que'],['gt','Maior que']];
 function fltCounts(){
   const bs=[...document.querySelectorAll('#flt-list .fs-s')],ch=bs.map(b=>b.dataset.c),n=ch.map(()=>0);let sel=0;
   const ext=r=>D.limpou||(todoOk(r)&&(!F.forn||fornKey(r)===F.forn)&&(!F.cadx||cadNao.has(r.produto)));   // filtros que vêm do Resumo (todo/fornecedor/conferência)
-  for(const r of allRecords){if(!(dCat(r)&&dEnt(r)&&cobPass(r,D.cob)&&(!D.d111||is111(r))&&giroOk(r,D.giro)&&ext(r)))continue;   // ⚡ 1 passada: conta todas as situações juntas (mesmo dChip de antes)
+  for(const r of allRecords){if(!(dCat(r)&&dEnt(r)&&cobPass(r,D.cob)&&(!D.d111||is111(r))&&(!D.capx||capMenor(r))&&giroOk(r,D.giro)&&ext(r)))continue;   // ⚡ 1 passada: conta todas as situações juntas (mesmo dChip de antes)
     for(let i=0;i<ch.length;i++)if(dChip(r,ch[i]))n[i]++;if(dChip(r))sel++}
   bs.forEach((b,i)=>{b.querySelector('small').textContent=f0(n[i])});
   $('flt-apply').textContent=`Ver ${f0(sel)} itens`;
-  $('flt-clear').style.visibility=(D.chip!=='all'||D.cat||(D.ent||'')!==ENT0||D.noCD||D.d111||D.giro||cobOn(D.cob)||(!D.limpou&&(F.todo||F.forn||F.cadx)))?'':'hidden'}
+  $('flt-clear').style.visibility=(D.chip!=='all'||D.cat||(D.ent||'')!==ENT0||D.noCD||D.d111||D.capx||D.giro||cobOn(D.cob)||(!D.limpou&&(F.todo||F.forn||F.cadx)))?'':'hidden'}
 function renderFlt(){refreshDep();
   const sit=CHIPS.filter(c=>c[0]!=='trans'||transitLoaded).map(c=>{
     const g=GLY[c[0]]||(c[2]?ic(c[2],13):'');
@@ -533,19 +543,20 @@ function renderFlt(){refreshDep();
    <label class="fs-ln"><span>Só 1×1<small>Os dois primeiros campos = 1 (qualquer quantidade por caixa)</small></span><input type="checkbox" id="fs-111" class="sw-i"${D.d111?' checked':''}><span class="sw-t fs-tg"></span></label>${D.d111?`
    <div class="fs-nova"><span class="fs-nl">Nova cobertura<small>campo do meio = dias × MDV ÷ embalagem (arredondado para cima)</small></span><div class="fs-cob"><div class="fs-num"><button type="button" data-nstep="-1" aria-label="Menos 1 dia">−</button><input id="fs-nova" type="number" inputmode="numeric" min="0" step="1" value="${D.nova>0?D.nova:''}" placeholder="—" aria-label="Dias da nova cobertura"><span>dias</span><button type="button" data-nstep="1" aria-label="Mais 1 dia">+</button></div><div class="fs-q">${[7,15,21,30].map(n=>`<button type="button" data-nq="${n}" class="${D.nova===n?'on':''}">${n}</button>`).join('')}</div></div>
    <span class="fs-nl fs-lim">Limite do sistema<small>Cob. Limite da tela do sistema — corta no máximo aceito (sem o alerta)</small></span><div class="fs-cob"><div class="fs-num"><input id="fs-lim" type="number" inputmode="numeric" min="1" step="1" value="${D.lim||LIMITE}" aria-label="Limite de cobertura do sistema em dias"><span>dias</span></div></div></div>`:''}
+   <label class="fs-ln"><span>Capacidade menor que 1 caixa<small>A caixa fechada não cabe no espaço cadastrado — candidatos a recadastro</small></span><input type="checkbox" id="fs-capx" class="sw-i"${D.capx?' checked':''}><span class="sw-t fs-tg"></span></label>
    ${(()=>{const gs=[...new Set(allRecords.map(giroR).filter(Boolean))].sort();return gs.length?`<h5>Giro</h5><div class="fs-seg">${[['','Todos'],...gs.map(g=>[g,g])].map(([v,l])=>`<button type="button" data-giro="${esc(v)}" class="${(D.giro||'')===v?'on':''}">${esc(l)}</button>`).join('')}</div>`:''})()}
    <h5>Sistemática</h5><div class="fs-seg">${ENTS.map(([v,l])=>`<button type="button" data-ent="${v}" class="${(D.ent||'')===v?'on':''}">${l}</button>`).join('')}</div>
    <h5>Categoria</h5><button type="button" class="fs-ln" id="cat-pick-btn"><span>${D.cat?esc(short(D.cat)):'Todas as categorias'}<small>${D.cat?'Toque para trocar':'Toque para escolher na árvore'}</small></span>${D.cat?'<i class="fs-cx" id="fs-catx" role="button" aria-label="Tirar categoria">✕</i>':'<i class="fs-ar">›</i>'}</button>
    <label class="fs-ln"><span>Esconder falta no CD (F/CD)<small>Estoque menor que 1 caixa, sem trânsito</small></span><input type="checkbox" id="fs-nocd" class="sw-i"${D.noCD?' checked':''}><span class="sw-t fs-tg"></span></label>${D.noCD?`
    <label class="fs-ln fs-sub"><span>Esconder também os em trânsito<small>Estoque menor que 1 caixa, com trânsito a caminho</small></span><input type="checkbox" id="fs-nocdtr" class="sw-i"${D.noCDTr?' checked':''}><span class="sw-t fs-tg"></span></label>`:''}`;
   fltCounts()}
-function openFlt(keep){if(!keep||!D)D={chip:F.chip,cat:F.cat||'',ent:F.ent||'',giro:F.giro||'',noCD,noCDTr,d111:!!F.d111,nova:NOVA||null,cob:F.cob?{...F.cob}:null};renderFlt();fltSheet.open();pushOv('flt')}
+function openFlt(keep){if(!keep||!D)D={chip:F.chip,cat:F.cat||'',ent:F.ent||'',giro:F.giro||'',noCD,noCDTr,d111:!!F.d111,capx:!!F.capx,nova:NOVA||null,cob:F.cob?{...F.cob}:null};renderFlt();fltSheet.open();pushOv('flt')}
 function closeFlt(){if(fltSheet.opened)fltSheet.close()}
 $('flt-btn').onclick=()=>openFlt();
 $('flt-sheet-x').onclick=closeFlt;$('flt-cancel').onclick=closeFlt;
-$('flt-clear').onclick=()=>{D={chip:'all',cat:'',ent:ENT0,giro:'',noCD:false,noCDTr:false,d111:false,nova:D.nova,cob:null,limpou:true};renderFlt()};
+$('flt-clear').onclick=()=>{D={chip:'all',cat:'',ent:ENT0,giro:'',noCD:false,noCDTr:false,d111:false,capx:false,nova:D.nova,cob:null,limpou:true};renderFlt()};
 $('flt-apply').onclick=()=>{if(D.limpou){F.todo='';F.forn='';F.cadx=false;todoP=null}   // Limpar também tira os filtros que vieram do Resumo
-  F.chip=D.chip;F.cat=D.cat;F.ent=D.ent;F.giro=D.giro||'';F.cob=cobOn(D.cob)?{op:D.cob.op,d:D.cob.d}:null;noCD=D.noCD;noCDTr=!!D.noCDTr;salvaCD();if(D.lim>0){LIMITE=D.lim;try{localStorage.setItem('planograma_limcob',LIMITE)}catch{}}F.d111=!!D.d111;NOVA=D.nova>0?D.nova:null;try{localStorage.setItem('planograma_cobnova',NOVA||'')}catch{};closeFlt();renderList(true)};
+  F.chip=D.chip;F.cat=D.cat;F.ent=D.ent;F.giro=D.giro||'';F.cob=cobOn(D.cob)?{op:D.cob.op,d:D.cob.d}:null;noCD=D.noCD;noCDTr=!!D.noCDTr;salvaCD();if(D.lim>0){LIMITE=D.lim;try{localStorage.setItem('planograma_limcob',LIMITE)}catch{}}F.d111=!!D.d111;F.capx=!!D.capx;NOVA=D.nova>0?D.nova:null;try{localStorage.setItem('planograma_cobnova',NOVA||'')}catch{};closeFlt();renderList(true)};
 $('flt-list').onclick=e=>{
   const nq=e.target.closest('[data-nq]');if(nq){D.nova=+nq.dataset.nq;return renderFlt()}
   const ns=e.target.closest('[data-nstep]');if(ns){D.nova=Math.max(0,(D.nova>0?D.nova:0)+ +ns.dataset.nstep)||null;return renderFlt()}
@@ -557,7 +568,7 @@ $('flt-list').onclick=e=>{
   const gi=e.target.closest('[data-giro]');if(gi){D.giro=gi.dataset.giro;return renderFlt()}
   if(e.target.closest('#fs-catx')){D.cat='';return renderFlt()}
   if(e.target.closest('#cat-pick-btn'))openCatPicker()};
-$('flt-list').onchange=e=>{if(e.target.id==='fs-nocd'){D.noCD=e.target.checked;renderFlt()}if(e.target.id==='fs-nocdtr'){D.noCDTr=e.target.checked;renderFlt()}if(e.target.id==='fs-111'){D.d111=e.target.checked;renderFlt()}};
+$('flt-list').onchange=e=>{if(e.target.id==='fs-nocd'){D.noCD=e.target.checked;renderFlt()}if(e.target.id==='fs-nocdtr'){D.noCDTr=e.target.checked;renderFlt()}if(e.target.id==='fs-111'){D.d111=e.target.checked;renderFlt()}if(e.target.id==='fs-capx'){D.capx=e.target.checked;fltCounts()}};
 $('flt-list').addEventListener('input',e=>{if(e.target.id==='fs-lim'){const v=parseInt(e.target.value,10);D.lim=v>0?v:null;return}
   if(e.target.id==='fs-nova'){const v=parseInt(e.target.value,10);D.nova=v>0?v:null;
   document.querySelectorAll('#flt-list [data-nq]').forEach(b=>b.classList.toggle('on',+b.dataset.nq===D.nova));return}

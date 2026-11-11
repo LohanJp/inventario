@@ -18,7 +18,11 @@ function readFile(file,cb,enc){const r=new FileReader();
 $('f-plano').onchange=e=>{const f=e.target.files[0];if(!f)return;e.target.value='';busy(true,'Lendo arquivo…',true);
  if(/\.json$/i.test(f.name))readFile(f,t=>importBackup(t,f.name),'utf-8');
  else readFile(f,async t=>{await tick();const p=parseFile(t);if(!p.records.length){busy(false);return toast('Nenhum produto encontrado no arquivo')}
+  const chaveAntes=lsKey;
   await loadRecords(p.records,p.meta,f.name,null,true);const had=doneSet.size;if(had){lsClear();derive();renderHome()}   // relatório novo: concluídos recomeçam do zero
+  /* planograma de OUTRO dia: zera também os concluídos guardados na NUVEM (antes os "feitos" de ontem voltavam na 1ª sincronização).
+     Com a lista da nuvem em mãos apaga já; senão deixa pendente (⏳) e a próxima sincronização apaga em vez de baixar. */
+  else if(chaveAntes&&chaveAntes!==lsKey&&typeof cloudWriteDone==='function'){if(cloudDone.size)cloudWriteDone();else{setPend('done',true);if(navigator.onLine)liveRefresh()}}
   busy(false);toast(f0(p.records.length)+' produtos carregados'+(had?' · concluídos zerados':'')+warnTxt())},'latin1')};
 $('f-trans').onchange=e=>{const f=e.target.files[0];if(!f)return;e.target.value='';busy(true,'Lendo trânsito…');
  readFile(f,async t=>{if(!/Qt\.Transito/i.test(t.slice(0,6000))){busy(false);return toast('Este arquivo não é o relatório de Trânsito — nada foi trocado')}   // relatório no lugar errado estragava os números em silêncio
@@ -34,7 +38,7 @@ function renderFresh(){
   const item=(nome,ok,m)=>{if(!ok)return `<span class="off">${nome} —</span>`;const dt=m&&m.date?String(m.date):'',diff=dt&&base&&dt!==base;if(diff)warn=true;
     return `<span${diff?' class="diff"':''} title="${m&&m.hora?esc(dt+' '+m.hora):''}">${nome} ${dt?esc(dt.slice(0,5)):'✓'}</span>`};   // datas podem vir da nuvem: sempre escapadas
   const curto=NARROW.matches;                                                   // tela estreita: nomes curtos para as 3 datas caberem
-  el.innerHTML=[item('Plano',planoRecs.length>0,currentMeta),item(curto?'Cob.':'Cobertura',estoqueLoaded,estoqueMeta),item(curto?'Trâns.':'Trânsito',transitLoaded,transitMeta)].join(' · ')+(warn?' ⚠':'');
+  el.innerHTML=[item('Plano',planoRecs.length>0,currentMeta),item(curto?'Cob.':'Cobertura',estoqueLoaded,estoqueMeta),item(curto?'Tr.':'Trânsito',transitLoaded,transitMeta)].join(' · ')+(warn?' ⚠':'');
   F_.classList.toggle('warn',warn);F_.title=warn?'Os relatórios são de dias diferentes — confira antes de pedir':'';
   renderDtBan();if(typeof renderCadBan==='function'){cadConfere();renderCadBan()}
 }
@@ -55,7 +59,7 @@ $('dtban').onclick=async e=>{if(!e.target.closest('#dt-tr'))return;
   if(!confirm('Descartar o Trânsito antigo? Os números de trânsito somem até você carregar o relatório novo.'))return;
   transitMap={};transitLoaded=false;transitMeta=null;
   if(idb){try{await idbSave({id:'transitmeta',meta:null});const rec=await idbGet('current');if(rec){delete rec.transit;await idbSave(rec)}}catch{}}
-  derive();renderData();toast('Trânsito antigo descartado')};
+  derive();renderData();go(document.querySelector('section.on').id.slice(2));toast('Trânsito antigo descartado')};   // redesenha a aba aberta (o Resumo ficava com os números antigos)
 $('theme-seg').onclick=e=>{const b=e.target.closest('button');if(b)applyTheme(b.dataset.t)};
 let _th='auto';try{_th=localStorage.getItem('planograma_theme')||'auto'}catch{}applyTheme(_th);
 function renderData(){renderFresh();if(typeof mostraVersao==='function')mostraVersao();const n=planoRecs.length;
@@ -102,7 +106,8 @@ function nuvemToBackup(n){const D=n.dados||{},P=D.plano||{},E=D.estq||{},T=D.tra
     anexos:{enc:D.enc&&D.enc.data,of:D.of||{},pf:D.pf||{},live:{enc:L.enc,of:L.of,pf:L.pf}}}}
 async function importBackup(text,fname){try{let b=JSON.parse(text);if(b&&b.app==='planograma-nuvem')b=nuvemToBackup(b);if(b.app!=='planograma'||!Array.isArray(b.records))throw 0;
  const meta=b.meta||{};
- if(b.transitMeta&&typeof b.transitMeta==='object'){transitMeta=b.transitMeta;if(idb)idbSave({id:'transitmeta',meta:transitMeta}).catch(()=>{})}
+ if(!b.transit){transitMap={};transitLoaded=false;transitMeta=null;if(idb)idbSave({id:'transitmeta',meta:null}).catch(()=>{})}   // backup sem Trânsito: não mistura com o Trânsito antigo do aparelho
+ if(b.transit&&b.transitMeta&&typeof b.transitMeta==='object'){transitMeta=b.transitMeta;if(idb)idbSave({id:'transitmeta',meta:transitMeta}).catch(()=>{})}
  if(b.estoque&&b.estoque.map&&typeof b.estoque.map==='object'){                 // Cobertura vem junto (backup version 2)
    estoqueMap=b.estoque.map;estoqueLoaded=true;estoqueMeta=b.estoque.meta||null;
    if(idb)idbSave({id:'estoque',map:estoqueMap,meta:estoqueMeta,name:'backup '+fname,savedAt:new Date().toLocaleString('pt-BR')}).catch(()=>{});
