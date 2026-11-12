@@ -569,3 +569,6 @@ html:not(.dark) .ent.urg{color:color-mix(in srgb,var(--crit) 72%,#000)}
 
 /* v52: botão Limpar concluídos no grupo do Pedido */
 .dn-clr{margin:4px 0 8px auto;display:flex;width:max-content}
+
+/* v54: marca "opcional" na linha Preços da aba Dados */
+.opc{font-size:11px;font-weight:500;color:var(--mu);margin-left:4px}

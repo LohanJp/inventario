@@ -177,6 +177,7 @@ async function loadFromCloud(c,fundo){
     cloudErr=cerr;cloudBadge();                                       // erro de conexão vira o ícone ⚠ no topo (antes era um aviso no meio da tela)
     if(!pi||!pi.total){if(!fundo)busy(false);return false}
     const sigAntes=fundo?liveSig():'';
+    prcSync(c).catch(()=>{});                                        // preços (opcional): confere em paralelo, sem segurar a abertura
     const estqNovo=await syncEstoque(c,ei);                          // antes de montar a tela, para o MDV/cobertura já virem certos
     const loc=idb?await idbGet('current').catch(()=>null):null;   // já tem esta versão neste aparelho?
     const pm=pi.meta||{filial:pi.filial,date:pi.date,hora:''};
@@ -362,9 +363,10 @@ $('b-up').onclick=async()=>{
         }else eNote=' · cobertura NÃO enviada (nuvem é mais nova)';
       }catch(e){fails.push('cobertura')}
     }
+    let pUp=[];try{if(PRC.p&&PRC.p.dirty||PRC.c&&PRC.c.dirty){busy(true,'Enviando preços…');pUp=await prcEnvia(c,now)}}catch{fails.push('preços')}
     try{const r=await idbGet('current');if(r){r.cloudAt=now;if(tUp)r.transAt=now;await idbSave(r)}}catch{}
     try{if(eUp){const r=await idbGet('estoque');if(r){r.cloudAt=now;await idbSave(r)}}}catch{}
-    busy(false);toast(fails.length?'Enviado com falhas em: '+fails.join(', ')+' — tente de novo':'Enviado ✓ — planograma'+(tUp?', trânsito':'')+(eUp?', cobertura':'')+' e pedido'+eNote);cloudInfo(true);
+    busy(false);toast(fails.length?'Enviado com falhas em: '+fails.join(', ')+' — tente de novo':'Enviado ✓ — planograma'+(tUp?', trânsito':'')+(eUp?', cobertura':'')+(pUp.length?', preços':'')+' e pedido'+eNote);cloudInfo(true);
   }catch(e){busy(false);toast(e.message)}
 };
 
@@ -376,6 +378,7 @@ async function boot(){
     if(e&&e.map){estoqueMap=e.map;estoqueLoaded=true;estoqueMeta=e.meta||null;
       $('cob-status').innerHTML=`<b>✓ ${esc(e.name||'estoque')}</b> · ${f0(Object.keys(estoqueMap).length)} produtos · salvo em ${esc(e.savedAt||'')}`}
   }catch{}
+  await prcRestaura();                           // preços (opcional) guardados no aparelho
   try{const t=await idbGet('transitmeta');if(t&&t.meta)transitMeta=t.meta}catch{}
   try{const en=await idbGet('encarte');                       // restaura o último Encarte carregado (aparece após o planograma abrir)
     if(en&&en.items&&en.items.length){encItems=en.items;encPer=en.per||null;   // 📅 dia do Panfleto (título da planilha)
@@ -432,13 +435,14 @@ if('serviceWorker' in navigator&&/^https?:/.test(location.protocol)){/* ⚡ regi
   addEventListener('load',()=>idle(()=>navigator.serviceWorker.register('./sw.js').then(reg=>reg.update()).catch(()=>{})))}
 /* versão do app na aba Dados (nome do cache do SW, ex.: v34) — para conferir se o aparelho já pegou a atualização */
 /* APP_VER = versão do CÓDIGO que está rodando. ⚠ Mantenha igual ao V do sw.js (o teste de fumaça confere). */
-const APP_VER='v53';
+const APP_VER='v54';
 const verNum=v=>parseInt(String(v||'').replace(/\D/g,''),10)||0;   // 'v9' < 'v45' < 'v100' (comparação numérica, não alfabética)
 function mostraVersao(){const el=$('app-ver');if(el)el.textContent='Versão do app: '+APP_VER}
 addEventListener('load',()=>setTimeout(mostraVersao,3000));
 /* ═══ NOVIDADES (nov/2026): depois de atualizar, o Resumo mostra o que mudou (1 vez por versão). Na 1ª instalação não aparece.
    Ao publicar uma versão com mudança visível, acrescente aqui a chave da versão (a mesma do sw.js, ex.: 'v43'). ═══ */
 const NOVIDADES={
+  v54:['💲 <b>Preços (opcional)</b>: em Dados → Preços, escolha o PRODUTO.TXT e o relatório de Preços do Clube (pode ser os dois de uma vez). A ficha do produto passa a mostrar o preço e o preço do Clube Condor'],
   v53:['⭐ <b>Oferta do dia pelo código</b>: item com Código/EAN é achado só pelo código (o que não está no planograma vai para “Sem correspondência”, sem chute pelo nome) e o 🔍 abre o produto exato'],
   v52:['🛒 Os <b>concluídos do Pedido</b> agora saem sozinhos ao carregar o planograma de um dia novo, e o grupo “✓ Concluídos” ganhou o botão <b>Limpar</b> (com Desfazer)'],
   v51:['🔄 <b>Botão Atualizar</b> no topo, ao lado da engrenagem — substitui o gesto de puxar a tela para baixo (que disparava sem querer ao rolar)'],

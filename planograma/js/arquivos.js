@@ -65,6 +65,7 @@ $('theme-seg').onclick=e=>{const b=e.target.closest('button');if(b)applyTheme(b.
 let _th='auto';try{_th=localStorage.getItem('planograma_theme')||'auto'}catch{}applyTheme(_th);
 function renderData(){renderFresh();if(typeof mostraVersao==='function')mostraVersao();const n=planoRecs.length;
  $('d-plano').innerHTML=n?`<b>${esc(savedInfo?.name||'')}</b><br>${f0(n)} produtos · ${esc(currentMeta.date||'')} · salvo em ${esc(savedInfo?.savedAt||'')}`:'Nenhum relatório carregado';
+ prcStatus();
  $('d-trans').innerHTML=transitLoaded?`<b>✓ Carregado</b> · ${f0(Object.keys(transitMap).length)} itens`:'Não carregado';cloudInfo()}
 $('b-clear').onclick=()=>{if(confirm('Zerar todos os itens concluídos?')){lsClear();derive();toast('Concluídos zerados')}};
 
@@ -73,7 +74,8 @@ $('b-clear').onclick=()=>{if(confirm('Zerar todos os itens concluídos?')){lsCle
 function buildBackup(){return{app:'planograma',version:2,exportedAt:new Date().toISOString(),name:savedInfo?.name||'planograma',meta:currentMeta,
  records:planoRecs.map(rawRec),transit:transitLoaded?transitMap:null,transitMeta:transitMeta||null,
  estoque:estoqueLoaded?{map:estoqueMap,meta:estoqueMeta||null}:null,
- done:[...doneSet],pedido,dep:Object.keys(depMap),prefs:{},anexos:anexosBackup()}}
+ done:[...doneSet],pedido,dep:Object.keys(depMap),prefs:{},anexos:anexosBackup(),
+ precos:PRC.p||PRC.c?{p:PRC.p?{map:PRC.p.map,name:PRC.p.name,savedAt:PRC.p.savedAt}:null,c:PRC.c?{map:PRC.c.map,meta:PRC.c.meta||null,name:PRC.c.name,savedAt:PRC.c.savedAt}:null}:null}}
 /* anexos no backup (nov/2026): Panfleto, Ofertas e Lâminas dos 7 dias — antes o .json voltava sem eles */
 function anexosBackup(){const a={of:{},pf:{}};
   if(encSrc&&encItems.length){a.enc={name:encSrc.name,kind:encSrc.kind,items:encItems,hdr:encSrc.hdr??-1,savedAt:encSavedAt,per:encPer};
@@ -113,6 +115,7 @@ async function importBackup(text,fname){try{let b=JSON.parse(text);if(b&&b.app==
    estoqueMap=b.estoque.map;estoqueLoaded=true;estoqueMeta=b.estoque.meta||null;
    if(idb)idbSave({id:'estoque',map:estoqueMap,meta:estoqueMeta,name:'backup '+fname,savedAt:new Date().toLocaleString('pt-BR')}).catch(()=>{});
    $('cob-status').innerHTML=`<b>✓ ${esc(fname)}</b> · ${f0(Object.keys(estoqueMap).length)} produtos · do backup`}
+ if(b.precos&&typeof b.precos==='object'){for(const k of['p','c']){const x=b.precos[k];if(x&&x.map&&typeof x.map==='object'){PRC[k]={...x,at:0,dirty:true};prcSave(k)}}prcStatus()}   // Preços vêm junto no backup
  await loadRecords(b.records,meta,b.name||fname,b.transit||null,true);
  try{localStorage.setItem(lsKeyFor(meta.filial||'',meta.date||''),JSON.stringify(b.done||[]));lsLoad();cloudWriteDone();derive();if(Array.isArray(b.pedido)){pedido=b.pedido;savePed()}if(Array.isArray(b.dep)){depMap={};b.dep.forEach(k=>{if(k)depMap[k]=true});saveDep()}renderHome()}catch{}
  let nax=0;try{nax=await restauraAnexos(b.anexos);if(nax){derive();renderHome()}}catch{}

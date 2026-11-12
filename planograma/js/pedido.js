@@ -165,6 +165,7 @@ function openSheet(r){if(!r)return;const kv=([a,b])=>`<div class="kv"><span>${a}
    +tile('Trânsito',prin[3][1],transitLoaded&&r._t>0&&ebx>1?f0(Math.floor(r._t/ebx))+' cx':'')
    +tile('MDV',prin[4][1],r._m?'un/dia':'');
  const rows=prin.slice(5).filter(x=>!vazio(x[1]));
+ {const pr=typeof precoHtml==='function'?precoHtml(r):'';if(pr)rows.unshift(['Preço',pr])}   // preço de venda e do Clube (relatórios opcionais de Preços) — só informação
  $('sheetc').innerHTML=`<div class="fh" style="--c:${COLOR[r._k]}"><div class="fh-top"><div class="fh-t"><span class="pill">${GLY[r._k]} ${LBL[r._k]}</span><h3>${esc(r.descricao)}</h3><div class="ln">${esc(r.produto)}${r.automacao?' · EAN '+esc(r.automacao):''} · ${esc(short(r.categoria))}</div></div><button class="shx" id="sh-x" type="button" aria-label="Fechar">✕</button></div>
  <div class="fts">${tiles}</div></div>
  <div class="shb page-content">${alerta}${rows.map(kv).join('')}<details class="more"><summary>Mais detalhes ${CHEV}</summary>${mais.map(kv).join('')}</details></div>
