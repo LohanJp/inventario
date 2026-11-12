@@ -65,10 +65,15 @@ function ofPrice(it){
   if(it.club&&(!it.reg||it.club<it.reg))return`<b>${ofFmt(it.club)}</b>${it.reg?` <s>${ofFmt(it.reg)}</s>`:''}${tag}`;
   if(it.reg||it.club)return`<b>${ofFmt(it.reg||it.club)}</b>${tag}`;
   return tag}
-function ofMatch(){                                              // 1º código/EAN (exato) · 2º nome (aproximado, marcado "≈")
+/* CÓDIGO É CERTEIRO (nov/2026): a linha da planilha que tem Código/EAN é procurada SÓ por ele.
+   Se o código não está no planograma (ex.: açougue, congelados), o item vai para "Sem correspondência" — antes o app
+   tentava adivinhar pelo nome e trazia produto errado ("≈ achado pelo nome"). O nome só é usado em linha SEM código e SEM EAN. */
+const ofSoNome=it=>!(zeros(it.code).length>=3||zeros(it.ean).length>=3);
+function ofMatch(){
   const bE={},bH={};allRecords.forEach(r=>{const e=zeros(r.automacao),h=zeros(r.produto);if(e)bE[e]=r;if(h)bH[h]=r});
   ofRes=ofItems.map(it=>{const c=zeros(it.code),e=zeros(it.ean),r=(c&&bH[c])||(e&&bE[e]);
     if(r)return{codes:[r.produto],approx:false};
+    if(!ofSoNome(it))return{codes:[],approx:false};
     const q=ofClean(it.desc),rs=q&&!/^C[oó]digo \d+$/i.test(q)?pfMatch(q,2):[];
     return{codes:rs.map(x=>x.produto),approx:rs.length>0}});
   ofMatchedFor=allRecords}
@@ -83,7 +88,7 @@ function renderOf(){
     if(rs.length)found.push({it,rs,approx:ofRes[i].approx});else nm.push(it)});
   let al=0;found.forEach(g=>{if(g.rs[0]._k==='rup'||g.rs[0]._k==='crit')al++});
   if(ofSortV==='sev'){const R={rup:0,sg:1,crit:2,aten:3,ok:4,nd:5};found.sort((a,b)=>R[a.rs[0]._k]-R[b.rs[0]._k]||(a.rs[0]._ct??999)-(b.rs[0]._ct??999))}
-  const grp=(g,rs)=>`<div class="pfh" data-q="${esc(ofClean(g.it.desc))}"><span>🔍 ${esc(g.it.desc)}${g.approx?' <small>≈ achado pelo nome</small>':''}</span><span class="pp">${ofPrice(g.it)}</span></div>`+rs.map(pfRowHtml).join('');
+  const grp=(g,rs)=>`<div class="pfh" data-q="${esc(g.approx?ofClean(g.it.desc):rs[0].produto)}"${g.approx?'':' data-cod="1"'}><span>🔍 ${esc(g.it.desc)}${g.approx?' <small>≈ achado pelo nome</small>':''}</span><span class="pp">${ofPrice(g.it)}</span></div>`+rs.map(pfRowHtml).join('');
   const qOn=!!axQ.of.trim();let vis=0;   // 🔍 busca: descrição da planilha ou o produto (nome, EAN, código)
   const mainG=[],inP=[];found.forEach(g=>{const rs0=!qOn||axHit('of',null,[g.it.desc,g.it.ean,g.it.code].join(' '))?g.rs:g.rs.filter(r=>axHit('of',r));if(!rs0.length)return;vis++;
     const rm=rs0.filter(r=>!inPed(r.produto)),rp=rs0.filter(r=>inPed(r.produto));   // produtos que já estão no pedido (e não concluídos) vão para um dropdown à parte
@@ -175,7 +180,7 @@ $('of-input').onchange=e=>{if(e.target.files[0])loadOfFile(e.target.files[0]);e.
 $('of-sort').onchange=e=>{ofSortV=e.target.value;renderOf()};
 $('of-list').addEventListener('toggle',e=>{if(e.target.id==='ofnm')ofNmOpen=e.target.open;if(e.target.id==='ofped')ofPedOpen=e.target.open},true);
 $('of-list').onclick=e=>{if(Date.now()<swBlock)return;
-  const h=e.target.closest('.pfh,.pfn');if(h&&h.dataset.q){pfSearch(h.dataset.q);return}
+  const h=e.target.closest('.pfh,.pfn');if(h&&h.dataset.q){if(h.dataset.cod)F.ent='';pfSearch(h.dataset.q);return}   // pelo código: tira a sistemática para o produto aparecer sempre
   const c=e.target.closest('.pfc');if(c&&e.target.closest('.infb')){const r=byProd.get(c.dataset.p);if(r)openSheet(r)}};
 
 /* 🧾 PANFLETO por dia da semana (mesmo esquema da Oferta do dia): 7 slots + nuvem (pf/d0…d6 + aviso em live/pf) */
@@ -272,7 +277,7 @@ function axPfCodes(w){const o=pfDays[w];if(!o||!o.text||!o.text.trim())return[];
 function axOfCodes(w){const o=ofDays[w];if(!o||!o.items||!o.items.length)return[];const c=axCache.of[w];if(c&&c.t===o.items&&c.r===allRecords)return c.codes;
   const bE={},bH={};allRecords.forEach(r=>{const e=zeros(r.automacao),h=zeros(r.produto);if(e)bE[e]=r;if(h)bH[h]=r});
   const s=new Set();o.items.forEach(it=>{const cc=zeros(it.code),e=zeros(it.ean),r=(cc&&bH[cc])||(e&&bE[e]);   // mesma regra da tela: código/EAN, senão pelo nome
-    if(r)s.add(r.produto);else{const q=ofClean(it.desc);if(q&&!/^C[oó]digo \d+$/i.test(q))pfMatch(q,2).forEach(x=>s.add(x.produto))}});
+    if(r)s.add(r.produto);else if(ofSoNome(it)){const q=ofClean(it.desc);if(q&&!/^C[oó]digo \d+$/i.test(q))pfMatch(q,2).forEach(x=>s.add(x.produto))}});
   return(axCache.of[w]={t:o.items,r:allRecords,codes:[...s]}).codes}
 function axBuild(){const k=axSigNow();if(axIdx&&k.length===axKey.length&&k.every((v,i)=>v===axKey[i]))return axIdx;
   axKey=k;const m=new Map(),add=(p,t,d)=>{let e=m.get(p);if(!e)m.set(p,e={of:[],pf:[],pfp:[],enc:false});if(t==='enc')e.enc=true;else if(t==='pfp'){if(!e.pfp.some(x=>x.ini===d.ini&&x.fim===d.fim))e.pfp.push(d)}else if(!e[t].includes(d))e[t].push(d)};
