@@ -58,10 +58,12 @@ function setPend(k,v){if(!!livePend[k]===v)return;if(v)livePend[k]=true;else del
 /* ícone na barra do topo em vez de avisos que cobriam a tela: ⏳ = alteração deste aparelho aguardando envio · ⚠ = sem conexão com a nuvem.
    Tocar abre a aba Dados (lá aparecem os detalhes). */
 let cloudErr='';
-function cloudBadge(){const b=$('fresh-cloud');if(!b)return;const p=Object.keys(livePend).length;
-  b.hidden=!(p||cloudErr);b.textContent=p?'⏳':'⚠';
-  b.title=p?'Alterações deste aparelho aguardando envio para a nuvem':'Nuvem: '+cloudErr;b.setAttribute('aria-label',b.title)}
-$('fresh-cloud').onclick=()=>go('data');
+/* v51: o aviso virou uma marquinha no canto do botão Atualizar (⏳ laranja = aguardando envio · ⚠ vermelho = sem conexão) —
+   assim o topo continua com 2 botões e as datas dos relatórios não cortam. Tocar no botão também envia o que estiver pendente. */
+function cloudBadge(){const b=$('fresh-upd');if(!b)return;const p=Object.keys(livePend).length;
+  b.classList.toggle('pend',!!p);b.classList.toggle('err',!p&&!!cloudErr);
+  b.title=p?'Atualizar — há alterações deste aparelho aguardando envio para a nuvem':cloudErr?'Atualizar — nuvem: '+cloudErr:'Atualizar com a nuvem';b.setAttribute('aria-label',b.title)}
+
 /* done: envia só o que mudou (antes mandava os ~7 mil produtos a cada toque) */
 function cloudWriteDone(){
   const c=code();if(!c||!allRecords.length)return;
@@ -429,13 +431,14 @@ if('serviceWorker' in navigator&&/^https?:/.test(location.protocol)){/* ⚡ regi
   addEventListener('load',()=>idle(()=>navigator.serviceWorker.register('./sw.js').then(reg=>reg.update()).catch(()=>{})))}
 /* versão do app na aba Dados (nome do cache do SW, ex.: v34) — para conferir se o aparelho já pegou a atualização */
 /* APP_VER = versão do CÓDIGO que está rodando. ⚠ Mantenha igual ao V do sw.js (o teste de fumaça confere). */
-const APP_VER='v50';
+const APP_VER='v51';
 const verNum=v=>parseInt(String(v||'').replace(/\D/g,''),10)||0;   // 'v9' < 'v45' < 'v100' (comparação numérica, não alfabética)
 function mostraVersao(){const el=$('app-ver');if(el)el.textContent='Versão do app: '+APP_VER}
 addEventListener('load',()=>setTimeout(mostraVersao,3000));
 /* ═══ NOVIDADES (nov/2026): depois de atualizar, o Resumo mostra o que mudou (1 vez por versão). Na 1ª instalação não aparece.
    Ao publicar uma versão com mudança visível, acrescente aqui a chave da versão (a mesma do sw.js, ex.: 'v43'). ═══ */
 const NOVIDADES={
+  v51:['🔄 <b>Botão Atualizar</b> no topo, ao lado da engrenagem — substitui o gesto de puxar a tela para baixo (que disparava sem querer ao rolar)'],
   v50:['🔧 O <b>✕ de limpar a busca</b> voltou para dentro da caixa de pesquisa'],
   v49:['⚡ <b>Abre na hora</b>: o app abre com o relatório guardado no aparelho e só baixa da nuvem se houver relatório novo. Pedido, concluídos, depósito e Ruptura no CD continuam sincronizando em tempo real'],
   v48:['📊 <b>Situação dos produtos por sistemática</b>: botões Todas · Sist. 1 · Sist. 10 · Sist. 20 no Resumo (como nas categorias)',

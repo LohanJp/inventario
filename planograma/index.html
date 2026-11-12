@@ -24,7 +24,7 @@
    <div class="left"><span class="brand" aria-hidden="true"><svg viewBox="0 0 32 32" width="30" height="30"><rect width="32" height="32" rx="9" fill="var(--f7-theme-color)"/><path d="M8 22V10M13 22V14M18 22V8M23 22V16" stroke="#fff" stroke-width="3" stroke-linecap="round"/></svg></span></div>
    <div class="title" id="fresh"><span id="tab-title">Resumo</span><span class="subtitle" id="fresh-t">Nenhum relatório carregado</span></div>
    <div class="right">
-    <a class="link icon-only fcl" id="fresh-cloud" hidden aria-label="Nuvem" role="button" tabindex="0"></a>
+    <a class="link icon-only" id="fresh-upd" aria-label="Atualizar com a nuvem" title="Atualizar com a nuvem" role="button" tabindex="0"><svg class="ic" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 0 1-15.5 6.2L3 16"/><path d="M3 21v-5h5"/><path d="M3 12a9 9 0 0 1 15.5-6.2L21 8"/><path d="M21 3v5h-5"/></svg></a>
     <a class="link icon-only" id="fresh-gear" aria-label="Dados e configurações" role="button" tabindex="0"><svg class="ic" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></a>
    </div>
   </div>
@@ -42,8 +42,7 @@
 
  <div class="tabs">
  <!-- ═══ RESUMO ═══ -->
- <section id="s-home" class="page-content ptr-content tab tab-active on">
-  <div class="ptr-preloader"><div class="preloader"></div><div class="ptr-arrow"></div></div>
+ <section id="s-home" class="page-content tab tab-active on">
   <div class="wrap">
   <div id="pban"></div>
   <div id="dtban" hidden></div>
@@ -70,8 +69,7 @@
  </section>
 
  <!-- ═══ PRODUTOS ═══ -->
- <section id="s-prod" class="page-content ptr-content tab">
-  <div class="ptr-preloader"><div class="preloader"></div><div class="ptr-arrow"></div></div>
+ <section id="s-prod" class="page-content tab">
   <div class="prod-top">
    <form class="searchbar sb-f7" onsubmit="return false" role="search">
     <div class="searchbar-inner">
@@ -95,8 +93,7 @@
  </section>
 
  <!-- ═══ PEDIDO ═══ -->
- <section id="s-ped" class="page-content ptr-content tab">
-  <div class="ptr-preloader"><div class="preloader"></div><div class="ptr-arrow"></div></div>
+ <section id="s-ped" class="page-content tab">
   <div class="wrap">
   <div class="card ped-head"><div class="card-content card-content-padding" id="phead"></div></div>
   <div class="block-title">Adicionar produto</div>
@@ -113,8 +110,7 @@
  </section>
 
  <!-- ═══ ANEXOS: Encarte · Panfleto · Oferta do dia ═══ -->
- <section id="s-enc" class="page-content ptr-content tab">
-  <div class="ptr-preloader"><div class="preloader"></div><div class="ptr-arrow"></div></div>
+ <section id="s-enc" class="page-content tab">
   <div class="axbar">
    <div class="segmented segmented-strong" id="ax-seg" role="group" aria-label="Tipo de anexo"><button class="button" type="button" data-axs="enc">📋 Panfleto</button><button class="button" type="button" data-axs="pan">🧾 Lâmina</button><button class="button" type="button" data-axs="dia">⭐ Oferta</button><span class="segmented-highlight"></span></div>
    <!-- seletor antigo (o oferta.js continua usando estes ids; fica escondido) -->
@@ -167,8 +163,7 @@
  </section>
 
  <!-- ═══ DADOS E CONFIGURAÇÕES (engrenagem do topo) ═══ -->
- <section id="s-data" class="page-content ptr-content tab">
-  <div class="ptr-preloader"><div class="preloader"></div><div class="ptr-arrow"></div></div>
+ <section id="s-data" class="page-content tab">
   <div class="wrap">
   <div class="block-title">Relatórios</div>
   <div class="list list-strong list-outline-ios list-dividers inset data-list"><ul>

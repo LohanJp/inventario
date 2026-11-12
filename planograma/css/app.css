@@ -44,7 +44,7 @@ input[type=file]{position:absolute!important;width:1px!important;height:1px!impo
 #fresh-t .diff{color:var(--am);font-weight:700}#fresh-t .off{opacity:.55}
 #fresh.warn #fresh-t{color:var(--am)}
 .navbar .left .brand{display:flex;padding-left:6px}
-.fcl{font-size:18px;color:var(--am)}
+
 .ios .navbar .title{align-items:center}
 /* abas de baixo */
 .tabbar .icon svg{width:24px;height:24px}
@@ -556,3 +556,13 @@ html:not(.dark) .ent.urg{color:color-mix(in srgb,var(--crit) 72%,#000)}
 
 /* v48: seletor de sistemática da Situação dos produtos */
 .kpsw{margin:0 var(--f7-card-margin-horizontal,16px) 10px}
+
+/* v51: botão Atualizar no topo (substitui o puxar para baixo) — gira enquanto confere a nuvem */
+#fresh-upd .ic{transition:transform .2s}
+#fresh-upd.gira{pointer-events:none;opacity:.7}
+#fresh-upd.gira .ic{animation:giraUpd .9s linear infinite}
+@keyframes giraUpd{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){#fresh-upd.gira .ic{animation:none}}
+#fresh-upd{position:relative}
+#fresh-upd.pend::after,#fresh-upd.err::after{content:'';position:absolute;top:9px;right:8px;width:9px;height:9px;border-radius:50%;background:var(--am);box-shadow:0 0 0 2px var(--f7-navbar-bg-color,var(--bg))}
+#fresh-upd.err::after{background:var(--cr)}

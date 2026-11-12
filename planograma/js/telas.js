@@ -38,12 +38,12 @@ const mkSheet=(id,o)=>{const el=$(id);if(el){el.setAttribute('role','dialog');el
 let D=null,sheetSwap=false;   // D = rascunho dos filtros enquanto a folha está aberta (só vale ao tocar em "Ver N itens")
 const fichaSheet=mkSheet('sheet'),fltSheet=mkSheet('flt-sheet'),catSheet=mkSheet('cat-sheet');
 
-/* ═══ PUXAR PARA ATUALIZAR (em todas as abas) ═══ as abas rolam por dentro, então o "puxar para baixo" do navegador
-   (que antes recarregava a página) não acontece mais: o do Framework7 busca a nuvem de novo e redesenha a aba atual,
-   mantendo a aba, a busca e os filtros. Sem internet/código: só recalcula e redesenha com os dados do aparelho. */
+/* ═══ BOTÃO ATUALIZAR (ao lado da engrenagem, em todas as abas) ═══ substituiu o "puxar para baixo" (nov/2026: o gesto
+   disparava sem querer ao rolar as listas). Confere a nuvem (só baixa relatório se houver um NOVO; pedido e concluídos
+   vêm sempre) e redesenha a aba atual, mantendo a aba, a busca e os filtros. Sem internet/código: só recalcula com os dados do aparelho. */
 let ptrBusy=false;
 async function puxarAtualizar(){
-  if(ptrBusy)return;ptrBusy=true;
+  if(ptrBusy)return;ptrBusy=true;const bt=$('fresh-upd');bt.classList.add('gira');bt.setAttribute('aria-busy','true');
   const aba=curTab,f={...F},q=$('q').value,c=code(),realGo=go;
   let nuvemOk=false;
   try{
@@ -54,11 +54,8 @@ async function puxarAtualizar(){
     go(aba,true);
     toast(nuvemOk?'Atualizado com a nuvem ✓':c&&navigator.onLine===false?'Sem internet — mostrando os dados do aparelho':'Atualizado ✓');
   }catch(e){toast('⚠ Não consegui atualizar: '+(e&&e.message||e))}
-  finally{ptrBusy=false}}
-document.querySelectorAll('.tabs>section.ptr-content').forEach(el=>{
-  el.querySelectorAll('.preloader').forEach(p=>app.preloader.init(p));
-  const ptr=app.ptr.create(el);
-  ptr.on('refresh',(el2,done)=>{puxarAtualizar().finally(()=>{if(typeof done==='function')done();else ptr.done()})})});
+  finally{ptrBusy=false;bt.classList.remove('gira');bt.removeAttribute('aria-busy')}}
+$('fresh-upd').onclick=()=>puxarAtualizar();
 
 /* navegação */
 /* ═══ BOTÃO/GESTO VOLTAR ═══ cada tela e cada janela (ficha, leitor) vira uma entrada do histórico:
