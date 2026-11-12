@@ -1,4 +1,4 @@
-/* Planograma Mobile — BASE DA INTERFACE: utilitários, busca, sugestão de pedido e cálculo de situação (derive).
+/* Planograma Mobile — BASE DA INTERFACE: utilitários, busca e cálculo de situação (derive).
    Ordem de carregamento (index.html): leitura → estado → base → telas → encarte → oferta → pedido → arquivos → nuvem.
    Todos são scripts comuns que compartilham o mesmo escopo global, então a ORDEM importa. */
 
@@ -58,28 +58,16 @@ let currentMeta={},savedInfo=null,F={chip:'all',cat:'',q:'',sort:'cobt',ent:'1'}
 let catSist='1';try{const v=localStorage.getItem('planograma_catsist');if(v==='10'||v==='20')catSist=v}catch{}   // ⚠ declarado aqui no topo: renderCats() roda dentro de renderHome()
 const key=r=>r.automacao||r.produto;
 
-/* ═══ SUGESTÃO DE PEDIDO ═══ repor até a CAPACIDADE do planograma (alt × larg × prof), descontando estoque e trânsito,
-   em caixas fechadas (Emb). Só entra item com MDV e cobertura total < SUG_DIAS dias.
-   Item em falta no CD (estoque < 1 caixa — zero ou negativo — e SEM trânsito) → fora da sugestão (pedir não resolve); aparece no filtro "Falta no CD". Com trânsito o CD tem o item → não é falta. */
+/* (nov/2026, v57) A SUGESTÃO DE QUANTIDADE foi removida do app a pedido: não era usada. Continua existindo só a
+   "Nova cobertura" do filtro 1×1 (telas.js: novaInfo), que gera o TXT para o cadastro automático do planograma. */
 const TR_ATRASO=4,TR_SAIU_DIAS=7;   // trânsito: 4+ dias = atrasado (normal: 2–3) · aviso de "saiu sem entrar no estoque" dura 7 dias
-const SUG_DIAS=7,SUG_ALVO=15;   // SUG_ALVO: item SEM capacidade cadastrada (fora do planograma) → sugere estoque para 15 dias de venda
 const capOf=r=>{const c=num(r.total);return c>0?c:num(r.altura)*num(r.largura)*num(r.prof)};
-function sugQty(r){
-  if(cdRisk(r)||!r._m||r._ct===null||r._ct>=SUG_DIAS)return 0;   // em falta no CD (estoque < 1 caixa, sem trânsito) → pedir não resolve   // cobertura TOTAL (estoque + trânsito) ÷ MDV
-  const cap=capOf(r),tem=Math.max(r._e,0)+r._t;
-  const need=cap>0?cap-tem:Math.ceil(SUG_ALVO*r._m)-tem;if(need<=0)return 0;   // sem capacidade: completa SUG_ALVO dias de venda (nov/2026)
-  const emb=num(r.emb)||1;return Math.ceil(need/emb)*emb}
-const sugDias=r=>r._sg>0&&!(capOf(r)>0);                                                      // sugestão calculada por dias de venda (sem capacidade)
-const sugPassa=r=>{const c=capOf(r);return r._sg>0&&c>0?Math.max(0,r._sg+Math.max(r._e,0)+r._t-c):0};   // quanto a caixa fechada passa da capacidade
 /* possível falta no CD: estoque menor que 1 caixa (inclui zero e negativo) — mesmo critério do Encarte */
 const isCD=r=>!r._sist||r._sist==='1';   // falta no CD só vale p/ sistemática 1; sist 10/20 negativo = só falta pedir ao fornecedor
 const cdRisk=r=>isCD(r)&&!(r._t>0)&&r._e<(num(r.emb)||1);   // com trânsito o CD TEM o item (só não chegou) → não é falta no CD
 let noCD=false;try{noCD=localStorage.getItem('planograma_nocd')==='1'}catch{}
-/* sugestão em unidades e em caixas (Emb) */
-const sugCx=r=>{const e=num(r.emb)||1;return e>1?`${f0(r._sg/e)} cx de ${f0(e)}`:''};
-const sugTxt=r=>`${f0(r._sg)} un`+(num(r.emb)>1?` · ${sugCx(r)}`:'');
 const addMsg=r=>transitLoaded&&r&&r._t>0?'Adicionado — aguardando chegada do trânsito':'Adicionado ao pedido';
-const addS=r=>addPed(r);   // sem quantidade: a sugestão continua visível nas etiquetas do cartão
+const addS=r=>addPed(r);
 /* ═══ TIPO DE ENTREGA + DATAS ═══ Sist 1 = CD · 20 = fornecedor direto · 10 = fornecedor através do CD */
 const ENT={'1':'CD','10':'Forn. via CD','20':'Fornecedor'};
 const entTxt=r=>r._sist?`<b class="ent e${esc(r._sist)}">${esc(ENT[r._sist]||'Sist. '+r._sist)}</b> <small>(sist. ${esc(r._sist)})</small>`:'—';
@@ -121,7 +109,7 @@ function derive(){mergeRecs();byProd=new Map(allRecords.map(r=>[r.produto,r]));f
  // ARREDONDA as duas coberturas para dias inteiros: ,5 ou mais sobe · abaixo de ,5 desce (6,4 → 6 · 6,5 → 7). A situação usa o número arredondado, igual ao que aparece na tela.
  const rnd=v=>v===null?null:Math.round(v);r._c=rnd(r._c);r._ct=rnd(r._ct);
  // SITUAÇÃO pela cobertura TOTAL: item com mercadoria a caminho não fica "Crítico" à toa. Ruptura continua sendo estoque ≤ 0 (gôndola vazia agora).
- r._k=r._e<=0?'rup':semGiro(r)?'sg':r._ct===null?'nd':r._ct<7?'crit':r._ct<15?'aten':'ok';r._d=doneSet.has(key(r));if(!r._h)r._h=norm(r.descricao+' '+r.produto+' '+r.automacao+' '+String(r.produto||'').replace(/^0+(?=\d)/,'')+' '+String(r.automacao||'').replace(/^0+(?=\d)/,''));r._sg=sugQty(r)}
+ r._k=r._e<=0?'rup':semGiro(r)?'sg':r._ct===null?'nd':r._ct<7?'crit':r._ct<15?'aten':'ok';r._d=doneSet.has(key(r));if(!r._h)r._h=norm(r.descricao+' '+r.produto+' '+r.automacao+' '+String(r.produto||'').replace(/^0+(?=\d)/,'')+' '+String(r.automacao||'').replace(/^0+(?=\d)/,''))}
   updBadge();
   if(encItems.length){encDirty=true;if(curTab==='enc'&&axCur==='enc')setTimeout(renderEnc,0)}   // ⚡ Encarte escondido: só marca (redesenha ao abrir)
   if($('pf-txt'))setTimeout(pfSync,0);            // e o Panfleto

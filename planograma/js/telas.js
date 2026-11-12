@@ -104,9 +104,9 @@ function ring(c,n){let off=25,s='';
 let hSist='1';try{const v=localStorage.getItem('planograma_hsist');if(v===''||v==='10'||v==='20')hSist=v}catch{}
 const hSistOk=r=>!hSist||(hSist==='1'?isCD(r):r._sist===hSist);
 const setHSist=v=>{hSist=v;try{localStorage.setItem('planograma_hsist',v)}catch{}renderHome()};
-function renderHome(){let n=allRecords.length;renderBan();renderSug();
+function renderHome(){let n=allRecords.length;renderBan();
  $('home-dados').hidden=!n;$('h-load').hidden=!!n;                            // sem dados: só o cartão com o botão de carregar (nada de "—" soltos)
- if(!n){$('h-fil').textContent='Nenhum relatório carregado';$('h-sub').textContent='Carregue o relatório de Planograma para ver a situação dos produtos e a sugestão de pedido.';$('h-ring').innerHTML='';$('h-health').innerHTML='';$('kpis').innerHTML='';$('cats').innerHTML='';return}
+ if(!n){$('h-fil').textContent='Nenhum relatório carregado';$('h-sub').textContent='Carregue o relatório de Planograma para ver a situação dos produtos.';$('h-ring').innerHTML='';$('h-health').innerHTML='';$('kpis').innerHTML='';$('cats').innerHTML='';return}
  /* O Resumo NÃO conta a falta no CD (Sist. 1, menos de 1 caixa, sem trânsito): pedir não resolve e só inflava os números.
     Mesmo critério da lista com "Esconder falta no CD" ligado → o número tocado bate com a lista que abre. */
  const R0=hSist?allRecords.filter(hSistOk):allRecords,R=R0.filter(r=>!hideCD(r,true,noCDTr)),nF=R0.length-R.length,N=n;n=R.length||1;   // toque no círculo: só a Sistemática 1 (isCD, igual ao filtro "1")
@@ -202,27 +202,8 @@ $('h-ring').setAttribute('role','button');
 $('h-sub').onclick=e=>{if(!e.target.closest('#h-fcd'))return;F={chip:'cd',cat:'',q:'',sort:'cobt',ent:hSist};$('q').value='';go('prod')};
 $('kpis').onclick=e=>{const b=e.target.closest('.kpi');if(!b)return;const k=b.dataset.k;if(!noCD){noCD=true;salvaCD()}F={chip:k==='tr'?'trans':k,cat:'',q:'',sort:k==='ok'?'nome':'cobt',ent:hSist};$('q').value='';go('prod')};   // a lista bate com o número tocado (todas ou só Sist. 1)
 $('cats').onclick=e=>{const b=e.target.closest('.bar');if(!b)return;if(!noCD){noCD=true;salvaCD()}F={chip:'alert',cat:b.dataset.c,q:'',sort:'cobt',ent:catSist};$('q').value='';go('prod')};
-function renderSug(){const el=$('sug');
-  if(!allRecords.length){el.innerHTML='<div class="empty">—</div>';return}
-  if(!estoqueLoaded){el.innerHTML='<div class="empty" style="padding:18px 12px">Carregue o relatório de <b>Cobertura</b> na aba <b>Dados</b> para ver a sugestão de pedido e as coberturas reais.</div>';return}
-  const all=allRecords.filter(r=>r._sg>0&&!r._d&&isCD(r)),neg=allRecords.filter(r=>cdRisk(r)&&r._m&&!r._d).length;   // neg: venderiam, mas estão em falta no CD (estoque < 1 caixa, sem trânsito)
-  const cd=neg?`<div class="sg-cd">${ic('warn',14)} ${f0(neg)} itens em falta no CD ficam fora da sugestão · <button class="lnk" id="sg-cd" type="button">ver</button></div>`:'';
-  if(!all.length){el.innerHTML=`<div class="empty" style="padding:20px 12px 8px">Nada para repor agora 🎉</div><div style="padding:0 14px 14px">${cd}</div>`;return}
-  const fresh=all.filter(r=>!inPed(r.produto));
-  const top=[...fresh].sort((a,b)=>Math.max(a._ct,0)-Math.max(b._ct,0)||b._m-a._m).slice(0,5);   // mais perto de zerar primeiro
-  el.innerHTML=`<div class="sug-h"><div class="sug-n">${ic('bulb',20)}<b>${f0(all.length)}</b><span>produtos para repor</span></div><div class="ln">Só Sistemática 1 · repor até a capacidade do planograma, em caixas fechadas · cobertura total &lt; ${SUG_DIAS} dias${transitLoaded?'':' · <b style="color:var(--am)">carregue o Trânsito para descontar o que já está a caminho</b>'}</div>${cd}</div>`
-   +(top.length?'<div class="urgs">'+top.map(r=>`<div class="urg" data-p="${esc(r.produto)}" style="--c:${COLOR[r._k]}"><div class="d">${esc(r.descricao)}<small>estoque ${f0(r._e)}${r._t>0?' · trânsito '+f0(r._t):''} · MDV ${f1(r._m)}</small></div><div class="uc"><b class="num">${f0(Math.max(r._ct,0))}</b><small>dias</small></div></div>`).join('')+'</div>':'<div class="empty" style="padding:14px">Todas as sugestões já estão no pedido ✓</div>')
-   +`<div class="sug-b"><button class="button button-tonal button-large" id="sg-all" type="button">Ver todas (${f0(all.length)})</button><button class="button button-fill button-large" id="sg-add" type="button"${fresh.length?'':' disabled'}>🛒 Adicionar ${f0(fresh.length)}</button></div>`}
-$('sug').onclick=e=>{
-  const u=e.target.closest('.urg');if(u)return openSheet(byProd.get(u.dataset.p));
-  if(e.target.closest('#sg-cd')){F={chip:'cd',cat:'',q:'',sort:'cobt',ent:'1'};$('q').value='';return go('prod')}
-  if(e.target.closest('#sg-all')){F={chip:'sug',cat:'',q:'',sort:'cobt',ent:'1'};$('q').value='';return go('prod')}
-  if(e.target.closest('#sg-add')){const P=pedSet(),f=allRecords.filter(r=>r._sg>0&&!r._d&&isCD(r)&&!P.has(r.produto));if(!f.length)return;
-    if(!confirm(`Adicionar ${f0(f.length)} produtos ao pedido?`))return;
-    f.forEach(r=>addPed(r,'',true));savePed();renderSug();toast(f0(f.length)+' produtos adicionados ao pedido')}};
-
 /* ═══ PRODUTOS ═══ */
-const CHIPS=[['all','Todos'],['sug','Sugestão','bulb'],['cd','Falta no CD','warn'],['dep','🔎 Procurar no depósito'],['alert','Alertas'],['rup','Ruptura'],['crit','Crítico'],['aten','Atenção'],['ok','OK'],['sg','Sem giro'],['nd','Sem MDV'],['trans','Em trânsito'],['pend','Pendentes'],['done','Feitos']];
+const CHIPS=[['all','Todos'],['cd','Falta no CD','warn'],['dep','🔎 Procurar no depósito'],['alert','Alertas'],['rup','Ruptura'],['crit','Crítico'],['aten','Atenção'],['ok','OK'],['sg','Sem giro'],['nd','Sem MDV'],['trans','Em trânsito'],['pend','Pendentes'],['done','Feitos']];
 const CHIP_C={rup:'var(--cr)',crit:'var(--crit)',aten:'var(--am)',ok:'var(--ok)',sg:'var(--sg)',nd:'var(--mu)',alert:'var(--cr)',cd:'var(--cr)',sug:'var(--am)',trans:'var(--in)',dep:'var(--in)',done:'var(--ok)'};
 /* 🔎 itens do pedido marcados para procurar no depósito (atualizado a cada renderList) */
 const LSDEP='planograma_dep';let depMap={};try{(JSON.parse(localStorage.getItem(LSDEP)||'[]')||[]).forEach(k=>{if(k)depMap[k]=true})}catch{}   // ⚠ precisa vir ANTES de refreshDep: a Oferta do dia chama refreshDep() na abertura
@@ -263,7 +244,7 @@ const T=toks(F.q);
  /* Altura × Largura: sem medidas cadastradas primeiro, depois 1×1, 1×2, 1×3… 2×1, 2×2…; empate → profundidade, depois nome A–Z */
  S.dim=(a,b)=>{const A=num(a.altura),B=num(b.altura),la=num(a.largura),lb=num(b.largura),sa=!(A&&la),sb=!(B&&lb);
   return (sb-sa)||(sa?S.nome(a,b):A-B||la-lb||num(a.prof)-num(b.prof)||S.nome(a,b))};if(!S[F.sort])F.sort='cobt';
- list.sort(T.length?(a,b)=>b._s-a._s||S[F.sort](a,b):S[F.sort]);$('cnt').textContent=f0(list.length)+(rel?' itens parciais — nenhum tem todas as palavras':' itens')+(T.length?(fAct?' · busca ignora os filtros':''):(()=>{if(!noCD||['cd','dep','sug'].includes(F.chip)||F.todo==='trsaiu')return '';const n=allRecords.filter(r=>hideCD(r)&&semCD(r)&&passesChip(r,F.chip,true)).length;return n?' · ocultando '+f0(n)+' (falta no CD)':''})());   // conta com TODOS os filtros ligados (antes ignorava giro, 1×1, fornecedor…)
+ list.sort(T.length?(a,b)=>b._s-a._s||S[F.sort](a,b):S[F.sort]);$('cnt').textContent=f0(list.length)+(rel?' itens parciais — nenhum tem todas as palavras':' itens')+(T.length?(fAct?' · busca ignora os filtros':''):(()=>{if(!noCD||['cd','dep'].includes(F.chip)||F.todo==='trsaiu')return '';const n=allRecords.filter(r=>hideCD(r)&&semCD(r)&&passesChip(r,F.chip,true)).length;return n?' · ocultando '+f0(n)+' (falta no CD)':''})());   // conta com TODOS os filtros ligados (antes ignorava giro, 1×1, fornecedor…)
  $('q-x').classList.toggle('on',!!F.q);
  $('list-empty').hidden=!!list.length;$('exp-txt').hidden=!list.length;
  if(!$('s-prod').classList.contains('on')&&!vl)return;                     // a lista virtual nasce quando a aba abre (precisa da altura da tela)
@@ -474,11 +455,11 @@ const giroR=r=>String(r.giro||'').trim().toUpperCase();
 const giroOk=(r,g=F.giro)=>!g||giroR(r)===g;
 const catOk=r=>!F.cat||r.categoria===F.cat||(r.categoria||'').startsWith(F.cat+'->');   // nível pai inclui os filhos
 function passesChip(r,ch=F.chip,ignNoCD){
-  return (ignNoCD||ch==='cd'||ch==='dep'||ch==='sug'||F.todo==='trsaiu'||!hideCD(r))&&
+  return (ignNoCD||ch==='cd'||ch==='dep'||F.todo==='trsaiu'||!hideCD(r))&&
     (ch==='all'||ch===r._k||
     (ch==='alert'&&(r._k==='rup'||r._k==='crit'))||
     (ch==='trans'&&r._t>0)||(ch==='pend'&&!r._d)||
-    (ch==='done'&&r._d)||(ch==='sug'&&r._sg>0)||
+    (ch==='done'&&r._d)||
     (ch==='cd'&&cdRisk(r))||(ch==='dep'&&DEP.has(r.produto)));}
 function buildCatTree(){const counts={};
   allRecords.forEach(r=>{if(!(dChip(r)&&dEnt(r)&&cobPass(r,D.cob)))return;const segs=(r.categoria||'').split('->');
@@ -523,7 +504,7 @@ const cobPass=(r,c)=>{if(!cobOn(c))return true;const v=cobDia(r);return v!==null
 const cobTxt=c=>`Cob. ${c.op==='lt'?'<':'>'} ${f0(c.d)} dias`;
 const dCat=r=>!D.cat||r.categoria===D.cat||(r.categoria||'').startsWith(D.cat+'->');
 const dEnt=r=>!D.ent||(D.ent==='np'?!!r._np:D.ent==='1'?isCD(r):r._sist===D.ent);
-const dChip=(r,ch=D.chip)=>(ch==='cd'||ch==='dep'||ch==='sug'||!hideCD(r,D.noCD,D.noCDTr))&&passesChip(r,ch,true);
+const dChip=(r,ch=D.chip)=>(ch==='cd'||ch==='dep'||!hideCD(r,D.noCD,D.noCDTr))&&passesChip(r,ch,true);
 const ENT0='1';   // filtro padrão de Sistemática (ao abrir o app e no "Limpar")
 const ENTS=[['','Todas'],['1','1'],['10','10'],['20','20'],['np','Sem plano']];
 const COBOPS=[['','Qualquer'],['lt','Menor que'],['gt','Maior que']];

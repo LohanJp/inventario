@@ -61,7 +61,7 @@ const srv=http.createServer((q,s)=>{const p=path.join(RAIZ,decodeURIComponent(q.
     const t=await p.$eval('#sheet h3',e=>e.textContent);await p.click('#sh-x');await espera(450);await p.fill('#q','');
     if(await p.evaluate(()=>fichaSheet.opened))throw Error('a ficha não fechou');return t});
   await passo('filtros e categorias (folha única de Filtros)',async()=>{
-    for(const c of['sug','cd','rup','ok','all']){await p.click('#flt-btn');await espera(400);await p.click(`#flt-list .fs-s[data-c=${c}]`);await p.click('#flt-apply');await espera(450)}
+    for(const c of['cd','rup','ok','all']){await p.click('#flt-btn');await espera(400);await p.click(`#flt-list .fs-s[data-c=${c}]`);await p.click('#flt-apply');await espera(450)}
     await p.click('#flt-btn');await espera(400);await p.click('#cat-pick-btn');await espera(500);await p.click('#cat-list .cs-item[data-action=drill]');await espera(150);await p.click('#cs-apply-btn');await espera(700);
     if(!(await p.evaluate(()=>fltSheet.opened&&!!D&&!!D.cat)))throw Error('não voltou para Filtros com a categoria');
     await p.click('#flt-list [data-ent="1"]');await p.click('#flt-apply');await espera(450);
@@ -85,7 +85,7 @@ const srv=http.createServer((q,s)=>{const p=path.join(RAIZ,decodeURIComponent(q.
     await p.evaluate(()=>{const a=document.querySelector('#list li [data-sw=ok]');a.click()});await espera(350);   // desfaz
     await p.evaluate(()=>{const a=document.querySelector('#list li [data-sw=add]');a.click()});await espera(350);
     if(!(await p.evaluate(pr=>!!inPed(pr),pr)))throw Error('não entrou no pedido');return 'item '+pr});
-  await passo('adiciona sugestões ao pedido',async()=>{await p.click('#nav [data-s=home]');await espera(300);if(await p.$('#sg-add:not([disabled])'))await p.click('#sg-add');
+  await passo('adiciona vários itens ao pedido',async()=>{await p.evaluate(()=>{allRecords.filter(r=>r._k==='crit').slice(0,25).forEach(r=>addPed(r,'',true));savePed()});
     await p.click('#nav [data-s=ped]');await espera(300);return (await p.$eval('#phead .t',e=>e.textContent))});
   await passo('gesto no Pedido: → concluir e ← excluir (com desfazer)',async()=>{
     const n0=await p.evaluate(()=>pedido.length);
@@ -100,7 +100,7 @@ const srv=http.createServer((q,s)=>{const p=path.join(RAIZ,decodeURIComponent(q.
     await p.click('#ax-seg [data-axs=pan]');
     const nome=await p.evaluate(()=>allRecords[0].descricao);await p.fill('#pf-txt',nome+' · 9,99');
     await p.click('#pf-go');await p.click('#pf-ask-days button');await espera(600);return await p.$eval('#pf-sum',e=>e.textContent)});
-  await passo('números calculados sem erro (estoque, trânsito, coberturas)',async()=>{const n=await p.evaluate(()=>allRecords.filter(r=>!Number.isFinite(r._e)||!Number.isFinite(r._t)||(r._ct!==null&&!Number.isFinite(r._ct))||(r._sg!==0&&!(r._sg>0))).length);if(n)throw new Error(n+' produtos com número inválido (NaN)');return 'ok'});
+  await passo('números calculados sem erro (estoque, trânsito, coberturas)',async()=>{const n=await p.evaluate(()=>allRecords.filter(r=>!Number.isFinite(r._e)||!Number.isFinite(r._t)||(r._ct!==null&&!Number.isFinite(r._ct))).length);if(n)throw new Error(n+' produtos com número inválido (NaN)');return 'ok'});
   await passo('aba Dados e backup',async()=>{await p.click('#fresh-gear');await espera(200);const b=await p.evaluate(()=>buildBackup());
     if(!b.records.length)throw Error('backup vazio');if((R.cob||R.nuvemCob)&&!b.estoque)throw Error('backup sem Cobertura')});
   await passo('modo claro e escuro',async()=>{await p.click('#theme-seg [data-t=dark]');const d=await p.evaluate(()=>document.documentElement.classList.contains('dark'));
