@@ -43,6 +43,9 @@ function savePed(){
   updBadge();
   cloudWritePedido();   // só em ação do usuário
 }
+/* CONCLUÍDOS DO PEDIDO (nov/2026): antes ficavam para sempre no grupo "✓ Concluídos".
+   Agora saem ao carregar o planograma de um DIA NOVO (igual aos feitos de Produtos) e há o botão "Limpar concluídos" no grupo. */
+function pedLimpaConcl(){const n=pedido.filter(x=>x.done).length;if(n){pedido=pedido.filter(x=>!x.done);savePed()}return n}
 function addPed(r,q,noSave){if(inPed(r.produto))return false;pedido=pedido.filter(x=>x.p!==r.produto);pedido.push({p:r.produto,d:r.descricao,q:q||'',date:tomorrow(),added:today(),done:false});if(!noSave)savePed();return true}
 function renderBan(){const n=pend().length,t=pedido.filter(x=>!x.done&&inTransit(x)).length;
  $('pban').innerHTML=n||t?`<button class="pban" data-go="ped" type="button"><span class="pb-ic">🛒</span><span class="pb-tx"><b>${n?`${n} ${n>1?'itens':'item'} para pedir`:'Nada para pedir agora'}</b>${t?`<small>${t} aguardando trânsito</small>`:'<small>Toque para abrir o pedido</small>'}</span><span class="pb-go">›</span></button>`:''}
@@ -77,8 +80,8 @@ function renderPed(){
  const ORD={nome,cob_a:by(cob,1),cob_d:by(cob,-1),mdv_d:by(mdv,-1),mdv_a:by(mdv,1)};
  const UO=x=>x.u==='a'?0:x.u==='b'?2:1;   // urgência primeiro, depois a ordenação escolhida
  const ord=l=>l.slice().sort((a,b)=>UO(a)-UO(b)||(ORD[pedSort]||nome)(a,b));
- const drop=(id,title,sub,l)=>l.length?`<details class="trd" id="${id}"${dropOpen[id]?' open':''}><summary><span>${title}<small>${sub}</small></span><span class="cnt">${l.length}</span>${CHEV}</summary><div class="trd-b">${ord(l).map(row).join('')}</div></details>`:'';
- const trHtml=drop('pnd','📋 Para pedir','Ainda falta pedir',fl(act))+drop('trd','⏳ Aguardando trânsito','Ficam aqui até a mercadoria chegar',fl(tr))+drop('fcd','⚠ Falta no CD','Menos de 1 caixa e sem trânsito — o CD não mandou',fl(fcd))+drop('rcd','⛔ Ruptura no CD',(()=>{const v=rc.filter(x=>rcdDias(x)>=RCD_VELHO).length;return v?`${v} há ${RCD_VELHO}+ dias — abra o item e reconfira se o CD já tem`:'Você marcou: o CD está sem — saem daqui quando aparecer trânsito'})(),fl(rc))+drop('dnd','✓ Concluídos','Deslize → para reabrir',fl(dn));
+ const drop=(id,title,sub,l,topo='')=>l.length?`<details class="trd" id="${id}"${dropOpen[id]?' open':''}><summary><span>${title}<small>${sub}</small></span><span class="cnt">${l.length}</span>${CHEV}</summary><div class="trd-b">${topo}${ord(l).map(row).join('')}</div></details>`:'';
+ const trHtml=drop('pnd','📋 Para pedir','Ainda falta pedir',fl(act))+drop('trd','⏳ Aguardando trânsito','Ficam aqui até a mercadoria chegar',fl(tr))+drop('fcd','⚠ Falta no CD','Menos de 1 caixa e sem trânsito — o CD não mandou',fl(fcd))+drop('rcd','⛔ Ruptura no CD',(()=>{const v=rc.filter(x=>rcdDias(x)>=RCD_VELHO).length;return v?`${v} há ${RCD_VELHO}+ dias — abra o item e reconfira se o CD já tem`:'Você marcou: o CD está sem — saem daqui quando aparecer trânsito'})(),fl(rc))+drop('dnd','✓ Concluídos','Deslize → para reabrir · saem sozinhos ao carregar o planograma de um dia novo',fl(dn),`<button class="button button-small button-tonal dn-clr" id="pc-clr" type="button">🗑 Limpar ${dn.length} concluído${dn.length>1?'s':''}</button>`);
  const chip=(nd||depOnly)?`<button class="chip-btn ${depOnly?'on':''}" id="pc-dep" type="button" style="--c:var(--in)">🔎 Procurar no depósito (${nd})</button>`:'';
  const cdChip=nfcd?`<button class="chip-btn ${pedNoCD?'on':''}" id="pc-fcd" type="button" style="--c:var(--am)" title="${pedNoCD?'Falta no CD fora de Para pedir — toque para mostrar':'Toque para esconder a falta no CD'}">⚠ Esconder falta no CD (${nfcd})</button>`:'';
  const sortBar=`<div class="row2 pedsort">${cdChip}${chip}<label class="chip-btn chip-sel ps-sel"><svg class="ic" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4v16M3 16l4 4 4-4M17 20V4M13 8l4-4 4 4"/></svg><select id="ped-sort" aria-label="Ordenar lista de pedido">${PED_ORD.map(([v,t])=>`<option value="${v}"${v===pedSort?' selected':''}>${t}</option>`).join('')}</select></label></div>`;
@@ -125,6 +128,8 @@ $('plist').onclick=e=>{if(Date.now()<swBlock)return;
   if(e.target.closest('#hint-x')){hintN=99;try{localStorage.setItem(LSHINT,hintN)}catch{}renderPed();return}
   if(e.target.closest('#pc-dep')){depOnly=!depOnly;renderPed();return}
   if(e.target.closest('#pc-fcd')){pedNoCD=!pedNoCD;renderPed();updBadge();return}
+  if(e.target.closest('#pc-clr')){const antes=pedido.slice(),n=pedLimpaConcl();renderPed();
+    if(n)toastUndo(`${n} concluído${n>1?'s':''} removido${n>1?'s':''} do pedido`,()=>{const tem=new Set(pedido.map(x=>x.p));pedido=[...pedido,...antes.filter(x=>x.done&&!tem.has(x.p))];savePed();renderPed()});return}
   if(e.target.closest('#pe-sug')){const P=pedSet(),f=allRecords.filter(r=>r._sg>0&&!r._d&&isCD(r)&&!P.has(r.produto));if(!f.length)return toast('Nenhuma sugestão no momento');f.forEach(r=>addPed(r,'',true));savePed();renderPed();return toast(f0(f.length)+' produtos adicionados')}
   if(e.target.closest('#pe-scan'))return $('b-scan2').click();
 const c=e.target.closest('.pedc,.pi');if(!c||(c.classList.contains('pedc')&&!e.target.closest('.infb')))return;openSheet(byProd.get(c.dataset.p))};

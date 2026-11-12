@@ -566,3 +566,6 @@ html:not(.dark) .ent.urg{color:color-mix(in srgb,var(--crit) 72%,#000)}
 #fresh-upd{position:relative}
 #fresh-upd.pend::after,#fresh-upd.err::after{content:'';position:absolute;top:9px;right:8px;width:9px;height:9px;border-radius:50%;background:var(--am);box-shadow:0 0 0 2px var(--f7-navbar-bg-color,var(--bg))}
 #fresh-upd.err::after{background:var(--cr)}
+
+/* v52: botão Limpar concluídos no grupo do Pedido */
+.dn-clr{margin:4px 0 8px auto;display:flex;width:max-content}

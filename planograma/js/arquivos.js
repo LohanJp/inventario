@@ -23,7 +23,8 @@ $('f-plano').onchange=e=>{const f=e.target.files[0];if(!f)return;e.target.value=
   /* planograma de OUTRO dia: zera também os concluídos guardados na NUVEM (antes os "feitos" de ontem voltavam na 1ª sincronização).
      Com a lista da nuvem em mãos apaga já; senão deixa pendente (⏳) e a próxima sincronização apaga em vez de baixar. */
   else if(chaveAntes&&chaveAntes!==lsKey&&typeof cloudWriteDone==='function'){if(cloudDone.size)cloudWriteDone();else{setPend('done',true);if(navigator.onLine)liveRefresh()}}
-  busy(false);toast(f0(p.records.length)+' produtos carregados'+(had?' · concluídos zerados':'')+warnTxt())},'latin1')};
+  const nPc=chaveAntes&&chaveAntes!==lsKey?pedLimpaConcl():0;   // dia novo: os concluídos do Pedido também saem (vai para a nuvem pelo savePed)
+  busy(false);toast(f0(p.records.length)+' produtos carregados'+(had?' · concluídos zerados':'')+(nPc?` · ${nPc} concluído${nPc>1?'s':''} do pedido limpo${nPc>1?'s':''}`:'')+warnTxt())},'latin1')};
 $('f-trans').onchange=e=>{const f=e.target.files[0];if(!f)return;e.target.value='';busy(true,'Lendo trânsito…');
  readFile(f,async t=>{if(!/Qt\.Transito/i.test(t.slice(0,6000))){busy(false);return toast('Este arquivo não é o relatório de Trânsito — nada foi trocado')}   // relatório no lugar errado estragava os números em silêncio
   const tm=parseTransitFile(t);if(!Object.keys(tm).length){busy(false);return toast('Nenhum produto lido no Trânsito — confira o arquivo')}
