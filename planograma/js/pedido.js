@@ -48,6 +48,10 @@ function savePed(){
 /* CONCLUÍDOS DO PEDIDO (nov/2026): antes ficavam para sempre no grupo "✓ Concluídos".
    Agora saem ao carregar o planograma de um DIA NOVO (igual aos feitos de Produtos) e há o botão "Limpar concluídos" no grupo. */
 function pedLimpaConcl(){const n=pedido.filter(x=>x.done).length;if(n){pedido=pedido.filter(x=>!x.done);savePed()}return n}
+/* ═══ FEITO É UM SÓ (nov/2026, v59): concluir no Pedido e marcar feito em Produtos são a MESMA coisa.
+   Qualquer um dos três caminhos (deslizar em Produtos, deslizar no Pedido, botão "Feito" da ficha) passa por aqui e marca/desmarca os dois. */
+function setFeito(prod,v){v=!!v;const r=byProd.get(prod);if(r&&!!r._d!==v){v?doneSet.add(key(r)):doneSet.delete(key(r));r._d=v;lsSave()}
+  const x=pedido.find(y=>y.p===prod);if(x&&!!x.done!==v){x.done=v;savePed()}}
 function addPed(r,q,noSave){if(inPed(r.produto))return false;pedido=pedido.filter(x=>x.p!==r.produto);pedido.push({p:r.produto,d:r.descricao,q:q||'',date:tomorrow(),added:today(),done:false});if(!noSave)savePed();return true}
 function renderBan(){const n=pend().length,t=pedido.filter(x=>!x.done&&inTransit(x)).length;
  $('pban').innerHTML=n||t?`<button class="pban" data-go="ped" type="button"><span class="pb-ic">🛒</span><span class="pb-tx"><b>${n?`${n} ${n>1?'itens':'item'} para pedir`:'Nada para pedir agora'}</b>${t?`<small>${t} aguardando trânsito</small>`:'<small>Toque para abrir o pedido</small>'}</span><span class="pb-go">›</span></button>`:''}
@@ -105,7 +109,7 @@ document.addEventListener('click',e=>{
   swBlock=Date.now()+350;const act=a.dataset.sw;
   if(li.closest('#plist')){                                              // PEDIDO
     const x=pedido.find(y=>y.p===c.dataset.p);if(!x){app.swipeout.close(li);return}
-    if(act==='ok'){app.swipeout.close(li);setTimeout(()=>{x.done=!x.done;savePed();renderPed()},260)}   // → concluir: volta suave e alterna
+    if(act==='ok'){app.swipeout.close(li);setTimeout(()=>{setFeito(x.p,!x.done);renderPed()},260)}   // → concluir: volta suave e alterna
     else if(act==='del'){app.swipeout.delete(li,()=>{const idx=pedido.indexOf(x);if(idx<0)return;pedido.splice(idx,1);savePed();renderPed();   // ← excluir: sai da tela e aparece "Desfazer"
       toastUndo('Item removido',()=>{pedido.splice(idx,0,x);savePed();renderPed()})})}
     return}
@@ -150,34 +154,77 @@ function fornTxt(r){
 /* ═══ FICHA DO PRODUTO (folha do Framework7 que sobe de baixo; arraste para baixo para fechar)
    topo: situação + os 5 números principais · meio: entrega e datas (rolável, vazios em "Mais detalhes") · ações SEMPRE visíveis embaixo ═══ */
 function openSheet(r){if(!r)return;const kv=([a,b])=>`<div class="kv"><span>${a}</span><span>${b}</span></div>`;
- const vazio=v=>v==='—'||/^—( dias)?$/.test(v);
- const sgk=r._k==='sg';   // sem giro: sem MDV a cobertura não tem sentido
- const prin=[['Cobertura total ((estoque + trânsito) ÷ MDV)',r._ct===null||sgk?'—':(r._ct>999?'+999':f0(Math.max(r._ct,0)))+' dias'],['Cobertura do relatório de Cobertura',r._c999?'999 no relatório (sem cálculo)':r._c===null||sgk?'—':f0(Math.max(r._c,0))+' dias'],
-   ['Estoque',f0(r._e)],['Em trânsito',transitLoaded?f0(r._t):'—'],['MDV (relatório de Cobertura)',r._m?f1(r._m):'—'],['Tipo de entrega',entTxt(r)],
-   ['Última entrada',esc(dtTxt(r._ue,'sem registro'))],['Última venda',esc(dtTxt(r._uv,'sem venda registrada'))]];
- const alerta=r._k==='nd'&&r._e>0?kv(['Sem MDV','<b style="color:var(--mu)">Vende pouco (MDV 0 no relatório) — sem como calcular a cobertura</b>']):r._k==='sg'?kv(['Sem giro',`<b style="color:var(--sg)">Tem ${f0(r._e)} un em estoque e ${semVendaDias(r)===Infinity?'nenhuma venda registrada':'nenhuma venda há '+f0(semVendaDias(r))+' dias'} — confira se está na gôndola</b>`]):r._e<0?(r._t>0?kv(['Estoque negativo','<b style="color:var(--am)">Já em trânsito — aguardando chegada</b>']):isCD(r)?kv(['⚠ Falta no CD','<b style="color:var(--cr)">Estoque negativo — fora da sugestão</b>']):kv(['⚠ Estoque negativo','<b style="color:var(--cr)">Falta pedir o item</b>'])):'';
- const det=[...(r._np?[['Planograma','Fora do planograma']]:[['Cob.Plan',r.cobplan?esc(r.cobplan)+' dias':'—'],['Capacidade (alt × larg × prof)',`${esc(r.altura||'—')} × ${esc(r.largura||'—')} × ${esc(r.prof||'—')} = ${esc(r.total||'—')}`]]),
-   ['Corredor',esc(r.corredor||'—')],['Giro',esc(r.giro||'—')],['Embalagem',esc(r.emb||'—')],['Código / EAN',esc(r.produto)+(r.automacao?' · '+esc(r.automacao):'')],['Fornecedor',esc(fornTxt(r))]];
- const mais=[...prin.filter(x=>vazio(x[1])),...det];                          // tudo que é secundário ou está vazio
- const ebx=num(r.emb)||1,tile=(l,v,s,big)=>`<div class="ft${big?' big':''}"><small>${l}</small><b class="num">${v}</b>${s?`<i>${s}</i>`:''}</div>`;
- const tiles=tile('Cobertura total',prin[0][1]==='—'?'—':prin[0][1].replace(' dias',''),prin[0][1]==='—'?'':'dias',true)
-   +tile('Relatório (R)',r._c999?'999':prin[1][1]==='—'?'—':prin[1][1].replace(' dias',''),r._c999?'sem cálculo':prin[1][1]==='—'?'':'dias')
-   +tile('Estoque',prin[2][1],ebx>1&&r._e>=0?f0(Math.floor(r._e/ebx))+' cx de '+f0(ebx):'un')
-   +tile('Trânsito',prin[3][1],transitLoaded&&r._t>0&&ebx>1?f0(Math.floor(r._t/ebx))+' cx':'')
-   +tile('MDV',prin[4][1],r._m?'un/dia':'');
- const rows=prin.slice(5).filter(x=>!vazio(x[1]));
- {const n=trDias(r),s=trReg.saiu[r.produto];
-  if(n>=0)rows.unshift(['Em trânsito desde',`${isoBr(trDesde(r))} · ${trDiasTxt(n)}${n>=TR_ATRASO?' · <b style="color:var(--am)">atrasado</b>':''}`]);
-  else if(s&&trSumiu(r))rows.unshift(['❓ Saiu do trânsito',`<b style="color:var(--am)">em ${isoBr(s.d)}, sem entrada no estoque</b><small class="kvs">${f0(s.q)} un estavam a caminho desde ${isoBr(s.desde)} · <button type="button" class="lnk" id="sh-trok">já conferi ✓</button></small>`])}
- {const pr=typeof precoHtml==='function'?precoHtml(r):'';if(pr)rows.unshift(['Preço',pr])}   // preço de venda e do Clube (relatórios opcionais de Preços) — só informação
- $('sheetc').innerHTML=`<div class="fh" style="--c:${COLOR[r._k]}"><div class="fh-top"><div class="fh-t"><span class="pill">${GLY[r._k]} ${LBL[r._k]}</span><h3>${esc(r.descricao)}</h3><div class="ln">${esc(r.produto)}${r.automacao?' · EAN '+esc(r.automacao):''} · ${esc(short(r.categoria))}</div></div><button class="shx" id="sh-x" type="button" aria-label="Fechar">✕</button></div>
- <div class="fts">${tiles}</div></div>
- <div class="shb page-content">${alerta}${rows.map(kv).join('')}<details class="more"><summary>Mais detalhes ${CHEV}</summary>${mais.map(kv).join('')}</details></div>
- <div class="shf">${`<button class="button button-fill button-large" id="sh-ped" type="button">${inPed(r.produto)?'🛒 Remover do pedido':'🛒 Adicionar ao pedido'}</button>`}
-  ${(()=>{const x=pedItem(r.produto)||{};return `<div class="shu"><span>Urgência</span><div class="fs-seg shu-seg">${[['a','🔥 Urgente'],['','Normal'],['b','⬇ Baixa']].map(([v,l])=>`<button type="button" data-u="${v}" class="${(x.u||'')===v?'on':''}">${l}</button>`).join('')}</div></div>
-  ${r._sist!=='20'||x.rcd?(x.rcd&&rcdDias(x)>0?`<div class="grid grid-cols-2 grid-gap"><button class="button button-tonal button-large shr on" id="sh-rcd" type="button">↩ Tirar de Rupt. CD</button><button class="button button-tonal button-large" id="sh-rcd2" type="button" title="Marcado há ${rcdDias(x)} dia(s). Conferi hoje: o CD continua sem">⛔ Continua sem (${rcdDias(x)}d)</button></div>`
-    :`<button class="button button-tonal button-large shr${x.rcd?' on':''}" id="sh-rcd" type="button">${x.rcd?'↩ Tirar de Ruptura no CD':'⛔ Ruptura no CD'}</button>`):''}`})()}
-  <div class="grid grid-cols-2 grid-gap"><button class="button button-tonal button-large" id="sh-dep" type="button">${depMap[r.produto]?'🔎 Tirar do depósito':'🔎 Depósito'}</button><button class="button button-tonal button-large" id="sh-done" type="button" title="Marca o produto como feito; se estiver no pedido, conclui lá também.">${r._d?'↩ Desfazer feito':'✓ Marcar feito'}</button></div></div>`;
+ /* ═══ FICHA "MISTA" (nov/2026, v59): faixa na cor da situação com os dias de cobertura + 3 abas.
+      Resumo    → selos, aviso, barra do cadastro do planograma, Estoque e MDV em destaque, blocos menores
+      Movimento → linha do tempo (última entrada/venda, hoje, quando acaba) e as datas
+      Cadastro  → código, categoria, planograma, fornecedor, preço
+    Os botões (pedido, urgência, Ruptura no CD, depósito, feito) ficam sempre visíveis embaixo.
+    ⚠ Os 3 números do planograma (ex.: 1×91×24) NÃO são espaço físico: são o cadastro (… × caixas × itens por caixa). ═══ */
+ const sgk=r._k==='sg',ebx=num(r.emb)||1,x0=pedItem(r.produto)||{},cap=r._np?0:capOf(r);
+ const cx=n=>ebx>1&&n>=ebx?` · ${f0(Math.floor(n/ebx))} cx`:'';
+ const ctTxt=r._ct===null||sgk?'—':(r._ct>999?'+999':f0(Math.max(r._ct,0))),rcTxt=r._c999?'999':r._c===null||sgk?'':f0(Math.max(r._c,0));
+ const sub=`${GLY[r._k]} ${SLBL[r._k]}`+(sgk?(semVendaDias(r)===Infinity?' · sem venda registrada':` · sem venda há ${f0(semVendaDias(r))} dias`):rcTxt?` · relatório diz ${rcTxt}${r._c999?' (sem cálculo)':rcTxt==='1'?' dia':' dias'}`:'');
+ /* —— Resumo —— */
+ const neg=r._e<0?(r._t>0?'<span class="ent">▼ negativo</span>':''):'';
+ const selos=[r._sist?`<span class="ent e${esc(r._sist)}">${esc(ENT[r._sist]||'Sist. '+r._sist)} · sist. ${esc(r._sist)}</span>`:'',r.giro?`<span class="ent">Giro ${esc(r.giro)}</span>`:'',inPed(r.produto)?PEDBADGE:'',pedTag(r.produto),axBadges(r),neg,r._d?'<span class="ent">✓ feito</span>':''].filter(Boolean).join(' ');
+ const aviso=(t,c,m)=>`<div class="fnote" style="--c:${c}"><b>${t}</b> ${m}</div>`;
+ const sS=trReg.saiu[r.produto];
+ const alerta=(r._k==='nd'&&r._e>0?aviso('Sem MDV.','var(--mu)','Vende pouco (MDV 0 no relatório) — sem como calcular a cobertura.')
+   :sgk?aviso('Sem giro.','var(--sg)',`Tem ${f0(r._e)} un em estoque e ${semVendaDias(r)===Infinity?'nenhuma venda registrada':'nenhuma venda há '+f0(semVendaDias(r))+' dias'} — confira se está na gôndola.`)
+   :cdRisk(r)?aviso('Falta no CD.','var(--cr)',`Menos de 1 caixa e nada a caminho${x0.rcd?` — você marcou Ruptura no CD em ${isoBr(x0.rcd)}`:''}.`)
+   :r._e<0?(r._t>0?aviso('Estoque negativo.','var(--am)','Já em trânsito — aguardando chegada.'):aviso('Estoque negativo.','var(--cr)','Falta pedir o item.')):'')
+   +(sS&&trSumiu(r)?aviso('Saiu do trânsito','var(--am)',`em ${isoBr(sS.d)}, sem entrada no estoque — ${f0(sS.q)} un estavam a caminho desde ${isoBr(sS.desde)}. <button type="button" class="lnk" id="sh-trok">já conferi ✓</button>`):'');
+ const eP=Math.max(r._e,0),tP=transitLoaded?Math.max(r._t,0):0;
+ const barra=cap>0?(()=>{const pe=Math.min(100,eP/cap*100),pt=Math.min(100-pe,tP/cap*100);
+   return `<div class="fbar"><div class="fbar-h"><span>Cadastro do planograma · ${esc(r.altura||'—')}×${esc(r.largura||'—')}×${esc(r.prof||'—')}</span><b class="num">${f0(Math.round((eP+tP)/cap*100))}% do cadastrado</b></div>
+    <div class="fbar-t" role="img" aria-label="Estoque ${f0(r._e)} e trânsito ${f0(tP)} de ${f0(cap)} cadastrados"><i style="width:${pe.toFixed(1)}%"></i><i class="tr" style="width:${pt.toFixed(1)}%"></i></div>
+    <div class="fbar-l"><span><i></i>Estoque ${f0(r._e)}</span>${transitLoaded?`<span><i class="tr"></i>Trânsito ${f0(tP)}</span>`:''}<span class="r">cadastrado: ${ebx>1?f0(Math.floor(cap/ebx))+' cx · ':''}${f0(cap)} un</span></div></div>`})():'';
+ const tl=(l,v,s,c)=>`<div class="ft"><small>${l}</small><b class="num"${c?` style="color:${c}"`:''}>${v}</b><i>${s||'&nbsp;'}</i></div>`;
+ const ref=dmy(estoqueMeta&&estoqueMeta.date)||dmy(currentMeta.date)||new Date(),mais_=n=>{const d=new Date(ref);d.setDate(d.getDate()+n);return d},dm=d=>String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0');
+ const soE=r._m>0&&eP>0?Math.floor(eP/r._m):null;                      // dias que SÓ o estoque dura (sem contar o trânsito)
+ const pr=typeof precoDe==='function'?precoDe(r):null;
+ const peq=[transitLoaded?tl('Trânsito',f0(tP)+' un',tP>0?(ebx>1?f0(Math.floor(tP/ebx))+' cx a caminho':'a caminho')+(trDias(r)>=0?' · '+trDiasTxt(trDias(r)):''):'nada a caminho',tP>0?'var(--tr2)':''):'',
+   tP>0&&soE!==null?tl('Só o estoque dura',soE===1?'1 dia':f0(soE)+' dias','acaba em '+dm(mais_(soE)),soE<7?'var(--cr)':''):rcTxt&&!r._c999?tl('Cobertura do relatório',rcTxt+(rcTxt==='1'?' dia':' dias'),'relatório de Cobertura'):'',
+   pr&&pr.n?tl('Preço',prcFmt(pr.n),pr.c?'Clube '+prcFmt(pr.c):'sem preço de Clube'):'',
+   cap>0?tl('Cadastrado',ebx>1?f0(Math.floor(cap/ebx))+' cx':f0(cap)+' un',`${esc(r.altura)}×${esc(r.largura)}×${esc(r.prof)} = ${f0(cap)} un`):r._np?tl('Planograma','fora','sem cadastro'):''].filter(Boolean).join('');
+ const resumo=`${selos?`<div class="fsel">${selos}</div>`:''}${alerta}${barra}
+   <div class="fbig"><div class="ft"><small>Estoque</small><b class="num"${r._e<0?' style="color:var(--cr)"':''}>${f0(r._e)}</b><i>un${ebx>1&&r._e>=0?` · ${f0(Math.floor(r._e/ebx))} cx de ${f0(ebx)}`:''}</i></div><div class="ft"><small>MDV</small><b class="num">${r._m?f1(r._m):'—'}</b><i>${r._m?'un por dia':'sem MDV no relatório'}</i></div></div>
+   ${peq?`<div class="fpeq">${peq}</div>`:''}${pr&&pr.promo?`<div class="ln fpromo">Promoção Clube: ${esc(pr.promo)}</div>`:''}`;
+ /* —— Movimento —— */
+ const hojeD=new Date();hojeD.setHours(0,0,0,0);const refHoje=Math.abs(ref-hojeD)<864e5/2;
+ const nos=[];{const ue=dmy(r._ue),uv=dmy(r._uv),td=trDesde(r);
+   if(ue)nos.push([ue,'última entrada','var(--mu)',1]);if(uv)nos.push([uv,'última venda','var(--mu)',1]);
+   if(td){const m=/^(\d{4})-(\d\d)-(\d\d)$/.exec(td);if(m)nos.push([new Date(+m[1],+m[2]-1,+m[3]),'entrou em trânsito','var(--tr2)',1])}
+   if(x0.rcd){const m=/^(\d{4})-(\d\d)-(\d\d)$/.exec(x0.rcd);if(m)nos.push([new Date(+m[1],+m[2]-1,+m[3]),'Rupt. CD marcada','var(--cr)',1])}
+   nos.sort((a,b)=>a[0]-b[0]);while(nos.length>3)nos.shift();
+   nos.push([ref,refHoje?'hoje':'relatório','var(--f7-theme-color)',1]);
+   if(soE!==null&&!sgk){nos.push([mais_(soE),tP>0?'só o estoque acaba':'estoque acaba',soE<7?'var(--cr)':'var(--mu)',0]);
+     if(tP>0&&r._ct!==null&&r._ct<=999&&Math.floor(r._ct)>soE)nos.push([mais_(Math.floor(r._ct)),'com o trânsito','var(--crit)',0])}}
+ const linha=`<div class="ftl"><small>Linha do tempo</small><div class="ftl-r">${nos.map(([d,t,c,f])=>`<div class="ftl-n"><i style="border-color:${c};${f?'background:'+c:''}"></i><b class="num">${dm(d)}</b><span>${t}</span></div>`).join('')}</div></div>`;
+ const mov=[transitLoaded?['Em trânsito',tP>0?`${f0(tP)} un${cx(tP)}`:'nada a caminho']:null,
+   trDias(r)>=0?['Em trânsito desde',`${isoBr(trDesde(r))} · ${trDiasTxt(trDias(r))}${trDias(r)>=TR_ATRASO?' · <b style="color:var(--am)">atrasado</b>':''}`]:null,
+   ['Última entrada',esc(dtTxt(r._ue,'sem registro'))],['Última venda',esc(dtTxt(r._uv,'sem venda registrada'))],
+   ['Cobertura total (com o trânsito)',ctTxt==='—'?'—':ctTxt+' dias'],['Cobertura do relatório',r._c999?'999 no relatório (sem cálculo)':rcTxt?rcTxt+' dias':'—'],
+   ['Entrega',entTxt(r)],x0.rcd?['Ruptura no CD',`marcada em ${isoBr(x0.rcd)}${rcdDias(x0)>0?' · há '+rcdDias(x0)+' dia'+(rcdDias(x0)>1?'s':''):''}`]:null].filter(Boolean);
+ /* —— Cadastro —— */
+ const cad=[['Código · EAN',esc(r.produto)+(r.automacao?' · '+esc(r.automacao):'')],['Categoria',esc(String(r.categoria||'Sem categoria').split('->').join(' › '))],
+   r._np?['Planograma','Fora do planograma']:['Planograma (cadastro)',`${esc(r.altura||'—')} × ${esc(r.largura||'—')} × ${esc(r.prof||'—')} = ${esc(r.total||f0(cap))} un`],
+   r._np?null:['Cob.Plan',r.cobplan?esc(r.cobplan)+' dias':'—'],['Embalagem · Giro',`caixa com ${f0(ebx)} · ${esc(r.giro||'—')}`],r.corredor&&r.corredor!=='0'?['Corredor',esc(r.corredor)]:null,
+   ['Fornecedor',esc(fornTxt(r))],pr&&(pr.n||pr.promo)?['Preço',precoHtml(r)]:null,axBadges(r)?['Anexos',axBadges(r)]:null].filter(Boolean);
+ const TABS=[['res','Resumo',resumo],['mov','Movimento',linha+mov.map(kv).join('')],['cad','Cadastro',cad.map(kv).join('')]];
+ const rcdBtn=r._sist!=='20'||x0.rcd,rcdVelho=x0.rcd&&rcdDias(x0)>0;
+ $('sheetc').innerHTML=`<div class="fb" style="--c:${COLOR[r._k]}"><div class="fb-n"><b class="num">${ctTxt}</b><small>${ctTxt==='—'?'&nbsp;':ctTxt==='1'?'dia':'dias'}</small></div>
+   <div class="fb-t"><span class="fb-s">${sub}</span><h3>${esc(r.descricao)}</h3><span class="fb-c">${esc(r.produto)}${r.automacao?' · EAN '+esc(r.automacao):''}</span></div>
+   <button class="shx" id="sh-x" type="button" aria-label="Fechar">✕</button></div>
+ <div class="ftabs" role="tablist">${TABS.map(([k,t],i)=>`<button type="button" role="tab" id="ft-${k}" data-ft="${k}" aria-selected="${i===0}" aria-controls="fp-${k}" class="${i===0?'on':''}">${t}</button>`).join('')}</div>
+ <div class="shb page-content">${TABS.map(([k,,h],i)=>`<div class="fpane" role="tabpanel" id="fp-${k}" aria-labelledby="ft-${k}"${i?' hidden':''}>${h}</div>`).join('')}</div>
+ <div class="shf"><button class="button button-fill button-large" id="sh-ped" type="button">${inPed(r.produto)?'🛒 Remover do pedido':'🛒 Adicionar ao pedido'}</button>
+  <div class="shu"><span>Urgência</span><div class="fs-seg shu-seg">${[['a','🔥 Urgente'],['','Normal'],['b','⬇ Baixa']].map(([v,l])=>`<button type="button" data-u="${v}" class="${(x0.u||'')===v?'on':''}">${l}</button>`).join('')}</div></div>
+  ${rcdBtn&&rcdVelho?`<div class="grid grid-cols-2 grid-gap"><button class="button button-tonal button-large shr on" id="sh-rcd" type="button">↩ Tirar de Rupt. CD</button><button class="button button-tonal button-large" id="sh-rcd2" type="button" title="Marcado há ${rcdDias(x0)} dia(s). Conferi hoje: o CD continua sem">⛔ Continua sem (${rcdDias(x0)}d)</button></div>`:''}
+  <div class="grid grid-cols-${rcdBtn&&!rcdVelho?3:2} grid-gap sh3">${rcdBtn&&!rcdVelho?`<button class="button button-tonal button-large shr${x0.rcd?' on':''}" id="sh-rcd" type="button">${x0.rcd?'↩ Tirar Rupt. CD':'⛔ Rupt. CD'}</button>`:''}<button class="button button-tonal button-large" id="sh-dep" type="button">${depMap[r.produto]?'↩ Depósito':'🔎 Depósito'}</button><button class="button button-tonal button-large" id="sh-done" type="button" title="Marca o produto como feito — vale para a aba Produtos e para o Pedido.">${r._d?'↩ Desfazer feito':'✓ Feito'}</button></div></div>`;
+ document.querySelectorAll('#sheetc [data-ft]').forEach(b=>b.onclick=()=>{const k=b.dataset.ft;
+   document.querySelectorAll('#sheetc [data-ft]').forEach(o=>{const on=o===b;o.classList.toggle('on',on);o.setAttribute('aria-selected',on)});
+   document.querySelectorAll('#sheetc .fpane').forEach(p=>p.hidden=p.id!=='fp-'+k);document.querySelector('#sheetc .shb').scrollTop=0});
  shOn('sheet',true);if(!fichaSheet.opened)fichaSheet.open();pushOv('sheet');$('sh-x').onclick=closeSheet;
  const aba=()=>go(document.querySelector('section.on').id.slice(2));
  /* remover pela ficha agora tem "Desfazer" (volta o item inteiro: quantidade, urgência, ruptura no CD) */
@@ -192,4 +239,4 @@ function openSheet(r){if(!r)return;const kv=([a,b])=>`<div class="kv"><span>${a}
    toast(v?`⛔ Ruptura no CD${novo?' · entrou no pedido':''} — sai de "Para pedir"`:'Saiu de Ruptura no CD');closeSheet();go(document.querySelector('section.on').id.slice(2))};
  $('sh-dep').onclick=()=>{const v=!depMap[r.produto];setDep(r.produto,v);toast(v?'🔎 Procurar no depósito':'Saiu de "Procurar no depósito"');closeSheet()};
  /* v58: "Marcar feito" e "Concluir no pedido" viraram UM botão — marca feito e, se o item está no pedido, conclui lá também (e desfaz os dois juntos) */
- $('sh-done').onclick=()=>{const marking=!r._d;r._d?doneSet.delete(key(r)):doneSet.add(key(r));r._d=!r._d;lsSave();{const x=pedido.find(y=>y.p===r.produto);if(x&&!!x.done!==marking){x.done=marking;savePed()}}if(marking)copyEAN(r.automacao||r.produto);closeSheet();go(document.querySelector('section.on').id.slice(2))}}   // ✓ Marcar feito: fica na aba em que estava (antes ia sempre para Produtos)
+ $('sh-done').onclick=()=>{const marking=!r._d;setFeito(r.produto,marking);if(marking)copyEAN(r.automacao||r.produto);closeSheet();go(document.querySelector('section.on').id.slice(2))}}   // ✓ Marcar feito: fica na aba em que estava (antes ia sempre para Produtos)

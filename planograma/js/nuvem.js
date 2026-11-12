@@ -447,13 +447,15 @@ if('serviceWorker' in navigator&&/^https?:/.test(location.protocol)){/* ⚡ regi
   addEventListener('load',()=>idle(()=>navigator.serviceWorker.register('./sw.js').then(reg=>reg.update()).catch(()=>{})))}
 /* versão do app na aba Dados (nome do cache do SW, ex.: v34) — para conferir se o aparelho já pegou a atualização */
 /* APP_VER = versão do CÓDIGO que está rodando. ⚠ Mantenha igual ao V do sw.js (o teste de fumaça confere). */
-const APP_VER='v58';
+const APP_VER='v59';
 const verNum=v=>parseInt(String(v||'').replace(/\D/g,''),10)||0;   // 'v9' < 'v45' < 'v100' (comparação numérica, não alfabética)
 function mostraVersao(){const el=$('app-ver');if(el)el.textContent='Versão do app: '+APP_VER}
 addEventListener('load',()=>setTimeout(mostraVersao,3000));
 /* ═══ NOVIDADES (nov/2026): depois de atualizar, o Resumo mostra o que mudou (1 vez por versão). Na 1ª instalação não aparece.
    Ao publicar uma versão com mudança visível, acrescente aqui a chave da versão (a mesma do sw.js, ex.: 'v43'). ═══ */
 const NOVIDADES={
+  v59:['🪪 <b>Ficha nova</b>: faixa colorida com os dias de cobertura e três abas — Resumo (estoque e MDV em destaque), Movimento (linha do tempo) e Cadastro',
+       '✓ <b>Feito é um só</b>: concluir no Pedido e marcar feito em Produtos agora são a mesma coisa, por qualquer caminho'],
   v58:['✓ Na ficha, <b>Marcar feito</b> agora também conclui o item no pedido — o botão “Concluir no pedido” saiu (eram a mesma coisa)'],
   v57:['🧹 A <b>sugestão de quantidade</b> saiu do app (cartão do Resumo, filtro Sugestão, linha na ficha e “Adicionar sugestões”). A <b>Nova cobertura</b> do filtro 1×1 do planograma continua igual'],
   v56:['💲 Os <b>Preços</b> agora vão para a nuvem sozinhos ao carregar os arquivos (e ao abrir o app, se ficou algo sem enviar) — os outros aparelhos recebem sem precisar do “Enviar para a nuvem”'],

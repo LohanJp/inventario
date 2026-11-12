@@ -293,7 +293,7 @@ function cardBody(r,acts,extra,noPed,nova){
 const swOk=d=>`<b>${d?'↩':'✓'}</b><span>${d?'Reabrir':'Concluir'}</span>`;
 const swli=(inner,done,cls,txt,ico)=>`<li class="swipeout swr"><div class="swipeout-content">${inner}</div>${done===null?'':`<div class="swipeout-actions-left"><a class="swipeout-overswipe sw-ok" data-sw="ok">${swOk(done)}</a></div>`}<div class="swipeout-actions-right"><a class="swipeout-overswipe sw-${cls}" data-sw="${cls}"><b>${ico}</b><span>${txt}</span></a></div></li>`;
 const swrap=(inner,done,cls,txt,ico)=>`<div class="swl"><ul>${swli(inner,done,cls,txt,ico)}</ul></div>`;   // fora da lista virtual (Pedido, Encarte, Panfleto, Oferta)
-function toggleDone(r,c){r._d?doneSet.delete(key(r)):doneSet.add(key(r));r._d=!r._d;lsSave();c.classList.toggle('done',r._d);
+function toggleDone(r,c){setFeito(r.produto,!r._d);updBadge();c.classList.toggle('done',r._d);
   const g=c.closest('.swr');if(g){const a=g.querySelector('[data-sw=ok]');if(a)a.innerHTML=swOk(r._d)}if(r._d)copyEAN(r.automacao||r.produto)}
 function card(r){const dp=DEP.has(r.produto);return swli(`<div class="p ${r._d?'done':''}${dp?' dep':''}" data-p="${esc(r.produto)}" style="--c:${COLOR[r._k]}">${cardBody(r,dp?DEPI:'',undefined,undefined,F.d111&&NOVA>0&&is111(r)?novaDim(r):undefined)}</div>`,r._d,'add',inPed(r.produto)?'Já no pedido':'Pedido','🛒')}
 
