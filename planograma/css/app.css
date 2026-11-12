@@ -515,7 +515,7 @@ li:focus-within>label.button,label.button:focus-within,.list li:has(input[type=f
 /* a rolagem das folhas não "vaza" para a tela de trás */
 .fs-body.page-content,.cs-list{overscroll-behavior:contain}
 /* área de toque maior em alvos pequenos */
-#q-x{position:relative}#q-x::before{content:'';position:absolute;inset:-11px}
+#q-x::before{content:'';position:absolute;inset:-11px}   /* área de toque maior; o X continua "absolute" do F7 (o position:relative da v46 tirava o X de dentro da caixa) */
 .expb{min-height:32px}
 /* contraste no escuro: texto escuro sobre o azul claro do tema */
 html.dark .ofdays button.on,html.dark .fbd,html.dark .sb-f7 .scanb,html.dark .pr-add{color:#0b1a33}

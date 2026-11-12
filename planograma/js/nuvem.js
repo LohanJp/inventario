@@ -429,13 +429,14 @@ if('serviceWorker' in navigator&&/^https?:/.test(location.protocol)){/* ⚡ regi
   addEventListener('load',()=>idle(()=>navigator.serviceWorker.register('./sw.js').then(reg=>reg.update()).catch(()=>{})))}
 /* versão do app na aba Dados (nome do cache do SW, ex.: v34) — para conferir se o aparelho já pegou a atualização */
 /* APP_VER = versão do CÓDIGO que está rodando. ⚠ Mantenha igual ao V do sw.js (o teste de fumaça confere). */
-const APP_VER='v49';
+const APP_VER='v50';
 const verNum=v=>parseInt(String(v||'').replace(/\D/g,''),10)||0;   // 'v9' < 'v45' < 'v100' (comparação numérica, não alfabética)
 function mostraVersao(){const el=$('app-ver');if(el)el.textContent='Versão do app: '+APP_VER}
 addEventListener('load',()=>setTimeout(mostraVersao,3000));
 /* ═══ NOVIDADES (nov/2026): depois de atualizar, o Resumo mostra o que mudou (1 vez por versão). Na 1ª instalação não aparece.
    Ao publicar uma versão com mudança visível, acrescente aqui a chave da versão (a mesma do sw.js, ex.: 'v43'). ═══ */
 const NOVIDADES={
+  v50:['🔧 O <b>✕ de limpar a busca</b> voltou para dentro da caixa de pesquisa'],
   v49:['⚡ <b>Abre na hora</b>: o app abre com o relatório guardado no aparelho e só baixa da nuvem se houver relatório novo. Pedido, concluídos, depósito e Ruptura no CD continuam sincronizando em tempo real'],
   v48:['📊 <b>Situação dos produtos por sistemática</b>: botões Todas · Sist. 1 · Sist. 10 · Sist. 20 no Resumo (como nas categorias)',
        '💡 A <b>Sugestão de pedido</b> do Resumo agora é sempre só da Sistemática 1'],
