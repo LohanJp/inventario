@@ -61,6 +61,7 @@ const key=r=>r.automacao||r.produto;
 /* ═══ SUGESTÃO DE PEDIDO ═══ repor até a CAPACIDADE do planograma (alt × larg × prof), descontando estoque e trânsito,
    em caixas fechadas (Emb). Só entra item com MDV e cobertura total < SUG_DIAS dias.
    Item em falta no CD (estoque < 1 caixa — zero ou negativo — e SEM trânsito) → fora da sugestão (pedir não resolve); aparece no filtro "Falta no CD". Com trânsito o CD tem o item → não é falta. */
+const TR_ATRASO=4,TR_SAIU_DIAS=7;   // trânsito: 4+ dias = atrasado (normal: 2–3) · aviso de "saiu sem entrar no estoque" dura 7 dias
 const SUG_DIAS=7,SUG_ALVO=15;   // SUG_ALVO: item SEM capacidade cadastrada (fora do planograma) → sugere estoque para 15 dias de venda
 const capOf=r=>{const c=num(r.total);return c>0?c:num(r.altura)*num(r.largura)*num(r.prof)};
 function sugQty(r){

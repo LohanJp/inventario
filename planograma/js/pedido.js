@@ -23,9 +23,11 @@ const RCD_VELHO=7;
 const rcdDias=x=>{const m=/^(\d{4})-(\d\d)-(\d\d)$/.exec(String(x&&x.rcd||''));if(!m)return 0;const h=new Date();h.setHours(0,0,0,0);return Math.max(0,Math.round((h-new Date(+m[1],+m[2]-1,+m[3]))/864e5))};
 const rcdVelhos=()=>pedido.filter(x=>x.rcd&&!x.done&&!inTransit(x)&&rcdDias(x)>=RCD_VELHO).length;
 const URG={a:{t:'🔥 Urgente',c:'urg'},b:{t:'⬇ Baixa',c:'baixa'}};
+/* ⏳ há quantos dias o item está em trânsito (data anotada pelo app a cada relatório de Trânsito) */
+function trTag(r){const n=r?trDias(r):-1;return n<0?'':` <span class="ent trg${n>=TR_ATRASO?' atr':''}" title="Em trânsito desde ${isoBr(trDesde(r))}${n>=TR_ATRASO?' — atrasado':''}">⏳ ${n}d</span>`}
 function pedTag(p){const x=pedItem(p);if(!x)return'';
   const d=rcdDias(x);
-  return (x.rcd?` <span class="ent rcd" title="Você marcou em ${esc(String(x.rcd).split('-').reverse().join('/'))}: o CD está sem o produto">⛔ Rupt. CD${d>0?' · '+d+'d':''}</span>`:'')+(URG[x.u]?` <span class="ent ${URG[x.u].c}">${URG[x.u].t}</span>`:'')}
+  return (x.rcd?` <span class="ent rcd" title="Você marcou em ${esc(String(x.rcd).split('-').reverse().join('/'))}: o CD está sem o produto">⛔ Rupt. CD${d>0?' · '+d+'d':''}</span>`:'')+(URG[x.u]?` <span class="ent ${URG[x.u].c}">${URG[x.u].t}</span>`:'')+(x.done?'':trTag(byProd.get(p)))}
 function setUrg(r,u){let x=pedItem(r.produto);if(!x){if(!u)return;addPed(r,'',true);x=pedItem(r.produto)}
   if(u)x.u=u;else delete x.u;savePed()}
 function setRcd(r,v){let x=pedItem(r.produto);if(!x){if(!v)return;addPed(r,'',true);x=pedItem(r.produto)}
@@ -165,6 +167,9 @@ function openSheet(r){if(!r)return;const kv=([a,b])=>`<div class="kv"><span>${a}
    +tile('Trânsito',prin[3][1],transitLoaded&&r._t>0&&ebx>1?f0(Math.floor(r._t/ebx))+' cx':'')
    +tile('MDV',prin[4][1],r._m?'un/dia':'');
  const rows=prin.slice(5).filter(x=>!vazio(x[1]));
+ {const n=trDias(r),s=trReg.saiu[r.produto];
+  if(n>=0)rows.unshift(['Em trânsito desde',`${isoBr(trDesde(r))} · ${trDiasTxt(n)}${n>=TR_ATRASO?' · <b style="color:var(--am)">atrasado</b>':''}`]);
+  else if(s&&trSumiu(r))rows.unshift(['❓ Saiu do trânsito',`<b style="color:var(--am)">em ${isoBr(s.d)}, sem entrada no estoque</b><small class="kvs">${f0(s.q)} un estavam a caminho desde ${isoBr(s.desde)} · <button type="button" class="lnk" id="sh-trok">já conferi ✓</button></small>`])}
  {const pr=typeof precoHtml==='function'?precoHtml(r):'';if(pr)rows.unshift(['Preço',pr])}   // preço de venda e do Clube (relatórios opcionais de Preços) — só informação
  $('sheetc').innerHTML=`<div class="fh" style="--c:${COLOR[r._k]}"><div class="fh-top"><div class="fh-t"><span class="pill">${GLY[r._k]} ${LBL[r._k]}</span><h3>${esc(r.descricao)}</h3><div class="ln">${esc(r.produto)}${r.automacao?' · EAN '+esc(r.automacao):''} · ${esc(short(r.categoria))}</div></div><button class="shx" id="sh-x" type="button" aria-label="Fechar">✕</button></div>
  <div class="fts">${tiles}</div></div>
@@ -184,6 +189,7 @@ function openSheet(r){if(!r)return;const kv=([a,b])=>`<div class="kv"><span>${a}
  if($('sh-conc'))$('sh-conc').onclick=()=>{const x=pedItem(r.produto);if(x){x.done=true;savePed();toastUndo('Concluído no pedido',()=>{x.done=false;savePed();aba()})}closeSheet();aba()};
  document.querySelectorAll('#sheetc [data-u]').forEach(b=>b.onclick=()=>{const u=b.dataset.u,novo=!inPed(r.produto)&&u;setUrg(r,u);
    toast(u?`${URG[u].t}${novo?' · adicionado ao pedido':''}`:'Urgência normal');closeSheet();go(document.querySelector('section.on').id.slice(2))});
+ if($('sh-trok'))$('sh-trok').onclick=()=>{delete trReg.saiu[r.produto];trDirty=true;trSalva();if(typeof trEnvia==='function')trEnvia();toast('Conferido — aviso removido');closeSheet();aba()};
  if($('sh-rcd2'))$('sh-rcd2').onclick=()=>{const x=pedItem(r.produto);if(x){x.rcd=today();savePed()}toast('⛔ Ruptura no CD renovada — conferido hoje');closeSheet();aba()};
  if($('sh-rcd'))$('sh-rcd').onclick=()=>{const v=!(pedItem(r.produto)||{}).rcd,novo=v&&!inPed(r.produto);setRcd(r,v);
    toast(v?`⛔ Ruptura no CD${novo?' · entrou no pedido':''} — sai de "Para pedir"`:'Saiu de Ruptura no CD');closeSheet();go(document.querySelector('section.on').id.slice(2))};

@@ -142,6 +142,17 @@ async function applyLive(c){
   derive();updBadge();
 }
 
+/* DATAS DO TRÂNSITO na nuvem: /trreg/last (data do último relatório lido) e /trreg/data (o registro, em texto).
+   Vale o registro do relatório mais novo; em empate, fica o do aparelho. */
+async function trEnvia(){const c=code();if(!c||!trDirty||!navigator.onLine)return;
+  try{const r1=await cf(cu(c,'trreg/data'),{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(JSON.stringify({reg:trReg.reg,saiu:trReg.saiu}))});if(!r1.ok)throw 0;
+    const r2=await cf(cu(c,'trreg/last'),{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(trReg.last)});if(!r2.ok)throw 0;trDirty=false;trSalva()}catch{}}
+async function trSync(c){const last=await cf(cu(c,'trreg/last')).then(r=>r.json()).catch(()=>undefined);if(last===undefined)return false;
+  if(trDirty&&(!last||trReg.last>=last)){trEnvia();return false}
+  if(typeof last!=='string'||last<=(trReg.last||''))return false;
+  const txt=await cf(cu(c,'trreg/data')).then(r=>r.json()).catch(()=>null);let v=null;try{v=typeof txt==='string'?JSON.parse(txt):null}catch{}
+  if(!v||!v.reg)return false;trReg={reg:v.reg,saiu:v.saiu||{},last};trDirty=false;trSalva();
+  const s=document.querySelector('section.on'),id=s?s.id.slice(2):'';if(id==='home')schedule(renderHome);else if(id==='ped')schedule(renderPed);return true}
 /* Carrega tudo da nuvem (records + transit + live) */
 const tsMeta=m=>{if(!m||!m.date)return 0;const [d,mo,y]=String(m.date).split('/'),[h,mi,se]=String(m.hora||'00:00:00').split(':');return new Date(+y,+mo-1,+d,+h||0,+mi||0,+se||0).getTime()||0};   // data + HORA do relatório
 const metaTxt=m=>m&&m.date?m.date+(m.hora?' '+String(m.hora).slice(0,5):''):'?';
@@ -177,7 +188,7 @@ async function loadFromCloud(c,fundo){
     cloudErr=cerr;cloudBadge();                                       // erro de conexão vira o ícone ⚠ no topo (antes era um aviso no meio da tela)
     if(!pi||!pi.total){if(!fundo)busy(false);return false}
     const sigAntes=fundo?liveSig():'';
-    prcSync(c).catch(()=>{});                                        // preços (opcional): confere em paralelo, sem segurar a abertura
+    prcSync(c).catch(()=>{});trSync(c).catch(()=>{});                                        // preços (opcional): confere em paralelo, sem segurar a abertura
     const estqNovo=await syncEstoque(c,ei);                          // antes de montar a tela, para o MDV/cobertura já virem certos
     const loc=idb?await idbGet('current').catch(()=>null):null;   // já tem esta versão neste aparelho?
     const pm=pi.meta||{filial:pi.filial,date:pi.date,hora:''};
@@ -363,6 +374,7 @@ $('b-up').onclick=async()=>{
         }else eNote=' · cobertura NÃO enviada (nuvem é mais nova)';
       }catch(e){fails.push('cobertura')}
     }
+    await trEnvia();
     let pUp=[];try{if(PRC.p&&PRC.p.dirty||PRC.c&&PRC.c.dirty){busy(true,'Enviando preços…');pUp=await prcEnvia(c,now)}}catch{fails.push('preços')}
     try{const r=await idbGet('current');if(r){r.cloudAt=now;if(tUp)r.transAt=now;await idbSave(r)}}catch{}
     try{if(eUp){const r=await idbGet('estoque');if(r){r.cloudAt=now;await idbSave(r)}}}catch{}
@@ -435,13 +447,14 @@ if('serviceWorker' in navigator&&/^https?:/.test(location.protocol)){/* ⚡ regi
   addEventListener('load',()=>idle(()=>navigator.serviceWorker.register('./sw.js').then(reg=>reg.update()).catch(()=>{})))}
 /* versão do app na aba Dados (nome do cache do SW, ex.: v34) — para conferir se o aparelho já pegou a atualização */
 /* APP_VER = versão do CÓDIGO que está rodando. ⚠ Mantenha igual ao V do sw.js (o teste de fumaça confere). */
-const APP_VER='v54';
+const APP_VER='v55';
 const verNum=v=>parseInt(String(v||'').replace(/\D/g,''),10)||0;   // 'v9' < 'v45' < 'v100' (comparação numérica, não alfabética)
 function mostraVersao(){const el=$('app-ver');if(el)el.textContent='Versão do app: '+APP_VER}
 addEventListener('load',()=>setTimeout(mostraVersao,3000));
 /* ═══ NOVIDADES (nov/2026): depois de atualizar, o Resumo mostra o que mudou (1 vez por versão). Na 1ª instalação não aparece.
    Ao publicar uma versão com mudança visível, acrescente aqui a chave da versão (a mesma do sw.js, ex.: 'v43'). ═══ */
 const NOVIDADES={
+  v55:['🚚 <b>Trânsito com data</b>: o app anota o dia em que cada item entrou em trânsito e conta os dias até chegar (na ficha e no Pedido). No Para fazer hoje: “Trânsito atrasado (4+ dias)” e “Saiu do trânsito sem entrar no estoque”'],
   v54:['💲 <b>Preços (opcional)</b>: em Dados → Preços, escolha o PRODUTO.TXT e o relatório de Preços do Clube (pode ser os dois de uma vez). A ficha do produto passa a mostrar o preço e o preço do Clube Condor'],
   v53:['⭐ <b>Oferta do dia pelo código</b>: item com Código/EAN é achado só pelo código (o que não está no planograma vai para “Sem correspondência”, sem chute pelo nome) e o 🔍 abre o produto exato'],
   v52:['🛒 Os <b>concluídos do Pedido</b> agora saem sozinhos ao carregar o planograma de um dia novo, e o grupo “✓ Concluídos” ganhou o botão <b>Limpar</b> (com Desfazer)'],

@@ -28,9 +28,43 @@ $('f-plano').onchange=e=>{const f=e.target.files[0];if(!f)return;e.target.value=
 $('f-trans').onchange=e=>{const f=e.target.files[0];if(!f)return;e.target.value='';busy(true,'Lendo trânsito…');
  readFile(f,async t=>{if(!/Qt\.Transito/i.test(t.slice(0,6000))){busy(false);return toast('Este arquivo não é o relatório de Trânsito — nada foi trocado')}   // relatório no lugar errado estragava os números em silêncio
   const tm=parseTransitFile(t);if(!Object.keys(tm).length){busy(false);return toast('Nenhum produto lido no Trânsito — confira o arquivo')}
-  transitMap=tm;transitLoaded=true;if(idb&&transitMeta)idbSave({id:'transitmeta',meta:transitMeta}).catch(()=>{});derive();
+  transitMap=tm;transitLoaded=true;if(idb&&transitMeta)idbSave({id:'transitmeta',meta:transitMeta}).catch(()=>{});derive();trAtualiza();
   if(idb){try{const rec=await idbGet('current');if(rec){rec.transit=transitMap;await idbSave(rec)}}catch{}}
   busy(false);renderData();toast('Trânsito carregado — '+f0(Object.keys(transitMap).length)+' itens')},'latin1')};
+/* ═══ TRÂNSITO: DESDE QUANDO (nov/2026) ═══ o relatório de Trânsito só traz a quantidade, sem data. Aqui o app anota o dia em que
+   cada item APARECEU em trânsito e vai contando até chegar:
+     · 1ª vez com quantidade no Trânsito → guarda a data daquele relatório (reg)
+     · continua aparecendo (mesmo com outra quantidade: entrega parcial, pedido novo) → mantém a data MAIS ANTIGA
+     · sumiu do Trânsito → sai do registro e vai para "saiu" por TR_SAIU_DIAS dias, para conferir se ENTROU NO ESTOQUE
+   Normal: chega em 2–3 dias → com TR_ATRASO dias ou mais é "atrasado" (Para fazer hoje).
+   trReg = {reg:{produto:{d:'aaaa-mm-dd',q:qtd,e:estoque da última vez}}, saiu:{produto:{d:dia que saiu,desde,q,e}}, last:data do último relatório lido}
+   Guardado no aparelho e na nuvem (/trreg), para os aparelhos mostrarem a mesma data. Não entra em nenhum cálculo. */
+const LSTR='planograma_trreg';   // TR_ATRASO e TR_SAIU_DIAS ficam no base.js (o telas.js usa ao carregar)
+let trReg={reg:{},saiu:{},last:''},trDirty=false;
+try{const v=JSON.parse(localStorage.getItem(LSTR)||'null');if(v&&v.reg){trReg={reg:v.reg||{},saiu:v.saiu||{},last:v.last||''};trDirty=!!v.dirty}}catch{}
+const trSalva=()=>{try{localStorage.setItem(LSTR,JSON.stringify({...trReg,dirty:trDirty}))}catch{}};
+const isoDmy=s=>{const d=dmy(s);return d?ymd(d):''};
+const isoDias=(a,b)=>{const p=s=>{const m=/^(\d{4})-(\d\d)-(\d\d)$/.exec(s||'');return m?new Date(+m[1],+m[2]-1,+m[3]):null},x=p(a),y=p(b);return x&&y?Math.round((y-x)/864e5):0};
+const isoBr=s=>String(s||'').slice(5).split('-').reverse().join('/');   // 2026-11-08 → 08/11
+const trDesde=r=>transitLoaded&&r._t>0&&trReg.reg[r.produto]?trReg.reg[r.produto].d:'';
+const trDias=r=>{const d=trDesde(r);return d?Math.max(0,isoDias(d,today())):-1};
+const trAtrasado=r=>trDias(r)>=TR_ATRASO;
+/* saiu do Trânsito e NÃO entrou no estoque? Considera que chegou se a "Última entrada" é do período do trânsito ou se o estoque subiu.
+   Só julga com um relatório de estoque do dia em que saiu (ou mais novo). */
+function trSumiu(r){const s=trReg.saiu[r.produto];if(!s||(transitLoaded&&r._t>0))return false;
+  const ue=isoDmy(r._ue);if(ue&&ue>=s.desde)return false;
+  if(typeof s.e==='number'&&r._e>s.e)return false;
+  const ref=isoDmy((estoqueMeta&&estoqueMeta.date)||currentMeta.date);return !(ref&&ref<s.d)}
+const trDiasTxt=n=>n<=0?'hoje':n===1?'1 dia':n+' dias';
+/* roda a cada relatório de Trânsito carregado por arquivo */
+function trAtualiza(){const d=isoDmy(transitMeta&&transitMeta.date)||today();
+  if(trReg.last&&d<trReg.last)return;                                   // relatório mais antigo que o último lido: não mexe nas datas
+  const {reg,saiu}=trReg,so=allRecords.length>0,tem=p=>transitMap[p]&&transitMap[p].qt_transito>0;
+  for(const p in transitMap){if(!tem(p)||(so&&!byProd.has(p)))continue;const r=byProd.get(p),e=r?r._e:null,q=transitMap[p].qt_transito;
+    if(reg[p]){reg[p].q=q;if(e!==null)reg[p].e=e}else reg[p]={d,q,e};delete saiu[p]}
+  for(const p in reg)if(!tem(p)){saiu[p]={d,desde:reg[p].d,q:reg[p].q,e:reg[p].e};delete reg[p]}
+  for(const p in saiu)if(isoDias(saiu[p].d,d)>TR_SAIU_DIAS)delete saiu[p];
+  trReg.last=d;trDirty=true;trSalva();if(typeof trEnvia==='function')trEnvia()}
 const NARROW=matchMedia('(max-width:379.98px)');   // ⚡ innerWidth forçava o layout da aba inteira (1,6 s no Pedido com 345 itens)
 function renderFresh(){
   const el=$('fresh-t'),F_=$('fresh');
@@ -74,7 +108,7 @@ $('b-clear').onclick=()=>{if(confirm('Zerar todos os itens concluídos?')){lsCle
 function buildBackup(){return{app:'planograma',version:2,exportedAt:new Date().toISOString(),name:savedInfo?.name||'planograma',meta:currentMeta,
  records:planoRecs.map(rawRec),transit:transitLoaded?transitMap:null,transitMeta:transitMeta||null,
  estoque:estoqueLoaded?{map:estoqueMap,meta:estoqueMeta||null}:null,
- done:[...doneSet],pedido,dep:Object.keys(depMap),prefs:{},anexos:anexosBackup(),
+ done:[...doneSet],pedido,dep:Object.keys(depMap),prefs:{},anexos:anexosBackup(),trreg:trReg,
  precos:PRC.p||PRC.c?{p:PRC.p?{map:PRC.p.map,name:PRC.p.name,savedAt:PRC.p.savedAt}:null,c:PRC.c?{map:PRC.c.map,meta:PRC.c.meta||null,name:PRC.c.name,savedAt:PRC.c.savedAt}:null}:null}}
 /* anexos no backup (nov/2026): Panfleto, Ofertas e Lâminas dos 7 dias — antes o .json voltava sem eles */
 function anexosBackup(){const a={of:{},pf:{}};
@@ -115,6 +149,7 @@ async function importBackup(text,fname){try{let b=JSON.parse(text);if(b&&b.app==
    estoqueMap=b.estoque.map;estoqueLoaded=true;estoqueMeta=b.estoque.meta||null;
    if(idb)idbSave({id:'estoque',map:estoqueMap,meta:estoqueMeta,name:'backup '+fname,savedAt:new Date().toLocaleString('pt-BR')}).catch(()=>{});
    $('cob-status').innerHTML=`<b>✓ ${esc(fname)}</b> · ${f0(Object.keys(estoqueMap).length)} produtos · do backup`}
+ if(b.trreg&&b.trreg.reg&&(b.trreg.last||'')>=(trReg.last||'')){trReg={reg:b.trreg.reg||{},saiu:b.trreg.saiu||{},last:b.trreg.last||''};trDirty=true;trSalva()}   // datas do trânsito vêm junto no backup
  if(b.precos&&typeof b.precos==='object'){for(const k of['p','c']){const x=b.precos[k];if(x&&x.map&&typeof x.map==='object'){PRC[k]={...x,at:0,dirty:true};prcSave(k)}}prcStatus()}   // Preços vêm junto no backup
  await loadRecords(b.records,meta,b.name||fname,b.transit||null,true);
  try{localStorage.setItem(lsKeyFor(meta.filial||'',meta.date||''),JSON.stringify(b.done||[]));lsLoad();cloudWriteDone();derive();if(Array.isArray(b.pedido)){pedido=b.pedido;savePed()}if(Array.isArray(b.dep)){depMap={};b.dep.forEach(k=>{if(k)depMap[k]=true});saveDep()}renderHome()}catch{}

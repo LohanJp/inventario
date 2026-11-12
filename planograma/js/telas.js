@@ -136,6 +136,8 @@ const TODO={
   lam:{ic:'🧾',t:'Lâmina de hoje com ruptura ou crítico',f:r=>(r._k==='rup'||r._k==='crit')&&axHoje(axBuild().get(r.produto),'pf')},
   of:{ic:'⭐',t:'Oferta de hoje com ruptura ou crítico',f:r=>(r._k==='rup'||r._k==='crit')&&axHoje(axBuild().get(r.produto),'of')},
   neg:{ic:'▼',t:'Estoque negativo (conferir)',f:r=>r._e<0&&!r._d},
+  tratr:{ic:'🚚',t:`Trânsito atrasado (${TR_ATRASO}+ dias)`,f:r=>trAtrasado(r)},
+  trsaiu:{ic:'❓',t:'Saiu do trânsito sem entrar no estoque',f:r=>trSumiu(r)},
   f20:{ic:'🏭',t:'Fornecedores (Sist. 20) com cobertura baixa',f:(r,P)=>r._sist==='20'&&(r._k==='rup'||r._k==='crit')&&!(transitLoaded&&r._t>0)&&!P.has(r.produto)&&!r._d,ent:'20'}};
 /* fornecedor: chave sem zeros à esquerda (o mesmo fornecedor vem como 00543219 e 543219) · nome para mostrar = "código · nome" */
 const fornKey=r=>{const t=fornTxt(r),m=/^0*(\d+)/.exec(t);return m?m[1]:t};
@@ -147,7 +149,7 @@ function renderTodo(){const el=$('todo');if(!el)return;if(!allRecords.length){el
   const entPad=r=>ENT0==='1'?isCD(r):!ENT0||r._sist===ENT0;
   const forn={};
   for(const r of allRecords){if(r._sist==='20'){if(TODO.f20.f(r,P)){c.f20++;const k=fornKey(r);(forn[k]=forn[k]||{n:0,t:fornNome(r)}).n++}continue}
-    if(!entPad(r))continue;const esc_=hideCD(r,true,noCDTr);for(const k in TODO)if(k!=='f20'&&(k==='enc'||!esc_)&&TODO[k].f(r,P))c[k]++}   // falta no CD fora (é o que a lista mostra)
+    if(!entPad(r))continue;const esc_=hideCD(r,true,noCDTr);for(const k in TODO)if(k!=='f20'&&(k==='enc'||k==='trsaiu'||!esc_)&&TODO[k].f(r,P))c[k]++}   // falta no CD fora (é o que a lista mostra)
   const urg=pedido.filter(x=>!x.done&&x.u==='a'&&!inTransit(x)&&!x.rcd&&!(pedNoCD&&pedFaltaCD(x))).length;   // igual ao que o Pedido mostra
   const FS=Object.entries(forn).sort((a,b)=>b[1].n-a[1].n||a[1].t.localeCompare(b[1].t));
   const L=Object.keys(TODO).filter(k=>c[k]).map(k=>`<li><a class="item-link item-content${k==='f20'?' td-f20'+(todoF20?' open':''):''}" data-todo="${k}"><div class="item-media td-ic">${TODO[k].ic}</div><div class="item-inner"><div class="item-title">${TODO[k].t}${k==='f20'?`<small>${f0(FS.length)} fornecedores · toque para ${todoF20?'fechar':'ver'}</small>`:''}</div><div class="item-after"><b class="num">${f0(c[k])}</b></div></div></a></li>`
@@ -261,7 +263,7 @@ const T=toks(F.q);
  /* Altura × Largura: sem medidas cadastradas primeiro, depois 1×1, 1×2, 1×3… 2×1, 2×2…; empate → profundidade, depois nome A–Z */
  S.dim=(a,b)=>{const A=num(a.altura),B=num(b.altura),la=num(a.largura),lb=num(b.largura),sa=!(A&&la),sb=!(B&&lb);
   return (sb-sa)||(sa?S.nome(a,b):A-B||la-lb||num(a.prof)-num(b.prof)||S.nome(a,b))};if(!S[F.sort])F.sort='cobt';
- list.sort(T.length?(a,b)=>b._s-a._s||S[F.sort](a,b):S[F.sort]);$('cnt').textContent=f0(list.length)+(rel?' itens parciais — nenhum tem todas as palavras':' itens')+(T.length?(fAct?' · busca ignora os filtros':''):(()=>{if(!noCD||['cd','dep','sug'].includes(F.chip))return '';const n=allRecords.filter(r=>hideCD(r)&&semCD(r)&&passesChip(r,F.chip,true)).length;return n?' · ocultando '+f0(n)+' (falta no CD)':''})());   // conta com TODOS os filtros ligados (antes ignorava giro, 1×1, fornecedor…)
+ list.sort(T.length?(a,b)=>b._s-a._s||S[F.sort](a,b):S[F.sort]);$('cnt').textContent=f0(list.length)+(rel?' itens parciais — nenhum tem todas as palavras':' itens')+(T.length?(fAct?' · busca ignora os filtros':''):(()=>{if(!noCD||['cd','dep','sug'].includes(F.chip)||F.todo==='trsaiu')return '';const n=allRecords.filter(r=>hideCD(r)&&semCD(r)&&passesChip(r,F.chip,true)).length;return n?' · ocultando '+f0(n)+' (falta no CD)':''})());   // conta com TODOS os filtros ligados (antes ignorava giro, 1×1, fornecedor…)
  $('q-x').classList.toggle('on',!!F.q);
  $('list-empty').hidden=!!list.length;$('exp-txt').hidden=!list.length;
  if(!$('s-prod').classList.contains('on')&&!vl)return;                     // a lista virtual nasce quando a aba abre (precisa da altura da tela)
@@ -472,7 +474,7 @@ const giroR=r=>String(r.giro||'').trim().toUpperCase();
 const giroOk=(r,g=F.giro)=>!g||giroR(r)===g;
 const catOk=r=>!F.cat||r.categoria===F.cat||(r.categoria||'').startsWith(F.cat+'->');   // nível pai inclui os filhos
 function passesChip(r,ch=F.chip,ignNoCD){
-  return (ignNoCD||ch==='cd'||ch==='dep'||ch==='sug'||!hideCD(r))&&
+  return (ignNoCD||ch==='cd'||ch==='dep'||ch==='sug'||F.todo==='trsaiu'||!hideCD(r))&&
     (ch==='all'||ch===r._k||
     (ch==='alert'&&(r._k==='rup'||r._k==='crit'))||
     (ch==='trans'&&r._t>0)||(ch==='pend'&&!r._d)||

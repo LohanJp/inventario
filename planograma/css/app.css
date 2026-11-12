@@ -572,3 +572,8 @@ html:not(.dark) .ent.urg{color:color-mix(in srgb,var(--crit) 72%,#000)}
 
 /* v54: marca "opcional" na linha Preços da aba Dados */
 .opc{font-size:11px;font-weight:500;color:var(--mu);margin-left:4px}
+
+/* v55: selo de dias em trânsito no Pedido */
+.ent.trg{background:var(--in-bg,color-mix(in srgb,var(--in) 14%,transparent));color:var(--in);font-weight:700}
+.ent.trg.atr{background:color-mix(in srgb,var(--am) 18%,transparent);color:var(--am)}
+html:not(.dark) .ent.trg.atr{color:color-mix(in srgb,var(--am) 70%,#000)}
