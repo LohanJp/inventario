@@ -63,8 +63,9 @@ function precoHtml(r){const x=precoDe(r);if(!x)return'';
 
 function prcStatus(){const el=$('d-preco');if(!el)return;const p=PRC.p,c=PRC.c;
   if(!p&&!c){el.textContent='Não carregado · opcional: PRODUTO.TXT e Preços do Clube';return}
-  el.innerHTML=(p?`<b>✓ Preços</b> · ${f0(Object.keys(p.map).length)} itens · ${esc(p.savedAt||'')}`:'Preços (PRODUTO.TXT): não carregado')+'<br>'
-    +(c?`<b>✓ Clube Condor</b> · ${f0(Object.keys(c.map).length)} itens${c.meta&&c.meta.date?' · '+esc(c.meta.date.slice(0,5))+(c.meta.hora?' '+esc(c.meta.hora.slice(0,5)):''):''}`:'Clube Condor: não carregado')}
+  const pend=x=>x&&x.dirty?' · <span style="color:var(--am)">⏳ falta enviar</span>':'';
+  el.innerHTML=(p?`<b>✓ Preços</b> · ${f0(Object.keys(p.map).length)} itens · ${esc(p.savedAt||'')}${pend(p)}`:'Preços (PRODUTO.TXT): não carregado')+'<br>'
+    +(c?`<b>✓ Clube Condor</b> · ${f0(Object.keys(c.map).length)} itens${c.meta&&c.meta.date?' · '+esc(c.meta.date.slice(0,5))+(c.meta.hora?' '+esc(c.meta.hora.slice(0,5)):''):''}${pend(c)}`:'Clube Condor: não carregado')}
 const prcSave=k=>{if(idb&&PRC[k])idbSave({id:'preco_'+k,...PRC[k]}).catch(()=>{})};
 async function prcRestaura(){for(const k of['p','c'])try{const r=await idbGet('preco_'+k);if(r&&r.map){const{id,...resto}=r;PRC[k]=resto}}catch{}prcStatus()}
 
@@ -77,7 +78,9 @@ async function loadPrecoFiles(files){busy(true,'Lendo preços…');const ok=[],r
       PRC.p={map,name:f.name,savedAt:quando,at:0,dirty:true};prcSave('p');ok.push(`Preços ${f0(n)}`)}
   }catch{ruim.push(f.name)}
   busy(false);prcStatus();
-  toast((ok.length?'💲 '+ok.join(' · ')+' itens'+(code()?' — envie para a nuvem':''):'')+(ruim.length?(ok.length?' · ':'')+'Não reconheci: '+ruim.join(', ')+' (esperado: PRODUTO.TXT ou o relatório de Preços do Clube)':''))}
+  const foi=ok.length?await prcAuto():false;                       // v56: já manda para a nuvem sozinho (antes só ia no "Enviar para a nuvem")
+  prcStatus();
+  toast((ok.length?'💲 '+ok.join(' · ')+' itens'+(foi?' · enviado para a nuvem ✓':code()?' — sem internet: vai para a nuvem sozinho depois':''):'')+(ruim.length?(ok.length?' · ':'')+'Não reconheci: '+ruim.join(', ')+' (esperado: PRODUTO.TXT ou o relatório de Preços do Clube)':''))}
 $('f-preco').onchange=e=>{const fs=[...e.target.files];if(fs.length)loadPrecoFiles(fs);e.target.value=''};
 
 /* ── NUVEM: /planograma/{code}/prc/info = {p:{at,name,n,savedAt}, c:{at,name,n,meta,savedAt}} · /prc/p e /prc/c = o mapa em TEXTO (JSON)
@@ -88,8 +91,11 @@ async function prcEnvia(c,now){const feitos=[];
     const r2=await cf(cu(c,'prc/info'),{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({[k]:{at:now,name:x.name||'',n:Object.keys(x.map).length,meta:x.meta||null,savedAt:x.savedAt||''}})});if(!r2.ok)throw Error('prc');
     x.at=now;x.dirty=false;prcSave(k);feitos.push(k)}
   return feitos}
+/* envio automático: ao carregar os arquivos e a cada abertura/Atualizar enquanto houver preço deste aparelho ainda não enviado */
+async function prcAuto(){const c=code();if(!c||!navigator.onLine||!(PRC.p&&PRC.p.dirty||PRC.c&&PRC.c.dirty))return false;
+  try{return (await prcEnvia(c,Date.now())).length>0}catch{return false}}
 /* baixa da nuvem só a parte que mudou (compara o carimbo); nunca troca o que foi carregado aqui e ainda não foi enviado */
-async function prcSync(c){const info=await cf(cu(c,'prc/info')).then(r=>r.json()).catch(()=>null);if(!info||typeof info!=='object')return false;let mud=false;
+async function prcSync(c){await prcAuto();const info=await cf(cu(c,'prc/info')).then(r=>r.json()).catch(()=>null);if(!info||typeof info!=='object')return false;let mud=false;
   for(const k of['p','c']){const i=info[k],x=PRC[k];if(!i||!i.at||(x&&(x.dirty||x.at===i.at)))continue;
     const txt=await cf(cu(c,'prc/'+k)).then(r=>r.json()).catch(()=>null);let map=null;try{map=typeof txt==='string'?JSON.parse(txt):null}catch{}
     if(!map||typeof map!=='object')continue;

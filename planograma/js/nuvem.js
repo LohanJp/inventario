@@ -447,13 +447,14 @@ if('serviceWorker' in navigator&&/^https?:/.test(location.protocol)){/* ⚡ regi
   addEventListener('load',()=>idle(()=>navigator.serviceWorker.register('./sw.js').then(reg=>reg.update()).catch(()=>{})))}
 /* versão do app na aba Dados (nome do cache do SW, ex.: v34) — para conferir se o aparelho já pegou a atualização */
 /* APP_VER = versão do CÓDIGO que está rodando. ⚠ Mantenha igual ao V do sw.js (o teste de fumaça confere). */
-const APP_VER='v55';
+const APP_VER='v56';
 const verNum=v=>parseInt(String(v||'').replace(/\D/g,''),10)||0;   // 'v9' < 'v45' < 'v100' (comparação numérica, não alfabética)
 function mostraVersao(){const el=$('app-ver');if(el)el.textContent='Versão do app: '+APP_VER}
 addEventListener('load',()=>setTimeout(mostraVersao,3000));
 /* ═══ NOVIDADES (nov/2026): depois de atualizar, o Resumo mostra o que mudou (1 vez por versão). Na 1ª instalação não aparece.
    Ao publicar uma versão com mudança visível, acrescente aqui a chave da versão (a mesma do sw.js, ex.: 'v43'). ═══ */
 const NOVIDADES={
+  v56:['💲 Os <b>Preços</b> agora vão para a nuvem sozinhos ao carregar os arquivos (e ao abrir o app, se ficou algo sem enviar) — os outros aparelhos recebem sem precisar do “Enviar para a nuvem”'],
   v55:['🚚 <b>Trânsito com data</b>: o app anota o dia em que cada item entrou em trânsito e conta os dias até chegar (na ficha e no Pedido). No Para fazer hoje: “Trânsito atrasado (4+ dias)” e “Saiu do trânsito sem entrar no estoque”'],
   v54:['💲 <b>Preços (opcional)</b>: em Dados → Preços, escolha o PRODUTO.TXT e o relatório de Preços do Clube (pode ser os dois de uma vez). A ficha do produto passa a mostrar o preço e o preço do Clube Condor'],
   v53:['⭐ <b>Oferta do dia pelo código</b>: item com Código/EAN é achado só pelo código (o que não está no planograma vai para “Sem correspondência”, sem chute pelo nome) e o 🔍 abre o produto exato'],
