@@ -428,9 +428,9 @@ $('catx').onclick=e=>{const b=e.target.closest('.catx');if(!b)return;if(b.datase
 
 /* ── Categoria em árvore: toca num nível com filhos → entra; "Filtrar …" aplica aquele nível; folha aplica direto ── */
 let catPath=[];   // caminho atual, ex.: ['MERCEARIA','LIMPEZA']
-/* F/CD em trânsito: menos de 40% do cadastro, mas com trânsito a caminho (só esconde se a sub-opção estiver ligada) */
+/* F/CD em trânsito: qualquer item com trânsito a caminho (só esconde se a sub-opção estiver ligada) */
 let noCDTr=false;try{noCDTr=localStorage.getItem('planograma_nocdtr')==='1'}catch{}
-const cdTr=r=>isCD(r)&&r._t>0&&abaixoCD(r);   // v63: mesma régua da Ruptura CD (40% do cadastro) — antes era "menos de 1 caixa" e deixava passar itens como 5 un de um cadastro de 44
+const cdTr=r=>r._t>0;   // v64: esconde TODO item com trânsito a caminho, de qualquer sistemática e qualquer estoque (pedido do Lohan)
 const hideCD=(r,on=noCD,tr=noCDTr)=>on&&(cdRisk(r)||(tr&&cdTr(r)));
 const salvaCD=()=>{try{localStorage.setItem('planograma_nocd',noCD?'1':'0');localStorage.setItem('planograma_nocdtr',noCDTr?'1':'0')}catch{}};
 /* ═══ 1×1 + nova cobertura (nov/2026). No sistema: 1º campo = 1 · campo do meio = dias × MDV ÷ embalagem · 3º campo = itens por caixa.
@@ -456,7 +456,7 @@ const giroOk=(r,g=F.giro)=>!g||giroR(r)===g;
 const catOk=r=>!F.cat||r.categoria===F.cat||(r.categoria||'').startsWith(F.cat+'->');   // nível pai inclui os filhos
 /* v61: os filtros "Esconder Ruptura CD" e "também os em trânsito" valem em TODA lista (na v60 paravam de agir com uma situação
    escolhida, e o botão parecia quebrado). Só o Resumo ignora os filtros; quando a lista esconde algo, o contador avisa quanto. */
-const SIT_CH=new Set(['cd']);
+const SIT_CH=new Set(['cd','trans']);   // na lista "Em trânsito" o filtro de trânsito não age (senão ela ficaria vazia)
 function passesChip(r,ch=F.chip,ignNoCD){
   return (ignNoCD||SIT_CH.has(ch)||ch==='dep'||F.todo==='trsaiu'||!hideCD(r))&&
     (ch==='all'||ch===r._k||
@@ -537,7 +537,7 @@ function renderFlt(){refreshDep();
    <h5>Sistemática</h5><div class="fs-seg">${ENTS.map(([v,l])=>`<button type="button" data-ent="${v}" class="${(D.ent||'')===v?'on':''}">${l}</button>`).join('')}</div>
    <h5>Categoria</h5><button type="button" class="fs-ln" id="cat-pick-btn"><span>${D.cat?esc(short(D.cat)):'Todas as categorias'}<small>${D.cat?'Toque para trocar':'Toque para escolher na árvore'}</small></span>${D.cat?'<i class="fs-cx" id="fs-catx" role="button" aria-label="Tirar categoria">✕</i>':'<i class="fs-ar">›</i>'}</button>
    <label class="fs-ln"><span>Esconder Ruptura CD (F/CD)<small>Sist. 1 sem trânsito e com menos de 40% do cadastro</small></span><input type="checkbox" id="fs-nocd" class="sw-i"${D.noCD?' checked':''}><span class="sw-t fs-tg"></span></label>${D.noCD?`
-   <label class="fs-ln fs-sub"><span>Esconder também os em trânsito<small>Sist. 1, menos de 40% do cadastro, com trânsito a caminho</small></span><input type="checkbox" id="fs-nocdtr" class="sw-i"${D.noCDTr?' checked':''}><span class="sw-t fs-tg"></span></label>`:''}`;
+   <label class="fs-ln fs-sub"><span>Esconder também os em trânsito<small>Todo item com trânsito a caminho, de qualquer estoque</small></span><input type="checkbox" id="fs-nocdtr" class="sw-i"${D.noCDTr?' checked':''}><span class="sw-t fs-tg"></span></label>`:''}`;
   fltCounts()}
 function openFlt(keep){if(!keep||!D)D={chip:F.chip,cat:F.cat||'',ent:F.ent||'',giro:F.giro||'',noCD,noCDTr,d111:!!F.d111,capx:!!F.capx,nova:NOVA||null,cob:F.cob?{...F.cob}:null};renderFlt();fltSheet.open();pushOv('flt')}
 function closeFlt(){if(fltSheet.opened)fltSheet.close()}

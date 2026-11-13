@@ -447,14 +447,14 @@ if('serviceWorker' in navigator&&/^https?:/.test(location.protocol)){/* ⚡ regi
   addEventListener('load',()=>idle(()=>navigator.serviceWorker.register('./sw.js').then(reg=>reg.update()).catch(()=>{})))}
 /* versão do app na aba Dados (nome do cache do SW, ex.: v34) — para conferir se o aparelho já pegou a atualização */
 /* APP_VER = versão do CÓDIGO que está rodando. ⚠ Mantenha igual ao V do sw.js (o teste de fumaça confere). */
-const APP_VER='v63';
+const APP_VER='v64';
 const verNum=v=>parseInt(String(v||'').replace(/\D/g,''),10)||0;   // 'v9' < 'v45' < 'v100' (comparação numérica, não alfabética)
 function mostraVersao(){const el=$('app-ver');if(el)el.textContent='Versão do app: '+APP_VER}
 addEventListener('load',()=>setTimeout(mostraVersao,3000));
 /* ═══ NOVIDADES (nov/2026): depois de atualizar, o Resumo mostra o que mudou (1 vez por versão). Na 1ª instalação não aparece.
    Ao publicar uma versão com mudança visível, acrescente aqui a chave da versão (a mesma do sw.js, ex.: 'v43'). ═══ */
 const NOVIDADES={
-  v63:['🔧 <b>Esconder também os em trânsito</b> agora usa a mesma régua da Ruptura CD (menos de 40% do cadastro, com trânsito a caminho) — antes só pegava quem tinha menos de 1 caixa'],
+  v64:['🔧 <b>Esconder também os em trânsito</b> agora esconde todo item com trânsito a caminho, seja qual for o estoque'],
   v61:['🔧 Os filtros <b>Esconder Ruptura CD</b> e <b>também os em trânsito</b> voltaram a funcionar em todas as listas (o Resumo continua sem depender deles); o contador mostra quantos itens ficaram escondidos'],
   v60:['📊 <b>Situações novas</b>: Ruptura loja (estoque ≤ 0 com trânsito, ou fora da Sist. 1) e <b>Ruptura CD</b> (Sist. 1 sem trânsito e com menos de 40% do cadastro), cada uma com seu número',
        'Crítico, Atenção e Saudável não contam mais a Ruptura CD · o Resumo não muda com os filtros · Crítico abre do maior MDV para o menor',
