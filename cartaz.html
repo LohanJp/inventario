@@ -131,10 +131,40 @@
       padding-top: 8px;
     }
 
+    /* --- Formato A3 (297 x 420 mm) ---
+       Posições medidas no modelo de referência (CartazApp A3):
+       faixa do nome entre 152 mm e 176 mm, preços abaixo,
+       rodapé entre ~398 mm e 413 mm. Parte de cima fica livre. */
+    .cartaz.a3 { width: 297mm; height: 420mm; display: block; }
+    .cartaz.a3 .area-util { position: absolute; inset: 0; height: auto; padding: 0; display: block; }
+    .cartaz.a3 .row-header { position: absolute; left: 0; right: 0; top: 151.4mm; margin: 0; padding: 0 8mm; gap: 5mm; }
+    .cartaz.a3 .col-thunder { flex: 0 0 26mm; }
+    .cartaz.a3 .trovao { width: 24mm; height: 24mm; }
+    .cartaz.a3 .bar-top, .cartaz.a3 .bar-bottom { height: 1.4mm; border-radius: 0.7mm; }
+    .cartaz.a3 .produto-nome { font-size: 20mm; height: 19.5mm; line-height: 19.5mm; margin: 1.6mm 0; }
+    .cartaz.a3 .precos { position: absolute; top: 192mm; left: 28mm; right: 28mm; width: auto; margin: 0; gap: 7mm; }
+    .cartaz.a3 .box-price { border-width: 0.8mm; border-radius: 4mm; padding: 3mm 5mm; }
+    .cartaz.a3 .box-price .label-price { font-size: 7mm; padding-right: 6mm; }
+    .cartaz.a3 .small-val { font-size: 34mm; }
+    .cartaz.a3 .big-val { font-size: 58mm; }
+    .cartaz.a3 .validade { bottom: 8mm; font-size: 6mm; padding-top: 3mm; border-top-width: 0.4mm; }
+    .col-title { min-width: 0; }
+    .cartaz.a3 .produto-nome { white-space: nowrap; max-width: 100%; overflow: hidden; }
+    /* Na tela o A3 aparece reduzido; na impressão/PDF sai no tamanho real */
+    @media screen { .cartaz.a3 { zoom: 0.5; } }
+    body.exportando .cartaz.a3 { zoom: 1; }
+    body.exportando .cartaz { margin: 0 !important; border: none !important; }
+    body.exportando .cartaz [contenteditable] { outline: none !important; background: none !important; }
+
+    .formato { margin-left: 10px; font-weight: bold; }
+    .formato select { padding: 10px; border-radius: 8px; border: 1px solid #ccc; font-weight: bold; }
+    .btn.pdf { background: #1a8f3c; margin-left: 10px; }
+
     @media print {
       .input-area, .container > header, .btn, .footer-note, .dica-editavel { display: none !important; }
+      .container { max-width: none; gap: 0; display: block; }
       .cartaz [contenteditable="true"] { outline: none !important; background: none !important; }
-      body { padding: 0; background: white; }
+      body { padding: 0; margin: 0; background: white; }
       .cartaz { margin: 0; border: none; box-shadow: none; page-break-after: always; }
       * { -webkit-print-color-adjust: exact !important; }
     }
@@ -157,11 +187,20 @@
       <button id="generate" class="btn">Gerar Cartazes</button>
       <button id="modelo" class="btn modelo">Modelo editável</button>
       <button id="clear" class="btn secondary">Limpar</button>
+      <button id="baixar-pdf" class="btn pdf">Baixar PDF</button>
+      <label class="formato">Tamanho:
+        <select id="formato">
+          <option value="a3">A3</option>
+          <option value="a5">A5</option>
+        </select>
+      </label>
     </section>
 
     <div id="preview-area"></div>
   </div>
 
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
   <script>
     const ICON_URL = "https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/icons/lightning-charge-fill.svg";
 
@@ -186,10 +225,49 @@
       return map;
     }
 
+    // --- Formato (A3 / A5) ---
+    const seletorFormato = document.getElementById('formato');
+    let formatoAtual = 'a3';
+    try { formatoAtual = localStorage.getItem('cartaz-formato') || 'a3'; } catch (e) {}
+    seletorFormato.value = formatoAtual;
+    const estiloPagina = document.createElement('style');
+    document.head.appendChild(estiloPagina);
+    function aplicarFormato() {
+      estiloPagina.textContent = formatoAtual === 'a3'
+        ? '@page { size: A3 portrait; margin: 0; }'
+        : '@page { size: A5 portrait; margin: 0; }';
+      document.querySelectorAll('.cartaz').forEach(c => {
+        c.classList.toggle('a3', formatoAtual === 'a3');
+      });
+      ajustarNomes();
+    }
+    seletorFormato.addEventListener('change', () => {
+      formatoAtual = seletorFormato.value;
+      try { localStorage.setItem('cartaz-formato', formatoAtual); } catch (e) {}
+      aplicarFormato();
+    });
+
+    // Diminui a fonte do nome até caber na largura (nomes compridos)
+    function ajustarNome(el) {
+      el.style.fontSize = '';
+      let tam = parseFloat(getComputedStyle(el).fontSize);
+      const min = tam * 0.35;
+      while (el.scrollWidth > el.clientWidth + 1 && tam > min) {
+        tam *= 0.95;
+        el.style.fontSize = tam + 'px';
+      }
+    }
+    function ajustarNomes() {
+      document.querySelectorAll('.produto-nome').forEach(ajustarNome);
+    }
+    document.getElementById('preview-area').addEventListener('input', (e) => {
+      if (e.target.classList && e.target.classList.contains('produto-nome')) ajustarNome(e.target);
+    });
+
     function montarCartaz(nome, precoDE, precoPor, validade, editavel = false) {
       const ed = editavel ? ' contenteditable="true" spellcheck="false"' : '';
       return `
-          <article class="cartaz">
+          <article class="cartaz ${formatoAtual}">
             <div class="area-util">
               <div class="row-header">
                 <div class="col-thunder">
@@ -235,6 +313,7 @@
         
         preview.insertAdjacentHTML('beforeend', montarCartaz(p.nome, precoDE, p.preco, p.validade, modoEditavel));
       });
+      ajustarNomes();
     });
 
     // Modelo editável: deixa editáveis todos os cartazes já na tela.
@@ -256,6 +335,7 @@
       if (!preview.querySelector('.dica-editavel')) {
         preview.insertAdjacentHTML('afterbegin', '<p class="dica-editavel">Clique em qualquer texto do cartaz para escrever por cima.</p>');
       }
+      ajustarNomes();
       preview.querySelector('.cartaz').scrollIntoView({ behavior: 'smooth', block: 'start' });
     });
 
@@ -291,6 +371,42 @@
       e.preventDefault();
       document.execCommand('insertText', false, (e.clipboardData || window.clipboardData).getData('text/plain'));
     });
+
+    // Baixar PDF no tamanho exato (A3 = 297x420 mm, A5 = 148x210 mm), um cartaz por página
+    document.getElementById('baixar-pdf').addEventListener('click', async () => {
+      const cartazes = [...document.querySelectorAll('#preview-area .cartaz')];
+      if (!cartazes.length) { alert('Gere ou crie um cartaz primeiro.'); return; }
+      if (!window.html2canvas || !window.jspdf) { alert('Não carregou o gerador de PDF. Verifique a internet e recarregue a página.'); return; }
+      const botao = document.getElementById('baixar-pdf');
+      const textoOriginal = botao.textContent;
+      botao.disabled = true;
+      if (document.activeElement) document.activeElement.blur();
+      document.body.classList.add('exportando');
+      try {
+        if (document.fonts && document.fonts.ready) await document.fonts.ready;
+        const a3 = formatoAtual === 'a3';
+        const [larg, alt] = a3 ? [297, 420] : [148, 210];
+        const pdf = new window.jspdf.jsPDF({ orientation: 'portrait', unit: 'mm', format: a3 ? 'a3' : 'a5' });
+        for (let i = 0; i < cartazes.length; i++) {
+          botao.textContent = `Gerando ${i + 1}/${cartazes.length}...`;
+          // ~150 dpi na largura do papel
+          const escala = (larg / 25.4 * 150) / cartazes[i].offsetWidth;
+          const canvas = await html2canvas(cartazes[i], { scale: escala, useCORS: true, backgroundColor: '#ffffff' });
+          if (i > 0) pdf.addPage(a3 ? 'a3' : 'a5', 'portrait');
+          pdf.addImage(canvas.toDataURL('image/jpeg', 0.92), 'JPEG', 0, 0, larg, alt);
+        }
+        pdf.save(`Cartazes_${a3 ? 'A3' : 'A5'}.pdf`);
+      } catch (err) {
+        console.error(err);
+        alert('Erro ao gerar o PDF: ' + err.message);
+      } finally {
+        document.body.classList.remove('exportando');
+        botao.textContent = textoOriginal;
+        botao.disabled = false;
+      }
+    });
+
+    aplicarFormato();
 
     document.getElementById('clear').addEventListener('click', () => {
       document.getElementById('preview-area').innerHTML = "";
