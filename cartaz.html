@@ -224,7 +224,8 @@
 
     document.getElementById('generate').addEventListener('click', () => {
       const preview = document.getElementById('preview-area');
-      preview.innerHTML = "";
+      preview.innerHTML = modoEditavel
+        ? '<p class="dica-editavel">Clique em qualquer texto do cartaz para escrever por cima.</p>' : "";
       
       const produtos = parseMainList(document.getElementById('input').value);
       const precosNormais = parseSecondaryList(document.getElementById('input2').value);
@@ -232,19 +233,30 @@
       produtos.forEach(p => {
         const precoDE = precosNormais.get(p.ean) || p.preco;
         
-        preview.insertAdjacentHTML('beforeend', montarCartaz(p.nome, precoDE, p.preco, p.validade));
+        preview.insertAdjacentHTML('beforeend', montarCartaz(p.nome, precoDE, p.preco, p.validade, modoEditavel));
       });
     });
 
-    // Modelo editável: cartaz com dados inventados, clique no texto para substituir
+    // Modelo editável: deixa editáveis todos os cartazes já na tela.
+    // Se ainda não houver nenhum, cria um com dados inventados.
+    // Depois de ativado, os próximos cartazes gerados já nascem editáveis.
+    let modoEditavel = false;
+    const CAMPOS_EDITAVEIS = '.produto-nome, .label-price, .value-price, .validade > span';
     document.getElementById('modelo').addEventListener('click', () => {
+      modoEditavel = true;
       const preview = document.getElementById('preview-area');
+      if (!preview.querySelector('.cartaz')) {
+        preview.insertAdjacentHTML('beforeend',
+          montarCartaz('Café Torrado 500g', '24,90', '19,90', '30/11/2026', true));
+      }
+      preview.querySelectorAll(CAMPOS_EDITAVEIS).forEach(el => {
+        el.setAttribute('contenteditable', 'true');
+        el.setAttribute('spellcheck', 'false');
+      });
       if (!preview.querySelector('.dica-editavel')) {
         preview.insertAdjacentHTML('afterbegin', '<p class="dica-editavel">Clique em qualquer texto do cartaz para escrever por cima.</p>');
       }
-      preview.insertAdjacentHTML('beforeend',
-        montarCartaz('Café Torrado 500g', '24,90', '19,90', '30/11/2026', true));
-      preview.lastElementChild.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      preview.querySelector('.cartaz').scrollIntoView({ behavior: 'smooth', block: 'start' });
     });
 
     // Ao clicar num campo editável, seleciona todo o texto para substituir ao digitar
@@ -282,6 +294,7 @@
 
     document.getElementById('clear').addEventListener('click', () => {
       document.getElementById('preview-area').innerHTML = "";
+      modoEditavel = false;
     });
   </script>
 </body>
