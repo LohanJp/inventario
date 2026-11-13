@@ -600,3 +600,6 @@ html:not(.dark) .ent.trg.atr{color:color-mix(in srgb,var(--am) 70%,#000)}
 .ftl-n i{width:12px;height:12px;border-radius:50%;box-sizing:border-box;border:2px solid var(--mu);background:var(--card)}
 .ftl-n b{font-size:13px}.ftl-n span{font-size:11px;line-height:1.25;color:var(--mu);text-align:center}
 .sh3 .button{padding:0 6px;font-size:13.5px}
+
+/* v62: a folha de Filtros não rola para o lado (sobravam 4 px e aparecia uma barra horizontal no PC) */
+#flt-list{overflow-x:hidden}
