@@ -72,7 +72,8 @@ const capOf=r=>{const c=num(r.total);return c>0?c:num(r.altura)*num(r.largura)*n
    r._vir: Ruptura CD que pela cobertura seria Saudável (MDV caiu) → selo "⚠ conferir estoque" (pode ser estoque virtual) */
 const isCD=r=>!r._sist||r._sist==='1';   // Ruptura CD só vale p/ sistemática 1; sist 10/20 ≤ 0 = Ruptura loja (falta pedir ao fornecedor)
 const RCD_PCT=0.4;
-const faltaCD=r=>{if(!isCD(r)||r._t>0)return false;const c=r._np?0:capOf(r);return c>0?r._e<RCD_PCT*c:r._e<=0};
+const abaixoCD=r=>{const c=r._np?0:capOf(r);return c>0?r._e<RCD_PCT*c:r._e<=0};   // estoque abaixo de 40% do cadastro (sem cadastro: zerado)
+const faltaCD=r=>isCD(r)&&!(r._t>0)&&abaixoCD(r);
 const cdRisk=r=>r._k==='rcd';   // "falta no CD" = Ruptura CD (o selo, o filtro F/CD, o Pedido e o Para fazer hoje usam este)
 let noCD=false;try{noCD=localStorage.getItem('planograma_nocd')==='1'}catch{}
 const addMsg=r=>transitLoaded&&r&&r._t>0?'Adicionado — aguardando chegada do trânsito':'Adicionado ao pedido';
