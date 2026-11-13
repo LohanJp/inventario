@@ -244,7 +244,7 @@ const T=toks(F.q);
  /* Altura × Largura: sem medidas cadastradas primeiro, depois 1×1, 1×2, 1×3… 2×1, 2×2…; empate → profundidade, depois nome A–Z */
  S.dim=(a,b)=>{const A=num(a.altura),B=num(b.altura),la=num(a.largura),lb=num(b.largura),sa=!(A&&la),sb=!(B&&lb);
   return (sb-sa)||(sa?S.nome(a,b):A-B||la-lb||num(a.prof)-num(b.prof)||S.nome(a,b))};if(!S[F.sort])F.sort='cobt';
- list.sort(T.length?(a,b)=>b._s-a._s||S[F.sort](a,b):S[F.sort]);$('cnt').textContent=f0(list.length)+(rel?' itens parciais — nenhum tem todas as palavras':' itens')+(T.length?(fAct?' · busca ignora os filtros':''):(()=>{if(!noCD||SIT_CH.has(F.chip)||F.chip==='dep'||F.todo==='trsaiu')return '';const n=allRecords.filter(r=>hideCD(r)&&semCD(r)&&passesChip(r,F.chip,true)).length;return n?' · ocultando '+f0(n)+' (Ruptura CD)':''})());   // conta com TODOS os filtros ligados (antes ignorava giro, 1×1, fornecedor…)
+ list.sort(T.length?(a,b)=>b._s-a._s||S[F.sort](a,b):S[F.sort]);$('cnt').textContent=f0(list.length)+(rel?' itens parciais — nenhum tem todas as palavras':' itens')+(T.length?(fAct?' · busca ignora os filtros':''):(()=>{if(!noCD||SIT_CH.has(F.chip)||F.chip==='dep'||F.todo==='trsaiu')return '';const h=allRecords.filter(r=>hideCD(r)&&semCD(r)&&passesChip(r,F.chip,true)),a=h.filter(cdRisk).length,b=h.length-a;return h.length?' · ocultando '+[a?f0(a)+' Ruptura CD':'',b?f0(b)+' em trânsito':''].filter(Boolean).join(' e '):''})());   // conta com TODOS os filtros ligados (antes ignorava giro, 1×1, fornecedor…)
  $('q-x').classList.toggle('on',!!F.q);
  $('list-empty').hidden=!!list.length;$('exp-txt').hidden=!list.length;
  if(!$('s-prod').classList.contains('on')&&!vl)return;                     // a lista virtual nasce quando a aba abre (precisa da altura da tela)
@@ -454,9 +454,9 @@ const novaDim=r=>F.d111&&NOVA>0&&is111(r)?novaLarg(r,NOVA):null;
 const giroR=r=>String(r.giro||'').trim().toUpperCase();
 const giroOk=(r,g=F.giro)=>!g||giroR(r)===g;
 const catOk=r=>!F.cat||r.categoria===F.cat||(r.categoria||'').startsWith(F.cat+'->');   // nível pai inclui os filhos
-/* v60: numa SITUAÇÃO escolhida (Ruptura loja, Ruptura CD, Crítico…) o "Esconder falta no CD" não age — a situação já define
-   o que entra (Crítico/Atenção/Saudável nunca têm Ruptura CD). Assim a lista bate sempre com o número do Resumo. */
-const SIT_CH=new Set(['rup','cd','crit','aten','ok','sg','nd','trans']);   // + Trânsito: o número "Em trânsito" do Resumo também bate
+/* v61: os filtros "Esconder Ruptura CD" e "também os em trânsito" valem em TODA lista (na v60 paravam de agir com uma situação
+   escolhida, e o botão parecia quebrado). Só o Resumo ignora os filtros; quando a lista esconde algo, o contador avisa quanto. */
+const SIT_CH=new Set(['cd']);
 function passesChip(r,ch=F.chip,ignNoCD){
   return (ignNoCD||SIT_CH.has(ch)||ch==='dep'||F.todo==='trsaiu'||!hideCD(r))&&
     (ch==='all'||ch===r._k||
@@ -537,7 +537,7 @@ function renderFlt(){refreshDep();
    <h5>Sistemática</h5><div class="fs-seg">${ENTS.map(([v,l])=>`<button type="button" data-ent="${v}" class="${(D.ent||'')===v?'on':''}">${l}</button>`).join('')}</div>
    <h5>Categoria</h5><button type="button" class="fs-ln" id="cat-pick-btn"><span>${D.cat?esc(short(D.cat)):'Todas as categorias'}<small>${D.cat?'Toque para trocar':'Toque para escolher na árvore'}</small></span>${D.cat?'<i class="fs-cx" id="fs-catx" role="button" aria-label="Tirar categoria">✕</i>':'<i class="fs-ar">›</i>'}</button>
    <label class="fs-ln"><span>Esconder Ruptura CD (F/CD)<small>Sist. 1 sem trânsito e com menos de 40% do cadastro · vale em Todos, Alertas, Trânsito…</small></span><input type="checkbox" id="fs-nocd" class="sw-i"${D.noCD?' checked':''}><span class="sw-t fs-tg"></span></label>${D.noCD?`
-   <label class="fs-ln fs-sub"><span>Esconder também os em trânsito<small>Estoque menor que 1 caixa, com trânsito a caminho</small></span><input type="checkbox" id="fs-nocdtr" class="sw-i"${D.noCDTr?' checked':''}><span class="sw-t fs-tg"></span></label>`:''}`;
+   <label class="fs-ln fs-sub"><span>Esconder também os em trânsito<small>Sist. 1, estoque menor que 1 caixa, com trânsito a caminho</small></span><input type="checkbox" id="fs-nocdtr" class="sw-i"${D.noCDTr?' checked':''}><span class="sw-t fs-tg"></span></label>`:''}`;
   fltCounts()}
 function openFlt(keep){if(!keep||!D)D={chip:F.chip,cat:F.cat||'',ent:F.ent||'',giro:F.giro||'',noCD,noCDTr,d111:!!F.d111,capx:!!F.capx,nova:NOVA||null,cob:F.cob?{...F.cob}:null};renderFlt();fltSheet.open();pushOv('flt')}
 function closeFlt(){if(fltSheet.opened)fltSheet.close()}
