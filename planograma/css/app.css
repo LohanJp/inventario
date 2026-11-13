@@ -6,7 +6,7 @@
 :root{
   --f7-theme-color:#0b63ce;
   --bg:#f3f5f8;--card:#ffffff;--card2:#f1f3f7;--bd:#e3e7ed;--tx:#141a22;--mu:#667180;--trk:#e4e8ee;
-  --cr:#d92d20;--crit:#d9620b;--am:#a86a00;--ok:#13843d;--in:#0b63ce;--sg:#7c3aed;
+  --cr:#d92d20;--rcd:#a61e4d;--crit:#d9620b;--am:#a86a00;--ok:#13843d;--in:#0b63ce;--sg:#7c3aed;
   --cr-bg:#fdecea;--am-bg:#fff5df;--ok-bg:#e8f6ee;--in-bg:#e8f1fc;
   --e10:#0f7f78;--e20:#7a4fc9;--ax-p:#1a7f37;--ax-t:#9a6700;--ax-f:#bc4c00;--ax-e:#0969da;
   --sw-ok:#15803d;--sw-del:#d92d20;--sw-add:#0b63ce;--shadow:0 1px 2px rgba(16,24,40,.05),0 1px 3px rgba(16,24,40,.06);
@@ -19,7 +19,7 @@
 }
 .dark{
   --bg:#0e1013;--card:#181b20;--card2:#22262d;--bd:#2b3038;--tx:#e9edf2;--mu:#98a2ae;--trk:#2a2f37;
-  --cr:#ff6b5e;--crit:#ff9a4d;--am:#f2b53b;--ok:#46d07a;--in:#69a8ff;--sg:#b590ff;
+  --cr:#ff6b5e;--rcd:#f783ac;--crit:#ff9a4d;--am:#f2b53b;--ok:#46d07a;--in:#69a8ff;--sg:#b590ff;
   --cr-bg:#3a1916;--am-bg:#33270d;--ok-bg:#12301d;--in-bg:#142640;
   --e10:#39c5bb;--e20:#b392f0;--ax-p:#3fb950;--ax-t:#e3b341;--ax-f:#f0883e;--ax-e:#58a6ff;
   --sw-ok:#238636;--sw-del:#b62324;--sw-add:#2f6fd0;--shadow:none;
@@ -405,7 +405,7 @@ input[type=file]{position:absolute!important;width:1px!important;height:1px!impo
 .kpi .l b .kg{position:static;transform:none;font-size:11px;margin-right:4px;color:var(--c);opacity:.9}
 .kpi .kr{display:flex;align-items:center;gap:6px;margin-top:6px}.kpi .kr .kb{flex:1;margin-top:0}
 .kpi .kr .pc{font-size:12px;font-weight:700;color:var(--c);white-space:nowrap;line-height:1}
-.kpi.kw{grid-column:1/-1;padding:9px 12px}
+.kpi.kw{grid-column:span 2;padding:9px 12px}   /* v60: 7 situações + trânsito → o trânsito ocupa 2 colunas ao lado de Sem MDV */
 
 /* Resumo: tocar no círculo mostra só a Sistemática 1 (nov/2026) */
 .ring{cursor:pointer;border-radius:50%;transition:transform .12s,box-shadow .15s}.ring:active{transform:scale(.95)}

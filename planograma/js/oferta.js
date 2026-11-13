@@ -87,7 +87,7 @@ function renderOf(){
   ofItems.forEach((it,i)=>{const rs=((ofRes[i]||{}).codes||[]).map(c=>byProd.get(c)).filter(Boolean);
     if(rs.length)found.push({it,rs,approx:ofRes[i].approx});else nm.push(it)});
   let al=0;found.forEach(g=>{if(g.rs[0]._k==='rup'||g.rs[0]._k==='crit')al++});
-  if(ofSortV==='sev'){const R={rup:0,sg:1,crit:2,aten:3,ok:4,nd:5};found.sort((a,b)=>R[a.rs[0]._k]-R[b.rs[0]._k]||(a.rs[0]._ct??999)-(b.rs[0]._ct??999))}
+  if(ofSortV==='sev'){const R={rup:0,rcd:0,sg:1,crit:2,aten:3,ok:4,nd:5};found.sort((a,b)=>R[a.rs[0]._k]-R[b.rs[0]._k]||(a.rs[0]._ct??999)-(b.rs[0]._ct??999))}
   const grp=(g,rs)=>`<div class="pfh" data-q="${esc(g.approx?ofClean(g.it.desc):rs[0].produto)}"${g.approx?'':' data-cod="1"'}><span>🔍 ${esc(g.it.desc)}${g.approx?' <small>≈ achado pelo nome</small>':''}</span><span class="pp">${ofPrice(g.it)}</span></div>`+rs.map(pfRowHtml).join('');
   const qOn=!!axQ.of.trim();let vis=0;   // 🔍 busca: descrição da planilha ou o produto (nome, EAN, código)
   const mainG=[],inP=[];found.forEach(g=>{const rs0=!qOn||axHit('of',null,[g.it.desc,g.it.ean,g.it.code].join(' '))?g.rs:g.rs.filter(r=>axHit('of',r));if(!rs0.length)return;vis++;

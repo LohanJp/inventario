@@ -269,7 +269,7 @@ function renderPf(){
     if(qOn&&!axHit('pf',null,g.nome)){rs=rs.filter(r=>axHit('pf',r));if(!rs.length)return}vis++;   // 🔍 busca: nome do panfleto ou do produto
     ents.push({g,rs,i})});
   /* ordenar por (o item da lâmina vale pelo 1º produto achado; empate → ordem colada) */
-  const R0=e=>e.rs[0],SEV={rup:0,sg:1,crit:2,aten:3,ok:4,nd:5},cobN=r=>r._ct!==null&&r._k!=='sg'?Math.max(r._ct,0):Infinity;
+  const R0=e=>e.rs[0],SEV={rup:0,rcd:0,sg:1,crit:2,aten:3,ok:4,nd:5},cobN=r=>r._ct!==null&&r._k!=='sg'?Math.max(r._ct,0):Infinity;
   const PFS={arq:(a,b)=>a.i-b.i,sev:(a,b)=>SEV[R0(a)._k]-SEV[R0(b)._k]||cobN(R0(a))-cobN(R0(b))||a.i-b.i,cob:(a,b)=>cobN(R0(a))-cobN(R0(b))||a.i-b.i,
     est:(a,b)=>R0(a)._e-R0(b)._e||a.i-b.i,mdv:(a,b)=>(R0(b)._m||0)-(R0(a)._m||0)||a.i-b.i,nome:(a,b)=>String(a.g.nome||'').localeCompare(String(b.g.nome||''))||a.i-b.i};
   ents.sort(PFS[pfSortV]||PFS.arq);

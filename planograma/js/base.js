@@ -8,8 +8,9 @@ const num=v=>parseFloat(String(v||'0').replace(/\./g,'').replace(',','.'))||0;
 const NF0=new Intl.NumberFormat('pt-BR',{maximumFractionDigits:0}),NF1=new Intl.NumberFormat('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1});
 const f0=v=>NF0.format(+v||0),f1=v=>NF1.format(+v||0);   // +v: sempre número (dado vindo da nuvem nunca vira HTML)
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const COLOR={rup:'var(--cr)',crit:'var(--crit)',aten:'var(--am)',ok:'var(--ok)',nd:'var(--mu)',sg:'var(--sg)'};   // Crítico (laranja) ≠ Ruptura (vermelho), igual ao Resumo
-const LBL={rup:'Ruptura',crit:'Crítico',aten:'Atenção',ok:'OK',nd:'Sem MDV',sg:'Sem giro'};
+GLY.rcd='⊘';SLBL.rcd='Ruptura CD';SLBL.rup='Ruptura loja';
+const COLOR={rup:'var(--cr)',rcd:'var(--rcd)',crit:'var(--crit)',aten:'var(--am)',ok:'var(--ok)',nd:'var(--mu)',sg:'var(--sg)'};   // Crítico (laranja) ≠ Ruptura (vermelho), igual ao Resumo
+const LBL={rup:'Rupt. loja',rcd:'Rupt. CD',crit:'Crítico',aten:'Atenção',ok:'OK',nd:'Sem MDV',sg:'Sem giro'};
 /* aviso (toast): máx. 2 linhas (texto inteiro no title); com janela/folha aberta aparece no TOPO, para não cobrir os botões */
 const overlayOn=()=>['sheet','scan','flt-sheet','cat-sheet'].some(i=>{const e=$(i);return !!e&&e.classList.contains('on')})||(()=>{const e=$('pf-ask');return !!e&&!!e.style.display&&e.style.display!=='none'})();   // folhas do F7 marcam aberta com .on
 let tmr;function showToast(html,act,ms){const t=$('toast');t.innerHTML=html;t.title=t.textContent;t.classList.toggle('act',act);t.classList.toggle('top',overlayOn());t.classList.add('on');clearTimeout(tmr);tmr=setTimeout(()=>t.classList.remove('on','act'),ms)}
@@ -62,9 +63,17 @@ const key=r=>r.automacao||r.produto;
    "Nova cobertura" do filtro 1×1 (telas.js: novaInfo), que gera o TXT para o cadastro automático do planograma. */
 const TR_ATRASO=4,TR_SAIU_DIAS=7;   // trânsito: 4+ dias = atrasado (normal: 2–3) · aviso de "saiu sem entrar no estoque" dura 7 dias
 const capOf=r=>{const c=num(r.total);return c>0?c:num(r.altura)*num(r.largura)*num(r.prof)};
-/* possível falta no CD: estoque menor que 1 caixa (inclui zero e negativo) — mesmo critério do Encarte */
-const isCD=r=>!r._sist||r._sist==='1';   // falta no CD só vale p/ sistemática 1; sist 10/20 negativo = só falta pedir ao fornecedor
-const cdRisk=r=>isCD(r)&&!(r._t>0)&&r._e<(num(r.emb)||1);   // com trânsito o CD TEM o item (só não chegou) → não é falta no CD
+/* ═══ SITUAÇÕES (nov/2026, v60 — regras do Lohan) ═══
+   Ruptura loja → estoque ≤ 0 (com trânsito a caminho, ou fora da Sist. 1)
+   Ruptura CD   → Sist. 1, SEM trânsito e estoque < 40% do cadastro do planograma (sem cadastro: estoque ≤ 0)
+                  = a antiga "falta no CD". Pedir não resolve, por isso Crítico/Atenção/Saudável NÃO contam esses itens.
+   Sem giro / Sem MDV → valem mesmo se o item estiver em Ruptura CD
+   Crítico < 7 dias · Atenção 7 a 14 · Saudável 15+ (cobertura total = estoque + trânsito ÷ MDV)
+   r._vir: Ruptura CD que pela cobertura seria Saudável (MDV caiu) → selo "⚠ conferir estoque" (pode ser estoque virtual) */
+const isCD=r=>!r._sist||r._sist==='1';   // Ruptura CD só vale p/ sistemática 1; sist 10/20 ≤ 0 = Ruptura loja (falta pedir ao fornecedor)
+const RCD_PCT=0.4;
+const faltaCD=r=>{if(!isCD(r)||r._t>0)return false;const c=r._np?0:capOf(r);return c>0?r._e<RCD_PCT*c:r._e<=0};
+const cdRisk=r=>r._k==='rcd';   // "falta no CD" = Ruptura CD (o selo, o filtro F/CD, o Pedido e o Para fazer hoje usam este)
 let noCD=false;try{noCD=localStorage.getItem('planograma_nocd')==='1'}catch{}
 const addMsg=r=>transitLoaded&&r&&r._t>0?'Adicionado — aguardando chegada do trânsito':'Adicionado ao pedido';
 const addS=r=>addPed(r);
@@ -109,7 +118,7 @@ function derive(){mergeRecs();byProd=new Map(allRecords.map(r=>[r.produto,r]));f
  // ARREDONDA as duas coberturas para dias inteiros: ,5 ou mais sobe · abaixo de ,5 desce (6,4 → 6 · 6,5 → 7). A situação usa o número arredondado, igual ao que aparece na tela.
  const rnd=v=>v===null?null:Math.round(v);r._c=rnd(r._c);r._ct=rnd(r._ct);
  // SITUAÇÃO pela cobertura TOTAL: item com mercadoria a caminho não fica "Crítico" à toa. Ruptura continua sendo estoque ≤ 0 (gôndola vazia agora).
- r._k=r._e<=0?'rup':semGiro(r)?'sg':r._ct===null?'nd':r._ct<7?'crit':r._ct<15?'aten':'ok';r._d=doneSet.has(key(r));if(!r._h)r._h=norm(r.descricao+' '+r.produto+' '+r.automacao+' '+String(r.produto||'').replace(/^0+(?=\d)/,'')+' '+String(r.automacao||'').replace(/^0+(?=\d)/,''))}
+ {const fc=faltaCD(r);r._k=r._e<=0?(fc?'rcd':'rup'):semGiro(r)?'sg':r._ct===null?'nd':fc?'rcd':r._ct<7?'crit':r._ct<15?'aten':'ok';r._vir=r._k==='rcd'&&r._e>0&&r._ct!==null&&r._ct>=15}r._d=doneSet.has(key(r));if(!r._h)r._h=norm(r.descricao+' '+r.produto+' '+r.automacao+' '+String(r.produto||'').replace(/^0+(?=\d)/,'')+' '+String(r.automacao||'').replace(/^0+(?=\d)/,''))}
   updBadge();
   if(encItems.length){encDirty=true;if(curTab==='enc'&&axCur==='enc')setTimeout(renderEnc,0)}   // ⚡ Encarte escondido: só marca (redesenha ao abrir)
   if($('pf-txt'))setTimeout(pfSync,0);            // e o Panfleto
