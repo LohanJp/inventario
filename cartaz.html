@@ -30,6 +30,13 @@
     textarea { width: 100%; min-height: 120px; margin-bottom: 15px; padding: 10px; border: 1px solid #ccc; border-radius: 6px; }
     .btn { background: #0066cc; color: #fff; border: none; padding: 12px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; }
     .btn.secondary { background: #666; margin-left: 10px; }
+    .btn.modelo { background: #e6b800; color: #222; margin-left: 10px; }
+
+    /* --- Modelo editável --- */
+    .cartaz [contenteditable="true"] { cursor: text; outline: 2px dashed transparent; outline-offset: 2px; border-radius: 4px; transition: outline-color .15s; }
+    .cartaz [contenteditable="true"]:hover { outline-color: #9cc3ff; }
+    .cartaz [contenteditable="true"]:focus { outline: 2px solid #0066cc; background: rgba(0,102,204,.05); }
+    .dica-editavel { text-align: center; color: var(--muted); font-size: 14px; margin: 0; }
 
     /* --- Estrutura do Cartaz --- */
     .cartaz { 
@@ -125,7 +132,8 @@
     }
 
     @media print {
-      .input-area, .container > header, .btn, .footer-note { display: none !important; }
+      .input-area, .container > header, .btn, .footer-note, .dica-editavel { display: none !important; }
+      .cartaz [contenteditable="true"] { outline: none !important; background: none !important; }
       body { padding: 0; background: white; }
       .cartaz { margin: 0; border: none; box-shadow: none; page-break-after: always; }
       * { -webkit-print-color-adjust: exact !important; }
@@ -147,6 +155,7 @@
       <textarea id="input2" placeholder="EAN [TAB] Preço"></textarea>
 
       <button id="generate" class="btn">Gerar Cartazes</button>
+      <button id="modelo" class="btn modelo">Modelo editável</button>
       <button id="clear" class="btn secondary">Limpar</button>
     </section>
 
@@ -159,7 +168,11 @@
     function parseMainList(text) {
       return text.split('\n').filter(line => line.trim()).map(line => {
         const c = line.split('\t').length >= 9 ? line.split('\t') : line.split(/\s{2,}/);
-        return c.length >= 9 ? { ean: c[1], nome: c[3], preco: c[4], validade: c[6], ativo: c[8].trim().toUpperCase() } : null;
+        if (c.length < 9) return null;
+        // Formato novo (com etiquetas pedidas/lançadas): verificação na coluna 10 (c[9]).
+        // Formato antigo: verificação na coluna 9 (c[8]).
+        const colAtivo = c.length >= 10 ? 9 : 8;
+        return { ean: c[1], nome: c[3], preco: c[4], validade: c[6], ativo: (c[colAtivo] || '').trim().toUpperCase() };
       }).filter(p => p && p.ativo === "NÃO");
     }
 
@@ -173,6 +186,42 @@
       return map;
     }
 
+    function montarCartaz(nome, precoDE, precoPor, validade, editavel = false) {
+      const ed = editavel ? ' contenteditable="true" spellcheck="false"' : '';
+      return `
+          <article class="cartaz">
+            <div class="area-util">
+              <div class="row-header">
+                <div class="col-thunder">
+                  <img src="${ICON_URL}" class="trovao left">
+                </div>
+                <div class="col-title">
+                  <div class="bar-top"></div>
+                  <h1 class="produto-nome"${ed}>${nome}</h1>
+                  <div class="bar-bottom"></div>
+                </div>
+                <div class="col-thunder">
+                  <img src="${ICON_URL}" class="trovao right">
+                </div>
+              </div>
+
+              <div class="precos">
+                <div class="box-price">
+                  <div class="label-price"${ed}>DE R$:</div>
+                  <div class="value-price small-val"${ed}>${precoDE}</div>
+                </div>
+                <div class="box-price">
+                  <div class="label-price"${ed}>POR R$:</div>
+                  <div class="value-price big-val"${ed}>${precoPor}</div>
+                </div>
+              </div>
+
+              <footer class="validade"><span${ed}>PRODUTO PRÓXIMO DA VALIDADE:</span> <span${ed}>${validade}</span></footer>
+            </div>
+          </article>
+      `;
+    }
+
     document.getElementById('generate').addEventListener('click', () => {
       const preview = document.getElementById('preview-area');
       preview.innerHTML = "";
@@ -183,42 +232,52 @@
       produtos.forEach(p => {
         const precoDE = precosNormais.get(p.ean) || p.preco;
         
-        const html = `
-          <article class="cartaz">
-            <div class="area-util">
-              <div class="row-header">
-                <div class="col-thunder">
-                  <img src="${ICON_URL}" class="trovao left">
-                </div>
-                <div class="col-title">
-                  <div class="bar-top"></div>
-                  <h1 class="produto-nome">${p.nome}</h1>
-                  <div class="bar-bottom"></div>
-                </div>
-                <div class="col-thunder">
-                  <img src="${ICON_URL}" class="trovao right">
-                </div>
-              </div>
-
-              <div class="precos">
-                <div class="box-price">
-                  <div class="label-price">DE R$:</div>
-                  <div class="value-price small-val">${precoDE}</div>
-                </div>
-                <div class="box-price">
-                  <div class="label-price">POR R$:</div>
-                  <div class="value-price big-val">${p.preco}</div>
-                </div>
-              </div>
-
-              <footer class="validade">
-                PRODUTO PRÓXIMO DA VALIDADE: ${p.validade}
-              </footer>
-            </div>
-          </article>
-        `;
-        preview.insertAdjacentHTML('beforeend', html);
+        preview.insertAdjacentHTML('beforeend', montarCartaz(p.nome, precoDE, p.preco, p.validade));
       });
+    });
+
+    // Modelo editável: cartaz com dados inventados, clique no texto para substituir
+    document.getElementById('modelo').addEventListener('click', () => {
+      const preview = document.getElementById('preview-area');
+      if (!preview.querySelector('.dica-editavel')) {
+        preview.insertAdjacentHTML('afterbegin', '<p class="dica-editavel">Clique em qualquer texto do cartaz para escrever por cima.</p>');
+      }
+      preview.insertAdjacentHTML('beforeend',
+        montarCartaz('Café Torrado 500g', '24,90', '19,90', '30/11/2026', true));
+      preview.lastElementChild.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+
+    // Ao clicar num campo editável, seleciona todo o texto para substituir ao digitar
+    function selecionarTudo(el) {
+      const r = document.createRange();
+      r.selectNodeContents(el);
+      const sel = window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(r);
+    }
+    let recemFocado = null;
+    document.getElementById('preview-area').addEventListener('focusin', (e) => {
+      const el = e.target.closest('[contenteditable="true"]');
+      if (!el) return;
+      recemFocado = el;
+      selecionarTudo(el);
+    });
+    // O mouseup do clique desfaz a seleção; reaplica só no primeiro clique
+    // (cliques seguintes no mesmo campo posicionam o cursor normalmente)
+    document.getElementById('preview-area').addEventListener('mouseup', (e) => {
+      const el = e.target.closest('[contenteditable="true"]');
+      if (el && el === recemFocado) selecionarTudo(el);
+      recemFocado = null;
+    });
+
+    // Enter confirma (sai do campo) em vez de criar nova linha; cola só texto puro
+    document.getElementById('preview-area').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && e.target.isContentEditable) { e.preventDefault(); e.target.blur(); }
+    });
+    document.getElementById('preview-area').addEventListener('paste', (e) => {
+      if (!e.target.isContentEditable) return;
+      e.preventDefault();
+      document.execCommand('insertText', false, (e.clipboardData || window.clipboardData).getData('text/plain'));
     });
 
     document.getElementById('clear').addEventListener('click', () => {
