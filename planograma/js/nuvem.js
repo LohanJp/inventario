@@ -387,27 +387,30 @@ $('b-up').onclick=async()=>{
 /* Inicialização: abre app → tenta nuvem → fallback IDB */
 async function boot(){
   try{await idbOpen()}catch{}
+  /* v67: pede tudo ao aparelho de uma vez (antes era um de cada vez, com o Planograma por último) — a ordem de uso abaixo não muda */
+  const pre=new Map(),get=id=>pre.has(id)?pre.get(id):idbGet(id);
+  if(idb)for(const id of['estoque','transitmeta','encarte','current',...[0,1,2,3,4,5,6].flatMap(w=>['oferta-d'+w,'panfleto-d'+w])])pre.set(id,new Promise(r=>{try{idbGet(id).then(r,()=>r(null))}catch{r(null)}}));
   try{                                           // restaura o relatório de estoque ANTES de montar a tela (vale p/ nuvem e p/ local)
-    const e=await idbGet('estoque');
+    const e=await get('estoque');
     if(e&&e.map){estoqueMap=e.map;estoqueLoaded=true;estoqueMeta=e.meta||null;
       $('cob-status').innerHTML=`<b>✓ ${esc(e.name||'estoque')}</b> · ${f0(Object.keys(estoqueMap).length)} produtos · salvo em ${esc(e.savedAt||'')}`}
   }catch{}
   await prcRestaura();                           // preços (opcional) guardados no aparelho
-  try{const t=await idbGet('transitmeta');if(t&&t.meta)transitMeta=t.meta}catch{}
-  try{const en=await idbGet('encarte');                       // restaura o último Encarte carregado (aparece após o planograma abrir)
+  try{const t=await get('transitmeta');if(t&&t.meta)transitMeta=t.meta}catch{}
+  try{const en=await get('encarte');                       // restaura o último Encarte carregado (aparece após o planograma abrir)
     if(en&&en.items&&en.items.length){encItems=en.items;encPer=en.per||null;   // 📅 dia do Panfleto (título da planilha)
       encSrc=en.kind==='xlsx'?{kind:'xlsx',name:en.name,buf:en.buf,hdr:en.hdr}:{...parseEncCSV(en.text||''),name:en.name,text:en.text||''};
       if(!encPer&&encSrc.per)encPer=encSrc.per;   // salvo antes do campo per: lê a data do título do .csv
       encCloudAt=en.cloudAt||0;encPending=!!en.pending;encSavedAt=en.savedAt||'';
       $('enc-title').style.display='';$('enc-title').textContent=`${en.name} · ${encItems.length} itens${encPerMeta()} · salvo em ${en.savedAt||''}`}
   }catch{}
-  try{for(let w=0;w<7;w++){const o=await idbGet('oferta-d'+w);if(o&&((o.items&&o.items.length)||(o.del&&o.pending)))ofDays[w]=o}      // restaura as planilhas da semana (1 por dia)
+  try{for(let w=0;w<7;w++){const o=await get('oferta-d'+w);if(o&&((o.items&&o.items.length)||(o.del&&o.pending)))ofDays[w]=o}      // restaura as planilhas da semana (1 por dia)
     if(!ofDays.some(Boolean)){                                    // versão antiga guardava só 1 planilha: vai para o dia da semana em que foi salva
       const o=await idbGet('oferta'),m=o&&o.items&&o.items.length&&String(o.savedAt||'').match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
       if(m){const d=new Date(+m[3],+m[2]-1,+m[1],12),w=d.getDay();ofDays[w]={...o,id:'oferta-d'+w,w,date:ofISO(d)};idbSave(ofDays[w]).catch(()=>{})}}
     ofSelOn=ofISO(new Date());ofSelDay=new Date().getDay();ofApplyDay();if(axCur==='dia'&&curTab==='enc'){ofShowMeta();renderOf()}
   }catch{}
-  try{for(let w=0;w<7;w++){const o=await idbGet('panfleto-d'+w);if(o&&((o.text&&o.text.trim())||(o.del&&o.pending)))pfDays[w]=o}       // restaura os panfletos da semana (1 por dia)
+  try{for(let w=0;w<7;w++){const o=await get('panfleto-d'+w);if(o&&((o.text&&o.text.trim())||(o.del&&o.pending)))pfDays[w]=o}       // restaura os panfletos da semana (1 por dia)
     if(!pfDays.some(Boolean)&&pfTxt().trim()){const w=new Date().getDay(),t=new Date();                          // versão antiga guardava só 1 texto: vira o panfleto de hoje
       pfDays[w]={id:'panfleto-d'+w,w,text:pfTxt(),date:ofISO(t),at:Date.now(),savedAt:t.toLocaleString('pt-BR'),cloudAt:0,pending:false};if(idb)idbSave(pfDays[w]).catch(()=>{})}
     pfSelOn=ofISO(new Date());pfSelDay=new Date().getDay();pfApplyDay(false);   // carrega a lista do dia certo (antes ficava o texto do último dia visto)
@@ -417,7 +420,7 @@ async function boot(){
   /* ABERTURA (nov/2026): abre NA HORA com o relatório guardado no aparelho e confere a nuvem em segundo plano.
      Antes toda abertura mostrava "Baixando da nuvem…" e esperava a internet responder, mesmo com o relatório do dia já no aparelho. */
   try{
-    const s=await idbGet('current');
+    const s=await get('current');
     if(s&&s.records){
       await loadRecords(s.records,s.meta||{},s.name,s.transit||null,false,s.savedAt);
       if(c){startSSE(c);loadFromCloud(c,true).catch(()=>{})}   // só baixa relatório se a nuvem tiver um NOVO; pedido/concluídos vêm sempre
@@ -431,7 +434,9 @@ async function boot(){
   if(estoqueLoaded&&Object.values(estoqueMap).some(x=>x&&x.d)){derive();go('home');return}   // só a Cobertura carregada: já dá para usar
   go('data'); // sem dados em lugar nenhum → vai direto para aba Dados
 }
-(async()=>{busy(true,'Abrindo seus dados…');try{await boot()}finally{busy(false)}})();
+/* v67 — TELA DE ABERTURA: já vem ligada no HTML (antes aparecia o Resumo vazio "Sem dados" por alguns segundos) e só sai quando o boot termina */
+(async()=>{const dem=setTimeout(()=>{$('lhint').textContent='Ainda abrindo… pode levar alguns segundos'},6000);
+  try{await boot()}finally{clearTimeout(dem);abrindo=false;busy(false);$('load').classList.remove('boot')}})();
 updBadge();
 /* PWA: service worker (funciona offline depois da 1ª abertura) */
 if('serviceWorker' in navigator&&/^https?:/.test(location.protocol)){/* ⚡ registro do SW em tempo ocioso: não compete com a 1ª pintura */
@@ -449,13 +454,14 @@ if('serviceWorker' in navigator&&/^https?:/.test(location.protocol)){/* ⚡ regi
   addEventListener('load',()=>idle(()=>navigator.serviceWorker.register('./sw.js').then(reg=>reg.update()).catch(()=>{})))}
 /* versão do app na aba Dados (nome do cache do SW, ex.: v34) — para conferir se o aparelho já pegou a atualização */
 /* APP_VER = versão do CÓDIGO que está rodando. ⚠ Mantenha igual ao V do sw.js (o teste de fumaça confere). */
-const APP_VER='v66';
+const APP_VER='v67';
 const verNum=v=>parseInt(String(v||'').replace(/\D/g,''),10)||0;   // 'v9' < 'v45' < 'v100' (comparação numérica, não alfabética)
 function mostraVersao(){const el=$('app-ver');if(el)el.textContent='Versão do app: '+APP_VER}
 addEventListener('load',()=>setTimeout(mostraVersao,3000));
 /* ═══ NOVIDADES (nov/2026): depois de atualizar, o Resumo mostra o que mudou (1 vez por versão). Na 1ª instalação não aparece.
    Ao publicar uma versão com mudança visível, acrescente aqui a chave da versão (a mesma do sw.js, ex.: 'v43'). ═══ */
 const NOVIDADES={
+  v67:['⏳ <b>Tela de abertura</b>: o app mostra "Abrindo seus dados…" até ler tudo o que está guardado — não aparece mais o Resumo vazio "Sem dados" nos primeiros segundos'],
   v66:['📂 <b>Um botão só</b> em Dados: escolha Planograma, Cobertura, Trânsito e Preços de uma vez — o app reconhece cada arquivo',
        '🔥 <b>Mais vendidos em risco</b> no Resumo: os 10 de maior MDV em ruptura ou críticos, sem trânsito e fora do pedido — deslize ← para pedir'],
   v65:['🧭 <b>Ordem Prioridade</b> (nova ordem padrão): Ruptura loja, Crítico e Atenção primeiro, do maior MDV para o menor — Ruptura CD fica por último',

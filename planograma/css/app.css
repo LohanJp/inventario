@@ -626,3 +626,4 @@ html:not(.dark) .ent.trg.atr{color:color-mix(in srgb,var(--am) 70%,#000)}
 /* v66 */
 #h-top{padding:0 16px}#h-top .trd{margin-top:14px}
 .rel-load{margin-top:8px;margin-bottom:10px}.rel-load label.button{cursor:pointer}
+#load.boot{background:var(--bg)}   /* v67: na abertura a tela de espera é opaca (não deixa ver o Resumo ainda vazio) */

@@ -26,8 +26,10 @@ addEventListener('error',e=>showErr(e.message+(e.lineno?' (linha '+e.lineno+')':
 addEventListener('unhandledrejection',e=>showErr(e.reason&&e.reason.message||e.reason));
 /* Tela de carregamento: só aparece se a ação passar de 1 s (now=true: trabalho pesado que trava a tela, mostra já) */
 let busyT=null,busyH=null,busyMsg='Carregando…';
+let abrindo=true;   // v67: true do carregamento da página até o boot terminar
 function busy(on,m,now){
   const L=$('load');
+  if(!on&&abrindo)return;   // v67: a tela de abertura só sai quando TUDO o que está guardado foi lido (ver boot)
   if(!on){clearTimeout(busyT);clearTimeout(busyH);busyT=busyH=null;L.classList.remove('on');return}
   if(m)busyMsg=m;
   if(L.classList.contains('on')){$('lmsg').textContent=busyMsg;return}      // já visível: só troca o texto
