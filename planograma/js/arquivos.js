@@ -33,7 +33,16 @@ $('f-trans').onchange=e=>{const f=e.target.files[0];if(!f)return;e.target.value=
   busy(false);renderData();toast('Trânsito carregado — '+f0(Object.keys(transitMap).length)+' itens')},'latin1')};
 /* ═══ v66 — UM BOTÃO SÓ: escolhe todos os relatórios do dia de uma vez; cada arquivo é reconhecido pelo cabeçalho e entregue
    ao mesmo leitor de antes (as entradas antigas continuam existindo, só sem botão). Ordem: Planograma → Cobertura → Trânsito → Preços. ═══ */
-$('f-multi').onchange=async e=>{const fs=[...e.target.files];e.target.value='';if(!fs.length)return;
+/* v68 — ATALHO Alt+R (computador, pensado para o AutoHotkey): vai para Dados e abre a janela de arquivos; ao terminar de carregar ENVIA para a nuvem sozinho.
+   O título da aba conta o andamento para o script esperar pelo nome da janela:  "⏳ Carregando relatórios" → "⏳ Enviando para a nuvem" → "✓ Relatórios enviados"  (ou "⚠ …" se algo falhar). */
+let autoUp=false,titT=null;const TIT0=document.title;
+const titulo=(t,volta)=>{clearTimeout(titT);document.title=t;if(volta)titT=setTimeout(()=>{document.title=TIT0},volta)};
+document.addEventListener('keydown',e=>{if(!e.altKey||e.ctrlKey||e.metaKey||e.shiftKey||e.code!=='KeyR'||e.repeat)return;e.preventDefault();
+  if(abrindo||$('load').classList.contains('on'))return;
+  autoUp=true;go('data');titulo('Planograma — escolha os relatórios');$('f-multi').click()});
+$('f-multi').addEventListener('cancel',()=>{if(autoUp){autoUp=false;titulo(TIT0)}});
+$('f-multi').onchange=async e=>{const fs=[...e.target.files];e.target.value='';const auto=autoUp;autoUp=false;if(!fs.length){if(auto)titulo(TIT0);return}
+  if(auto)titulo('⏳ Carregando relatórios');
   const g={j:[],p:[],c:[],t:[],$:[]};
   for(const f of fs){if(/\.json$/i.test(f.name)){g.j.push(f);continue}
     let t='';try{t=decodeBuf(await f.slice(0,6000).arrayBuffer())}catch{}
@@ -44,7 +53,14 @@ $('f-multi').onchange=async e=>{const fs=[...e.target.files];e.target.value='';i
   if(g.p[0]){$('f-plano').onchange(fake(g.p[0]));await livre()}
   if(g.c[0]){await loadCobFile(g.c[0]);await livre()}
   if(g.t[0]){$('f-trans').onchange(fake(g.t[0]));await livre()}
-  if(g.$.length&&typeof loadPrecoFiles==='function')loadPrecoFiles(g.$)};
+  if(g.$.length&&typeof loadPrecoFiles==='function'){await loadPrecoFiles(g.$);if(auto)await livre()}
+  if(!auto)return;
+  if(!planoRecs.length)return titulo('⚠ Nenhum planograma carregado',120000);
+  if(!navigator.onLine)return titulo('⚠ Sem internet — relatórios carregados, falta enviar',120000);
+  titulo('⏳ Enviando para a nuvem');
+  try{await $('b-up').onclick();await livre();if(typeof prcAuto==='function')await prcAuto()}catch{}
+  const falta=[relNovo.p&&'planograma',relNovo.c&&'cobertura',relNovo.t&&'trânsito'].filter(Boolean);
+  titulo(falta.length?'⚠ Falta enviar: '+falta.join(', '):'✓ Relatórios enviados',120000)};
 /* ═══ TRÂNSITO: DESDE QUANDO (nov/2026) ═══ o relatório de Trânsito só traz a quantidade, sem data. Aqui o app anota o dia em que
    cada item APARECEU em trânsito e vai contando até chegar:
      · 1ª vez com quantidade no Trânsito → guarda a data daquele relatório (reg)

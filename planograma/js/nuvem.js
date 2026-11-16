@@ -454,13 +454,14 @@ if('serviceWorker' in navigator&&/^https?:/.test(location.protocol)){/* ⚡ regi
   addEventListener('load',()=>idle(()=>navigator.serviceWorker.register('./sw.js').then(reg=>reg.update()).catch(()=>{})))}
 /* versão do app na aba Dados (nome do cache do SW, ex.: v34) — para conferir se o aparelho já pegou a atualização */
 /* APP_VER = versão do CÓDIGO que está rodando. ⚠ Mantenha igual ao V do sw.js (o teste de fumaça confere). */
-const APP_VER='v67';
+const APP_VER='v68';
 const verNum=v=>parseInt(String(v||'').replace(/\D/g,''),10)||0;   // 'v9' < 'v45' < 'v100' (comparação numérica, não alfabética)
 function mostraVersao(){const el=$('app-ver');if(el)el.textContent='Versão do app: '+APP_VER}
 addEventListener('load',()=>setTimeout(mostraVersao,3000));
 /* ═══ NOVIDADES (nov/2026): depois de atualizar, o Resumo mostra o que mudou (1 vez por versão). Na 1ª instalação não aparece.
    Ao publicar uma versão com mudança visível, acrescente aqui a chave da versão (a mesma do sw.js, ex.: 'v43'). ═══ */
 const NOVIDADES={
+  v68:['⌨️ No computador, <b>Alt+R</b> abre direto a janela de escolher os relatórios e, depois de carregar, envia para a nuvem sozinho — o título da aba mostra "✓ Relatórios enviados" quando termina'],
   v67:['⏳ <b>Tela de abertura</b>: o app mostra "Abrindo seus dados…" até ler tudo o que está guardado — não aparece mais o Resumo vazio "Sem dados" nos primeiros segundos'],
   v66:['📂 <b>Um botão só</b> em Dados: escolha Planograma, Cobertura, Trânsito e Preços de uma vez — o app reconhece cada arquivo',
        '🔥 <b>Mais vendidos em risco</b> no Resumo: os 10 de maior MDV em ruptura ou críticos, sem trânsito e fora do pedido — deslize ← para pedir'],
