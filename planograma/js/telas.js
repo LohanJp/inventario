@@ -124,7 +124,15 @@ function renderHome(){let n=allRecords.length;renderBan();
  if(transitLoaded)K.push(['tr','Em trânsito','itens com entrada a caminho','var(--in)']);   // não é situação: faixa larga embaixo
  const pct=k=>{const v=c[k]/n*100;return v>0&&v<0.1?'&lt;0,1%':f1(v)+'%'};   // % de todos os produtos
  $('kpis').innerHTML=K.map(k=>`<button class="kpi${k[0]==='tr'?' kw':''}" data-k="${k[0]}" style="--c:${k[3]}" title="${k[2]}" type="button"><span class="n num">${f0(c[k[0]])}</span><span class="l"><b><span class="kg" aria-hidden="true">${k[0]==='tr'?'⇢':GLY[k[0]]}</span>${k[1]}</b></span><span class="kr"><i class="kb"><u style="width:${Math.max(2,c[k[0]]/n*100).toFixed(1)}%"></u></i><span class="pc num">${pct(k[0])}</span></span></button>`).join('');
- renderCats();renderTodo()}
+ renderCats();renderTodo();renderTop(R)}
+/* v66 — MAIS VENDIDOS EM RISCO: os 10 de maior MDV em Ruptura loja ou Crítico, sem trânsito e fora do pedido (da sistemática escolhida no Resumo).
+   Mesmo formato dos grupos do Pedido (abre/fecha) e o MESMO cartão das listas: deslize ← para pôr no pedido, ⓘ abre a ficha. */
+let topOpen=false;
+function renderTop(R){const el=$('h-top');if(!el)return;const P=pedSet(),
+  L=R.filter(r=>(r._k==='rup'||r._k==='crit')&&r._m>0&&!(transitLoaded&&r._t>0)&&!P.has(r.produto)&&!r._d).sort((a,b)=>b._m-a._m||a.descricao.localeCompare(b.descricao)).slice(0,10);
+  el.innerHTML=L.length?`<details class="trd" id="h-topd"${topOpen?' open':''}><summary><span>🔥 Mais vendidos em risco<small>Ruptura ou crítico, sem trânsito e fora do pedido · deslize ← para pedir</small></span><span class="cnt">${L.length}</span>${CHEV}</summary><div class="trd-b">${L.map(r=>swrap(`<div class="p" data-p="${esc(r.produto)}" style="--c:${COLOR[r._k]}">${cardBody(r,'')}</div>`,r._d,'add','Pedido','🛒')).join('')}</div></details>`:'';
+  const d=$('h-topd');if(d)d.ontoggle=()=>{topOpen=d.open}}
+$('h-top').onclick=e=>{if(Date.now()<swBlock||!e.target.closest('.infb'))return;const c=e.target.closest('.p');if(c)openSheet(byProd.get(c.dataset.p))};
 /* Categorias com mais alertas — por sistemática. Só a Sist. 1 (CD) tem a divisão "dá para pedir" × "sem no CD" */
 /* ═══ PARA FAZER HOJE (nov/2026): o Resumo mostra o próximo passo, não só o estado. Cada linha só aparece se tiver itens
    e abre Produtos já filtrado (F.todo). Conta só a Sistemática padrão (ENT0), como a lista abre. ═══ */
@@ -194,7 +202,7 @@ function renderCats(){
   const rows=Object.entries(g).sort((a,b)=>b[1].y+b[1].cd-a[1].y-a[1].cd).slice(0,6).sort((a,b)=>b[1].y-a[1].y||a[1].cd-b[1].cd),mx=Math.max(...rows.map(([,v])=>v.y+v.cd),1);   // 6 com mais alertas
   const leg='';
   $('cats').innerHTML=rows.length?leg+rows.map(([k,v])=>`<button class="bar" data-c="${esc(k)}" type="button"><span class="r"><span>${esc(short(k))}</span><b class="num"><span style="color:var(--am)">${v.y}</span></b></span><i><u style="width:${(v.y+v.cd)/mx*100}%">${v.y?`<s style="flex:${v.y}"></s>`:''}${v.cd?`<s class="cd" style="flex:${v.cd}"></s>`:''}</u></i></button>`).join(''):'<div class="empty">Sem alertas nessa sistemática</div>'}
-$('h-load').onclick=()=>$('f-plano').click();                                // Resumo vazio: abre direto o seletor do relatório
+$('h-load').onclick=()=>$('f-multi').click();                                // Resumo vazio: abre direto o seletor do relatório
 $('cats-sw').onclick=e=>{const b=e.target.closest('button');if(!b||b.dataset.cs===catSist)return;catSist=b.dataset.cs;try{localStorage.setItem('planograma_catsist',catSist)}catch{};renderCats()};
 $('h-ring').onclick=()=>{if(!allRecords.length)return;setHSist(hSist?'':'1')};
 $('kpis-sw').onclick=e=>{const b=e.target.closest('button');if(!b||b.dataset.hs===hSist)return;setHSist(b.dataset.hs)};
@@ -253,7 +261,7 @@ const T=toks(F.q);
  if(!list.length){const le=$('list-empty');   // v65: a tela vazia diz o motivo e oferece o botão certo
   le.innerHTML=!allRecords.length?'<div class="em-ic">📄</div><p><b>Nenhum relatório carregado</b></p><p class="ln">Carregue o Planograma para ver os produtos.</p><div style="margin-top:14px"><button class="button button-fill button-large" type="button" id="le-load">Carregar relatório</button></div>'
    :'<div class="em-ic">🔍</div><p><b>Nenhum produto com '+(T.length?'essa busca':'esses filtros')+'</b></p>'+(T.length?'<p class="ln">Confira o nome ou tente o código / EAN.</p>':'<div style="margin-top:14px"><button class="button button-tonal button-large" type="button" id="le-clr">Limpar filtros</button></div>');
-  if($('le-load'))$('le-load').onclick=()=>$('f-plano').click();
+  if($('le-load'))$('le-load').onclick=()=>$('f-multi').click();
   if($('le-clr'))$('le-clr').onclick=()=>{F={chip:'all',cat:'',q:'',sort:F.sort,ent:ENT0};noCD=false;noCDTr=false;salvaCD();renderList(true)}}
  $('list-empty').hidden=!!list.length;$('exp-txt').hidden=!list.length;
  if(!$('s-prod').classList.contains('on')&&!vl)return;                     // a lista virtual nasce quando a aba abre (precisa da altura da tela)

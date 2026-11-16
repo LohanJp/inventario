@@ -622,3 +622,7 @@ html:not(.dark) .ent.trg.atr{color:color-mix(in srgb,var(--am) 70%,#000)}
  #list>ul{display:grid;grid-template-columns:1fr 1fr;column-gap:4px;align-content:start;grid-auto-rows:max-content}
  #plist .trd-b{display:grid;grid-template-columns:1fr 1fr;column-gap:8px}#plist .trd-b>.dn-clr{grid-column:1/-1}
 }
+
+/* v66 */
+#h-top{padding:0 16px}#h-top .trd{margin-top:14px}
+.rel-load{margin-top:8px;margin-bottom:10px}.rel-load label.button{cursor:pointer}

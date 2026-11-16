@@ -31,6 +31,20 @@ $('f-trans').onchange=e=>{const f=e.target.files[0];if(!f)return;e.target.value=
   transitMap=tm;transitLoaded=true;setRelNovo('t',true);if(idb&&transitMeta)idbSave({id:'transitmeta',meta:transitMeta}).catch(()=>{});derive();trAtualiza();
   if(idb){try{const rec=await idbGet('current');if(rec){rec.transit=transitMap;await idbSave(rec)}}catch{}}
   busy(false);renderData();toast('Trânsito carregado — '+f0(Object.keys(transitMap).length)+' itens')},'latin1')};
+/* ═══ v66 — UM BOTÃO SÓ: escolhe todos os relatórios do dia de uma vez; cada arquivo é reconhecido pelo cabeçalho e entregue
+   ao mesmo leitor de antes (as entradas antigas continuam existindo, só sem botão). Ordem: Planograma → Cobertura → Trânsito → Preços. ═══ */
+$('f-multi').onchange=async e=>{const fs=[...e.target.files];e.target.value='';if(!fs.length)return;
+  const g={j:[],p:[],c:[],t:[],$:[]};
+  for(const f of fs){if(/\.json$/i.test(f.name)){g.j.push(f);continue}
+    let t='';try{t=decodeBuf(await f.slice(0,6000).arrayBuffer())}catch{}
+    g[/listaplanograma|Relatorio de Planograma/i.test(t)?'p':/Qt\.Transito/i.test(t)?'t':/Vda 12 meses/i.test(t)?'c':'$'].push(f)}
+  const livre=()=>new Promise(r=>{const i=setInterval(()=>{if(!busyT&&!busyH&&!$('load').classList.contains('on')){clearInterval(i);setTimeout(r,900)}},150)});   // espera o leitor terminar (e o aviso dele aparecer)
+  const fake=f=>({target:{files:[f],value:''}});
+  if(g.j[0]){$('f-plano').onchange(fake(g.j[0]));await livre()}
+  if(g.p[0]){$('f-plano').onchange(fake(g.p[0]));await livre()}
+  if(g.c[0]){await loadCobFile(g.c[0]);await livre()}
+  if(g.t[0]){$('f-trans').onchange(fake(g.t[0]));await livre()}
+  if(g.$.length&&typeof loadPrecoFiles==='function')loadPrecoFiles(g.$)};
 /* ═══ TRÂNSITO: DESDE QUANDO (nov/2026) ═══ o relatório de Trânsito só traz a quantidade, sem data. Aqui o app anota o dia em que
    cada item APARECEU em trânsito e vai contando até chegar:
      · 1ª vez com quantidade no Trânsito → guarda a data daquele relatório (reg)
