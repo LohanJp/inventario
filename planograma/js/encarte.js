@@ -388,7 +388,7 @@ async function loadCobFile(file){
     if(!/Vda 12 meses/i.test(text.slice(0,6000))){busy(false);return toast('Este arquivo não é o relatório de Cobertura — nada foi trocado')}   // relatório no lugar errado sobrescrevia a Cobertura boa
     const em=parseEstoqueFile(text);if(!Object.keys(em).length){busy(false);return toast('Nenhum produto lido na Cobertura — confira o arquivo')}
     estoqueMap=em;
-    estoqueLoaded=true;
+    estoqueLoaded=true;setRelNovo('c',true);
     const total=Object.keys(estoqueMap).length;
     // Update status
     $('cob-status').innerHTML=`<b>✓ ${esc(file.name)}</b> · ${f0(total)} produtos · ${f0(Object.values(estoqueMap).filter(e=>e.mdv>0).length)} com MDV`;

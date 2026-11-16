@@ -15,6 +15,10 @@ const LBL={rup:'Rupt. loja',rcd:'Rupt. CD',crit:'Crítico',aten:'Atenção',ok:'
 const overlayOn=()=>['sheet','scan','flt-sheet','cat-sheet'].some(i=>{const e=$(i);return !!e&&e.classList.contains('on')})||(()=>{const e=$('pf-ask');return !!e&&!!e.style.display&&e.style.display!=='none'})();   // folhas do F7 marcam aberta com .on
 let tmr;function showToast(html,act,ms){const t=$('toast');t.innerHTML=html;t.title=t.textContent;t.classList.toggle('act',act);t.classList.toggle('top',overlayOn());t.classList.add('on');clearTimeout(tmr);tmr=setTimeout(()=>t.classList.remove('on','act'),ms)}
 function toastUndo(msg,fn){showToast(`<span class="tt">${esc(msg)}</span><button class="tu" id="tu">Desfazer</button>`,true,5000);$('tu').onclick=()=>{fn();$('toast').classList.remove('on','act')}}
+/* v65: relatórios carregados de ARQUIVO neste aparelho e ainda não enviados para a nuvem (p = planograma, c = cobertura, t = trânsito) → aviso no Resumo */
+const LSRN='planograma_relnovo';let relNovo={};try{relNovo=JSON.parse(localStorage.getItem(LSRN)||'{}')||{}}catch{}
+function setRelNovo(k,v){if(k===null)relNovo={};else if(!!relNovo[k]===v)return;else if(v)relNovo[k]=true;else delete relNovo[k];
+  try{localStorage.setItem(LSRN,JSON.stringify(relNovo))}catch{}if(typeof renderBan==='function')renderBan()}
 function toast(m){showToast(`<span class="tt">${esc(m)}</span>`,false,3200)}
 /* diagnóstico: qualquer erro de JavaScript aparece na tela (antes o app só "parava" sem dizer nada) */
 let errAt=0;const showErr=m=>{if(Date.now()-errAt<4000)return;errAt=Date.now();try{toast('⚠ Erro no app: '+String(m||'desconhecido').slice(0,140))}catch{}};
@@ -55,7 +59,7 @@ function score(r,T,rel){const h=r._h;let sc=0;
       while(j>=0){if((j===0||!AN.test(h[j-1]))&&!AN.test(h[j+k]||' ')){w=1;break}j=h.indexOf(q,j+1)}}
     if(w)sc+=wt*w;else if(!rel)return 0}                                              // modo parcial (rel) aceita palavras faltando
   return sc}
-let currentMeta={},savedInfo=null,F={chip:'all',cat:'',q:'',sort:'cobt',ent:'1'},shown=40,list=[];
+let currentMeta={},savedInfo=null,F={chip:'all',cat:'',q:'',sort:'prio',ent:'1'},shown=40,list=[];
 let catSist='1';try{const v=localStorage.getItem('planograma_catsist');if(v==='10'||v==='20')catSist=v}catch{}   // ⚠ declarado aqui no topo: renderCats() roda dentro de renderHome()
 const key=r=>r.automacao||r.produto;
 

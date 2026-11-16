@@ -8,7 +8,7 @@ async function loadRecords(records,meta,name,transit,persist,savedAt){
  if(transit){transitMap=transit;transitLoaded=true}
  savedInfo={name,savedAt:savedAt||new Date().toLocaleString('pt-BR')};
  if(persist&&idb)await idbSave({id:'current',name,records,meta,savedAt:savedInfo.savedAt,filial:meta.filial,date:meta.date,transit:transitLoaded?transitMap:undefined}).catch(()=>{});
- derive();F={chip:'all',cat:'',q:'',sort:'cobt',ent:ENT0};$('q').value='';go('home')}
+ derive();F={chip:'all',cat:'',q:'',sort:'prio',ent:ENT0};$('q').value='';go('home')}
 /* Os relatórios do sistema são UTF-8 (cada acento ocupa 1 coluna). Ler como latin1 transformava Ç, Ã, º… em 2 caracteres e
    DESLOCAVA as colunas dessas linhas (≈2% do planograma): Cob.Plan 999 virava "6 9", estoque 0 virava 9, etc.
    Agora tenta UTF-8 e só cai para Windows-1252 se o arquivo realmente não for UTF-8. */
@@ -19,7 +19,7 @@ $('f-plano').onchange=e=>{const f=e.target.files[0];if(!f)return;e.target.value=
  if(/\.json$/i.test(f.name))readFile(f,t=>importBackup(t,f.name),'utf-8');
  else readFile(f,async t=>{await tick();const p=parseFile(t);if(!p.records.length){busy(false);return toast('Nenhum produto encontrado no arquivo')}
   const chaveAntes=lsKey;
-  await loadRecords(p.records,p.meta,f.name,null,true);const had=doneSet.size;if(had){lsClear();derive();renderHome()}   // relatório novo: concluídos recomeçam do zero
+  await loadRecords(p.records,p.meta,f.name,null,true);setRelNovo('p',true);const had=doneSet.size;if(had){lsClear();derive();renderHome()}   // relatório novo: concluídos recomeçam do zero
   /* planograma de OUTRO dia: zera também os concluídos guardados na NUVEM (antes os "feitos" de ontem voltavam na 1ª sincronização).
      Com a lista da nuvem em mãos apaga já; senão deixa pendente (⏳) e a próxima sincronização apaga em vez de baixar. */
   else if(chaveAntes&&chaveAntes!==lsKey&&typeof cloudWriteDone==='function'){if(cloudDone.size)cloudWriteDone();else{setPend('done',true);if(navigator.onLine)liveRefresh()}}
@@ -28,7 +28,7 @@ $('f-plano').onchange=e=>{const f=e.target.files[0];if(!f)return;e.target.value=
 $('f-trans').onchange=e=>{const f=e.target.files[0];if(!f)return;e.target.value='';busy(true,'Lendo trânsito…');
  readFile(f,async t=>{if(!/Qt\.Transito/i.test(t.slice(0,6000))){busy(false);return toast('Este arquivo não é o relatório de Trânsito — nada foi trocado')}   // relatório no lugar errado estragava os números em silêncio
   const tm=parseTransitFile(t);if(!Object.keys(tm).length){busy(false);return toast('Nenhum produto lido no Trânsito — confira o arquivo')}
-  transitMap=tm;transitLoaded=true;if(idb&&transitMeta)idbSave({id:'transitmeta',meta:transitMeta}).catch(()=>{});derive();trAtualiza();
+  transitMap=tm;transitLoaded=true;setRelNovo('t',true);if(idb&&transitMeta)idbSave({id:'transitmeta',meta:transitMeta}).catch(()=>{});derive();trAtualiza();
   if(idb){try{const rec=await idbGet('current');if(rec){rec.transit=transitMap;await idbSave(rec)}}catch{}}
   busy(false);renderData();toast('Trânsito carregado — '+f0(Object.keys(transitMap).length)+' itens')},'latin1')};
 /* ═══ TRÂNSITO: DESDE QUANDO (nov/2026) ═══ o relatório de Trânsito só traz a quantidade, sem data. Aqui o app anota o dia em que

@@ -218,6 +218,7 @@ async function loadFromCloud(c,fundo){
     try{const r=await idbGet('current');if(r){r.cloudAt=pi.exportedAt;r.transAt=ti?ti.exportedAt:undefined;await idbSave(r)}}catch{}
     await applyLive(c);   // ⚡ applyLive já roda o derive()
     if(chaveAntes&&chaveAntes!==lsKey)pedLimpaConcl();   // relatório de um DIA NOVO veio da nuvem: concluídos do Pedido saem (normalmente o outro aparelho já limpou)
+    setRelNovo(null);   // a nuvem trouxe relatório mais novo: nada deste aparelho ficou para enviar
     renderHome();busy(false);
     return true;
   }catch(e){busy(false);toast(e.message);return false}
@@ -323,6 +324,7 @@ $('b-up').onclick=async()=>{
           filial:currentMeta.filial||'',date:currentMeta.date||'',total:planoRecs.length,
           meta:currentMeta})}).then(r=>{if(!r.ok)throw Error('Falha ao enviar info')})
     ]);
+    setRelNovo('p',false);
     if(encSrc&&encItems.length){encPending=true;await encSaveLocal();pushEnc()}   // Encarte vai junto
     // Envia live/done e live/pedido junto (garante consistência)
     const doneMap={};
@@ -350,7 +352,7 @@ $('b-up').onclick=async()=>{
             cf(cu(c,'trans/info'),{method:'PUT',headers:{'Content-Type':'application/json'},
               body:JSON.stringify({exportedAt:now,date:tl.date||'',meta:transitMeta||null,total:Object.keys(transitMap).length})})
           ]);
-          if(rs.every(r=>r.ok))tUp=true;else fails.push('trânsito');
+          if(rs.every(r=>r.ok)){tUp=true;setRelNovo('t',false)}else fails.push('trânsito');
         }catch{fails.push('trânsito')}
       }
     }
@@ -370,7 +372,7 @@ $('b-up').onclick=async()=>{
           const r2=await cf(cu(c,'estq/info'),{method:'PUT',headers:{'Content-Type':'application/json'},
             body:JSON.stringify({exportedAt:now,name:(await idbGet('estoque').catch(()=>null)||{}).name||'cobertura',meta:estoqueMeta||null,total:Object.keys(estoqueMap).length})});
           if(!r2.ok)throw Error('info');
-          eUp=true;
+          eUp=true;setRelNovo('c',false);
         }else eNote=' · cobertura NÃO enviada (nuvem é mais nova)';
       }catch(e){fails.push('cobertura')}
     }
@@ -447,13 +449,18 @@ if('serviceWorker' in navigator&&/^https?:/.test(location.protocol)){/* ⚡ regi
   addEventListener('load',()=>idle(()=>navigator.serviceWorker.register('./sw.js').then(reg=>reg.update()).catch(()=>{})))}
 /* versão do app na aba Dados (nome do cache do SW, ex.: v34) — para conferir se o aparelho já pegou a atualização */
 /* APP_VER = versão do CÓDIGO que está rodando. ⚠ Mantenha igual ao V do sw.js (o teste de fumaça confere). */
-const APP_VER='v64';
+const APP_VER='v65';
 const verNum=v=>parseInt(String(v||'').replace(/\D/g,''),10)||0;   // 'v9' < 'v45' < 'v100' (comparação numérica, não alfabética)
 function mostraVersao(){const el=$('app-ver');if(el)el.textContent='Versão do app: '+APP_VER}
 addEventListener('load',()=>setTimeout(mostraVersao,3000));
 /* ═══ NOVIDADES (nov/2026): depois de atualizar, o Resumo mostra o que mudou (1 vez por versão). Na 1ª instalação não aparece.
    Ao publicar uma versão com mudança visível, acrescente aqui a chave da versão (a mesma do sw.js, ex.: 'v43'). ═══ */
 const NOVIDADES={
+  v65:['🧭 <b>Ordem Prioridade</b> (nova ordem padrão): Ruptura loja, Crítico e Atenção primeiro, do maior MDV para o menor — Ruptura CD fica por último',
+       '📦 Cartão: as caixas ficam na linha do rótulo (não cortam mais) · os dias em trânsito aparecem ao lado de "Trânsito" · sem selo repetido de falta no CD',
+       '☁️ Aviso no Resumo quando um relatório carregado aqui ainda não foi para a nuvem — toque para enviar',
+       '⛔ A sua marca agora se chama <b>Ruptura CD confirmada</b> (antes "Ruptura no CD") · Filtros na ordem do Resumo · "Cadastro menor que 1 caixa"',
+       '🖥 No computador: Resumo em duas colunas e cartões lado a lado · ficha mostra a última entrada · tela vazia com botão · avisos longos sem corte'],
   v64:['🔧 <b>Esconder também os em trânsito</b> agora esconde todo item com trânsito a caminho, seja qual for o estoque'],
   v61:['🔧 Os filtros <b>Esconder Ruptura CD</b> e <b>também os em trânsito</b> voltaram a funcionar em todas as listas (o Resumo continua sem depender deles); o contador mostra quantos itens ficaram escondidos'],
   v60:['📊 <b>Situações novas</b>: Ruptura loja (estoque ≤ 0 com trânsito, ou fora da Sist. 1) e <b>Ruptura CD</b> (Sist. 1 sem trânsito e com menos de 40% do cadastro), cada uma com seu número',

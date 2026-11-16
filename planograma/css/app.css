@@ -603,3 +603,22 @@ html:not(.dark) .ent.trg.atr{color:color-mix(in srgb,var(--am) 70%,#000)}
 
 /* v62: a folha de Filtros não rola para o lado (sobravam 4 px e aparecia uma barra horizontal no PC) */
 #flt-list{overflow-x:hidden}
+
+/* ═══ v65 (nov/2026): sugestões aprovadas no antes/depois ═══ */
+/* cartão: caixas na linha do rótulo ("Estoque     12 cx") · dias em trânsito ao lado do rótulo */
+.st3 small.lb2{display:flex;justify-content:space-between;gap:4px}.st3 small.lb2 span{min-width:0;overflow:hidden;text-overflow:ellipsis}.st3 small.lb2 em{font-style:normal;font-weight:650;color:var(--tx);opacity:.8;flex:none;font-variant-numeric:tabular-nums}
+.st3 .es b.bx{display:flex!important;justify-content:space-between;align-items:baseline;gap:4px;flex-wrap:nowrap}.trdl{text-decoration:none;font:700 11.5px var(--num);color:var(--in);flex:none}.trdl.atr{color:var(--am)}
+/* aviso do pé da tela: mensagem inteira, sem "…" */
+#toast .tt{-webkit-line-clamp:5}#toast{max-width:min(92vw,520px);width:max-content;white-space:normal}
+/* aviso "relatório só neste aparelho" */
+.pb-nv{background:var(--in-bg)!important;border-color:color-mix(in srgb,var(--in) 40%,transparent)!important}
+/* tela larga (computador): Resumo em 2 colunas, cartões lado a lado em Produtos e no Pedido — no celular nada muda */
+@media (min-width:1000px){
+ #s-home .wrap,#s-ped .wrap,.prod-top,.vlist{max-width:1240px}
+ #s-home .wrap{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.25fr);column-gap:8px;align-items:start}
+ #s-home .wrap>#pban,#s-home .wrap>#dtban,#s-home .wrap>#cadban{grid-column:1/-1}
+ #s-home .wrap>.hero-card{grid-column:1}#home-dados{grid-column:2;grid-row:span 9}
+ .kpis{grid-template-columns:repeat(4,1fr)}
+ #list>ul{display:grid;grid-template-columns:1fr 1fr;column-gap:4px;align-content:start;grid-auto-rows:max-content}
+ #plist .trd-b{display:grid;grid-template-columns:1fr 1fr;column-gap:8px}#plist .trd-b>.dn-clr{grid-column:1/-1}
+}

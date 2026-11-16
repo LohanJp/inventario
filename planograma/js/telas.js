@@ -155,7 +155,7 @@ function renderTodo(){const el=$('todo');if(!el)return;if(!allRecords.length){el
   const L=Object.keys(TODO).filter(k=>c[k]).map(k=>`<li><a class="item-link item-content${k==='f20'?' td-f20'+(todoF20?' open':''):''}" data-todo="${k}"><div class="item-media td-ic">${TODO[k].ic}</div><div class="item-inner"><div class="item-title">${TODO[k].t}${k==='f20'?`<small>${f0(FS.length)} fornecedores · toque para ${todoF20?'fechar':'ver'}</small>`:''}</div><div class="item-after"><b class="num">${f0(c[k])}</b></div></div></a></li>`
     +(k==='f20'&&todoF20?FS.map(([fk,v])=>`<li class="td-sub"><a class="item-link item-content" data-forn="${esc(fk)}"><div class="item-inner"><div class="item-title">${esc(v.t)}</div><div class="item-after"><b class="num">${f0(v.n)}</b></div></div></a></li>`).join(''):''));
   const rv=rcdVelhos();
-  if(rv)L.push(`<li><a class="item-link item-content" data-todo="rcdv"><div class="item-media td-ic">⛔</div><div class="item-inner"><div class="item-title">Ruptura no CD há ${RCD_VELHO}+ dias (reconferir)</div><div class="item-after"><b class="num">${f0(rv)}</b></div></div></a></li>`);
+  if(rv)L.push(`<li><a class="item-link item-content" data-todo="rcdv"><div class="item-media td-ic">⛔</div><div class="item-inner"><div class="item-title">Ruptura CD confirmada há ${RCD_VELHO}+ dias (reconferir)</div><div class="item-after"><b class="num">${f0(rv)}</b></div></div></a></li>`);
   if(urg)L.unshift(`<li><a class="item-link item-content" data-todo="urg"><div class="item-media td-ic">🔥</div><div class="item-inner"><div class="item-title">Urgentes no pedido para pedir</div><div class="item-after"><b class="num">${f0(urg)}</b></div></div></a></li>`);
   el.innerHTML=L.length?`<div class="block-title">Para fazer hoje</div><div class="list list-strong inset list-dividers todo-l"><ul>${L.join('')}</ul></div>`:''}
 $('todo').onclick=e=>{const fa=e.target.closest('[data-forn]');
@@ -200,26 +200,28 @@ $('h-ring').onclick=()=>{if(!allRecords.length)return;setHSist(hSist?'':'1')};
 $('kpis-sw').onclick=e=>{const b=e.target.closest('button');if(!b||b.dataset.hs===hSist)return;setHSist(b.dataset.hs)};
 $('h-ring').setAttribute('role','button');
 $('h-sub').onclick=e=>{if(!e.target.closest('#h-fcd'))return;F={chip:'cd',cat:'',q:'',sort:'cobt',ent:hSist};$('q').value='';go('prod')};
-$('kpis').onclick=e=>{const b=e.target.closest('.kpi');if(!b)return;const k=b.dataset.k;F={chip:k==='tr'?'trans':k==='rcd'?'cd':k,cat:'',q:'',sort:k==='crit'?'mdv_d':k==='ok'?'nome':'cobt',ent:hSist};$('q').value='';go('prod')};   // Crítico abre do maior MDV para o menor   // a lista bate com o número tocado (todas ou só Sist. 1)
+$('kpis').onclick=e=>{const b=e.target.closest('.kpi');if(!b)return;const k=b.dataset.k;F={chip:k==='tr'?'trans':k==='rcd'?'cd':k,cat:'',q:'',sort:k==='crit'||k==='rcd'?'mdv_d':k==='ok'?'nome':'cobt',ent:hSist};$('q').value='';go('prod')};   // Crítico abre do maior MDV para o menor   // a lista bate com o número tocado (todas ou só Sist. 1)
 $('cats').onclick=e=>{const b=e.target.closest('.bar');if(!b)return;if(!noCD){noCD=true;salvaCD()}F={chip:'alert',cat:b.dataset.c,q:'',sort:'cobt',ent:catSist};$('q').value='';go('prod')};
 /* ═══ PRODUTOS ═══ */
-const CHIPS=[['all','Todos'],['cd','Ruptura CD','warn'],['dep','🔎 Procurar no depósito'],['alert','Alertas'],['rup','Ruptura loja'],['crit','Crítico'],['aten','Atenção'],['ok','OK'],['sg','Sem giro'],['nd','Sem MDV'],['trans','Em trânsito'],['pend','Pendentes'],['done','Feitos']];
+const CHIPS=[['all','Todos'],['cd','Ruptura CD','warn'],['dep','🔎 Procurar no depósito'],['alert','Alertas'],['rup','Ruptura loja'],['crit','Crítico'],['aten','Atenção'],['ok','Saudável'],['sg','Sem giro'],['nd','Sem MDV'],['trans','Em trânsito'],['pend','Pendentes'],['done','Feitos']];
 const CHIP_C={rup:'var(--cr)',crit:'var(--crit)',aten:'var(--am)',ok:'var(--ok)',sg:'var(--sg)',nd:'var(--mu)',alert:'var(--cr)',cd:'var(--rcd)',sug:'var(--am)',trans:'var(--in)',dep:'var(--in)',done:'var(--ok)'};
 /* 🔎 itens do pedido marcados para procurar no depósito (atualizado a cada renderList) */
 const LSDEP='planograma_dep';let depMap={};try{(JSON.parse(localStorage.getItem(LSDEP)||'[]')||[]).forEach(k=>{if(k)depMap[k]=true})}catch{}   // ⚠ precisa vir ANTES de refreshDep: a Oferta do dia chama refreshDep() na abertura
 let DEP=new Set();function refreshDep(){DEP=new Set(Object.keys(depMap))}
+const FORD=['all','rup','cd','crit','aten','ok','sg','nd','trans','alert','pend','done','dep'];
 const FLT_SHORT={dep:'🔎 Depósito',all:'Situação'};
 /* lista virtual do Framework7: só os cartões visíveis existem na tela (9 mil itens sem travar) */
 let vl=null,CH=0;
 /* ⚡ altura fixa: todo cartão de Produtos tem a mesma altura (nome em 2 linhas com "…", 1 linha de código/medidas/selos,
    números sem quebrar). Mede-se UM cartão e o Framework7 posiciona os outros por conta — sem medir 9 mil cartões ao rolar. */
 function medeCartao(){const L=$('list'),r=list[0]||allRecords[0];if(!L||!r||!L.offsetWidth)return 0;
-  const u=document.createElement('ul');u.style.cssText='position:absolute;left:0;right:0;top:0;visibility:hidden;margin:0;padding:0;list-style:none';
+  const u=document.createElement('ul');u.style.cssText='position:absolute;left:0;right:0;top:0;visibility:hidden;margin:0;padding:0;list-style:none';if(vlCols()>1)u.style.right='50%';
   L.style.removeProperty('--ph');u.innerHTML=card(r);L.appendChild(u);const li=u.firstElementChild,p=li.querySelector('.p');
   const h=li.offsetHeight,ph=p?p.offsetHeight:0;u.remove();if(ph)L.style.setProperty('--ph',ph+'px');return h}
-function ajustaAltura(){if(!vl)return;const h=medeCartao();if(h&&h!==CH){CH=h;vl.params.height=h;vl.setListSize();vl.render(true)}}
+const vlCols=()=>innerWidth>=1000?2:1;   // v65: no computador os cartões ficam lado a lado
+function ajustaAltura(){if(!vl)return;if(vl.params.cols!==vlCols()){vl.destroy();vl=null;CH=0;ensureVL().replaceAllItems(list);return}const h=medeCartao();if(h&&h!==CH){CH=h;vl.params.height=h;vl.setListSize();vl.render(true)}}
 function ensureVL(){if(vl)return vl;CH=medeCartao();
-  vl=app.virtualList.create({el:$('list'),items:[],height:CH||120,renderItem:r=>card(r),scrollableParentEl:$('s-prod'),setListHeight:true,rowsBefore:10,rowsAfter:5});   // janela menor = cada redesenho troca menos cartões (tranco menor ao rolar rápido)
+  vl=app.virtualList.create({el:$('list'),items:[],height:CH||120,renderItem:r=>card(r),scrollableParentEl:$('s-prod'),setListHeight:true,cols:vlCols(),rowsBefore:10,rowsAfter:5});   // janela menor = cada redesenho troca menos cartões (tranco menor ao rolar rápido)
   return vl}
 window.addEventListener('resize',debounce(ajustaAltura,150));   // girou o celular / mudou o tamanho da letra: mede de novo
 function renderList(reset){todoP=null;   // o conjunto do pedido do "Para fazer hoje" é refeito a cada lista
@@ -227,7 +229,7 @@ const T=toks(F.q);
  refreshDep();{const n=nFiltros(),fb=$('flt-btn');$('flt-n').textContent=n;$('flt-n').hidden=!n;fb.classList.toggle('on',!!n);   // botão "Filtros" com quantos estão ligados
   const nm=F.chip==='all'?'':(FLT_SHORT[F.chip]||(CHIPS.find(c=>c[0]===F.chip)||[])[1]||'');fb.title='Filtros'+(nm?' · '+nm:'');fb.setAttribute('aria-label',fb.title)}
  $('sort').value=F.sort;
- $('catx').innerHTML=(F.cat?`<button class="catx" data-x="cat" type="button">✕ ${esc(short(F.cat))}</button>`:'')+(F.cob?`<button class="catx" data-x="cob" type="button">✕ ${cobTxt(F.cob)}</button>`:'')+(F.giro?`<button class="catx" data-x="giro" type="button">✕ Giro ${esc(F.giro)}</button>`:'')+(F.capx?`<button class="catx" data-x="capx" type="button">✕ Capacidade &lt; 1 caixa</button>`:'')+(F.cadx?`<button class="catx" data-x="cadx" type="button">✕ Não entraram no cadastro</button>`:'')+(F.todo&&TODO[F.todo]&&!F.forn?`<button class="catx" data-x="todo" type="button">✕ ${TODO[F.todo].t}</button>`:'')+(F.forn?`<button class="catx" data-x="forn" type="button">✕ ${esc((()=>{const r=allRecords.find(x=>fornKey(x)===F.forn);return r?fornNome(r):'Fornecedor '+F.forn})())} · cobertura baixa</button>`:'');
+ $('catx').innerHTML=(F.cat?`<button class="catx" data-x="cat" type="button">✕ ${esc(short(F.cat))}</button>`:'')+(F.cob?`<button class="catx" data-x="cob" type="button">✕ ${cobTxt(F.cob)}</button>`:'')+(F.giro?`<button class="catx" data-x="giro" type="button">✕ Giro ${esc(F.giro)}</button>`:'')+(F.capx?`<button class="catx" data-x="capx" type="button">✕ Cadastro &lt; 1 caixa</button>`:'')+(F.cadx?`<button class="catx" data-x="cadx" type="button">✕ Não entraram no cadastro</button>`:'')+(F.todo&&TODO[F.todo]&&!F.forn?`<button class="catx" data-x="todo" type="button">✕ ${TODO[F.todo].t}</button>`:'')+(F.forn?`<button class="catx" data-x="forn" type="button">✕ ${esc((()=>{const r=allRecords.find(x=>fornKey(x)===F.forn);return r?fornNome(r):'Fornecedor '+F.forn})())} · cobertura baixa</button>`:'');
  const fAct=F.chip!=='all'||!!F.cat||!!F.ent||noCD;   // algum filtro ligado?
  const semCD=r=>catOk(r)&&entOk(r)&&cobPass(r,F.cob)&&(!F.d111||is111(r))&&(!F.capx||capMenor(r))&&giroOk(r)&&(!F.cadx||cadNao.has(r.produto))&&todoOk(r)&&(!F.forn||fornKey(r)===F.forn);   // todos os filtros, menos o chip e o F/CD
  const base=T.length?(()=>true):r=>semCD(r)&&passesChip(r);   // BUSCANDO: os filtros (chip, categoria, sistemática, F/CD) não escondem nada
@@ -240,12 +242,19 @@ const T=toks(F.q);
  /* mesmas ordens do Pedido: maior cobertura · maior MDV · menor MDV (item sem número vai para o fim; empate → nome A–Z) */
  const cobV=r=>r._ct!==null&&r._k!=='sg'?Math.max(r._ct,0):null,mdvV=r=>r._m||null;
  const by=(f,dir)=>(a,b)=>{const va=f(a),vb=f(b);if(va===null||vb===null)return(va===null)-(vb===null)||S.nome(a,b);return(va-vb)*dir||S.nome(a,b)};
+ /* v65 Prioridade: o que dá para resolver primeiro (Ruptura loja → Crítico → Atenção, do maior MDV para o menor); Ruptura CD por último */
+ {const RK={rup:0,crit:1,aten:2,ok:3,nd:4,sg:5,rcd:6};S.prio=(a,b)=>RK[a._k]-RK[b._k]||(b._m||0)-(a._m||0)||S.nome(a,b)}
  S.cob_d=by(cobV,-1);S.mdv_d=by(mdvV,-1);S.mdv_a=by(mdvV,1);
  /* Altura × Largura: sem medidas cadastradas primeiro, depois 1×1, 1×2, 1×3… 2×1, 2×2…; empate → profundidade, depois nome A–Z */
  S.dim=(a,b)=>{const A=num(a.altura),B=num(b.altura),la=num(a.largura),lb=num(b.largura),sa=!(A&&la),sb=!(B&&lb);
-  return (sb-sa)||(sa?S.nome(a,b):A-B||la-lb||num(a.prof)-num(b.prof)||S.nome(a,b))};if(!S[F.sort])F.sort='cobt';
+  return (sb-sa)||(sa?S.nome(a,b):A-B||la-lb||num(a.prof)-num(b.prof)||S.nome(a,b))};if(!S[F.sort])F.sort='prio';
  list.sort(T.length?(a,b)=>b._s-a._s||S[F.sort](a,b):S[F.sort]);$('cnt').textContent=f0(list.length)+(rel?' itens parciais — nenhum tem todas as palavras':' itens')+(T.length?(fAct?' · busca ignora os filtros':''):(()=>{if(!noCD||SIT_CH.has(F.chip)||F.chip==='dep'||F.todo==='trsaiu')return '';const h=allRecords.filter(r=>hideCD(r)&&semCD(r)&&passesChip(r,F.chip,true)),a=h.filter(cdRisk).length,b=h.length-a;return h.length?' · ocultando '+[a?f0(a)+' Ruptura CD':'',b?f0(b)+' em trânsito':''].filter(Boolean).join(' e '):''})());   // conta com TODOS os filtros ligados (antes ignorava giro, 1×1, fornecedor…)
  $('q-x').classList.toggle('on',!!F.q);
+ if(!list.length){const le=$('list-empty');   // v65: a tela vazia diz o motivo e oferece o botão certo
+  le.innerHTML=!allRecords.length?'<div class="em-ic">📄</div><p><b>Nenhum relatório carregado</b></p><p class="ln">Carregue o Planograma para ver os produtos.</p><div style="margin-top:14px"><button class="button button-fill button-large" type="button" id="le-load">Carregar relatório</button></div>'
+   :'<div class="em-ic">🔍</div><p><b>Nenhum produto com '+(T.length?'essa busca':'esses filtros')+'</b></p>'+(T.length?'<p class="ln">Confira o nome ou tente o código / EAN.</p>':'<div style="margin-top:14px"><button class="button button-tonal button-large" type="button" id="le-clr">Limpar filtros</button></div>');
+  if($('le-load'))$('le-load').onclick=()=>$('f-plano').click();
+  if($('le-clr'))$('le-clr').onclick=()=>{F={chip:'all',cat:'',q:'',sort:F.sort,ent:ENT0};noCD=false;noCDTr=false;salvaCD();renderList(true)}}
  $('list-empty').hidden=!!list.length;$('exp-txt').hidden=!list.length;
  if(!$('s-prod').classList.contains('on')&&!vl)return;                     // a lista virtual nasce quando a aba abre (precisa da altura da tela)
  ensureVL().replaceAllItems(list);if(!CH)ajustaAltura();   // aba estava escondida na 1ª vez: mede agora
@@ -255,7 +264,7 @@ function relaxFiltersFor(r){
   const off=[];
   if(!cobPass(r,F.cob)){F.cob=null;off.push('cobertura')}
   if(F.d111&&!is111(r)){F.d111=false;off.push('1×1')}
-  if(F.capx&&!capMenor(r)){F.capx=false;off.push('capacidade < 1 caixa')}
+  if(F.capx&&!capMenor(r)){F.capx=false;off.push('cadastro < 1 caixa')}
   if(!giroOk(r)){F.giro='';off.push('giro')}
   if(!catOk(r)){F.cat='';off.push('categoria')}
   if(!entOk(r)){F.ent='';off.push('sistemática')}
@@ -276,16 +285,19 @@ function cardBody(r,acts,extra,noPed,nova){
   const dias=v=>v>999?'+999':f0(Math.max(v,0));   // coberturas já vêm arredondadas (dias inteiros)
   const rel=r._c!==null;                                                        // sempre mostra também a cobertura do relatório de Cobertura
   const ebx=num(r.emb)||1;
-  const unCx=n=>`<span class="un">${f0(n)}<i>un</i></span>${ebx>1&&n>=0?`<wbr><span class="cx"><i class="sep">|</i>${n>0&&n<ebx?'<span style="color:var(--cr)">&lt;1</span>':f0(Math.floor(n/ebx))}<i>cx</i></span>`:''}`;   // "276un | 46cx" (Estoque e Trânsito iguais)
-  const neg=r._e<0?` <span class="neg" title="Estoque negativo${r._t>0?' · já em trânsito':isCD(r)?' · falta no CD':' · falta pedir ao fornecedor'}">▼ ${r._t>0?'negativo':isCD(r)?'falta no CD':'falta pedir'}</span>`
+  /* v65: as caixas vão na linha do rótulo ("Estoque      12 cx") e só as unidades ficam grandes — antes "300un | 12cx" quebrava e cortava */
+  const cxN=n=>ebx>1&&n>=0?(n>0&&n<ebx?'&lt;1':f0(Math.floor(n/ebx)))+' cx':'';
+  const lab=(t,n,ex)=>`<small class="lb2"><span>${t}</span><em>${cxN(n)}</em></small><b class="num${ex?' bx':''}"><span class="un">${f0(n)}<i>un</i></span>${ex||''}</b>`;
+  const trd=trDias(r)>=0?`<u class="trdl${trDias(r)>=TR_ATRASO?' atr':''}" title="Em trânsito desde ${isoBr(trDesde(r))}">${trDias(r)}d</u>`:'';   // há quantos dias está a caminho
+  const neg=r._e<0&&r._k!=='rcd'?` <span class="neg" title="Estoque negativo${r._t>0?' · já em trânsito':isCD(r)?' · falta no CD':' · falta pedir ao fornecedor'}">▼ ${r._t>0?'negativo':isCD(r)?'falta no CD':'falta pedir'}</span>`
     :r._vir?` <span class="neg cdw" title="Pela cobertura estaria Saudável (MDV baixo), mas tem menos de 40% do cadastro e nada a caminho — pode ser estoque virtual">⚠ conferir estoque</span>`:'';   // estoque 0 ou positivo também (nov/2026)
   const sel=(r._sist?`<span class="ent e${esc(r._sist)}">${esc(ENT[r._sist]||'Sist. '+r._sist)}</span>`:'')+(!noPed&&inPed(r.produto)?' '+PEDBADGE:'')+pedTag(r.produto)+axBadges(r)+neg;
   const cob=r._k==='sg'?(semVendaDias(r)===Infinity?'—':f0(semVendaDias(r))+'<i>d s/ venda</i>'):r._ct===null?'—':dias(r._ct)+(rel||r._c999?`<i class="sep">|</i><i class="rr" title="R = cobertura do relatório de Cobertura de Estoque${r._c999?' (veio 999 = sem cálculo)':''}">R:</i>${rel?dias(r._c):'—'}`:'<i>d</i>');
   return `<div class="hd"><div class="nm">${esc(r.descricao)}</div><div class="acts">${acts}${INFOBTN}</div></div>
  <div class="sb"><span class="sbt"><span class="cod">${esc(r.produto)}</span> · ${r._np?'<span title="Fora do planograma">s/ plano</span>':(nova===undefined?dimTxt(r):nova?(()=>{const i=novaInfo(r,NOVA)||{};return `<b class="nv" title="Medida nova (era ${dimTxt(r).replace(/<[^>]+>/g,'')}): ${NOVA} dias × MDV ${f1(r._m)} ÷ emb ${f0(num(r.emb)||1)} = ${i.quer}${i.cap?` · cortado no máximo do sistema (${LIMITE} dias ≈ ${f0(i.q)} un)`:''}">➜ 1×${nova}×${porCx(r)}${i.cap?' <small class="nvx">máx.</small>':''}</b>`})():`<b class="nv nv0" title="Sem MDV: não dá para calcular (fica fora do TXT)">${dimTxt(r).replace(/<[^>]+>/g,'')} · sem MDV</b>`)+(nova?'':' · '+embTxt(r))}</span>${sel?`<span class="sbb"> ${sel}</span>`:''}</div>
  <div class="st3">
-  <div class="es"><small>Estoque</small><b class="num">${unCx(r._e)}</b></div>
-  <div class="es"><small>Trânsito</small><b class="num">${transitLoaded?unCx(r._t):'—'}</b></div>
+  <div class="es">${lab('Estoque',r._e)}</div>
+  <div class="es">${transitLoaded?lab('Trânsito',r._t,trd):'<small>Trânsito</small><b class="num">—</b>'}</div>
   <div><small>MDV</small><b class="num">${r._m?f1(r._m):'—'}</b></div>
   <div class="cv" title="Cobertura total = (estoque + trânsito) ÷ MDV · R = cobertura do relatório"><small>${GLY[r._k]} ${r._k==='rup'?'Ruptura':r._k==='rcd'?'Rupt. CD':SLBL[r._k]}</small><b class="num">${cob}</b></div>
  </div>${extra||''}`}
@@ -521,7 +533,7 @@ function fltCounts(){
   $('flt-apply').textContent=`Ver ${f0(sel)} itens`;
   $('flt-clear').style.visibility=(D.chip!=='all'||D.cat||(D.ent||'')!==ENT0||D.noCD||D.d111||D.capx||D.giro||cobOn(D.cob)||(!D.limpou&&(F.todo||F.forn||F.cadx)))?'':'hidden'}
 function renderFlt(){refreshDep();
-  const sit=CHIPS.filter(c=>c[0]!=='trans'||transitLoaded).map(c=>{
+  const sit=CHIPS.slice().sort((a,b)=>FORD.indexOf(a[0])-FORD.indexOf(b[0])).filter(c=>c[0]!=='trans'||transitLoaded).map(c=>{   // v65: mesma ordem do Resumo
     const g=GLY[c[0]]||(c[2]?ic(c[2],13):'');
     return `<button type="button" class="fs-s${D.chip===c[0]?' on':''}" data-c="${c[0]}" style="--c:${CHIP_C[c[0]]||'var(--tx)'}"><b>${g?`<i>${g}</i>`:''}${c[0]==='dep'?'🔎 Depósito':c[1]}</b><small></small></button>`}).join('');
   const op=D.cob?D.cob.op:'',dd=D.cob&&Number.isFinite(D.cob.d)?D.cob.d:'';
@@ -532,7 +544,7 @@ function renderFlt(){refreshDep();
    <label class="fs-ln"><span>Só 1×1<small>Os dois primeiros campos = 1 (qualquer quantidade por caixa)</small></span><input type="checkbox" id="fs-111" class="sw-i"${D.d111?' checked':''}><span class="sw-t fs-tg"></span></label>${D.d111?`
    <div class="fs-nova"><span class="fs-nl">Nova cobertura<small>campo do meio = dias × MDV ÷ embalagem (arredondado para cima)</small></span><div class="fs-cob"><div class="fs-num"><button type="button" data-nstep="-1" aria-label="Menos 1 dia">−</button><input id="fs-nova" type="number" inputmode="numeric" min="0" step="1" value="${D.nova>0?D.nova:''}" placeholder="—" aria-label="Dias da nova cobertura"><span>dias</span><button type="button" data-nstep="1" aria-label="Mais 1 dia">+</button></div><div class="fs-q">${[7,15,21,30].map(n=>`<button type="button" data-nq="${n}" class="${D.nova===n?'on':''}">${n}</button>`).join('')}</div></div>
    <span class="fs-nl fs-lim">Limite do sistema<small>Cob. Limite da tela do sistema — corta no máximo aceito (sem o alerta)</small></span><div class="fs-cob"><div class="fs-num"><input id="fs-lim" type="number" inputmode="numeric" min="1" step="1" value="${D.lim||LIMITE}" aria-label="Limite de cobertura do sistema em dias"><span>dias</span></div></div></div>`:''}
-   <label class="fs-ln"><span>Capacidade menor que 1 caixa<small>A caixa fechada não cabe no espaço cadastrado — candidatos a recadastro</small></span><input type="checkbox" id="fs-capx" class="sw-i"${D.capx?' checked':''}><span class="sw-t fs-tg"></span></label>
+   <label class="fs-ln"><span>Cadastro menor que 1 caixa<small>O cadastrado no planograma dá menos que uma caixa fechada — candidatos a recadastro</small></span><input type="checkbox" id="fs-capx" class="sw-i"${D.capx?' checked':''}><span class="sw-t fs-tg"></span></label>
    ${(()=>{const gs=[...new Set(allRecords.map(giroR).filter(Boolean))].sort();return gs.length?`<h5>Giro</h5><div class="fs-seg">${[['','Todos'],...gs.map(g=>[g,g])].map(([v,l])=>`<button type="button" data-giro="${esc(v)}" class="${(D.giro||'')===v?'on':''}">${esc(l)}</button>`).join('')}</div>`:''})()}
    <h5>Sistemática</h5><div class="fs-seg">${ENTS.map(([v,l])=>`<button type="button" data-ent="${v}" class="${(D.ent||'')===v?'on':''}">${l}</button>`).join('')}</div>
    <h5>Categoria</h5><button type="button" class="fs-ln" id="cat-pick-btn"><span>${D.cat?esc(short(D.cat)):'Todas as categorias'}<small>${D.cat?'Toque para trocar':'Toque para escolher na árvore'}</small></span>${D.cat?'<i class="fs-cx" id="fs-catx" role="button" aria-label="Tirar categoria">✕</i>':'<i class="fs-ar">›</i>'}</button>
