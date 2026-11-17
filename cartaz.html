@@ -31,6 +31,11 @@
     .btn { background: #0066cc; color: #fff; border: none; padding: 12px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; }
     .btn.secondary { background: #666; margin-left: 10px; }
     .btn.modelo { background: #e6b800; color: #222; margin-left: 10px; }
+    .btn.pasta { background: #555; }
+    .pasta-area { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 8px; }
+    #pasta-status { font-size: 14px; color: var(--muted); }
+    #pasta-status.aviso { color: #b35c00; font-weight: bold; }
+    #resumo-precos { font-size: 14px; color: var(--muted); margin: 0 0 15px; min-height: 1em; }
 
     /* --- Modelo editável --- */
     .cartaz [contenteditable="true"] { cursor: text; outline: 2px dashed transparent; outline-offset: 2px; border-radius: 4px; transition: outline-color .15s; }
@@ -181,8 +186,15 @@
       <label>Lista Principal:</label>
       <textarea id="input" placeholder="Cole os dados aqui..."></textarea>
       
-      <label>Lista Secundária (Preço Normal):</label>
-      <textarea id="input2" placeholder="EAN [TAB] Preço"></textarea>
+      <label>Lista Secundária (Preço DE) — opcional:</label>
+      <textarea id="input2" placeholder="EAN [TAB] Preço  (opcional: o que não estiver aqui é buscado nos arquivos da pasta)"></textarea>
+
+      <div class="pasta-area">
+        <button id="escolher-pasta" class="btn pasta" type="button">📂 Pasta dos relatórios</button>
+        <input type="file" id="arquivos-relatorio" multiple accept=".txt,text/plain" hidden>
+        <span id="pasta-status">Nenhuma pasta escolhida — o preço DE vem só da lista acima.</span>
+      </div>
+      <p id="resumo-precos"></p>
 
       <button id="generate" class="btn">Gerar Cartazes</button>
       <button id="modelo" class="btn modelo">Modelo editável</button>
@@ -223,6 +235,133 @@
         if (ean && preco) map.set(ean[0], preco[0]);
       });
       return map;
+    }
+
+    // --- Preços direto dos arquivos da pasta RelatorioAutomatico ---
+    // Precos_AAAA-MM-DD: conferência de preços Clube Condor (EAN na coluna AUTOMACAO,
+    //   depois PRECO NORMAL e PRECO CLUBE).
+    // PRODUTO: EAN (13 dígitos com zeros) + descrição + preço "0000042,900000000.00".
+    const normEan = s => String(s || '').replace(/\D/g, '').replace(/^0+/, '');
+
+    function parsePrecosClube(text) {
+      const map = new Map();
+      text.split(/\r?\n/).forEach(line => {
+        const m = line.match(/(\d{8,14})\s+(\d+,\d{2})\s+(\d+,\d{2})/);
+        if (m) map.set(normEan(m[1]), { normal: m[2], clube: m[3] });
+      });
+      return map;
+    }
+
+    function parseProduto(text) {
+      const map = new Map();
+      text.split(/\r?\n/).forEach(line => {
+        const ean = line.match(/^\s*(\d{6,14})\s/);
+        const preco = line.match(/(\d+),(\d+)(?:\.\d+)?\s*$/);
+        if (!ean || !preco) return;
+        const centavos = preco[2].slice(0, 2).padEnd(2, '0');
+        map.set(normEan(ean[1]), parseInt(preco[1], 10) + ',' + centavos);
+      });
+      return map;
+    }
+
+    let pastaHandle = null;
+    let dadosArquivos = null; // { clube: Map, produto: Map, nomePrecos, nomeProduto, dataPrecos }
+    const statusPasta = document.getElementById('pasta-status');
+
+    function hojeISO() {
+      const d = new Date();
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    }
+
+    async function lerTexto(file) {
+      return new TextDecoder('windows-1252').decode(await file.arrayBuffer());
+    }
+
+    async function lerArquivos(files) {
+      const precos = files.filter(f => /^precos_/i.test(f.name)).sort((a, b) => b.name.localeCompare(a.name))[0];
+      const produto = files.filter(f => /^produto/i.test(f.name)).sort((a, b) => b.lastModified - a.lastModified)[0];
+      if (!precos && !produto) {
+        dadosArquivos = null;
+        statusPasta.className = 'aviso';
+        statusPasta.textContent = 'Não achei Precos_… nem PRODUTO nessa pasta.';
+        return;
+      }
+      const dataPrecos = precos ? ((precos.name.match(/\d{4}-\d{2}-\d{2}/) || [])[0] || '') : '';
+      dadosArquivos = {
+        clube: precos ? parsePrecosClube(await lerTexto(precos)) : new Map(),
+        produto: produto ? parseProduto(await lerTexto(produto)) : new Map(),
+        nomePrecos: precos ? precos.name : null,
+        nomeProduto: produto ? produto.name : null,
+        dataPrecos
+      };
+      const partes = [];
+      partes.push(precos ? `${precos.name} (${dadosArquivos.clube.size} preços Clube)` : 'sem arquivo Precos_');
+      partes.push(produto ? `${produto.name} (${dadosArquivos.produto.size} preços normais)` : 'sem arquivo PRODUTO');
+      const velho = precos && dataPrecos && dataPrecos !== hojeISO();
+      statusPasta.className = velho || !precos || !produto ? 'aviso' : '';
+      statusPasta.textContent = (velho ? '⚠ Precos não é de hoje — ' : '✔ ') + partes.join(' · ');
+    }
+
+    async function lerPasta(handle) {
+      const files = [];
+      for await (const [nome, h] of handle.entries()) {
+        if (h.kind === 'file' && /^(precos_|produto)/i.test(nome)) files.push(await h.getFile());
+      }
+      await lerArquivos(files);
+    }
+
+    // Guarda a pasta escolhida (IndexedDB) para não precisar escolher de novo
+    function abrirDB() {
+      return new Promise((res, rej) => {
+        const r = indexedDB.open('cartaz-pasta', 1);
+        r.onupgradeneeded = () => r.result.createObjectStore('kv');
+        r.onsuccess = () => res(r.result);
+        r.onerror = () => rej(r.error);
+      });
+    }
+    async function dbGet(k) {
+      const db = await abrirDB();
+      return new Promise((res, rej) => { const q = db.transaction('kv').objectStore('kv').get(k); q.onsuccess = () => res(q.result); q.onerror = () => rej(q.error); });
+    }
+    async function dbSet(k, v) {
+      const db = await abrirDB();
+      return new Promise((res, rej) => { const t = db.transaction('kv', 'readwrite'); t.objectStore('kv').put(v, k); t.oncomplete = res; t.onerror = () => rej(t.error); });
+    }
+
+    const inputArquivos = document.getElementById('arquivos-relatorio');
+    document.getElementById('escolher-pasta').addEventListener('click', async () => {
+      if (!('showDirectoryPicker' in window)) { inputArquivos.click(); return; } // navegador sem acesso a pasta: escolhe os 2 arquivos
+      try {
+        const h = await window.showDirectoryPicker({ id: 'relatorios', mode: 'read' });
+        pastaHandle = h;
+        try { await dbSet('pasta', h); } catch (e) {}
+        await lerPasta(h);
+      } catch (e) {
+        if (e.name !== 'AbortError') { console.error(e); alert('Não consegui ler a pasta: ' + e.message); }
+      }
+    });
+    inputArquivos.addEventListener('change', async () => {
+      await lerArquivos([...inputArquivos.files]);
+      inputArquivos.value = '';
+    });
+
+    // Ao abrir: se já tem pasta lembrada e a permissão continua, já carrega
+    (async () => {
+      try {
+        const h = await dbGet('pasta');
+        if (!h) return;
+        pastaHandle = h;
+        if (await h.queryPermission({ mode: 'read' }) === 'granted') await lerPasta(h);
+        else statusPasta.textContent = `Pasta "${h.name}" lembrada — será lida ao clicar em Gerar Cartazes.`;
+      } catch (e) { console.warn(e); }
+    })();
+
+    // Antes de gerar, relê a pasta (pega o Precos de hoje mesmo se a página ficou aberta)
+    async function atualizarDaPasta() {
+      if (!pastaHandle) return;
+      try {
+        if (await pastaHandle.requestPermission({ mode: 'read' }) === 'granted') await lerPasta(pastaHandle);
+      } catch (e) { console.warn(e); }
     }
 
     // --- Formato (A3 / A5) ---
@@ -300,19 +439,33 @@
       `;
     }
 
-    document.getElementById('generate').addEventListener('click', () => {
+    document.getElementById('generate').addEventListener('click', async () => {
+      await atualizarDaPasta();
       const preview = document.getElementById('preview-area');
       preview.innerHTML = modoEditavel
         ? '<p class="dica-editavel">Clique em qualquer texto do cartaz para escrever por cima.</p>' : "";
-      
+
       const produtos = parseMainList(document.getElementById('input').value);
       const precosNormais = parseSecondaryList(document.getElementById('input2').value);
 
+      // Preço DE: 1º lista colada, 2º preço Clube (Precos_), 3º preço normal (PRODUTO), senão o próprio preço
+      const cont = { lista: 0, clube: 0, produto: 0, nenhum: 0 };
+      const semPreco = [];
       produtos.forEach(p => {
-        const precoDE = precosNormais.get(p.ean) || p.preco;
-        
+        const ean = normEan(p.ean);
+        let precoDE = precosNormais.get(p.ean);
+        if (precoDE) cont.lista++;
+        else if (dadosArquivos && dadosArquivos.clube.has(ean)) { precoDE = dadosArquivos.clube.get(ean).clube; cont.clube++; }
+        else if (dadosArquivos && dadosArquivos.produto.has(ean)) { precoDE = dadosArquivos.produto.get(ean); cont.produto++; }
+        else { precoDE = p.preco; cont.nenhum++; semPreco.push(p.nome); }
+
         preview.insertAdjacentHTML('beforeend', montarCartaz(p.nome, precoDE, p.preco, p.validade, modoEditavel));
       });
+      const resumo = document.getElementById('resumo-precos');
+      resumo.textContent = produtos.length
+        ? `${produtos.length} cartazes — preço DE: ${cont.lista} da lista, ${cont.clube} do Clube, ${cont.produto} do PRODUTO` +
+          (cont.nenhum ? `, ${cont.nenhum} sem preço DE (${semPreco.join(', ')})` : '')
+        : '';
       ajustarNomes();
     });
 
