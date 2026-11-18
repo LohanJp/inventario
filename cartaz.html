@@ -97,6 +97,28 @@
     #preview-area:empty { display: none; }
     #preview-area .cartaz { margin: 0; border: none; box-shadow: 0 1px 2px rgba(0,0,0,.12), 0 10px 30px rgba(40,50,40,.16); }
 
+    /* --- Galeria de ícones --- */
+    .modo-editavel .cartaz .col-thunder { cursor: pointer; }
+    .modo-editavel .cartaz .col-thunder:hover { outline: 2px dashed #9cc3ff; outline-offset: 2px; border-radius: 6px; }
+    body.exportando .cartaz .col-thunder { outline: none !important; }
+    #galeria { border: 0; border-radius: 12px; padding: 0; width: min(520px, calc(100vw - 32px)); color: var(--tinta); box-shadow: 0 20px 60px rgba(30,35,30,.35); }
+    #galeria::backdrop { background: rgba(35,38,42,.45); }
+    .galeria-corpo { padding: 20px 22px 22px; }
+    .galeria-corpo h2 { margin: 0; font-size: 18px; }
+    #galeria-alvo { margin: 2px 0 16px; font-size: 13px; color: var(--tinta-suave); }
+    .grade-icones { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+    .grade-icones button { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 10px 4px 8px; border: 1px solid var(--linha); border-radius: 8px; background: #fff; cursor: pointer; font: 500 12px/1.2 "Archivo", system-ui, sans-serif; color: var(--tinta); }
+    .grade-icones button:hover { border-color: var(--tinta-suave); }
+    .grade-icones button[aria-pressed="true"] { border-color: var(--tinta); box-shadow: inset 0 0 0 1px var(--tinta); background: #fffbea; }
+    .grade-icones svg { width: 34px; height: 34px; }
+    .grade-icones .nenhum { width: 34px; height: 34px; border: 2px dashed #c4c9c1; border-radius: 50%; }
+    .linha-cores { display: flex; align-items: center; gap: 10px; margin-top: 16px; font-size: 14px; font-weight: 600; }
+    .linha-cores button { width: 30px; height: 30px; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 0 0 1px #c4c9c1; cursor: pointer; }
+    .linha-cores button[aria-pressed="true"] { box-shadow: 0 0 0 2px var(--tinta); }
+    .galeria-acoes { display: flex; justify-content: flex-end; gap: 8px; margin-top: 20px; }
+    .grade-icones button:focus-visible, .linha-cores button:focus-visible { outline: 3px solid var(--raio); outline-offset: 2px; }
+    @media (max-width: 480px) { .grade-icones { grid-template-columns: repeat(3, 1fr); } }
+
     @media (max-width: 900px) {
       .app { grid-template-columns: 1fr; }
       .painel { position: static; height: auto; border-right: 0; border-bottom: 1px solid var(--linha); }
@@ -159,7 +181,7 @@
     .trovao { 
       width: 55px; 
       height: 55px; 
-      filter: invert(74%) sepia(95%) saturate(1832%) hue-rotate(3deg) brightness(102%) contrast(105%); 
+      display: block;
     }
     .trovao.right { transform: scaleX(-1); }
 
@@ -292,6 +314,7 @@
           <option value="a3">A3</option>
           <option value="a5">A5</option>
         </select>
+        <button id="abrir-galeria" class="btn btn-claro" type="button">Ícone</button>
         <span class="espaco"></span>
         <button id="modelo" class="btn btn-claro" type="button">Modelo editável</button>
         <button id="clear" class="btn btn-texto" type="button">Limpar</button>
@@ -306,10 +329,65 @@
     </main>
   </div>
 
+  <dialog id="galeria" aria-labelledby="galeria-titulo">
+    <form method="dialog" class="galeria-corpo">
+      <h2 id="galeria-titulo">Ícone do cartaz</h2>
+      <p id="galeria-alvo">Vale para todos os cartazes.</p>
+      <div class="grade-icones" id="grade-icones"></div>
+      <div class="linha-cores" id="linha-cores"><span>Cor</span></div>
+      <div class="galeria-acoes">
+        <button type="button" id="galeria-padrao" class="btn btn-texto" hidden>Usar o mesmo dos outros</button>
+        <button class="btn btn-tinta" value="ok">Pronto</button>
+      </div>
+    </form>
+  </dialog>
+
   <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
   <script>
-    const ICON_URL = "https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/icons/lightning-charge-fill.svg";
+    // --- Ícones (SVG embutido: sai igual no PDF e funciona sem internet) ---
+    // espelhar: o ícone da direita aparece virado, como o raio original
+    const ICONES = {
+      raio: { nome: 'Raio', vb: '0 0 16 16', espelhar: true,
+        svg: '<path d="M11.251.068a.5.5 0 0 1 .227.58L9.677 6.5H13a.5.5 0 0 1 .364.843l-8 8.5a.5.5 0 0 1-.842-.49L6.323 9.5H3a.5.5 0 0 1-.364-.843l8-8.5a.5.5 0 0 1 .615-.09z"/>' },
+      seta: { nome: 'Seta', vb: '0 0 24 24',
+        svg: '<path d="M8.5 2.5h7v9h5L12 22 3.5 11.5h5z"/>' },
+      grafico: { nome: 'Queda', vb: '0 0 24 24', espelhar: true,
+        svg: '<path d="M2.5 5.5l6.5 6.5 4-4 8.5 9" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M21.5 10v7h-7" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>' },
+      porcento: { nome: 'Etiqueta %', vb: '0 0 24 24', espelhar: true,
+        svg: '<path d="M2 2.5h9.3L22 13.2 13.2 22 2.5 11.3V2.5z"/><circle cx="6.7" cy="6.7" r="1.6" fill="#fff"/><circle cx="11.2" cy="11.6" r="1.4" fill="#fff"/><circle cx="16" cy="16.4" r="1.4" fill="#fff"/><path d="M16.3 11.3l-5.4 5.4" stroke="#fff" stroke-width="1.6" stroke-linecap="round"/>' },
+      selo: { nome: 'Selo', vb: '0 0 24 24',
+        svg: '<polygon points="12.0,1.0 14.1,4.1 17.5,2.5 17.8,6.2 21.5,6.5 19.9,9.9 23.0,12.0 19.9,14.1 21.5,17.5 17.8,17.8 17.5,21.5 14.1,19.9 12.0,23.0 9.9,19.9 6.5,21.5 6.2,17.8 2.5,17.5 4.1,14.1 1.0,12.0 4.1,9.9 2.5,6.5 6.2,6.2 6.5,2.5 9.9,4.1"/><circle cx="9.3" cy="9.3" r="1.6" fill="#fff"/><circle cx="14.7" cy="14.7" r="1.6" fill="#fff"/><path d="M15.2 8.8l-6.4 6.4" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/>' },
+      cifrao: { nome: 'Preço baixo', vb: '0 0 24 24',
+        svg: '<path d="M13 6.8c-.8-1.1-1.9-1.6-3.4-1.6-2 0-3.4 1-3.4 2.6 0 3.6 7.3 1.9 7.3 5.6 0 1.7-1.5 2.8-3.6 2.8-1.6 0-3-.7-3.7-2M9.8 2.5v17" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M19 4v14m-3.5-3.5L19 18l3.5-3.5" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>' },
+      fogo: { nome: 'Fogo', vb: '0 0 24 24',
+        svg: '<path d="M12 1.5c1.2 3.8 6.5 6.2 6.5 12.2A6.5 6.5 0 0 1 5.5 14c0-2.5 1.2-4.4 2.7-5.6.1 1.9.9 3.2 2.1 3.8C10.8 8.6 10.6 5 12 1.5z"/>' },
+      relogio: { nome: 'Últimos dias', vb: '0 0 24 24',
+        svg: '<circle cx="12" cy="13" r="8.5" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 8.5V13l3 2.5M9.5 2.5h5" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>' },
+      estrela: { nome: 'Estrela', vb: '0 0 24 24',
+        svg: '<polygon points="12.0,1.5 14.6,8.4 22.0,8.8 16.2,13.4 18.2,20.5 12.0,16.4 5.8,20.5 7.8,13.4 2.0,8.8 9.4,8.4"/>' },
+      nenhum: { nome: 'Sem ícone' }
+    };
+    const CORES_ICONE = { amarelo: '#e6b800', vermelho: '#d62828', laranja: '#f28c00', preto: '#222222' };
+    let iconePadrao = 'raio', corPadrao = 'amarelo';
+    try {
+      iconePadrao = ICONES[localStorage.getItem('cartaz-icone')] ? localStorage.getItem('cartaz-icone') : 'raio';
+      corPadrao = CORES_ICONE[localStorage.getItem('cartaz-icone-cor')] ? localStorage.getItem('cartaz-icone-cor') : 'amarelo';
+    } catch (e) {}
+
+    function svgIcone(id, cor, lado) {
+      const ic = ICONES[id];
+      if (!ic || !ic.svg) return '';
+      const classe = 'trovao' + (lado === 'right' && ic.espelhar ? ' right' : '');
+      return `<svg class="${classe}" viewBox="${ic.vb}" fill="currentColor" style="color:${CORES_ICONE[cor] || cor}" aria-hidden="true">${ic.svg}</svg>`;
+    }
+    // Cartaz com data-icone/data-cor próprios ignora o padrão
+    function desenharIcones(cartaz) {
+      const id = cartaz.dataset.icone || iconePadrao;
+      const cor = cartaz.dataset.cor || corPadrao;
+      cartaz.querySelectorAll('.col-thunder').forEach(c => { c.innerHTML = svgIcone(id, cor, c.dataset.lado); });
+    }
+    function desenharTodos() { document.querySelectorAll('#preview-area .cartaz').forEach(desenharIcones); }
 
     function parseMainList(text) {
       return text.split('\n').filter(line => line.trim()).map(line => {
@@ -504,17 +582,13 @@
           <article class="cartaz ${formatoAtual}">
             <div class="area-util">
               <div class="row-header">
-                <div class="col-thunder">
-                  <img src="${ICON_URL}" class="trovao left">
-                </div>
+                <div class="col-thunder" data-lado="left" title="Trocar ícone"></div>
                 <div class="col-title">
                   <div class="bar-top"></div>
                   <h1 class="produto-nome"${ed}>${nome}</h1>
                   <div class="bar-bottom"></div>
                 </div>
-                <div class="col-thunder">
-                  <img src="${ICON_URL}" class="trovao right">
-                </div>
+                <div class="col-thunder" data-lado="right" title="Trocar ícone"></div>
               </div>
 
               <div class="precos">
@@ -570,7 +644,7 @@
     let modoEditavel = false;
     const CAMPOS_EDITAVEIS = '.produto-nome, .label-price, .value-price, .validade > span';
     document.getElementById('modelo').addEventListener('click', () => {
-      modoEditavel = true;
+      modoEditavel = true; document.body.classList.add("modo-editavel");
       const preview = document.getElementById('preview-area');
       if (!preview.querySelector('.cartaz')) {
         preview.insertAdjacentHTML('beforeend',
@@ -674,15 +748,75 @@
       const n = areaPreview.querySelectorAll('.cartaz').length;
       document.getElementById('contagem').textContent = n ? `${n} cartaz${n > 1 ? 'es' : ''}` : 'Nenhum cartaz';
       document.getElementById('vazio').hidden = n > 0;
+      areaPreview.querySelectorAll('.cartaz').forEach(c => { if (!c.dataset.desenhado) { c.dataset.desenhado = '1'; desenharIcones(c); } });
+      document.body.classList.toggle('modo-editavel', modoEditavel);
       if (!n && !areaPreview.querySelector('.cartaz')) areaPreview.innerHTML = '';
     }
     new MutationObserver(atualizarMesa).observe(areaPreview, { childList: true });
     atualizarMesa();
 
+    // --- Galeria ---
+    const galeria = document.getElementById('galeria');
+    const gradeIcones = document.getElementById('grade-icones');
+    const linhaCores = document.getElementById('linha-cores');
+    let alvoGaleria = null; // null = todos os cartazes; senão, um cartaz
+    Object.entries(ICONES).forEach(([id, ic]) => {
+      const b = document.createElement('button');
+      b.type = 'button'; b.dataset.icone = id;
+      b.innerHTML = (ic.svg ? `<svg viewBox="${ic.vb}" fill="currentColor" aria-hidden="true">${ic.svg}</svg>` : '<span class="nenhum" aria-hidden="true"></span>') + `<span>${ic.nome}</span>`;
+      gradeIcones.appendChild(b);
+    });
+    Object.entries(CORES_ICONE).forEach(([id, hex]) => {
+      const b = document.createElement('button');
+      b.type = 'button'; b.dataset.cor = id; b.style.background = hex;
+      b.setAttribute('aria-label', id); b.title = id[0].toUpperCase() + id.slice(1);
+      linhaCores.appendChild(b);
+    });
+    function estadoGaleria() {
+      const icone = alvoGaleria ? (alvoGaleria.dataset.icone || iconePadrao) : iconePadrao;
+      const cor = alvoGaleria ? (alvoGaleria.dataset.cor || corPadrao) : corPadrao;
+      gradeIcones.querySelectorAll('button').forEach(b => {
+        b.setAttribute('aria-pressed', String(b.dataset.icone === icone));
+        b.style.color = CORES_ICONE[cor];
+      });
+      linhaCores.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.cor === cor)));
+      linhaCores.hidden = icone === 'nenhum';
+      document.getElementById('galeria-alvo').textContent = alvoGaleria
+        ? `Só para o cartaz "${alvoGaleria.querySelector('.produto-nome').textContent.trim()}".`
+        : 'Vale para todos os cartazes.';
+      document.getElementById('galeria-padrao').hidden = !(alvoGaleria && (alvoGaleria.dataset.icone || alvoGaleria.dataset.cor));
+    }
+    function abrirGaleria(cartaz) { alvoGaleria = cartaz || null; estadoGaleria(); galeria.showModal(); }
+    function aplicar(campo, valor) {
+      if (alvoGaleria) {
+        alvoGaleria.dataset[campo] = valor;
+        desenharIcones(alvoGaleria);
+      } else {
+        if (campo === 'icone') iconePadrao = valor; else corPadrao = valor;
+        try { localStorage.setItem(campo === 'icone' ? 'cartaz-icone' : 'cartaz-icone-cor', valor); } catch (e) {}
+        desenharTodos();
+      }
+      estadoGaleria();
+    }
+    gradeIcones.addEventListener('click', e => { const b = e.target.closest('button'); if (b) aplicar('icone', b.dataset.icone); });
+    linhaCores.addEventListener('click', e => { const b = e.target.closest('button'); if (b) aplicar('cor', b.dataset.cor); });
+    document.getElementById('galeria-padrao').addEventListener('click', () => {
+      if (!alvoGaleria) return;
+      delete alvoGaleria.dataset.icone; delete alvoGaleria.dataset.cor;
+      desenharIcones(alvoGaleria); estadoGaleria();
+    });
+    document.getElementById('abrir-galeria').addEventListener('click', () => abrirGaleria(null));
+    // No modo editável, clicar no ícone de um cartaz troca só o dele
+    areaPreview.addEventListener('click', e => {
+      const col = e.target.closest('.col-thunder');
+      if (col && modoEditavel) abrirGaleria(col.closest('.cartaz'));
+    });
+    galeria.addEventListener('click', e => { if (e.target === galeria) galeria.close(); });
+
     document.getElementById('clear').addEventListener('click', () => {
       document.getElementById('preview-area').innerHTML = "";
       document.getElementById('resumo-precos').textContent = '';
-      modoEditavel = false;
+      modoEditavel = false; document.body.classList.remove("modo-editavel");
     });
   </script>
 </body>
