@@ -3,7 +3,10 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Gerador de Cartazes A5 - Estrutura Flexbox 3 Colunas</title>
+  <title>Gerador de cartazes</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@400;600;700&display=swap" rel="stylesheet">
   <style>
     /* --- Estilos de Base --- */
     @font-face {
@@ -23,25 +26,89 @@
       --yellow-thunder: #e6b800;
     }
     * { box-sizing: border-box; }
-    body { background: var(--bg); padding: 20px; font-family: system-ui, Arial; }
-    
-    .container { max-width: 900px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
-    .input-area { background: var(--card-bg); padding: 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
-    textarea { width: 100%; min-height: 120px; margin-bottom: 15px; padding: 10px; border: 1px solid #ccc; border-radius: 6px; }
-    .btn { background: #0066cc; color: #fff; border: none; padding: 12px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; }
-    .btn.secondary { background: #666; margin-left: 10px; }
-    .btn.modelo { background: #e6b800; color: #222; margin-left: 10px; }
-    .btn.pasta { background: #555; }
-    .pasta-area { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 8px; }
-    #pasta-status { font-size: 14px; color: var(--muted); }
-    #pasta-status.aviso { color: #b35c00; font-weight: bold; }
-    #resumo-precos { font-size: 14px; color: var(--muted); margin: 0 0 15px; min-height: 1em; }
+    /* --- Bancada: painel de controles à esquerda, mesa com os cartazes à direita --- */
+    :root {
+      --tinta: #23262a;
+      --tinta-suave: #5c6168;
+      --painel: #f7f8f5;
+      --mesa: #d5d9d2;
+      --linha: #dfe2dc;
+      --raio: #f2b705;
+      --raio-escuro: #c99400;
+      --ok: #2f7d4f;
+      --alerta: #b35c00;
+      --muted: var(--tinta-suave);
+    }
+    html, body { margin: 0; }
+    body { background: var(--mesa); color: var(--tinta); font: 15px/1.5 "Archivo", system-ui, Arial, sans-serif; }
+    .app { display: grid; grid-template-columns: 380px 1fr; min-height: 100vh; }
+
+    .painel { position: sticky; top: 0; height: 100vh; overflow-y: auto; background: var(--painel); border-right: 1px solid var(--linha); padding: 24px 24px 32px; display: flex; flex-direction: column; gap: 28px; }
+    .marca { display: flex; align-items: center; gap: 12px; }
+    .marca .selo { flex: 0 0 44px; height: 44px; border-radius: 10px; background: var(--tinta); display: grid; place-items: center; }
+    .marca .selo svg { width: 24px; height: 24px; fill: var(--raio); }
+    .marca h1 { font-family: "Anton", Impact, sans-serif; font-weight: 400; font-size: 26px; line-height: 1; margin: 0; letter-spacing: .01em; }
+    .marca p { margin: 4px 0 0; font-size: 13px; color: var(--tinta-suave); line-height: 1.3; }
+
+    .passo h2 { display: flex; align-items: center; gap: 10px; font-size: 16px; font-weight: 700; margin: 0 0 4px; }
+    .passo h2 .n { flex: 0 0 24px; height: 24px; border-radius: 50%; background: var(--tinta); color: #fff; font-size: 13px; display: grid; place-items: center; }
+    .ajuda { margin: 0 0 10px 34px; font-size: 13px; color: var(--tinta-suave); line-height: 1.4; }
+    textarea { display: block; width: 100%; min-height: 130px; padding: 10px 12px; border: 1px solid #c9cdc6; border-radius: 8px; background: #fff; font: 12px/1.45 ui-monospace, Consolas, monospace; color: var(--tinta); resize: vertical; }
+    textarea:focus, select:focus { outline: none; border-color: var(--tinta); box-shadow: 0 0 0 3px rgba(242,183,5,.45); }
+    #input { min-height: 180px; }
+
+    .pasta-card { display: flex; flex-direction: column; gap: 8px; padding: 12px; border: 1px solid var(--linha); border-radius: 8px; background: #fff; }
+    #pasta-status { font-size: 13px; color: var(--tinta-suave); line-height: 1.4; }
+    #pasta-status.ok { color: var(--ok); }
+    #pasta-status.aviso { color: var(--alerta); font-weight: 600; }
+    .manual { margin-top: 10px; }
+    .manual summary { cursor: pointer; font-size: 14px; font-weight: 600; padding: 4px 0; }
+    .manual[open] summary { margin-bottom: 6px; }
+    .manual .ajuda { margin-left: 0; }
+    #resumo-precos { font-size: 13px; color: var(--tinta-suave); margin: 10px 0 0; line-height: 1.4; }
+    #resumo-precos:empty { display: none; }
+
+    .btn { font: 600 14px/1 "Archivo", system-ui, sans-serif; border: 1px solid transparent; border-radius: 8px; padding: 11px 16px; cursor: pointer; color: var(--tinta); background: transparent; transition: background-color .12s, border-color .12s; }
+    .btn:focus-visible, .segmento button:focus-visible, .manual summary:focus-visible { outline: 3px solid var(--raio); outline-offset: 2px; }
+    .btn:disabled { opacity: .6; cursor: wait; }
+    .btn-raio { background: var(--raio); font-size: 16px; padding: 15px 18px; }
+    .btn-raio:hover { background: var(--raio-escuro); }
+    .btn-tinta { background: var(--tinta); color: #fff; }
+    .btn-tinta:hover { background: #000; }
+    .btn-claro { background: #fff; border-color: #c9cdc6; }
+    .btn-claro:hover { border-color: var(--tinta); }
+    .btn-texto { color: var(--tinta-suave); }
+    .btn-texto:hover { color: var(--tinta); background: rgba(0,0,0,.05); }
+    .largo { width: 100%; }
+
+    .mesa { min-width: 0; display: flex; flex-direction: column; }
+    .barra { position: sticky; top: 0; z-index: 2; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 12px 24px; background: rgba(213,217,210,.92); backdrop-filter: blur(6px); border-bottom: 1px solid #c4c9c1; }
+    #contagem { font-weight: 700; margin-right: 8px; }
+    .segmento { display: inline-flex; background: #fff; border: 1px solid #c4c9c1; border-radius: 8px; padding: 3px; }
+    .segmento button { font: 600 13px/1 "Archivo", system-ui, sans-serif; border: 0; background: none; padding: 7px 14px; border-radius: 5px; cursor: pointer; color: var(--tinta-suave); }
+    .segmento button[aria-checked="true"] { background: var(--tinta); color: #fff; }
+    .espaco { flex: 1; }
+    .vazio { margin: 12vh auto 0; max-width: 360px; text-align: center; color: var(--tinta-suave); }
+    .vazio .folha { width: 120px; height: 170px; margin: 0 auto 20px; background: #fff; border-radius: 3px; box-shadow: 0 1px 2px rgba(0,0,0,.12), 0 8px 24px rgba(40,50,40,.12); display: grid; place-items: end center; padding-bottom: 28px; }
+    .vazio .folha i { display: block; width: 70px; height: 10px; border-radius: 2px; background: var(--raio); box-shadow: 0 -18px 0 -2px #cfd3cc, 0 16px 0 #cfd3cc; }
+    .vazio strong { display: block; color: var(--tinta); font-size: 16px; margin-bottom: 4px; }
+    .vazio p { margin: 0; font-size: 14px; }
+    #preview-area { display: flex; flex-wrap: wrap; justify-content: center; align-items: flex-start; gap: 32px; padding: 32px 24px 64px; }
+    #preview-area:empty { display: none; }
+    #preview-area .cartaz { margin: 0; border: none; box-shadow: 0 1px 2px rgba(0,0,0,.12), 0 10px 30px rgba(40,50,40,.16); }
+
+    @media (max-width: 900px) {
+      .app { grid-template-columns: 1fr; }
+      .painel { position: static; height: auto; border-right: 0; border-bottom: 1px solid var(--linha); }
+      #preview-area { padding: 20px 8px 48px; }
+      @media screen { .cartaz.a3 { zoom: 0.35 !important; } }
+    }
 
     /* --- Modelo editável --- */
     .cartaz [contenteditable="true"] { cursor: text; outline: 2px dashed transparent; outline-offset: 2px; border-radius: 4px; transition: outline-color .15s; }
     .cartaz [contenteditable="true"]:hover { outline-color: #9cc3ff; }
     .cartaz [contenteditable="true"]:focus { outline: 2px solid #0066cc; background: rgba(0,102,204,.05); }
-    .dica-editavel { text-align: center; color: var(--muted); font-size: 14px; margin: 0; }
+    .dica-editavel { flex-basis: 100%; text-align: center; color: var(--muted); font-size: 14px; margin: 0; }
 
     /* --- Estrutura do Cartaz --- */
     .cartaz { 
@@ -158,16 +225,15 @@
     /* Na tela o A3 aparece reduzido; na impressão/PDF sai no tamanho real */
     @media screen { .cartaz.a3 { zoom: 0.5; } }
     body.exportando .cartaz.a3 { zoom: 1; }
-    body.exportando .cartaz { margin: 0 !important; border: none !important; }
+    body.exportando .cartaz { margin: 0 !important; border: none !important; box-shadow: none !important; }
     body.exportando .cartaz [contenteditable] { outline: none !important; background: none !important; }
 
-    .formato { margin-left: 10px; font-weight: bold; }
-    .formato select { padding: 10px; border-radius: 8px; border: 1px solid #ccc; font-weight: bold; }
-    .btn.pdf { background: #1a8f3c; margin-left: 10px; }
 
     @media print {
-      .input-area, .container > header, .btn, .footer-note, .dica-editavel { display: none !important; }
-      .container { max-width: none; gap: 0; display: block; }
+      .painel, .barra, .vazio, .dica-editavel { display: none !important; }
+      .app { display: block; }
+      #preview-area { display: block; padding: 0; gap: 0; }
+      #preview-area .cartaz { box-shadow: none; }
       .cartaz [contenteditable="true"] { outline: none !important; background: none !important; }
       body { padding: 0; margin: 0; background: white; }
       .cartaz { margin: 0; border: none; box-shadow: none; page-break-after: always; }
@@ -177,38 +243,67 @@
 </head>
 <body>
 
-  <div class="container">
-    <header>
-      <h1>Gerador de Cartazes Semântico</h1>
-    </header>
+  <div class="app">
+    <aside class="painel">
+      <header class="marca">
+        <span class="selo" aria-hidden="true"><svg viewBox="0 0 16 16"><path d="M11.251.068a.5.5 0 0 1 .227.58L9.677 6.5H13a.5.5 0 0 1 .364.843l-8 8.5a.5.5 0 0 1-.842-.49L6.323 9.5H3a.5.5 0 0 1-.364-.843l8-8.5a.5.5 0 0 1 .615-.09z"/></svg></span>
+        <div>
+          <h1>Gerador de cartazes</h1>
+          <p>Ofertas de produtos próximos da validade, em A3 ou A5.</p>
+        </div>
+      </header>
 
-    <section class="input-area">
-      <label>Lista Principal:</label>
-      <textarea id="input" placeholder="Cole os dados aqui..."></textarea>
-      
-      <label>Lista Secundária (Preço DE) — opcional:</label>
-      <textarea id="input2" placeholder="EAN [TAB] Preço  (opcional: o que não estiver aqui é buscado nos arquivos da pasta)"></textarea>
+      <section class="passo">
+        <h2><span class="n">1</span><label for="input">Lista do inventário</label></h2>
+        <p class="ajuda">Cole as linhas do relatório. Entram só os itens com verificação "NÃO".</p>
+        <textarea id="input" wrap="off" placeholder="Cole aqui as linhas do relatório…" spellcheck="false"></textarea>
+      </section>
 
-      <div class="pasta-area">
-        <button id="escolher-pasta" class="btn pasta" type="button">📂 Pasta dos relatórios</button>
-        <input type="file" id="arquivos-relatorio" multiple accept=".txt,text/plain" hidden>
-        <span id="pasta-status">Nenhuma pasta escolhida — o preço DE vem só da lista acima.</span>
-      </div>
-      <p id="resumo-precos"></p>
+      <section class="passo">
+        <h2><span class="n">2</span>Preço DE</h2>
+        <p class="ajuda">Vem do preço Clube (Precos_ de hoje) e, se não tiver, do arquivo PRODUTO.</p>
+        <div class="pasta-card">
+          <button id="escolher-pasta" class="btn btn-claro" type="button">Escolher pasta dos relatórios</button>
+          <input type="file" id="arquivos-relatorio" multiple accept=".txt,text/plain" hidden>
+          <span id="pasta-status" aria-live="polite">Nenhuma pasta escolhida.</span>
+        </div>
+        <details class="manual">
+          <summary>Colar preços à mão (opcional)</summary>
+          <p class="ajuda">Uma linha por produto, com EAN e preço. Tem prioridade sobre os arquivos.</p>
+          <textarea id="input2" wrap="off" placeholder="7896894900013	2,99" spellcheck="false"></textarea>
+        </details>
+      </section>
 
-      <button id="generate" class="btn">Gerar Cartazes</button>
-      <button id="modelo" class="btn modelo">Modelo editável</button>
-      <button id="clear" class="btn secondary">Limpar</button>
-      <button id="baixar-pdf" class="btn pdf">Baixar PDF</button>
-      <label class="formato">Tamanho:
-        <select id="formato">
+      <section class="passo">
+        <h2><span class="n">3</span>Gerar</h2>
+        <button id="generate" class="btn btn-raio largo" type="button">Gerar cartazes</button>
+        <p id="resumo-precos" aria-live="polite"></p>
+      </section>
+    </aside>
+
+    <main class="mesa">
+      <div class="barra">
+        <span id="contagem">Nenhum cartaz</span>
+        <div class="segmento" role="radiogroup" aria-label="Tamanho do papel">
+          <button type="button" role="radio" data-formato="a3">A3</button>
+          <button type="button" role="radio" data-formato="a5">A5</button>
+        </div>
+        <select id="formato" hidden>
           <option value="a3">A3</option>
           <option value="a5">A5</option>
         </select>
-      </label>
-    </section>
-
-    <div id="preview-area"></div>
+        <span class="espaco"></span>
+        <button id="modelo" class="btn btn-claro" type="button">Modelo editável</button>
+        <button id="clear" class="btn btn-texto" type="button">Limpar</button>
+        <button id="baixar-pdf" class="btn btn-tinta" type="button">Baixar PDF</button>
+      </div>
+      <div id="vazio" class="vazio">
+        <div class="folha" aria-hidden="true"><i></i></div>
+        <strong>Os cartazes aparecem aqui</strong>
+        <p>Cole a lista e clique em Gerar cartazes, ou abra o modelo editável para montar um à mão.</p>
+      </div>
+      <div id="preview-area"></div>
+    </main>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
@@ -298,8 +393,8 @@
       partes.push(precos ? `${precos.name} (${dadosArquivos.clube.size} preços Clube)` : 'sem arquivo Precos_');
       partes.push(produto ? `${produto.name} (${dadosArquivos.produto.size} preços normais)` : 'sem arquivo PRODUTO');
       const velho = precos && dataPrecos && dataPrecos !== hojeISO();
-      statusPasta.className = velho || !precos || !produto ? 'aviso' : '';
-      statusPasta.textContent = (velho ? '⚠ Precos não é de hoje — ' : '✔ ') + partes.join(' · ');
+      statusPasta.className = velho || !precos || !produto ? 'aviso' : 'ok';
+      statusPasta.textContent = (velho ? 'Atenção: o Precos não é de hoje. ' : '') + partes.join(' · ');
     }
 
     async function lerPasta(handle) {
@@ -561,8 +656,32 @@
 
     aplicarFormato();
 
+    // Botões A3/A5 da barra controlam o seletor escondido
+    const botoesFormato = document.querySelectorAll('.segmento [data-formato]');
+    function marcarFormato() {
+      botoesFormato.forEach(b => b.setAttribute('aria-checked', String(b.dataset.formato === seletorFormato.value)));
+    }
+    botoesFormato.forEach(b => b.addEventListener('click', () => {
+      seletorFormato.value = b.dataset.formato;
+      seletorFormato.dispatchEvent(new Event('change'));
+      marcarFormato();
+    }));
+    marcarFormato();
+
+    // Contagem de cartazes e tela vazia
+    const areaPreview = document.getElementById('preview-area');
+    function atualizarMesa() {
+      const n = areaPreview.querySelectorAll('.cartaz').length;
+      document.getElementById('contagem').textContent = n ? `${n} cartaz${n > 1 ? 'es' : ''}` : 'Nenhum cartaz';
+      document.getElementById('vazio').hidden = n > 0;
+      if (!n && !areaPreview.querySelector('.cartaz')) areaPreview.innerHTML = '';
+    }
+    new MutationObserver(atualizarMesa).observe(areaPreview, { childList: true });
+    atualizarMesa();
+
     document.getElementById('clear').addEventListener('click', () => {
       document.getElementById('preview-area').innerHTML = "";
+      document.getElementById('resumo-precos').textContent = '';
       modoEditavel = false;
     });
   </script>
