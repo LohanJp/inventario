@@ -316,6 +316,7 @@
         </select>
         <button id="abrir-galeria" class="btn btn-claro" type="button">Ícone</button>
         <span class="espaco"></span>
+        <button id="btn-teste" class="btn btn-claro" type="button" aria-pressed="false" title="Editor profissional em teste: mover, girar, cores, fontes e mais">Versão de teste</button>
         <button id="modelo" class="btn btn-claro" type="button">Modelo editável</button>
         <button id="clear" class="btn btn-texto" type="button">Limpar</button>
         <button id="baixar-pdf" class="btn btn-tinta" type="button">Baixar PDF</button>
@@ -812,6 +813,22 @@
       if (col && modoEditavel) abrirGaleria(col.closest('.cartaz'));
     });
     galeria.addEventListener('click', e => { if (e.target === galeria) galeria.close(); });
+
+    // --- Versão de teste: editor profissional em arquivo separado (cartaz-editor-pro.js) ---
+    const btnTeste = document.getElementById('btn-teste');
+    btnTeste.addEventListener('click', () => {
+      const alternar = () => {
+        if (window.EditorPro.ativo) { window.EditorPro.desligar(); btnTeste.setAttribute('aria-pressed', 'false'); btnTeste.textContent = 'Versão de teste'; }
+        else { window.EditorPro.ligar(); btnTeste.setAttribute('aria-pressed', 'true'); btnTeste.textContent = 'Sair da versão de teste'; }
+      };
+      if (window.EditorPro) { alternar(); return; }
+      btnTeste.disabled = true;
+      const sc = document.createElement('script');
+      sc.src = 'cartaz-editor-pro.js?v=1';
+      sc.onload = () => { btnTeste.disabled = false; alternar(); };
+      sc.onerror = () => { btnTeste.disabled = false; alert('Não consegui carregar a versão de teste. Verifique a internet e recarregue a página.'); };
+      document.body.appendChild(sc);
+    });
 
     document.getElementById('clear').addEventListener('click', () => {
       document.getElementById('preview-area').innerHTML = "";
