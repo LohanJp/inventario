@@ -48,19 +48,19 @@ body.exportando .ed { outline: none !important; }
 body.exportando .ed.oculto { visibility: hidden !important; opacity: 1 !important; }
 body.exportando .ed [contenteditable]:focus, body.exportando .ed[contenteditable]:focus { background: none !important; }
 body.exportando .pro-camada-ui, body.exportando .barra-pro, body.exportando .painel-pro,
-body.exportando .pro-pop, body.exportando .pro-ctx, body.exportando .pro-dialogo { display: none !important; }
+body.exportando .pro-pop, body.exportando .pro-ctx, body.exportando .pro-dialogo, body.exportando .pro-aviso { display: none !important; }
 html body.exportando #preview-area .cartaz.cartaz.cartaz { zoom: 1 !important; }
 body.exportando #preview-area { padding-right: 24px; }
 @media print {
   .ed { outline: none !important; }
   .ed.oculto { visibility: hidden !important; opacity: 1 !important; }
-  .pro-camada-ui, .barra-pro, .painel-pro, .pro-pop, .pro-ctx, .pro-dialogo { display: none !important; }
+  .pro-camada-ui, .barra-pro, .painel-pro, .pro-pop, .pro-ctx, .pro-dialogo, .pro-aviso { display: none !important; }
   body.editor-pro #preview-area { padding: 0 !important; gap: 0 !important; }
 }
 
 /* ---------- Tokens da interface ---------- */
 :root { --pro-largura: 300px; --pro-sel: #1d63ed; --pro-guia: #ff2d7a; }
-.barra-pro, .painel-pro, .pro-pop, .pro-ctx, .pro-dialogo, .pro-camada-ui {
+.barra-pro, .painel-pro, .pro-pop, .pro-ctx, .pro-dialogo, .pro-camada-ui, .pro-aviso {
   font: 13px/1.3 "Archivo", system-ui, sans-serif; color: var(--tinta, #23262a);
 }
 .barra-pro, .painel-pro, .pro-camada-ui { display: none; }
@@ -81,12 +81,24 @@ body.editor-pro.pro-com-regua #preview-area { gap: 44px; padding-top: 44px; padd
   font: 600 13px/1 "Archivo", system-ui, sans-serif; color: var(--tinta, #23262a); background: transparent; border: 1px solid transparent;
   border-radius: 6px; cursor: pointer; white-space: nowrap; }
 .barra-pro .pro-btn { flex-shrink: 0; }
-@media (max-width: 1600px) { .barra-pro .so-largo { display: none; } }
-@media (max-width: 1380px) {
-  .barra-pro [data-acao=add-imagem] .rotulo-btn, .barra-pro [data-acao=add-faixa] .rotulo-btn, .barra-pro [data-pop=arquivo] .rotulo-btn { display: none; }
-  .barra-pro .divisor { margin: 0 4px; }
-}
-@media (max-width: 1180px) { .barra-pro .rotulo-btn { display: none; } }
+/* Compactação por níveis (interface.js, ui.ajustarBarra): a faixa nunca passa da borda */
+.barra-pro [data-pop=mais] { display: none; }
+.barra-pro.c1 .so-largo { display: none; }
+.barra-pro.c2 :is([data-acao=add-imagem], [data-acao=add-faixa], [data-pop=arquivo], [data-pop=layout]) .rotulo-btn { display: none; }
+.barra-pro.c2 .divisor { margin: 0 4px; }
+.barra-pro.c3 [data-acao=nova-folha] .rotulo-btn { display: none; }
+.barra-pro.c4 .rotulo-btn { display: none; }
+.barra-pro.c5 .selo-teste { padding: 0 8px; gap: 0; margin-right: 2px; }
+.barra-pro.c5 .selo-teste > span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.barra-pro.c5 .divisor { margin: 0 2px; }
+.barra-pro.c6 .seta-menu { display: none; }
+.barra-pro.c7 :is([data-acao=regua], [data-acao=grade], [data-pop=arquivo], [data-pop=layout], [data-acao=atalhos], .selo-teste) { display: none; }
+.barra-pro.c7 [data-pop=mais] { display: inline-flex; }
+.barra-pro.c7 .grupo[aria-label="Ajudas visuais"] { display: none; }
+.barra-pro.c8 .grupo[aria-label=Zoom], .barra-pro.c8 .divisor:has(+ .grupo[aria-label=Zoom]) { display: none; }
+.barra-pro.c8 { gap: 0; padding: 0 4px; }
+.barra-pro.c8 .espaco-pro { min-width: 0; }
+.barra-pro.c9 :is(.grupo[aria-label="Nova folha"], .grupo[aria-label="Nova folha"] + .divisor, [data-acao=add-faixa]) { display: none; }
 .pro-btn svg { width: 18px; height: 18px; flex: 0 0 18px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
 .pro-btn .seta-menu { width: 12px; height: 12px; flex-basis: 12px; margin-left: -2px; opacity: .7; }
 .pro-btn.so-icone { padding: 0; width: 32px; }
@@ -105,8 +117,14 @@ body.editor-pro.pro-com-regua #preview-area { gap: 44px; padding-top: 44px; padd
 .selo-teste { display: inline-flex; align-items: center; gap: 6px; height: 24px; padding: 0 9px; margin-right: 6px; border-radius: 12px;
   background: #fff6d6; color: #6b5200; font-size: 12px; font-weight: 600; flex: 0 0 auto; }
 .selo-teste::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--raio, #f2b705); box-shadow: 0 0 0 2px rgba(242,183,5,.3); }
-#pro-status { color: var(--ok, #2f7d4f); font-weight: 600; margin-right: 10px; white-space: nowrap; }
-#pro-status:empty { display: none; }
+/* Aviso: flutua sob a faixa, no meio da mesa (posição calculada em interface.js) */
+.pro-aviso { position: fixed; z-index: 32; display: none; transform: translateX(-50%); max-width: calc(100vw - 24px);
+  padding: 8px 14px; border-radius: 8px; background: var(--tinta, #23262a); color: #fff; font: 600 13px/1.3 "Archivo", system-ui, sans-serif;
+  box-shadow: 0 8px 24px rgba(30,35,30,.25); pointer-events: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+body.editor-pro .pro-aviso:not(:empty) { display: block; animation: pro-aviso-entra .16s ease-out; }
+@keyframes pro-aviso-entra { from { opacity: 0; margin-top: -6px; } }
+@media (prefers-reduced-motion: reduce) { body.editor-pro .pro-aviso:not(:empty) { animation: none; } }
+.pro-nota-teste { margin: 6px 10px 4px; font-size: 12px; line-height: 1.4; color: #6b5200; }
 #btn-teste[aria-pressed="true"] { background: #f2b705; border-color: #f2b705; }
 
 /* ---------- Popovers e menus ---------- */
@@ -126,7 +144,14 @@ body.editor-pro.pro-com-regua #preview-area { gap: 44px; padding-top: 44px; padd
 .pro-item kbd, .pro-ctx kbd { font: 500 11px/1 "Archivo", system-ui, sans-serif; color: var(--tinta-suave, #5c6168); }
 .pro-item.perigo { color: #a3262a; }
 .pro-pop hr, .pro-ctx hr { border: 0; border-top: 1px solid var(--linha, #dfe2dc); margin: 5px 4px; }
-.pro-item[aria-checked="true"]::after { content: "✓"; font-weight: 700; }
+/* a marca fica na 1ª coluna da mesma linha (antes caía numa linha sozinha embaixo do item) */
+.pro-item > :not(small) { grid-row: 1; }
+.pro-item > :nth-child(1) { grid-column: 1; }
+.pro-item > :nth-child(2) { grid-column: 2; }
+.pro-item > :nth-child(3) { grid-column: 3; }
+.pro-item[aria-checked="true"]::after { content: "✓"; font-weight: 700; grid-row: 1; grid-column: 1; justify-self: center; }
+.pro-item[aria-checked="true"] > svg { visibility: hidden; }
+.pro-pop.fontes .pro-item[aria-checked="true"]::after { grid-column: 2; }
 
 .pro-grade-formas { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; padding: 4px; }
 .pro-grade-formas button { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 10px 4px 8px; background: none; border: 1px solid transparent;
@@ -320,9 +345,7 @@ body.editor-pro.pro-com-regua #preview-area { gap: 44px; padding-top: 44px; padd
 @media (max-width: 900px) {
   :root { --pro-largura: 100vw; }
   .barra-pro { top: var(--pro-topo, 0px); padding: 0 6px; overflow-x: auto; scrollbar-width: none; }
-  .barra-pro .rotulo-btn { display: none; }
   .barra-pro .divisor { margin: 0 3px; }
-  .barra-pro .so-largo { display: none; }
   .selo-teste { margin-right: 2px; }
   body.editor-pro #preview-area { padding-right: 8px; }
   body.editor-pro.pro-com-regua #preview-area { padding-left: 32px; }

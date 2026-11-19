@@ -282,7 +282,16 @@
     if (!EP.ativo || e.button !== 0 || area.contains(e.target) || e.target.closest('.barra, .barra-pro, .vazio, button, input, select, textarea')) return;
     pressionar(e, null, null);
   });
-  area.addEventListener('mousedown', e => { if (EP.ativo && bloquearMouse) e.preventDefault(); }, true);
+  area.addEventListener('mousedown', e => {
+    if (!EP.ativo) return;
+    if (bloquearMouse) e.preventDefault();
+    // botão direito num texto que não está em edição: não entra na edição (o Chrome daria foco ao texto e
+    // mostraria o menu do navegador em vez do menu do editor)
+    if (e.button === 2) {
+      const ed = e.target.closest('.ed'), ae = document.activeElement;
+      if (ed && !(ae && ae.isContentEditable && ed.contains(ae))) e.preventDefault();
+    }
+  }, true);
   area.addEventListener('click', e => {
     if (!EP.ativo) return;
     if (suprimirClique) { e.stopPropagation(); e.preventDefault(); suprimirClique = false; }
@@ -500,14 +509,19 @@
     if (!EP.ativo) return;
     const ed = e.target.closest && e.target.closest('.ed');
     if (!ed || !e.target.isContentEditable) return;
-    fotoAntesTexto = EP.fotografia();
     ed.classList.add('editando-texto');
     if (!EP.sel.includes(ed)) EP.selecionar([ed], { sozinho: true });
+    fotoAntesTexto = EP.estado();
   });
   area.addEventListener('focusout', e => {
     const ed = e.target.closest && e.target.closest('.ed');
     if (ed) ed.classList.remove('editando-texto');
-    if (fotoAntesTexto !== null) { const antes = fotoAntesTexto; fotoAntesTexto = null; if (EP.fotografia() !== antes) EP.registrar(antes); }
+    // texto livre apagado até ficar vazio vira um elemento invisível que não dá para clicar: some (desfazer traz de volta)
+    if (EP.ativo && ed && ed.isConnected && ed.classList.contains('livre-texto') && !ed.textContent.trim() && !ed.querySelector('img, svg')) {
+      ed.remove();
+      if (EP.sel.includes(ed)) EP.selecionar(EP.sel.filter(x => x !== ed), { sozinho: true });
+    }
+    if (fotoAntesTexto !== null) { const antes = fotoAntesTexto; fotoAntesTexto = null; if (EP.fotografia() !== antes.html) EP.registrar(antes); }
     if (EP.ativo) EP.emitir('mudou');
   });
   area.addEventListener('input', () => { if (EP.ativo) agendar(); });
@@ -623,12 +637,27 @@
   document.head.appendChild(estiloZoom);
   const zoom = { a3: null, a5: null };
   const formato = () => (typeof formatoAtual !== 'undefined' ? formatoAtual : 'a3');
-  const zoomPadrao = f => f === 'a3' ? (window.matchMedia('(max-width: 900px)').matches ? 0.35 : 0.5) : 1;
+  // Zoom padrão: A3 50% (35% no celular) e A5 100%, mas nunca maior que a parte visível da mesa
+  // (no celular e em janelas médias o cartaz passava da tela e ficava atrás do inspetor)
+  const estreita = () => window.matchMedia('(max-width: 900px)').matches;
+  const zoomPadrao = f => {
+    const base = f === 'a3' ? (estreita() ? 0.35 : 0.5) : 1;
+    const cs = getComputedStyle(area);
+    const painel = document.querySelector('.painel-pro');
+    const lateral = !estreita() && painel && document.body.classList.contains('editor-pro');
+    const direita = lateral ? painel.offsetWidth + 8 : parseFloat(cs.paddingRight) || 0;
+    const livre = area.clientWidth - (parseFloat(cs.paddingLeft) || 0) - direita;
+    if (!(livre > 0)) return base;
+    const larguraPx = f === 'a3' ? 297 / 25.4 * 96 : 558;
+    return Math.max(0.1, Math.min(base, Math.floor(livre / larguraPx * 100) / 100));
+  };
   EP.zoomAtual = () => { const f = formato(); return zoom[f] !== null ? zoom[f] : zoomPadrao(f); };
   function aplicarZoom() {
     const css = [];
-    if (zoom.a3 !== null) css.push(`body.editor-pro #preview-area .cartaz.a3 { zoom: ${zoom.a3} !important; }`);
-    if (zoom.a5 !== null) css.push(`body.editor-pro #preview-area .cartaz:not(.a3) { zoom: ${zoom.a5} !important; }`);
+    const z3 = zoom.a3 !== null ? zoom.a3 : zoomPadrao('a3');
+    const z5 = zoom.a5 !== null ? zoom.a5 : zoomPadrao('a5');
+    css.push(`body.editor-pro #preview-area .cartaz.a3 { zoom: ${z3} !important; }`);
+    css.push(`body.editor-pro #preview-area .cartaz:not(.a3) { zoom: ${z5} !important; }`);
     estiloZoom.textContent = css.length ? '@media screen { ' + css.join(' ') + ' }' : '';
     ui.estadoZoom(EP.zoomAtual(), regua, grade);
     agendar();
@@ -674,6 +703,8 @@
     const c = e.target.closest('.cartaz') || EP.cartazAlvo();
     EP.definirZoom(EP.zoomAtual() * Math.exp(-e.deltaY * 0.0018), { x: e.clientX, y: e.clientY, cartaz: c });
   }, { passive: false });
+  // na tela estreita o zoom padrão depende da largura (girar o celular, redimensionar a janela)
+  window.addEventListener('resize', () => { if (EP.ativo) aplicarZoom(); });
   // Trocar A3/A5 muda o zoom mostrado
   document.querySelectorAll('.segmento [data-formato]').forEach(b => b.addEventListener('click', () => setTimeout(aplicarZoom, 0)));
 
@@ -691,6 +722,14 @@
 
   /* ---------- Teclado ---------- */
   let esperaColar = null;
+  // Como o foco chegou ao controle atual: por clique (mouse/toque) ou pelo teclado/script.
+  // (:focus-visible não serve: o Chrome liga o anel de foco assim que qualquer tecla é apertada)
+  let ultimoPonteiro = { t: 0, alvo: null }, focoPorPonteiro = false;
+  document.addEventListener('pointerdown', e => { ultimoPonteiro = { t: performance.now(), alvo: e.target }; }, true);
+  document.addEventListener('focusin', e => {
+    const a = ultimoPonteiro.alvo;
+    focoPorPonteiro = !!a && performance.now() - ultimoPonteiro.t < 1500 && e.target.nodeType === 1 && (e.target === a || e.target.contains(a));
+  }, true);
   document.addEventListener('keydown', e => {
     if (!EP.ativo || e.defaultPrevented && e.key !== 'Escape') return;
     if (ui.dialogoAberto()) return;
@@ -699,6 +738,10 @@
     const emCampo = ae && !editandoTexto && (/INPUT|TEXTAREA|SELECT/.test(ae.tagName) || ae.isContentEditable);
     const ctrl = e.ctrlKey || e.metaKey, k = (e.key || '').toLowerCase(), code = e.code || '';
     if (emCampo) { if (e.key === 'Escape' && ae.closest('.painel-pro')) ae.blur(); return; }
+    // Botão (ou camada) com foco de TECLADO: Enter/Espaço acionam o próprio controle.
+    // Com foco deixado por um clique de mouse, Enter continua entrando na edição do texto selecionado.
+    if ((e.key === 'Enter' || e.key === ' ') && ae && ae !== document.body && !area.contains(ae) && !camada.contains(ae) &&
+        (ae.closest('.pro-pop, .pro-ctx, .pro-dialogo') || (ae.matches('button, summary, a[href], [role=tab], [tabindex]') && !focoPorPonteiro))) return;
     if (editandoTexto) {
       if (e.key === 'Escape') { e.preventDefault(); ae.blur(); window.getSelection().removeAllRanges(); return; }
       if (ctrl && !e.altKey && ['b', 'i', 'u'].includes(k)) { e.preventDefault(); EP.acao({ b: 'negrito', i: 'italico', u: 'sublinhado' }[k]); return; }
@@ -739,7 +782,9 @@
       if (k === 'c') return fazer('add-forma', 'circulo');
       if (k === 'l') return fazer('add-forma', 'linha');
     }
-    if (e.key === 'Tab' && !ctrl && !e.altKey && ae && (ae === document.body || area.contains(ae) || camada.contains(ae))) {
+    // Tab passa de elemento em elemento só quando há algo selecionado; sem seleção (Esc) o Tab
+    // segue a ordem normal da página e o teclado chega à faixa e ao inspetor.
+    if (e.key === 'Tab' && !ctrl && !e.altKey && EP.sel.length && ae && (ae === document.body || area.contains(ae) || camada.contains(ae))) {
       const c = EP.cartazAlvo(); if (!c) return;
       const els = EP.elementos(c).filter(x => !EP.oculto(x));
       if (!els.length) return;
@@ -795,6 +840,8 @@
         if (modelo && !c.dataset.branco) EP.aplicarLayout(c, modelo);
         c.dataset.pro = '1';
       });
+      // cartazes trocados por fora (Gerar, Limpar, abrir projeto): o cartaz ativo não pode ficar solto
+      if (!EP.cartazAtivo || !area.contains(EP.cartazAtivo)) EP.cartazAtivo = area.querySelector('.cartaz');
       if (EP.sel.some(x => !x.isConnected)) EP.selecionar(EP.sel.filter(x => x.isConnected), { sozinho: true });
       else EP.emitir('mudou');
     }
@@ -816,6 +863,18 @@
       if (y1 > folha.top - 12) window.scrollBy({ top: Math.min(y1 - folha.top + 24, y0 - topo - 12), behavior: 'smooth' });
       else if (y0 < topo + 8) window.scrollBy({ top: y0 - topo - 16, behavior: 'smooth' });
     });
+  });
+
+  /* ---------- Gerar e Limpar do cartaz.html com o editor ligado ---------- */
+  // Os dois trocam a mesa inteira: entram no histórico (Ctrl+Z traz de volta o trabalho)
+  document.addEventListener('click', e => {
+    if (EP.ativo && e.target.closest && e.target.closest('#generate, #clear') && EP.cartazes().length) EP.registrar();
+  }, true);
+  // Limpar desliga o modo editável do cartaz.html; com o editor ligado os próximos cartazes precisam nascer editáveis
+  document.addEventListener('click', e => {
+    if (!EP.ativo || !e.target.closest || !e.target.closest('#clear')) return;
+    if (typeof modoEditavel !== 'undefined') modoEditavel = true;
+    document.body.classList.add('modo-editavel');
   });
 
   /* ---------- Ligar / desligar ---------- */

@@ -62,7 +62,8 @@
     girar: '<path d="M15.5 9.5a5.5 5.5 0 1 1-1.8-4.1"/><path d="M15.5 3.5v3h-3"/>',
     estilo: '<path d="M4 3.5h10v4H4z"/><path d="M14 5.5h2v4.5h-6.5v2.5"/><rect x="8" y="12.5" width="3" height="5" rx=".8"/>',
     cartaz: '<rect x="4.5" y="2.5" width="11" height="15" rx="1"/><path d="M7 11h6M7 13.5h4"/>',
-    selecionar: '<rect x="3" y="3" width="14" height="14" rx="1" stroke-dasharray="2.5 2"/>'
+    selecionar: '<rect x="3" y="3" width="14" height="14" rx="1" stroke-dasharray="2.5 2"/>',
+    mais3: '<circle cx="4.5" cy="10" r="1.3" fill="currentColor"/><circle cx="10" cy="10" r="1.3" fill="currentColor"/><circle cx="15.5" cy="10" r="1.3" fill="currentColor"/>'
   };
   const svg = (n, cls) => `<svg viewBox="0 0 20 20" aria-hidden="true"${cls ? ` class="${cls}"` : ''}>${ICO[n] || ''}</svg>`;
   ui.svg = svg; ui.ICO = ICO;
@@ -77,15 +78,15 @@
   barra.setAttribute('aria-label', 'Ferramentas do editor');
   barra.innerHTML = `
     <div class="grupo" role="group" aria-label="Nova folha">
-      <button type="button" class="pro-btn" data-acao="nova-folha" title="Folha em branco, sem modelo pronto (Shift+N)">${svg('folha')}<span class="rotulo-btn">Folha em branco</span></button>
+      <button type="button" class="pro-btn" aria-label="Folha em branco" data-acao="nova-folha" title="Folha em branco, sem modelo pronto (Shift+N)">${svg('folha')}<span class="rotulo-btn">Folha em branco</span></button>
     </div>
     <span class="divisor" aria-hidden="true"></span>
     <div class="grupo" role="group" aria-label="Adicionar ao cartaz">
-      <button type="button" class="pro-btn" data-acao="add-texto" title="Adicionar texto (T)">${svg('texto')}<span class="rotulo-btn">Texto</span></button>
-      <button type="button" class="pro-btn" data-pop="formas" aria-haspopup="true" aria-expanded="false" title="Adicionar forma">${svg('formas')}<span class="rotulo-btn">Formas</span>${svg('seta', 'seta-menu')}</button>
-      <button type="button" class="pro-btn" data-pop="icones" aria-haspopup="true" aria-expanded="false" title="Adicionar ícone">${svg('icone')}<span class="rotulo-btn">Ícone</span>${svg('seta', 'seta-menu')}</button>
-      <button type="button" class="pro-btn" data-acao="add-imagem" title="Adicionar imagem do computador">${svg('imagem')}<span class="rotulo-btn">Imagem</span></button>
-      <button type="button" class="pro-btn" data-acao="add-faixa" title="Adicionar faixa">${svg('faixa')}<span class="rotulo-btn">Faixa</span></button>
+      <button type="button" class="pro-btn" aria-label="Texto" data-acao="add-texto" title="Adicionar texto (T)">${svg('texto')}<span class="rotulo-btn">Texto</span></button>
+      <button type="button" class="pro-btn" aria-label="Formas" data-pop="formas" aria-haspopup="true" aria-expanded="false" title="Adicionar forma">${svg('formas')}<span class="rotulo-btn">Formas</span>${svg('seta', 'seta-menu')}</button>
+      <button type="button" class="pro-btn" aria-label="Ícone" data-pop="icones" aria-haspopup="true" aria-expanded="false" title="Adicionar ícone">${svg('icone')}<span class="rotulo-btn">Ícone</span>${svg('seta', 'seta-menu')}</button>
+      <button type="button" class="pro-btn" aria-label="Imagem" data-acao="add-imagem" title="Adicionar imagem do computador">${svg('imagem')}<span class="rotulo-btn">Imagem</span></button>
+      <button type="button" class="pro-btn" aria-label="Faixa" data-acao="add-faixa" title="Adicionar faixa">${svg('faixa')}<span class="rotulo-btn">Faixa</span></button>
     </div>
     <span class="divisor" aria-hidden="true"></span>
     <div class="grupo" role="group" aria-label="Histórico">
@@ -103,11 +104,11 @@
       <button type="button" class="pro-btn so-icone" data-acao="grade" aria-pressed="false" title="Grade de 10 mm (Shift+G)" aria-label="Grade">${svg('grade')}</button>
     </div>
     <span class="espaco-pro"></span>
-    <span id="pro-status" role="status" aria-live="polite"></span>
     <span class="selo-teste" title="Editor em teste: os cartazes saem iguais no PDF, mas a interface ainda pode mudar"><span>Em teste</span></span>
-    <button type="button" class="pro-btn" data-pop="arquivo" aria-haspopup="true" aria-expanded="false" title="Abrir e salvar projeto">${svg('arquivo')}<span class="rotulo-btn">Arquivo</span>${svg('seta', 'seta-menu')}</button>
-    <button type="button" class="pro-btn" data-pop="layout" aria-haspopup="true" aria-expanded="false" title="Layout dos cartazes">${svg('layout')}<span class="rotulo-btn">Layout</span>${svg('seta', 'seta-menu')}</button>
-    <button type="button" class="pro-btn so-icone" data-acao="atalhos" title="Atalhos do teclado (?)" aria-label="Atalhos do teclado">${svg('ajuda')}</button>`;
+    <button type="button" class="pro-btn" aria-label="Arquivo" data-pop="arquivo" aria-haspopup="true" aria-expanded="false" title="Abrir e salvar projeto">${svg('arquivo')}<span class="rotulo-btn">Arquivo</span>${svg('seta', 'seta-menu')}</button>
+    <button type="button" class="pro-btn" aria-label="Layout" data-pop="layout" aria-haspopup="true" aria-expanded="false" title="Layout dos cartazes">${svg('layout')}<span class="rotulo-btn">Layout</span>${svg('seta', 'seta-menu')}</button>
+    <button type="button" class="pro-btn so-icone" data-acao="atalhos" title="Atalhos do teclado (?)" aria-label="Atalhos do teclado">${svg('ajuda')}</button>
+    <button type="button" class="pro-btn so-icone" data-pop="mais" aria-haspopup="true" aria-expanded="false" title="Mais: zoom, régua, grade, arquivo, layout e atalhos" aria-label="Mais opções">${svg('mais3')}</button>`;
   document.querySelector('.barra').after(barra);
 
   /* ---------- Inspetor ---------- */
@@ -299,13 +300,49 @@
   if (window.ResizeObserver) new ResizeObserver(medirTopo).observe(barraPrincipal);
   else window.addEventListener('resize', medirTopo);
 
-  /* ---------- Aviso ---------- */
+  /* ---------- Aviso (flutua sobre a mesa: não ocupa lugar na faixa) ---------- */
+  const aviso = document.createElement('div');
+  aviso.id = 'pro-status';
+  aviso.className = 'pro-aviso';
+  aviso.setAttribute('role', 'status');
+  aviso.setAttribute('aria-live', 'polite');
+  document.body.appendChild(aviso);
   let tempoStatus = null;
+  function posicionarAviso() {
+    const b = barra.getBoundingClientRect();
+    const p = painel.getBoundingClientRect();
+    const lateral = window.innerWidth > 900 && getComputedStyle(painel).display !== 'none';
+    const dir = lateral ? p.left : b.right;
+    aviso.style.left = Math.round((Math.max(b.left, 0) + Math.min(dir, window.innerWidth)) / 2) + 'px';
+    aviso.style.top = Math.round(Math.max(b.bottom, 0) + 12) + 'px';
+  }
   ui.avisar = msg => {
-    $('pro-status').textContent = msg;
+    aviso.textContent = msg;
+    posicionarAviso();
     clearTimeout(tempoStatus);
-    tempoStatus = setTimeout(() => { $('pro-status').textContent = ''; }, 2400);
+    tempoStatus = setTimeout(() => { aviso.textContent = ''; }, 2400);
   };
+
+  /* ---------- Faixa que cabe na tela ---------- */
+  // Em vez de cortar o que passa da borda, a faixa vai se compactando por níveis até caber:
+  // c1 some −/+ do zoom · c2 some o rótulo de Imagem, Faixa, Arquivo e Layout · c3 o de Folha em branco ·
+  // c4 some todo rótulo (fica o ícone, com title e aria-label) · c5 o selo "Em teste" vira só o ponto ·
+  // c6 somem as setinhas dos menus · c7 régua, grade, selo, Arquivo, Layout e atalhos vão para o menu "Mais" ·
+  // c8 o zoom também · c9 Folha em branco e Faixa também (celular de 360 px).
+  // Se nem assim couber (tela muito estreita), a faixa rola de lado.
+  const NIVEIS_BARRA = 9;
+  ui.ajustarBarra = () => {
+    if (!barra.clientWidth) return; // editor desligado (faixa escondida)
+    for (let n = 1; n <= NIVEIS_BARRA; n++) barra.classList.remove('c' + n);
+    let n = 0;
+    while (barra.scrollWidth > barra.clientWidth + 1 && n < NIVEIS_BARRA) barra.classList.add('c' + (++n));
+    barra.dataset.nivel = n;
+    if (popAncora && !popAncora.offsetParent) ui.fecharPop();
+  };
+  if (window.ResizeObserver) new ResizeObserver(() => ui.ajustarBarra()).observe(barra);
+  window.addEventListener('resize', () => ui.ajustarBarra());
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => ui.ajustarBarra());
+  if (document.fonts && document.fonts.addEventListener) document.fonts.addEventListener('loadingdone', () => ui.ajustarBarra());
 
   /* ---------- Popover genérico ---------- */
   let popAncora = null, popFechar = null;
@@ -385,6 +422,30 @@
       p.innerHTML = itemMenu('aplicar-todos', 'aplicar', 'Aplicar em todos', 'Copia o layout deste cartaz para os outros') + '<hr>' +
         itemMenu('salvar-modelo', 'salvar', 'Salvar modelo', 'Os próximos cartazes já saem com este layout') +
         itemMenu('esquecer-modelo', 'apagar', 'Esquecer modelo', 'Volta ao layout padrão nos próximos', { perigo: true });
+    },
+    // Tela estreita: o que saiu da faixa fica aqui (nada some de vez)
+    mais: p => {
+      const z = EP.zoomAtual ? Math.round(EP.zoomAtual() * 100) : 100;
+      const marcado = (acao, ic, rot, kbd, on) => `<button type="button" class="pro-item" role="menuitemcheckbox" aria-checked="${on}" data-acao="${acao}">${svg(ic)}<span>${rot}</span><kbd>${kbd}</kbd></button>`;
+      const regua = barra.querySelector('[data-acao=regua]').getAttribute('aria-pressed') === 'true';
+      const grade = barra.querySelector('[data-acao=grade]').getAttribute('aria-pressed') === 'true';
+      const fora = acao => !barra.querySelector(`[data-acao=${acao}]`).offsetParent;
+      const inserir = (fora('nova-folha') ? itemMenu('nova-folha', 'folha', 'Folha em branco', '', { kbd: 'Shift+N' }) : '') +
+        (fora('add-faixa') ? itemMenu('add-faixa', 'faixa', 'Adicionar faixa', '') : '');
+      p.innerHTML = (inserir ? inserir + '<hr>' : '') + `<h4>Zoom: ${z}%</h4>` +
+        itemMenu('zoom-ajustar', '', 'Ajustar à tela', '', { kbd: 'Shift+1' }) +
+        itemMenu('zoom-mais', 'mais', 'Aumentar zoom', '', { kbd: K + '+=' }) +
+        itemMenu('zoom-menos', 'menos', 'Diminuir zoom', '', { kbd: K + '+−' }) +
+        marcado('regua', 'regua', 'Régua', 'Shift+R', regua) + marcado('grade', 'grade', 'Grade', 'Shift+G', grade) + '<hr>' +
+        '<h4>Arquivo</h4>' +
+        itemMenu('abrir-projeto', 'abrir', 'Abrir projeto…', '', { kbd: K + '+O' }) +
+        itemMenu('salvar-projeto', 'salvar', 'Salvar projeto', '', { kbd: K + '+S' }) + '<hr>' +
+        '<h4>Layout</h4>' +
+        itemMenu('aplicar-todos', 'aplicar', 'Aplicar em todos', '') +
+        itemMenu('salvar-modelo', 'salvar', 'Salvar modelo', '') +
+        itemMenu('esquecer-modelo', 'apagar', 'Esquecer modelo', '', { perigo: true }) + '<hr>' +
+        itemMenu('atalhos', 'ajuda', 'Atalhos do teclado', '', { kbd: '?' }) +
+        '<p class="pro-nota-teste">Editor em teste: os cartazes saem iguais no PDF, mas a interface ainda pode mudar.</p>';
     }
   };
   pop.addEventListener('click', e => {
@@ -398,7 +459,8 @@
     const b = e.target.closest('button');
     if (!b) return;
     if (b.dataset.pop) { ui.abrirPop(b, b.dataset.pop, POPS[b.dataset.pop]); return; }
-    if (b.dataset.acao) { EP.acao(b.dataset.acao); if (/^add-/.test(b.dataset.acao)) b.blur(); }
+    // depois de criar algo o teclado volta para a mesa (senão Espaço/Enter repetiriam o botão, ex.: outra folha em branco)
+    if (b.dataset.acao) { EP.acao(b.dataset.acao); if (/^(add-|nova-folha$)/.test(b.dataset.acao)) b.blur(); }
   });
 
   /* ---------- Painel de cores ---------- */
@@ -999,7 +1061,7 @@
     const grupos = [...new Set(els.map(e => e.dataset.grupo).filter(Boolean))];
     lista.innerHTML = els.map(el => {
       const g = el.dataset.grupo, trav = EP.travado(el), oc = EP.oculto(el);
-      return `<li draggable="true" data-uid="${el.dataset.uid}" aria-selected="${EP.sel.includes(el)}" class="${oc ? 'oculto' : ''}${g ? ' em-grupo' : ''}"${g ? ` style="--grupo-cor:${coresGrupo[grupos.indexOf(g) % coresGrupo.length]}"` : ''}>
+      return `<li draggable="true" tabindex="0" data-uid="${el.dataset.uid}" aria-selected="${EP.sel.includes(el)}" class="${oc ? 'oculto' : ''}${g ? ' em-grupo' : ''}"${g ? ` style="--grupo-cor:${coresGrupo[grupos.indexOf(g) % coresGrupo.length]}"` : ''}>
         <span class="tipo">${svg(ICO_TIPO[EP.tipo(el)])}</span>
         <span class="nome" title="Clique duas vezes para renomear">${esc(EP.nome(el))}</span>
         <button type="button" class="pro-btn${trav ? ' ligado' : ''}" data-camada="travar" aria-pressed="${trav}" title="${trav ? 'Destravar' : 'Travar'}" aria-label="${trav ? 'Destravar' : 'Travar'} ${esc(EP.nome(el))}">${svg(trav ? 'cadeado' : 'cadeadoAberto')}</button>
@@ -1019,16 +1081,42 @@
       if (b.dataset.camada === 'travar') EP.travar([el], !EP.travado(el));
       else el.classList.toggle('oculto');
       EP.emitir('mudou');
+      if (e.detail) b.blur();
       return;
     }
     if (e.shiftKey || e.ctrlKey || e.metaKey) {
       const l = EP.sel.includes(el) ? EP.sel.filter(x => x !== el) : EP.sel.concat(el);
       EP.selecionar(l, { sozinho: true });
     } else EP.selecionar([el], { sozinho: true });
+    // clique de mouse devolve o teclado para a mesa (setas movem o elemento, como antes)
+    if (e.detail && document.activeElement && $('pro-camadas').contains(document.activeElement)) document.activeElement.blur();
   });
   $('pro-camadas').addEventListener('dblclick', e => {
-    const nome = e.target.closest('.nome'); if (!nome) return;
+    const nome = e.target.closest('.nome'); if (nome) renomear(nome);
+  });
+  // Teclado na lista: Enter/Espaço seleciona, setas andam na lista (não movem o elemento), F2 renomeia
+  $('pro-camadas').addEventListener('keydown', e => {
+    const li = e.target.closest('li[data-uid]');
+    if (!li || e.target !== li) return;
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault(); e.stopPropagation();
+      const el = porUid(li.dataset.uid); if (!el) return;
+      if (e.shiftKey || e.ctrlKey || e.metaKey) EP.selecionar(EP.sel.includes(el) ? EP.sel.filter(x => x !== el) : EP.sel.concat(el), { sozinho: true });
+      else EP.selecionar([el], { sozinho: true });
+      const vivo = $('pro-camadas').querySelector(`li[data-uid="${li.dataset.uid}"]`); if (vivo) vivo.focus();
+    } else if (e.key === 'ArrowDown' || e.key === 'ArrowUp' || e.key === 'Home' || e.key === 'End') {
+      e.preventDefault(); e.stopPropagation();
+      const itens = [...$('pro-camadas').querySelectorAll('li[data-uid]')], i = itens.indexOf(li);
+      const j = e.key === 'Home' ? 0 : e.key === 'End' ? itens.length - 1 : Math.min(itens.length - 1, Math.max(0, i + (e.key === 'ArrowDown' ? 1 : -1)));
+      itens[j].focus();
+    } else if (e.key === 'F2') {
+      e.preventDefault(); e.stopPropagation();
+      renomear(li.querySelector('.nome'));
+    }
+  });
+  function renomear(nome) {
     const li = nome.closest('li'), el = porUid(li.dataset.uid); if (!el) return;
+    const uid = li.dataset.uid, teclado = li === document.activeElement;
     nome.innerHTML = `<input type="text" value="${esc(EP.nome(el))}" aria-label="Nome da camada">`;
     const i = nome.querySelector('input');
     i.focus(); i.select();
@@ -1039,10 +1127,11 @@
       nome.innerHTML = ''; lista_assin_reset();
       if (salvar && v !== EP.nome(el)) { EP.registrar(); if (v && v !== EP.nomePadrao(el)) el.dataset.nome = v; else delete el.dataset.nome; }
       desenharCamadas(); sincronizar();
+      if (teclado) { const vivo = $('pro-camadas').querySelector(`li[data-uid="${uid}"]`); if (vivo) vivo.focus(); }
     };
-    i.addEventListener('keydown', ev => { ev.stopPropagation(); if (ev.key === 'Enter') fim(true); if (ev.key === 'Escape') fim(false); });
+    i.addEventListener('keydown', ev => { ev.stopPropagation(); if (ev.key === 'Enter') { ev.preventDefault(); fim(true); } if (ev.key === 'Escape') { ev.preventDefault(); fim(false); } });
     i.addEventListener('blur', () => fim(true));
-  });
+  }
   // Arrastar na lista reordena
   let arrastandoUid = null;
   $('pro-camadas').addEventListener('dragstart', e => {
@@ -1119,14 +1208,14 @@
   /* ---------- Atalhos ---------- */
   // "Ctrl+Shift+]" vira teclas; palavras de mouse (clique, arrastar...) ficam como texto
   const NAO_TECLA = /^(clique|cliques|2 cliques|arrastar|girar|roda)$/;
-  const kb = s => s.split(/( \/ | ou )/).map(parte => {
-    if (/^ (\/|ou) $/.test(parte)) return `<span> ${parte.trim()} </span>`;
+  const kb = s => s.split(/( \/ | ou | e )/).map(parte => {
+    if (/^ (\/|ou|e) $/.test(parte)) return `<span> ${parte.trim()} </span>`;
     return parte.split('+').map(k => NAO_TECLA.test(k) ? `<span>${k}</span>` : `<kbd>${k}</kbd>`).join(' ');
   }).join('');
   const GRUPOS_ATALHOS = [
-    ['Selecionar e mover', [['Selecionar vários', 'Shift+clique'], ['Selecionar tudo', K + '+A'], ['Próximo elemento', 'Tab'], ['Tirar seleção', 'Esc'], ['Mover 1 mm', 'Setas'], ['Mover 10 mm', 'Shift+Setas'], ['Duplicar arrastando', 'Alt+arrastar'], ['Arrastar sem encaixe', K + '+arrastar'], ['Girar de 15 em 15°', 'Shift+girar']]],
+    ['Selecionar e mover', [['Selecionar vários', 'Shift+clique'], ['Selecionar tudo', K + '+A'], ['Próximo elemento (com algo selecionado)', 'Tab'], ['Tirar seleção', 'Esc'], ['Ir para a faixa e o inspetor', 'Esc e Tab'], ['Mover 1 mm', 'Setas'], ['Mover 10 mm', 'Shift+Setas'], ['Duplicar arrastando', 'Alt+arrastar'], ['Arrastar sem encaixe', K + '+arrastar'], ['Girar de 15 em 15°', 'Shift+girar']]],
     ['Editar', [['Folha em branco', 'Shift+N'], ['Desfazer', K + '+Z'], ['Refazer', K + '+Y'], ['Copiar', K + '+C'], ['Colar', K + '+V'], ['Recortar', K + '+X'], ['Duplicar', K + '+D'], ['Excluir', 'Delete'], ['Copiar estilo', K + '+Alt+C'], ['Colar estilo', K + '+Alt+V']]],
-    ['Camadas', [['Trazer para frente', K + '+]'], ['Enviar para trás', K + '+['], ['Trazer para o topo', K + '+Shift+]'], ['Enviar para o fundo', K + '+Shift+['], ['Agrupar', K + '+G'], ['Desagrupar', K + '+Shift+G'], ['Travar / destravar', 'Alt+Shift+L']]],
+    ['Camadas', [['Trazer para frente', K + '+]'], ['Enviar para trás', K + '+['], ['Trazer para o topo', K + '+Shift+]'], ['Enviar para o fundo', K + '+Shift+['], ['Renomear camada (na lista)', 'F2'], ['Agrupar', K + '+G'], ['Desagrupar', K + '+Shift+G'], ['Travar / destravar', 'Alt+Shift+L']]],
     ['Texto', [['Editar texto', 'Enter ou 2 cliques'], ['Nova linha', 'Shift+Enter'], ['Negrito', K + '+B'], ['Itálico', K + '+I'], ['Sublinhado', K + '+U'], ['Maiúsculas', K + '+Shift+K'], ['Alinhar à esquerda', K + '+Shift+L'], ['Centralizar texto', K + '+Shift+E'], ['Alinhar à direita', K + '+Shift+R']]],
     ['Inserir', [['Texto', 'T'], ['Retângulo', 'R'], ['Círculo', 'C'], ['Linha', 'L']]],
     ['Ver e arquivo', [['Aumentar / diminuir zoom', K + '+= / ' + K + '+−'], ['Zoom com a roda', K + '+roda'], ['Ajustar à tela', 'Shift+1'], ['Tamanho real', 'Shift+0'], ['Régua', 'Shift+R'], ['Grade', 'Shift+G'], ['Salvar projeto', K + '+S'], ['Abrir projeto', K + '+O'], ['Esta lista', '?']]]
@@ -1152,6 +1241,7 @@
     $('pro-zoom-valor').textContent = Math.round(z * 100) + '%';
     barra.querySelector('[data-acao=regua]').setAttribute('aria-pressed', String(regua));
     barra.querySelector('[data-acao=grade]').setAttribute('aria-pressed', String(grade));
+    ui.ajustarBarra();
   };
   estadoBarra();
 })();

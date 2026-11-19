@@ -308,6 +308,8 @@
   };
 
   /* ---------- Histórico ---------- */
+  // Cada passo guarda a mesa, a seleção e o cartaz em que se trabalhava NAQUELE momento:
+  // desfazer/refazer devolvem os três juntos (o inspetor e as próximas inserções seguem o cartaz certo).
   const hist = EP.hist = { desfazer: [], refazer: [] };
   EP.fotografia = () => {
     const c = area.cloneNode(true);
@@ -315,22 +317,35 @@
     c.querySelectorAll('.editando-texto').forEach(e => e.classList.remove('editando-texto'));
     return c.innerHTML;
   };
+  EP.estado = html => ({
+    html: html === undefined ? EP.fotografia() : html,
+    sel: EP.sel.map(e => e.dataset.uid).filter(Boolean),
+    ativo: EP.cartazes().indexOf(EP.cartazAlvo())
+  });
   EP.registrar = foto => {
-    const f = foto || EP.fotografia();
-    if (hist.desfazer[hist.desfazer.length - 1] !== f) { hist.desfazer.push(f); if (hist.desfazer.length > 80) hist.desfazer.shift(); }
+    const f = !foto ? EP.estado() : typeof foto === 'string' ? EP.estado(foto) : foto;
+    const topo = hist.desfazer[hist.desfazer.length - 1];
+    if (!topo || topo.html !== f.html) { hist.desfazer.push(f); if (hist.desfazer.length > 80) hist.desfazer.shift(); }
     hist.refazer.length = 0;
     EP.emitir('historico');
   };
   EP.restaurar = (de, para) => {
     if (!de.length) return false;
-    const uids = EP.sel.map(e => e.dataset.uid);
-    const idxCartaz = EP.cartazes().indexOf(EP.cartazAtivo);
-    para.push(EP.fotografia());
+    para.push(EP.estado());
+    const alvo = de.pop();
     if (document.activeElement && area.contains(document.activeElement)) document.activeElement.blur();
-    area.innerHTML = de.pop();
+    area.innerHTML = alvo.html;
     if (typeof ajustarNomes === 'function') ajustarNomes();
-    EP.cartazAtivo = EP.cartazes()[idxCartaz] || EP.cartazes()[0] || null;
-    EP.selecionar(uids.map(u => area.querySelector(`.ed[data-uid="${u}"]`)).filter(Boolean), { sozinho: true });
+    const cartazes = EP.cartazes();
+    EP.cartazAtivo = cartazes[Math.min(Math.max(alvo.ativo, 0), cartazes.length - 1)] || null;
+    EP.selecionar(alvo.sel.map(u => area.querySelector(`.ed[data-uid="${u}"]`)).filter(Boolean), { sozinho: true });
+    // se o que voltou está fora da vista (outro cartaz), rola até ele
+    const foco = EP.cartazAlvo();
+    if (foco) {
+      const r = foco.getBoundingClientRect(), barra = document.querySelector('.barra-pro');
+      const topo = barra ? barra.getBoundingClientRect().bottom : 0;
+      if (r.bottom < topo + 40 || r.top > window.innerHeight - 40) window.scrollBy(0, r.top - topo - 20);
+    }
     EP.emitir('historico');
     return true;
   };
@@ -600,6 +615,10 @@
       if (el) delete el.dataset.uid; // ganha id próprio neste cartaz
     });
     EP.preparar(cartaz);
+    // O estilo copiado traz o tamanho que o cartaz.html calculou para o nome DAQUELE produto:
+    // recalcula para o nome deste (senão nome comprido sai cortado e nome curto sai miúdo)
+    const nome = cartaz.querySelector('.produto-nome');
+    if (nome && typeof ajustarNome === 'function') ajustarNome(nome);
   };
   EP.lerModelo = () => { try { return JSON.parse(localStorage.getItem(CHAVE_MODELO) || 'null'); } catch (e) { return null; } };
 
@@ -668,7 +687,8 @@
     EP.registrar();
     if (typeof modoEditavel !== 'undefined' && !modoEditavel) document.getElementById('modelo').click();
     area.innerHTML = '';
-    cartazes.forEach(c => area.appendChild(c));
+    // já vêm prontos do projeto: o modelo salvo não deve ser aplicado por cima
+    cartazes.forEach(c => { c.dataset.pro = '1'; area.appendChild(c); });
     const f = dados.formato === 'a5' ? 'a5' : 'a3';
     const botao = document.querySelector(`.segmento [data-formato="${f}"]`);
     if (botao) botao.click();

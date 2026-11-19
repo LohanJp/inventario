@@ -9,7 +9,7 @@
    Posições ficam em fração do cartaz (cqw/cqh), então valem igual em A3 e A5. */
 (function () {
   if (window.EditorPro) return;
-  const VERSAO = '2';
+  const VERSAO = '3';
   const atual = document.currentScript && document.currentScript.src;
   const base = atual ? new URL('editor-pro/', atual).href : 'editor-pro/';
   let ativo = false, pronto = false, falhou = false, pendente = null;
