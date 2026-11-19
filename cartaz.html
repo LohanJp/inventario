@@ -824,7 +824,7 @@
       if (window.EditorPro) { alternar(); return; }
       btnTeste.disabled = true;
       const sc = document.createElement('script');
-      sc.src = 'cartaz-editor-pro.js?v=1';
+      sc.src = 'cartaz-editor-pro.js?v=2';
       sc.onload = () => { btnTeste.disabled = false; alternar(); };
       sc.onerror = () => { btnTeste.disabled = false; alert('Não consegui carregar a versão de teste. Verifique a internet e recarregue a página.'); };
       document.body.appendChild(sc);
