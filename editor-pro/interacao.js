@@ -45,12 +45,13 @@
   }
   function desenhar() {
     lSel.innerHTML = ''; lItens.innerHTML = ''; lAtivo.innerHTML = ''; lRegua.innerHTML = ''; lGrade.innerHTML = '';
+    EP.emitir('desenho'); // cabeçalho dos cartazes (paginas.js)
     if (!EP.ativo) return;
     const vivos = EP.sel.filter(e => e.isConnected);
     if (vivos.length !== EP.sel.length) { EP.selecionar(vivos, { sozinho: true }); return; }
-    const cartazes = EP.cartazes();
+    const cartazes = EP.visiveis(); // ocultos (olho) não ganham régua, grade nem contorno de ativo
     // Cartaz ativo (quando há mais de um e nada selecionado)
-    if (!vivos.length && EP.cartazAtivo && EP.cartazAtivo.isConnected && cartazes.length > 1) {
+    if (!vivos.length && EP.cartazAtivo && EP.cartazAtivo.isConnected && !EP.cartazOculto(EP.cartazAtivo) && cartazes.length > 1) {
       const q = quadro(EP.cartazAtivo);
       const d = document.createElement('div'); d.className = 'pro-cartaz-ativo';
       d.style.cssText = `left:${q.x}px;top:${q.y}px;width:${q.W * q.k}px;height:${q.H * q.k}px`;
@@ -79,7 +80,8 @@
     }
     if (trav || arrasto) return;
     const pw = quadroSel.w * q.k, ph = quadroSel.h * q.k;
-    const lados = um && EP.tipo(vivos[0]) === 'forma';
+    // formas e a moldura das caixas de preço esticam pelos lados
+    const lados = um && (EP.tipo(vivos[0]) === 'forma' || EP.ehMoldura(vivos[0]));
     const alcas = ['nw', 'ne', 'se', 'sw'];
     if (lados) {
       if (vivos[0].dataset.forma === 'linha') alcas.push('e', 'w');
@@ -275,6 +277,7 @@
   area.addEventListener('pointerdown', e => {
     if (!EP.ativo || e.button !== 0) return;
     if (!e.target.closest('.cartaz') && !e.target.closest('#preview-area')) return;
+    if (e.target.closest('.pro-ocultos, .cartaz-oculto')) return; // barra "Ocultos" e cartazes ocultos não são mesa de trabalho
     pressionar(e, e.target.closest('.ed'), e.target.closest('.cartaz'));
   });
   // A mesa fora dos cartazes também começa o laço
@@ -296,6 +299,18 @@
     if (!EP.ativo) return;
     if (suprimirClique) { e.stopPropagation(); e.preventDefault(); suprimirClique = false; }
   }, true);
+  // Clique duplo num texto entra direto na edição, mesmo dentro de um grupo (ex.: o valor de uma caixa
+  // de preço): o 1º clique pega o grupo, o 2º só o texto, e o duplo clique já abre o texto para digitar.
+  document.addEventListener('dblclick', e => {
+    if (!EP.ativo || e.button !== 0 || !e.target.closest) return;
+    // o 2º clique pode cair na caixa de seleção do grupo (camada de interface): pega o elemento embaixo
+    const ed = area.contains(e.target) ? e.target.closest('.ed') : camada.contains(e.target) ? elementoEmbaixo(e.clientX, e.clientY) : null;
+    if (!ed || EP.travado(ed) || EP.sel.length !== 1 || EP.sel[0] !== ed) return;
+    const t = ed.getAttribute('contenteditable') === 'true' ? ed : ed.querySelector('[contenteditable="true"]');
+    if (!t || document.activeElement === t) return;
+    t.focus();
+    t.dispatchEvent(new MouseEvent('mouseup', { bubbles: true })); // o cartaz.html seleciona o texto todo
+  });
 
   // Alças e caixa de seleção múltipla
   camada.addEventListener('pointerdown', e => {
@@ -427,7 +442,7 @@
     lLaco.innerHTML = `<div class="pro-laco" style="left:${x0 + scrollX}px;top:${y0 + scrollY}px;width:${x1 - x0}px;height:${y1 - y0}px"></div>`;
     let cartaz = a.cartaz;
     if (!cartaz) {
-      cartaz = EP.cartazes().find(c => { const r = c.getBoundingClientRect(); return r.left < x1 && r.right > x0 && r.top < y1 && r.bottom > y0; });
+      cartaz = EP.visiveis().find(c => { const r = c.getBoundingClientRect(); return r.left < x1 && r.right > x0 && r.top < y1 && r.bottom > y0; });
       if (!cartaz) return;
     }
     const q = quadro(cartaz), rx0 = (x0 - q.r.left) / q.k, rx1 = (x1 - q.r.left) / q.k, ry0 = (y0 - q.r.top) / q.k, ry1 = (y1 - q.r.top) / q.k;
@@ -560,7 +575,7 @@
     if (!dados) { dados = clip; if (!dados) { try { dados = JSON.parse(localStorage.getItem(CHAVE_CLIP) || 'null'); } catch (e) {} } }
     if (!dados || !Array.isArray(dados.itens) || !dados.itens.length) { ui.avisar('Nada para colar'); return; }
     const cartaz = EP.cartazAlvo();
-    if (!cartaz) { alert('Gere ou crie um cartaz primeiro.'); return; }
+    if (!cartaz) { EP.avisoSemCartaz(); return; }
     EP.registrar();
     const tmp = document.createElement('div');
     tmp.innerHTML = dados.itens.join('');
@@ -689,11 +704,11 @@
     const direita = !estreito && painel ? painel.getBoundingClientRect().left : window.innerWidth;
     const esquerda = area.getBoundingClientRect().left;
     const folga = regua ? 72 : 48;
-    const z = Math.min((direita - esquerda - folga) / W, (window.innerHeight - barraPro.bottom - folga) / H);
+    const z = Math.min((direita - esquerda - folga) / W, (window.innerHeight - barraPro.bottom - folga - 34) / H);
     EP.definirZoom(z);
     requestAnimationFrame(() => {
       const r = c.getBoundingClientRect();
-      window.scrollBy(0, r.top - barraPro.bottom - (regua ? 36 : 20));
+      window.scrollBy(0, r.top - barraPro.bottom - (regua ? 36 : 20) - 34); // 34: cabeçalho "Cartaz N" acima do cartaz
     });
   };
   window.addEventListener('wheel', e => {
@@ -781,6 +796,7 @@
       if (k === 'r') return fazer('add-forma', 'retangulo');
       if (k === 'c') return fazer('add-forma', 'circulo');
       if (k === 'l') return fazer('add-forma', 'linha');
+      if (k === 'p') return fazer('pecas');
     }
     // Tab passa de elemento em elemento só quando há algo selecionado; sem seleção (Esc) o Tab
     // segue a ordem normal da página e o teclado chega à faixa e ao inspetor.
@@ -895,5 +911,6 @@
     EP.selecionar([]);
     document.body.classList.remove('editor-pro', 'pro-com-regua', 'pro-com-sel', 'pro-camadas-aberto');
     camada.querySelectorAll(':scope > div').forEach(d => { d.innerHTML = ''; });
+    EP.emitir('desenho');
   };
 })();

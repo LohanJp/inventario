@@ -8,6 +8,7 @@
   /* ---------- Ícones de interface (traço 20x20) ---------- */
   const ICO = {
     texto: '<path d="M4.5 5h11M10 5v11M7.5 16h5"/>',
+    pecas: '<rect x="2.5" y="5" width="15" height="10" rx="2.5"/><path d="M5.5 10h2.5M11 8v4M13.5 8v4"/>',
     formas: '<rect x="2.5" y="9" width="8" height="8" rx="1"/><circle cx="13.5" cy="6.5" r="4"/>',
     icone: '<path d="M11.5 2.5 4.5 11h5l-1 6.5 7-8.5h-5z"/>',
     imagem: '<rect x="2.5" y="3.5" width="15" height="13" rx="1.5"/><circle cx="7" cy="8" r="1.5"/><path d="m3 15 4.5-4.5 3 3 2-2 4.5 4"/>',
@@ -83,6 +84,7 @@
     <span class="divisor" aria-hidden="true"></span>
     <div class="grupo" role="group" aria-label="Adicionar ao cartaz">
       <button type="button" class="pro-btn" aria-label="Texto" data-acao="add-texto" title="Adicionar texto (T)">${svg('texto')}<span class="rotulo-btn">Texto</span></button>
+      <button type="button" class="pro-btn" aria-label="Peças do cartaz" data-pop="pecas" aria-haspopup="true" aria-expanded="false" title="Peças do cartaz: caixas de preço, nome, rodapé e moldura (P)">${svg('pecas')}<span class="rotulo-btn">Peças</span>${svg('seta', 'seta-menu')}</button>
       <button type="button" class="pro-btn" aria-label="Formas" data-pop="formas" aria-haspopup="true" aria-expanded="false" title="Adicionar forma">${svg('formas')}<span class="rotulo-btn">Formas</span>${svg('seta', 'seta-menu')}</button>
       <button type="button" class="pro-btn" aria-label="Ícone" data-pop="icones" aria-haspopup="true" aria-expanded="false" title="Adicionar ícone">${svg('icone')}<span class="rotulo-btn">Ícone</span>${svg('seta', 'seta-menu')}</button>
       <button type="button" class="pro-btn" aria-label="Imagem" data-acao="add-imagem" title="Adicionar imagem do computador">${svg('imagem')}<span class="rotulo-btn">Imagem</span></button>
@@ -200,7 +202,7 @@
 
       <details class="pro-secao" data-secao="forma" open><summary>Forma</summary><div class="pro-corpo-secao">
         <div class="pro-grade2">${corBtn('pi-preench', 'Cor')}${corBtn('pi-borda', 'Borda')}</div>
-        <div id="pi-borda-esp-linha">${deslize('pi-borda-esp', 'Espessura da borda', 0, 5, 0.1, '')}</div>
+        <div id="pi-borda-esp-linha">${deslize('pi-borda-esp', 'Espessura da borda', 0, 5, 0.05, '')}</div>
         <div id="pi-raio-linha">${deslize('pi-raio', 'Cantos arredondados', 0, 20, 0.5, '')}</div>
         <div id="pi-linha-esp-linha">${deslize('pi-linha-esp', 'Espessura da linha', 0.2, 6, 0.1, '')}</div>
       </div></details>
@@ -325,8 +327,9 @@
 
   /* ---------- Faixa que cabe na tela ---------- */
   // Em vez de cortar o que passa da borda, a faixa vai se compactando por níveis até caber:
-  // c1 some −/+ do zoom · c2 some o rótulo de Imagem, Faixa, Arquivo e Layout · c3 o de Folha em branco ·
-  // c4 some todo rótulo (fica o ícone, com title e aria-label) · c5 o selo "Em teste" vira só o ponto ·
+  // c1 some −/+ do zoom · c2 some o rótulo de Imagem, Faixa, Arquivo e Layout e o selo "Em teste" vira só o ponto ·
+  // c3 some o rótulo de Folha em branco · c4 some todo rótulo menos o de Peças (fica o ícone, com title e aria-label) ·
+  // c5 some o rótulo de Peças ·
   // c6 somem as setinhas dos menus · c7 régua, grade, selo, Arquivo, Layout e atalhos vão para o menu "Mais" ·
   // c8 o zoom também · c9 Folha em branco e Faixa também (celular de 360 px).
   // Se nem assim couber (tela muito estreita), a faixa rola de lado.
@@ -361,7 +364,11 @@
     if (mesma) return;
     pop.innerHTML = '';
     pop.className = 'pro-pop aberto' + (classe ? ' ' + classe : '');
-    popFechar = montar(pop) || null;
+    // cada abertura monta num recipiente novo: os ouvintes de clique da abertura anterior vão embora com ele
+    // (antes ficavam presos no popover e, na 2ª vez que o menu abria, um clique inseria 2 formas)
+    const corpo = document.createElement('div');
+    pop.appendChild(corpo);
+    popFechar = montar(corpo) || null;
     popAncora = ancora;
     if (ancora.hasAttribute('aria-expanded')) ancora.setAttribute('aria-expanded', 'true');
     posicionar(pop, ancora.getBoundingClientRect());
@@ -448,6 +455,7 @@
         '<p class="pro-nota-teste">Editor em teste: os cartazes saem iguais no PDF, mas a interface ainda pode mudar.</p>';
     }
   };
+  ui.POPS = POPS; // pecas.js acrescenta o menu "Peças"
   pop.addEventListener('click', e => {
     const b = e.target.closest('.pro-item[data-acao]');
     if (!b || b.disabled) return;
@@ -534,7 +542,9 @@
       case 'add-faixa': EP.criar('faixa'); break;
       case 'add-icone': EP.criar('icone', { icone: valor }); break;
       case 'add-forma': EP.criar('forma', { forma: valor || 'retangulo' }); break;
-      case 'add-imagem': if (!EP.cartazAlvo()) { alert('Gere ou crie um cartaz primeiro.'); break; } modoImagem = 'inserir'; inputImg.click(); break;
+      case 'add-peca': EP.criarPeca && EP.criarPeca(valor); break;
+      case 'pecas': { const b = barra.querySelector('[data-pop=pecas]'); if (b && b.offsetParent && POPS.pecas) ui.abrirPop(b, 'pecas', POPS.pecas); break; }
+      case 'add-imagem': if (!EP.cartazAlvo()) { EP.avisoSemCartaz(); break; } modoImagem = 'inserir'; inputImg.click(); break;
       case 'trocar-imagem': modoImagem = 'trocar'; inputImg.click(); break;
       case 'desfazer': EP.desfazer(); break;
       case 'refazer': EP.refazer(); break;
@@ -580,7 +590,7 @@
         EP.registrar(); EP.distribuir(acao.slice(-1)); EP.emitir('mudou'); break;
       case 'espelhar-h': mudar(e => { if (EP.podeEspelhar(e)) e.style.setProperty('--fh', EP.num(e, '--fh', 1) === -1 ? '1' : '-1'); }); break;
       case 'espelhar-v': mudar(e => { if (EP.podeEspelhar(e)) e.style.setProperty('--fv', EP.num(e, '--fv', 1) === -1 ? '1' : '-1'); }); break;
-      case 'zerar': mudar(e => ['--fx', '--fy', '--s', '--r', '--fh', '--fv'].forEach(v => e.style.removeProperty(v))); break;
+      case 'zerar': mudar(e => ['--fx', '--fy', '--s', '--r', '--fh', '--fv', '--mx', '--my'].forEach(v => e.style.removeProperty(v))); break;
       case 'selecionar-tudo': {
         const c = EP.cartazAlvo(); if (!c) break;
         EP.selecionar(EP.elementos(c).filter(e => !EP.travado(e) && !EP.oculto(e)), { sozinho: true }); break;
@@ -623,7 +633,7 @@
       case 'abrir-projeto': inputProj.click(); break;
       case 'aplicar-todos': {
         const base = EP.cartazAlvo();
-        if (!base) { alert('Gere ou crie um cartaz primeiro.'); break; }
+        if (!base) { EP.avisoSemCartaz(); break; }
         const outros = EP.cartazes().filter(c => c !== base);
         if (!outros.length) { ui.avisar('Só há um cartaz'); break; }
         EP.registrar();
@@ -636,7 +646,7 @@
       }
       case 'salvar-modelo': {
         const base = EP.cartazAlvo();
-        if (!base) { alert('Gere ou crie um cartaz primeiro.'); break; }
+        if (!base) { EP.avisoSemCartaz(); break; }
         try { localStorage.setItem(EP.CHAVE_MODELO, JSON.stringify(EP.extrairLayout(base))); ui.avisar('Modelo salvo'); }
         catch (err) { alert('Não consegui salvar o modelo (imagens grandes ocupam muito espaço): ' + err.message); }
         break;
@@ -764,8 +774,14 @@
   ligarDeslize('pi-letras', v => destravadosTexto().forEach(e => { EP.alvoTexto(e).style.letterSpacing = (v / 1000) + 'em'; }));
   ligarDeslize('pi-linhas', v => destravadosTexto().forEach(e => { EP.alvoTexto(e).style.lineHeight = String(v); }));
   ligarDeslize('pi-opacidade', v => destravados().forEach(e => { e.style.opacity = v >= 100 ? '' : (v / 100).toFixed(2); }));
-  ligarDeslize('pi-borda-esp', v => destravados().filter(e => EP.tipo(e) === 'forma').forEach(e => { e.dataset.esp = v; if (v > 0 && !e.dataset.borda) e.dataset.borda = '#222222'; EP.desenharForma(e); }));
-  ligarDeslize('pi-raio', v => destravados().filter(e => EP.tipo(e) === 'forma').forEach(e => { e.dataset.raio = v; EP.desenharForma(e); }));
+  ligarDeslize('pi-borda-esp', v => {
+    destravados().filter(e => EP.tipo(e) === 'forma').forEach(e => { e.dataset.esp = v; if (v > 0 && !e.dataset.borda) e.dataset.borda = '#222222'; EP.desenharForma(e); });
+    destravados().filter(EP.ehMoldura).forEach(e => EP.gravarMoldura(e, 'esp', v));
+  });
+  ligarDeslize('pi-raio', v => {
+    destravados().filter(e => EP.tipo(e) === 'forma').forEach(e => { e.dataset.raio = v; EP.desenharForma(e); });
+    destravados().filter(EP.ehMoldura).forEach(e => EP.gravarMoldura(e, 'raio', v));
+  });
   ligarDeslize('pi-linha-esp', v => destravados().filter(e => e.dataset.forma === 'linha').forEach(e => { const g = EP.geo(e); e.style.height = v + 'cqw'; EP.desenharForma(e); EP.definirCentro(e, g.cx, g.cy); }));
   ligarDeslize('pi-img-raio', v => destravados().filter(e => EP.tipo(e) === 'imagem').forEach(e => { e.querySelector('img').style.borderRadius = v ? v / 2 + '%' : ''; e.dataset.raio = v; }));
 
@@ -811,10 +827,15 @@
     c => destravadosTexto().forEach(e => { EP.alvoTexto(e).style.color = c; if (EP.infoPapel(e) && EP.infoPapel(e).papel === 'rodape') e.querySelectorAll('span').forEach(s => { s.style.color = ''; }); }));
   ligarCor('pi-faixa-cor', 'Cor da faixa', () => getComputedStyle(primeiro()).backgroundColor,
     c => destravados().filter(e => EP.tipo(e) === 'faixa').forEach(e => { e.style.background = ''; e.style.setProperty('--pro-bg', c || 'transparent'); }), true);
-  ligarCor('pi-preench', 'Preenchimento', () => primeiro().dataset.preench,
-    c => destravados().filter(e => EP.tipo(e) === 'forma').forEach(e => { e.dataset.preench = c; EP.desenharForma(e); }), true);
-  ligarCor('pi-borda', 'Cor da borda', () => primeiro().dataset.borda,
-    c => destravados().filter(e => EP.tipo(e) === 'forma').forEach(e => { if (c) { e.dataset.borda = c; if (!+e.dataset.esp) e.dataset.esp = '0.6'; } else delete e.dataset.borda; EP.desenharForma(e); }), true);
+  const leFormaCor = k => () => { const el = primeiro(); return EP.ehMoldura(el) ? EP.lerMoldura(el)[k] : el.dataset[k]; };
+  ligarCor('pi-preench', 'Preenchimento', leFormaCor('preench'), c => {
+    destravados().filter(e => EP.tipo(e) === 'forma').forEach(e => { e.dataset.preench = c; EP.desenharForma(e); });
+    destravados().filter(EP.ehMoldura).forEach(e => EP.gravarMoldura(e, 'preench', c));
+  }, true);
+  ligarCor('pi-borda', 'Cor da borda', leFormaCor('borda'), c => {
+    destravados().filter(e => EP.tipo(e) === 'forma').forEach(e => { if (c) { e.dataset.borda = c; if (!+e.dataset.esp) e.dataset.esp = '0.6'; } else delete e.dataset.borda; EP.desenharForma(e); });
+    destravados().filter(EP.ehMoldura).forEach(e => EP.gravarMoldura(e, 'borda', c));
+  }, true);
   ligarCor('pi-icone-cor', 'Cor do ícone', () => getComputedStyle(primeiro()).color,
     c => destravados().filter(e => EP.tipo(e) === 'icone').forEach(e => { e.style.color = c; const s = e.querySelector('svg'); if (s) s.style.color = c; }));
   $('pi-fundo').addEventListener('click', e => {
@@ -876,19 +897,25 @@
   const aoMudarNum = (id, fn) => $(id).addEventListener('change', e => {
     const v = parseFloat(String(e.target.value).replace(',', '.'));
     if (isNaN(v)) { sincronizar(); return; }
+    // valor igual ao que o inspetor já mostra, ou o mesmo que este campo acabou de aplicar sem nada ter mudado
+    // depois (Enter e em seguida sair do campo): nada a fazer, nem passo a mais no histórico
+    const d = e.target.dataset;
+    if (d.sinc !== undefined && parseFloat(d.sinc) === v) return;
+    if (d.aplicado !== undefined && +d.aplicado === v && d.sinc === d.sincDepois) return;
     const p = lerPos(); if (!p || !destravados().length) return;
     EP.registrar(); fn(v, p); EP.emitir('mudou');
+    d.aplicado = String(v); d.sincDepois = d.sinc;
   });
   aoMudarNum('pi-x', (v, p) => destravados().forEach(e => EP.mover(e, v / p.mm - p.u.x0, 0)));
   aoMudarNum('pi-y', (v, p) => destravados().forEach(e => EP.mover(e, 0, v / p.mm - p.u.y0)));
   aoMudarNum('pi-l', (v, p) => {
     const el = destravados()[0]; if (!el || v <= 0) return;
-    if (EP.tipo(el) === 'forma') { const g = EP.geo(el); EP.aplicarMedida(el, EP.medida(el), v / p.mm / g.w, 1); EP.definirCentro(el, g.cx, g.cy); }
+    if (EP.tipo(el) === 'forma' || EP.ehMoldura(el)) { const g = EP.geo(el); EP.aplicarMedida(el, EP.medida(el), v / p.mm / g.w, 1); EP.definirCentro(el, g.cx, g.cy); }
     else EP.escalar(el, v / p.mm / p.g.w);
   });
   aoMudarNum('pi-a', (v, p) => {
     const el = destravados()[0]; if (!el || v <= 0) return;
-    if (EP.tipo(el) === 'forma') { const g = EP.geo(el); EP.aplicarMedida(el, EP.medida(el), 1, v / p.mm / g.h); EP.definirCentro(el, g.cx, g.cy); }
+    if (EP.tipo(el) === 'forma' || EP.ehMoldura(el)) { const g = EP.geo(el); EP.aplicarMedida(el, EP.medida(el), 1, v / p.mm / g.h); EP.definirCentro(el, g.cx, g.cy); }
     else EP.escalar(el, v / p.mm / p.g.h);
   });
   aoMudarNum('pi-giro', v => destravados().forEach(e => { let r = ((v % 360) + 540) % 360 - 180; e.style.setProperty('--r', EP.fix(r)); }));
@@ -900,7 +927,7 @@
   const mostrar = (secao, sim) => { const d = painel.querySelector(`[data-secao="${secao}"]`); if (d) d.hidden = !sim; };
   const pintar = (id, cor) => { const i = $(id).querySelector('i'); const h = EP.paraHex(cor); i.className = h ? '' : 'sem'; i.style.background = h || ''; };
   const valor = (id, v) => { const r = $(id), n = $(id + '-n'); if (document.activeElement !== n) n.value = v; r.value = v; };
-  const numSet = (id, v) => { const n = $(id); if (document.activeElement !== n) n.value = v; };
+  const numSet = (id, v) => { const n = $(id); n.dataset.sinc = String(v); if (document.activeElement !== n) n.value = v; };
   const r1 = v => (Math.round(v * 10) / 10).toString();
 
   function sincronizar() {
@@ -933,10 +960,12 @@
     mostrar('texto', todosTexto);
     mostrar('efeitos', todosTexto);
     mostrar('faixa', tipos.size === 1 && tipos.has('faixa'));
-    mostrar('forma', tipos.size === 1 && tipos.has('forma'));
+    // a moldura das caixas de preço usa os mesmos controles de forma (cor, borda, espessura, cantos)
+    const molduras = l.every(EP.ehMoldura);
+    mostrar('forma', (tipos.size === 1 && tipos.has('forma')) || molduras);
     mostrar('icone', tipos.size === 1 && tipos.has('icone'));
     mostrar('imagem', um && tipos.has('imagem'));
-    const partes = um && EP.infoPapel(el) ? EP.infoPapel(el).partes : null;
+    const partes = um && EP.infoPapel(el) && (EP.infoPapel(el).partes || []).length ? EP.infoPapel(el).partes : null;
     mostrar('detalhes', !!partes);
     mostrar('posicao', true);
     mostrar('elemento', true);
@@ -984,9 +1013,17 @@
       $('pi-borda-esp-linha').hidden = linha;
       $('pi-raio-linha').hidden = el.dataset.forma !== 'retangulo';
       $('pi-linha-esp-linha').hidden = !linha;
-      valor('pi-borda-esp', +el.dataset.esp || 0);
-      valor('pi-raio', +el.dataset.raio || 0);
+      valor('pi-borda-esp', Math.round((+el.dataset.esp || 0) * 100) / 100);
+      valor('pi-raio', Math.round((+el.dataset.raio || 0) * 10) / 10);
       if (linha) valor('pi-linha-esp', Math.round(parseFloat(el.style.height) * 10) / 10);
+    }
+    if (molduras) {
+      const m = EP.lerMoldura(el);
+      pintar('pi-preench', m.preench); pintar('pi-borda', m.borda);
+      $('pi-borda').hidden = $('pi-borda-esp-linha').hidden = $('pi-raio-linha').hidden = false;
+      $('pi-linha-esp-linha').hidden = true;
+      valor('pi-borda-esp', Math.round(m.esp * 100) / 100);
+      valor('pi-raio', Math.round(m.raio * 10) / 10);
     }
     if (tipos.has('icone') && tipos.size === 1) {
       pintar('pi-icone-cor', getComputedStyle(el).color);
@@ -1062,7 +1099,7 @@
     lista.innerHTML = els.map(el => {
       const g = el.dataset.grupo, trav = EP.travado(el), oc = EP.oculto(el);
       return `<li draggable="true" tabindex="0" data-uid="${el.dataset.uid}" aria-selected="${EP.sel.includes(el)}" class="${oc ? 'oculto' : ''}${g ? ' em-grupo' : ''}"${g ? ` style="--grupo-cor:${coresGrupo[grupos.indexOf(g) % coresGrupo.length]}"` : ''}>
-        <span class="tipo">${svg(ICO_TIPO[EP.tipo(el)])}</span>
+        <span class="tipo">${svg(EP.ehMoldura(el) ? 'formas' : ICO_TIPO[EP.tipo(el)])}</span>
         <span class="nome" title="Clique duas vezes para renomear">${esc(EP.nome(el))}</span>
         <button type="button" class="pro-btn${trav ? ' ligado' : ''}" data-camada="travar" aria-pressed="${trav}" title="${trav ? 'Destravar' : 'Travar'}" aria-label="${trav ? 'Destravar' : 'Travar'} ${esc(EP.nome(el))}">${svg(trav ? 'cadeado' : 'cadeadoAberto')}</button>
         <button type="button" class="pro-btn${oc ? ' ligado' : ''}" data-camada="ocultar" aria-pressed="${oc}" title="${oc ? 'Mostrar' : 'Ocultar'}" aria-label="${oc ? 'Mostrar' : 'Ocultar'} ${esc(EP.nome(el))}">${svg(oc ? 'olhoFechado' : 'olho')}</button>
@@ -1184,7 +1221,7 @@
         it('alinhar-centro', 'alCentro', l.length > 1 ? 'Centralizar entre si' : 'Centralizar no cartaz', '', trav);
     } else {
       html += it('colar', 'colar', 'Colar', K + '+V', !EP.temClipboard || !EP.temClipboard()) + it('selecionar-tudo', 'selecionar', 'Selecionar tudo', K + '+A') + '<hr>' +
-        it('add-texto', 'texto', 'Adicionar texto', 'T') + it('add-forma', 'formas', 'Adicionar retângulo', 'R') + it('add-imagem', 'imagem', 'Adicionar imagem…', '') + '<hr>' +
+        it('add-texto', 'texto', 'Adicionar texto', 'T') + it('pecas', 'pecas', 'Peças do cartaz…', 'P') + it('add-forma', 'formas', 'Adicionar retângulo', 'R') + it('add-imagem', 'imagem', 'Adicionar imagem…', '') + '<hr>' +
         it('aplicar-todos', 'aplicar', 'Aplicar layout em todos', '');
     }
     ctx.innerHTML = html;
@@ -1217,7 +1254,7 @@
     ['Editar', [['Folha em branco', 'Shift+N'], ['Desfazer', K + '+Z'], ['Refazer', K + '+Y'], ['Copiar', K + '+C'], ['Colar', K + '+V'], ['Recortar', K + '+X'], ['Duplicar', K + '+D'], ['Excluir', 'Delete'], ['Copiar estilo', K + '+Alt+C'], ['Colar estilo', K + '+Alt+V']]],
     ['Camadas', [['Trazer para frente', K + '+]'], ['Enviar para trás', K + '+['], ['Trazer para o topo', K + '+Shift+]'], ['Enviar para o fundo', K + '+Shift+['], ['Renomear camada (na lista)', 'F2'], ['Agrupar', K + '+G'], ['Desagrupar', K + '+Shift+G'], ['Travar / destravar', 'Alt+Shift+L']]],
     ['Texto', [['Editar texto', 'Enter ou 2 cliques'], ['Nova linha', 'Shift+Enter'], ['Negrito', K + '+B'], ['Itálico', K + '+I'], ['Sublinhado', K + '+U'], ['Maiúsculas', K + '+Shift+K'], ['Alinhar à esquerda', K + '+Shift+L'], ['Centralizar texto', K + '+Shift+E'], ['Alinhar à direita', K + '+Shift+R']]],
-    ['Inserir', [['Texto', 'T'], ['Retângulo', 'R'], ['Círculo', 'C'], ['Linha', 'L']]],
+    ['Inserir', [['Texto', 'T'], ['Peças do cartaz', 'P'], ['Retângulo', 'R'], ['Círculo', 'C'], ['Linha', 'L']]],
     ['Ver e arquivo', [['Aumentar / diminuir zoom', K + '+= / ' + K + '+−'], ['Zoom com a roda', K + '+roda'], ['Ajustar à tela', 'Shift+1'], ['Tamanho real', 'Shift+0'], ['Régua', 'Shift+R'], ['Grade', 'Shift+G'], ['Salvar projeto', K + '+S'], ['Abrir projeto', K + '+O'], ['Esta lista', '?']]]
   ];
   function abrirAtalhos() {

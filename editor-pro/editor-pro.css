@@ -28,6 +28,26 @@ html body.exportando .cartaz .livre-faixa, html body.exportando .cartaz [data-ef
 @media print { html body .cartaz .livre-faixa, html body .cartaz [data-efx*='"destaque"'] { background-color: var(--pro-bg, transparent) !important; } }
 .cartaz .pro-sub { border-bottom: .06em solid currentColor; width: fit-content; max-width: 100%; margin-left: auto; margin-right: auto; }
 
+/* Caixa de preço separada (moldura / rótulo / valor). A caixa vira só o molde do layout: a borda dela fica
+   transparente com a MESMA espessura (nada sai do lugar) e a .moldura-price desenha o mesmo contorno por cima.
+   --mx/--my (cqw) esticam a moldura para os lados. Vale também com o editor desligado (aparência igual). */
+.cartaz .box-price.pro-separada { position: relative; border-color: transparent; }
+.cartaz .box-price.pro-separada > .label-price, .cartaz .box-price.pro-separada > .value-price { position: relative; }
+.cartaz .box-price > .moldura-price { position: absolute; box-sizing: border-box;
+  top: calc(-2px - var(--my, 0) * 1cqw); bottom: calc(-2px - var(--my, 0) * 1cqw);
+  left: calc(-2px - var(--mx, 0) * 1cqw); right: calc(-2px - var(--mx, 0) * 1cqw);
+  border: 2px solid #cfcfcf; border-radius: 10px; }
+.cartaz.a3 .box-price > .moldura-price {
+  top: calc(-0.8mm - var(--my, 0) * 1cqw); bottom: calc(-0.8mm - var(--my, 0) * 1cqw);
+  left: calc(-0.8mm - var(--mx, 0) * 1cqw); right: calc(-0.8mm - var(--mx, 0) * 1cqw);
+  border-width: 0.8mm; border-radius: 4mm; }
+
+/* Cartaz oculto (olho): não sai no PDF nem na impressão (o cartaz.html pula .cartaz-oculto). Fica no mesmo
+   lugar do DOM; na tela vai para o fim da mesa, depois da barra "Ocultos", e só aparece com ela aberta. */
+#preview-area > .pro-ocultos { order: 1; flex: 0 0 100%; }
+#preview-area > .cartaz.cartaz-oculto { order: 2; opacity: .45; pointer-events: none; }
+#preview-area:not(.mostrar-ocultos) > .cartaz.cartaz-oculto { display: none; }
+
 /* ---------- Estado de edição (só na tela) ---------- */
 .editor-pro .ed { cursor: move; touch-action: none; }
 .editor-pro .ed[data-trava] { cursor: default; }
@@ -48,19 +68,21 @@ body.exportando .ed { outline: none !important; }
 body.exportando .ed.oculto { visibility: hidden !important; opacity: 1 !important; }
 body.exportando .ed [contenteditable]:focus, body.exportando .ed[contenteditable]:focus { background: none !important; }
 body.exportando .pro-camada-ui, body.exportando .barra-pro, body.exportando .painel-pro,
-body.exportando .pro-pop, body.exportando .pro-ctx, body.exportando .pro-dialogo, body.exportando .pro-aviso { display: none !important; }
+body.exportando .pro-pop, body.exportando .pro-ctx, body.exportando .pro-dialogo, body.exportando .pro-aviso,
+body.exportando .pro-cabecalhos, body.exportando .pro-ocultos { display: none !important; }
 html body.exportando #preview-area .cartaz.cartaz.cartaz { zoom: 1 !important; }
 body.exportando #preview-area { padding-right: 24px; }
 @media print {
   .ed { outline: none !important; }
   .ed.oculto { visibility: hidden !important; opacity: 1 !important; }
-  .pro-camada-ui, .barra-pro, .painel-pro, .pro-pop, .pro-ctx, .pro-dialogo, .pro-aviso { display: none !important; }
+  .pro-camada-ui, .barra-pro, .painel-pro, .pro-pop, .pro-ctx, .pro-dialogo, .pro-aviso, .pro-cabecalhos, .pro-ocultos { display: none !important; }
+  #preview-area > .cartaz.cartaz-oculto { display: none !important; }
   body.editor-pro #preview-area { padding: 0 !important; gap: 0 !important; }
 }
 
 /* ---------- Tokens da interface ---------- */
 :root { --pro-largura: 300px; --pro-sel: #1d63ed; --pro-guia: #ff2d7a; }
-.barra-pro, .painel-pro, .pro-pop, .pro-ctx, .pro-dialogo, .pro-camada-ui, .pro-aviso {
+.barra-pro, .painel-pro, .pro-pop, .pro-ctx, .pro-dialogo, .pro-camada-ui, .pro-aviso, .pro-cabecalhos, .pro-ocultos {
   font: 13px/1.3 "Archivo", system-ui, sans-serif; color: var(--tinta, #23262a);
 }
 .barra-pro, .painel-pro, .pro-camada-ui { display: none; }
@@ -69,7 +91,9 @@ body.editor-pro .pro-camada-ui { display: block; }
 body.editor-pro #preview-area { padding-right: calc(var(--pro-largura) + 24px); justify-content: safe center; }
 /* com zoom grande o cartaz não encolhe: a mesa rola */
 body.editor-pro #preview-area .cartaz { flex-shrink: 0; }
-body.editor-pro.pro-com-regua #preview-area { gap: 44px; padding-top: 44px; padding-left: 44px; }
+/* espaço acima de cada cartaz para o cabeçalho "Cartaz N" (e para a régua, quando ligada) */
+body.editor-pro #preview-area { padding-top: 52px; row-gap: 56px; }
+body.editor-pro.pro-com-regua #preview-area { gap: 44px; row-gap: 80px; padding-top: 80px; padding-left: 44px; }
 
 /* ---------- Faixa de ferramentas ---------- */
 .barra-pro { position: sticky; top: var(--pro-topo, 61px); z-index: 4; height: 48px; align-items: center; gap: 2px;
@@ -86,10 +110,12 @@ body.editor-pro.pro-com-regua #preview-area { gap: 44px; padding-top: 44px; padd
 .barra-pro.c1 .so-largo { display: none; }
 .barra-pro.c2 :is([data-acao=add-imagem], [data-acao=add-faixa], [data-pop=arquivo], [data-pop=layout]) .rotulo-btn { display: none; }
 .barra-pro.c2 .divisor { margin: 0 4px; }
+.barra-pro.c2 .selo-teste { padding: 0 8px; gap: 0; margin-right: 2px; }
+.barra-pro.c2 .selo-teste > span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 .barra-pro.c3 [data-acao=nova-folha] .rotulo-btn { display: none; }
-.barra-pro.c4 .rotulo-btn { display: none; }
-.barra-pro.c5 .selo-teste { padding: 0 8px; gap: 0; margin-right: 2px; }
-.barra-pro.c5 .selo-teste > span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+/* o rótulo "Peças" é o último a sumir (sem ele o botão não diz o que tem) */
+.barra-pro.c4 :not([data-pop=pecas]) > .rotulo-btn { display: none; }
+.barra-pro.c5 .rotulo-btn { display: none; }
 .barra-pro.c5 .divisor { margin: 0 2px; }
 .barra-pro.c6 .seta-menu { display: none; }
 .barra-pro.c7 :is([data-acao=regua], [data-acao=grade], [data-pop=arquivo], [data-pop=layout], [data-acao=atalhos], .selo-teste) { display: none; }
@@ -179,6 +205,31 @@ body.editor-pro .pro-aviso:not(:empty) { display: block; animation: pro-aviso-en
 .pro-cor-livre { position: relative; width: 32px; height: 32px; flex: 0 0 32px; border-radius: 6px; overflow: hidden; border: 1px solid #c9cdc6; cursor: pointer;
   background: linear-gradient(90deg, #d62828, #f28c00, #e6b800, #1a7f3c, #0b5cad, #7a3db8); }
 .pro-cor-livre input { position: absolute; inset: -4px; width: calc(100% + 8px); height: calc(100% + 8px); opacity: 0; cursor: pointer; border: 0; padding: 0; }
+
+/* Menu "Peças do cartaz": miniaturas iguais às peças */
+.pro-pop.pecas { width: 316px; padding: 10px 10px 12px; }
+.pro-pop.pecas h4 { color: var(--tinta, #23262a); font-size: 13px; margin: 2px 4px 2px; }
+.pro-pecas-dica { margin: 0 4px 10px; font-size: 12px; line-height: 1.4; color: var(--tinta-suave, #5c6168); }
+.pro-grade-pecas { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.pro-grade-pecas button { display: flex; flex-direction: column; align-items: stretch; gap: 2px; min-width: 0; padding: 6px 6px 8px; background: #fff;
+  border: 1px solid var(--linha, #dfe2dc); border-radius: 8px; cursor: pointer; text-align: left; color: var(--tinta, #23262a); font: 600 12px/1.25 "Archivo", system-ui, sans-serif; }
+.pro-grade-pecas button:hover { border-color: #aeb3ab; background: #fafbf8; }
+.pro-grade-pecas button.largo { grid-column: 1 / -1; }
+.pro-grade-pecas .rot { padding: 0 2px; }
+.pro-grade-pecas small { padding: 0 2px; font-weight: 400; font-size: 11px; color: var(--tinta-suave, #5c6168); }
+.pro-mini { display: flex; align-items: center; justify-content: center; height: 52px; margin-bottom: 4px; padding: 0 6px; border-radius: 5px;
+  background: #fff; box-shadow: inset 0 0 0 1px #eceee9; overflow: hidden; }
+.pro-mini .mini-caixa { display: flex; align-items: center; width: 100%; padding: 3px 5px; border: 1.5px solid #cfcfcf; border-radius: 5px; }
+.pro-mini .mini-caixa b { font: 700 7px/1.5 "Archivo", system-ui, sans-serif; padding-right: 4px; white-space: nowrap; }
+.pro-mini .mini-caixa i { flex: 1; text-align: center; font: 400 22px/1 "ImpactCustom", Impact, sans-serif; color: #444; font-style: normal; }
+.pro-mini .mini-caixa.por i { font-size: 30px; color: #e6b800; }
+.pro-mini .mini-nome { display: flex; align-items: center; gap: 6px; width: 100%; }
+.pro-mini .mini-nome svg.trovao { width: 22px; height: 22px; flex: 0 0 22px; }
+.pro-mini .mini-nome .col { flex: 1; display: flex; flex-direction: column; align-items: stretch; gap: 3px; }
+.pro-mini .mini-nome .col i { height: 2px; border-radius: 1px; background: #000; }
+.pro-mini .mini-nome b { font: 700 15px/1 "ImpactCustom", Impact, sans-serif; text-align: center; letter-spacing: .01em; }
+.pro-mini .mini-rodape { width: 100%; padding-top: 5px; border-top: 1px dashed #cfcfcf; text-align: center; font: 400 7.5px/1.4 "Archivo", system-ui, sans-serif; color: #777; white-space: nowrap; }
+.pro-mini .mini-moldura { width: 82%; height: 34px; border: 1.5px solid #cfcfcf; border-radius: 6px; }
 
 /* Lista de fontes */
 .pro-pop.fontes { width: 240px; }
@@ -328,6 +379,40 @@ body.editor-pro .pro-aviso:not(:empty) { display: block; animation: pro-aviso-en
 .pro-cartaz-ativo { pointer-events: none; outline: 2px solid rgba(29,99,237,.35); outline-offset: 4px; border-radius: 2px; }
 .pro-solta { pointer-events: none; outline: 3px dashed var(--pro-sel); outline-offset: -3px; background: rgba(29,99,237,.06); }
 
+/* ---------- Cabeçalho de cada cartaz (fora da folha) ---------- */
+.pro-cabecalhos { position: absolute; left: 0; top: 0; width: 0; height: 0; z-index: 1; display: none; } /* abaixo das barras fixas (z 2+) */
+body.editor-pro .pro-cabecalhos { display: block; }
+/* sobre a mesa (#d5d9d2) o cinza do painel fica abaixo de 4,5:1: usa um cinza mais escuro */
+.pro-cab-cartaz { position: absolute; height: 28px; display: flex; align-items: center; gap: 4px; color: #41464c; }
+.pro-cab-cartaz[hidden] { display: none; }
+.pro-cab-nome { flex: 1; min-width: 0; height: 28px; padding: 0 2px; background: none; border: 0; border-radius: 4px; cursor: pointer; text-align: left;
+  font: 600 12px/28px "Archivo", system-ui, sans-serif; color: inherit; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pro-cab-nome:hover, .pro-cab-cartaz.ativo .pro-cab-nome { color: var(--tinta, #23262a); }
+.pro-cab-acoes { display: flex; gap: 2px; flex: 0 0 auto; }
+.pro-cab-cartaz .pro-btn { width: 28px; min-width: 28px; height: 28px; color: #41464c; }
+.pro-cab-cartaz .pro-btn svg { width: 16px; height: 16px; flex-basis: 16px; }
+.pro-cab-cartaz .pro-btn:hover:not(:disabled) { background: rgba(255,255,255,.65); color: var(--tinta, #23262a); }
+.pro-cab-cartaz .pro-btn[hidden] { display: none; }
+/* duplicar/excluir aparecem no cartaz ativo, no passar do mouse e no teclado (sem amontoar a mesa) */
+@media (hover: hover) {
+  .pro-cab-cartaz:not(.ativo):not(:hover):not(:focus-within) :is([data-cab=duplicar], [data-cab=excluir]) { opacity: 0; }
+}
+.pro-cab-cartaz.oculto .pro-btn[data-cab=olho], .pro-cab-cartaz.oculto .pro-btn[data-cab=olho]:hover:not(:disabled) {
+  background: #fff; border-color: #c4c9c1; color: var(--tinta, #23262a); }
+
+/* ---------- Área "Ocultos" no fim da mesa ---------- */
+.pro-ocultos { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 12px; padding: 16px 2px 0; border-top: 1px solid #c4c9c1; color: #41464c; }
+.pro-ocultos button { display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 12px 0 9px; border: 1px solid #c4c9c1; border-radius: 16px;
+  background: #fff; cursor: pointer; font: 600 13px/1 "Archivo", system-ui, sans-serif; color: var(--tinta, #23262a); }
+.pro-ocultos button:hover { border-color: var(--tinta, #23262a); }
+.pro-ocultos button:focus-visible { outline: 2px solid var(--pro-sel); outline-offset: 2px; }
+.pro-ocultos svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.pro-ocultos-alternar svg { transform: rotate(-90deg); transition: transform .12s; }
+.pro-ocultos-alternar[aria-expanded="true"] svg { transform: none; }
+.pro-ocultos-nota { flex: 1; min-width: 160px; font-size: 13px; }
+.pro-ocultos .pro-ocultos-todos { border-color: transparent; background: transparent; }
+.pro-ocultos .pro-ocultos-todos:hover { background: rgba(255,255,255,.6); border-color: #c4c9c1; }
+
 /* Diálogo de atalhos */
 .pro-dialogo { border: 0; border-radius: 12px; padding: 0; width: min(920px, calc(100vw - 32px)); max-height: calc(100vh - 48px); box-shadow: 0 20px 60px rgba(30,35,30,.35); }
 .pro-dialogo::backdrop { background: rgba(35,38,42,.45); }
@@ -359,4 +444,6 @@ body.editor-pro .pro-aviso:not(:empty) { display: block; animation: pro-aviso-en
   .pro-btn.so-icone { width: 40px; }
   .pro-al { width: 18px; height: 18px; margin: -9px 0 0 -9px; }
   .pro-al.girar { width: 28px; height: 28px; margin: -14px 0 0 -14px; }
+  .pro-cab-cartaz .pro-btn { width: 32px; min-width: 32px; height: 32px; }
+  body.editor-pro #preview-area { padding-top: 52px; }
 }

@@ -259,6 +259,7 @@
       .cartaz [contenteditable="true"] { outline: none !important; background: none !important; }
       body { padding: 0; margin: 0; background: white; }
       .cartaz { margin: 0; border: none; box-shadow: none; page-break-after: always; }
+      .cartaz.cartaz-oculto { display: none !important; } /* ocultado no olho da versão de teste */
       * { -webkit-print-color-adjust: exact !important; }
     }
   </style>
@@ -697,8 +698,8 @@
 
     // Baixar PDF no tamanho exato (A3 = 297x420 mm, A5 = 148x210 mm), um cartaz por página
     document.getElementById('baixar-pdf').addEventListener('click', async () => {
-      const cartazes = [...document.querySelectorAll('#preview-area .cartaz')];
-      if (!cartazes.length) { alert('Gere ou crie um cartaz primeiro.'); return; }
+      const cartazes = [...document.querySelectorAll('#preview-area .cartaz:not(.cartaz-oculto)')]; // ocultos (olho) ficam de fora
+      if (!cartazes.length) { alert(document.querySelector('#preview-area .cartaz') ? 'Todos os cartazes estão ocultos. Mostre pelo menos um (área Ocultos, no fim da mesa) para baixar o PDF.' : 'Gere ou crie um cartaz primeiro.'); return; }
       if (!window.html2canvas || !window.jspdf) { alert('Não carregou o gerador de PDF. Verifique a internet e recarregue a página.'); return; }
       const botao = document.getElementById('baixar-pdf');
       const textoOriginal = botao.textContent;
@@ -824,7 +825,7 @@
       if (window.EditorPro) { alternar(); return; }
       btnTeste.disabled = true;
       const sc = document.createElement('script');
-      sc.src = 'cartaz-editor-pro.js?v=3';
+      sc.src = 'cartaz-editor-pro.js?v=4';
       sc.onload = () => { btnTeste.disabled = false; alternar(); };
       sc.onerror = () => { btnTeste.disabled = false; alert('Não consegui carregar a versão de teste. Verifique a internet e recarregue a página.'); };
       document.body.appendChild(sc);

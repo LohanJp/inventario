@@ -14,13 +14,18 @@
   EP.emitir = (nome, dado) => { (ouvintes[nome] || []).forEach(fn => { try { fn(dado); } catch (e) { console.error(e); } }); };
 
   /* ---------- Papéis fixos do cartaz ---------- */
+  // Cada caixa de preço vira 3 elementos separados (moldura, rótulo e valor), agrupados por padrão.
+  // A caixa (.box-price) continua só como molde do layout: a borda dela fica transparente e quem
+  // desenha o contorno é a .moldura-price (mesma borda, raio e cor), então a aparência não muda.
   EP.PAPEIS = [
     { papel: 'titulo', sel: '.row-header', alvo: '.produto-nome', nome: 'Nome do produto',
       partes: [{ rot: 'Barras', sel: '.bar-top, .bar-bottom', prop: 'backgroundColor' }] },
-    { papel: 'de', sel: '.box-price:first-child', alvo: '.value-price', nome: 'Preço DE',
-      partes: [{ rot: 'Rótulo', sel: '.label-price', prop: 'color' }, { rot: 'Moldura', sel: null, prop: 'borderColor' }] },
-    { papel: 'por', sel: '.box-price:last-child', alvo: '.value-price', nome: 'Preço POR',
-      partes: [{ rot: 'Rótulo', sel: '.label-price', prop: 'color' }, { rot: 'Moldura', sel: null, prop: 'borderColor' }] },
+    { papel: 'de-moldura', sel: '.box-price:first-child > .moldura-price', nome: 'Moldura DE' },
+    { papel: 'de-rotulo', sel: '.box-price:first-child > .label-price', nome: 'Rótulo DE' },
+    { papel: 'de', sel: '.box-price:first-child > .value-price', nome: 'Preço DE' },
+    { papel: 'por-moldura', sel: '.box-price:last-child > .moldura-price', nome: 'Moldura POR' },
+    { papel: 'por-rotulo', sel: '.box-price:last-child > .label-price', nome: 'Rótulo POR' },
+    { papel: 'por', sel: '.box-price:last-child > .value-price', nome: 'Preço POR' },
     { papel: 'rodape', sel: '.validade', alvo: null, nome: 'Rodapé',
       partes: [{ rot: 'Linha', sel: null, prop: 'borderTopColor' }] }
   ];
@@ -63,7 +68,9 @@
     for (const t of ['texto', 'faixa', 'icone', 'forma', 'imagem']) if (el.classList.contains('livre-' + t)) return t;
     return 'texto';
   };
-  EP.temTexto = el => ['fixo', 'texto', 'faixa'].includes(EP.tipo(el));
+  // Moldura de caixa de preço de cartaz gerado: elemento fixo, mas com controles de forma
+  EP.ehMoldura = el => !!el && /-moldura$/.test(el.dataset.papel || '');
+  EP.temTexto = el => ['fixo', 'texto', 'faixa'].includes(EP.tipo(el)) && !EP.ehMoldura(el);
   EP.alvoTexto = el => { const p = EP.infoPapel(el); return (p && p.alvo && el.querySelector(p.alvo)) || el; };
   EP.podeEspelhar = el => ['icone', 'forma', 'imagem'].includes(EP.tipo(el));
   EP.nomePadrao = el => {
@@ -131,9 +138,18 @@
     const t = EP.tipo(el);
     if (t === 'forma') return { w: parseFloat(el.style.width) || 30, h: parseFloat(el.style.height) || 30 };
     if (t === 'imagem') return { w: parseFloat(el.style.width) || 40 };
+    if (EP.ehMoldura(el)) return { s: num(el, '--s', 1), mx: num(el, '--mx', 0), my: num(el, '--my', 0), lw: el.offsetWidth, lh: el.offsetHeight };
     return { s: num(el, '--s', 1) };
   };
   EP.aplicarMedida = (el, m, kx, ky) => {
+    // Moldura de cartaz gerado: canto = escala por igual (--s, como era a caixa);
+    // lado = estica só largura ou altura (--mx/--my aumentam a caixa para os dois lados, em cqw)
+    if (EP.ehMoldura(el) && ky !== undefined && m.lw !== undefined) {
+      const W = EP.dim(el.closest('.cartaz')).W;
+      if (kx !== 1) el.style.setProperty('--mx', EP.fix(m.mx + (Math.max(4, m.lw * kx) - m.lw) / 2 / W * 100));
+      if (ky !== 1) el.style.setProperty('--my', EP.fix(m.my + (Math.max(4, m.lh * ky) - m.lh) / 2 / W * 100));
+      return;
+    }
     if (ky === undefined) ky = kx;
     const t = EP.tipo(el);
     if (t === 'forma') {
@@ -160,7 +176,7 @@
     }
     return pts.join(' ');
   }
-  EP.svgForma = (forma, W, H, preench, borda, esp, raio) => {
+  EP.svgForma = (forma, W, H, preench, borda, esp, raio, tracejado) => {
     const sw = borda ? esp : 0, i = sw / 2;
     const fill = preench || 'none', st = borda ? ` stroke="${borda}" stroke-width="${sw}" stroke-linejoin="round"` : '';
     let corpo = '';
@@ -169,6 +185,9 @@
       corpo = `<rect x="${i}" y="${i}" width="${Math.max(0, W - sw)}" height="${Math.max(0, H - sw)}" rx="${rr}" ry="${rr}" fill="${fill}"${st}/>`;
     } else if (forma === 'circulo') {
       corpo = `<ellipse cx="${W / 2}" cy="${H / 2}" rx="${Math.max(0, W / 2 - i)}" ry="${Math.max(0, H / 2 - i)}" fill="${fill}"${st}/>`;
+    } else if (forma === 'linha' && tracejado) {
+      // linha tracejada (rodapé de validade): traços de 3x a espessura, como a borda "dashed" do navegador
+      corpo = `<line x1="0" y1="${H / 2}" x2="${W}" y2="${H / 2}" stroke="${preench || '#222'}" stroke-width="${H}" stroke-dasharray="${+(H * 3).toFixed(2)} ${+(H * 3).toFixed(2)}"/>`;
     } else if (forma === 'linha') {
       corpo = `<rect x="0" y="0" width="${W}" height="${H}" rx="${raio ? H / 2 : 0}" fill="${preench || '#222'}"/>`;
     } else if (forma === 'seta') {
@@ -184,7 +203,26 @@
   };
   EP.desenharForma = el => {
     const w = (parseFloat(el.style.width) || 30) * 10, h = (parseFloat(el.style.height) || 30) * 10, d = el.dataset;
-    el.innerHTML = EP.svgForma(d.forma, +w.toFixed(1), +h.toFixed(1), d.preench, d.borda, (+d.esp || 0) * 10, (+d.raio || 0) * 10);
+    el.innerHTML = EP.svgForma(d.forma, +w.toFixed(1), +h.toFixed(1), d.preench, d.borda, (+d.esp || 0) * 10, (+d.raio || 0) * 10, d.tracejado === '1');
+  };
+
+  /* ---------- Moldura de cartaz gerado (CSS: borda e fundo da .moldura-price) ---------- */
+  // Valores em cqw, na mesma escala dos controles de forma do inspetor
+  EP.lerMoldura = el => {
+    const c = el.closest('.cartaz'), cs = getComputedStyle(el), W = EP.dim(c).W;
+    // a espessura calculada vem arredondada para o pixel da tela (zoom da mesa): sem valor próprio, usa a do cartaz
+    // (A3: 0,8 mm de 297 mm; A5: 2 px de 558 px)
+    const propria = parseFloat(el.style.borderWidth);
+    const bw = parseFloat(cs.borderTopWidth) || 0;
+    const esp = !isNaN(propria) && /cqw$/.test(el.style.borderWidth) ? propria : (c.classList.contains('a3') ? 0.8 / 297 * 100 : 2 / 558 * 100);
+    return { preench: EP.paraHex(cs.backgroundColor), borda: cs.borderTopStyle === 'none' || !bw ? '' : EP.paraHex(cs.borderTopColor),
+      esp: bw ? esp : 0, raio: (parseFloat(cs.borderTopLeftRadius) || 0) / W * 100 };
+  };
+  EP.gravarMoldura = (el, campo, v) => {
+    if (campo === 'preench') el.style.backgroundColor = v || '';
+    if (campo === 'borda') { el.style.borderColor = v || 'transparent'; if (v && !(EP.lerMoldura(el).esp > 0)) el.style.borderWidth = '0.3cqw'; }
+    if (campo === 'esp') el.style.borderWidth = EP.fix(v) + 'cqw';
+    if (campo === 'raio') el.style.borderRadius = EP.fix(v) + 'cqw';
   };
 
   /* ---------- Efeitos de texto (text-shadow e fundo: o html2canvas 1.4.1 desenha os dois) ---------- */
@@ -220,8 +258,84 @@
     } else { alvo.style.removeProperty('--pro-bg'); alvo.style.padding = ''; alvo.style.borderRadius = ''; }
   };
 
+  /* ---------- Caixas de preço: moldura, rótulo e valor separados ---------- */
+  const VARS_GEO = ['--fx', '--fy', '--s', '--r'];
+  const qualCaixa = box => (box.parentElement && box.parentElement.firstElementChild === box ? 'de' : 'por');
+  EP.separarCaixas = cartaz => {
+    const { W, H } = EP.dim(cartaz);
+    cartaz.querySelectorAll('.precos > .box-price').forEach(box => {
+      if (box.classList.contains('pro-separada')) return;
+      const label = box.querySelector(':scope > .label-price'), valor = box.querySelector(':scope > .value-price');
+      if (!label || !valor) return;
+      const q = qualCaixa(box);
+      // Caixa da versão anterior (a caixa inteira era o elemento "de"/"por"): guarda o que tinha
+      const antiga = !!box.dataset.papel;
+      const v = { fx: num(box, '--fx', 0), fy: num(box, '--fy', 0), s: num(box, '--s', 1), r: num(box, '--r', 0) };
+      const velho = antiga ? {
+        z: box.style.zIndex, op: box.style.opacity, borda: box.style.borderColor, oculto: box.classList.contains('oculto'),
+        trava: box.hasAttribute('data-trava'), nome: box.dataset.nome || '', grupo: box.dataset.grupo || '', uid: box.dataset.uid || ''
+      } : null;
+      if (antiga) {
+        // destrava antes (devolve contenteditable aos textos) para poder travar os 3 depois
+        if (velho.trava) EP.travar([box], false);
+        box.removeAttribute('style');
+        box.classList.remove('ed', 'sel', 'oculto');
+        ['papel', 'uid', 'nome', 'grupo'].forEach(k => delete box.dataset[k]);
+      }
+      const mold = document.createElement('div');
+      mold.className = 'moldura-price';
+      box.prepend(mold);
+      box.classList.add('pro-separada');
+      const membros = [[mold, q + '-moldura'], [label, q + '-rotulo'], [valor, q]];
+      const grupo = (velho && velho.grupo) || ('g' + EP.novoUid());
+      membros.forEach(([el, papel]) => {
+        el.dataset.papel = papel; el.classList.add('ed'); el.dataset.uid = EP.novoUid(); el.dataset.grupo = grupo;
+      });
+      if (!antiga) return;
+      // Migração: a transformação da caixa (posição, escala e giro em volta do centro dela) vira a
+      // transformação equivalente em cada parte, que gira/escala em volta do próprio centro.
+      const cb = caixaLayout(box, cartaz), c = { x: cb.x + cb.w / 2, y: cb.y + cb.h / 2 };
+      const rad = v.r * Math.PI / 180, co = Math.cos(rad), si = Math.sin(rad);
+      membros.forEach(([el]) => {
+        let tx = v.fx * W, ty = v.fy * H;
+        if (el !== mold) {
+          const b = caixaLayout(el, cartaz), dx = b.x + b.w / 2 - c.x, dy = b.y + b.h / 2 - c.y;
+          tx += v.s * (dx * co - dy * si) - dx;
+          ty += v.s * (dx * si + dy * co) - dy;
+        }
+        if (tx) el.style.setProperty('--fx', EP.fix(tx / W));
+        if (ty) el.style.setProperty('--fy', EP.fix(ty / H));
+        if (v.s !== 1) el.style.setProperty('--s', EP.fix(v.s));
+        if (v.r) el.style.setProperty('--r', EP.fix(v.r));
+        if (velho.z) el.style.zIndex = velho.z;
+        if (velho.op) el.style.opacity = velho.op;
+        if (velho.oculto) el.classList.add('oculto');
+      });
+      if (velho.borda) mold.style.borderColor = velho.borda;
+      if (velho.nome) valor.dataset.nome = velho.nome;
+      if (velho.uid) valor.dataset.uid = velho.uid; // seleção/histórico que apontavam para a caixa seguem o preço
+      if (velho.trava) EP.travar(membros.map(m => m[0]), true);
+    });
+  };
+  // Volta a caixa ao formato antigo (só para aplicar um modelo salvo na versão anterior; depois separa de novo)
+  EP.juntarCaixas = cartaz => {
+    cartaz.querySelectorAll('.precos > .box-price.pro-separada').forEach(box => {
+      const filhos = [...box.querySelectorAll(':scope > .label-price, :scope > .value-price')];
+      EP.travar(filhos, false);
+      box.querySelectorAll(':scope > .moldura-price').forEach(m => m.remove());
+      filhos.forEach(f => {
+        f.classList.remove('ed', 'sel', 'oculto');
+        ['papel', 'uid', 'nome', 'grupo'].forEach(k => delete f.dataset[k]);
+        VARS_GEO.concat(['z-index', 'opacity']).forEach(p => f.style.removeProperty(p));
+      });
+      box.classList.remove('pro-separada');
+      box.dataset.papel = qualCaixa(box); box.classList.add('ed'); box.dataset.uid = EP.novoUid();
+    });
+  };
+
   /* ---------- Preparar cartazes ---------- */
   EP.preparar = cartaz => {
+    EP.separarCaixas(cartaz);
     EP.PAPEIS.forEach(p => {
       const el = cartaz.querySelector(p.sel);
       if (el && !el.dataset.papel) { el.dataset.papel = p.papel; el.classList.add('ed'); }
@@ -246,7 +360,14 @@
     EP.normalizarZ(cartaz);
   };
   EP.prepararTodos = () => area.querySelectorAll('.cartaz').forEach(EP.preparar);
+  // Todos os cartazes (a numeração "Cartaz N" conta os ocultos: ao mostrar de novo ele volta ao mesmo lugar)
   EP.cartazes = () => [...area.querySelectorAll('.cartaz')];
+  // Cartazes ocultos (olho) não saem no PDF nem na impressão e ficam na área "Ocultos", no fim da mesa
+  EP.cartazOculto = c => !!c && c.classList.contains('cartaz-oculto');
+  EP.visiveis = () => EP.cartazes().filter(c => !EP.cartazOculto(c));
+  EP.avisoSemCartaz = () => alert(area.querySelector('.cartaz.cartaz-oculto')
+    ? 'Todos os cartazes estão ocultos. Mostre um deles (área Ocultos, no fim da mesa) ou crie uma folha em branco.'
+    : 'Gere ou crie um cartaz primeiro.');
 
   /* ---------- Camadas (z-index explícito: o html2canvas respeita) ---------- */
   EP.elementos = cartaz => {
@@ -315,6 +436,7 @@
     const c = area.cloneNode(true);
     c.querySelectorAll('.sel').forEach(e => e.classList.remove('sel'));
     c.querySelectorAll('.editando-texto').forEach(e => e.classList.remove('editando-texto'));
+    c.querySelectorAll('.pro-ocultos').forEach(e => e.remove()); // barra "Ocultos" é interface (refeita sozinha)
     return c.innerHTML;
   };
   EP.estado = html => ({
@@ -353,7 +475,9 @@
   EP.refazer = () => EP.restaurar(hist.refazer, hist.desfazer);
 
   /* ---------- Criar elementos ---------- */
-  EP.cartazAlvo = () => (EP.sel[0] && EP.sel[0].closest('.cartaz')) || (EP.cartazAtivo && area.contains(EP.cartazAtivo) ? EP.cartazAtivo : null) || area.querySelector('.cartaz');
+  EP.cartazAlvo = () => (EP.sel[0] && EP.sel[0].closest('.cartaz')) ||
+    (EP.cartazAtivo && area.contains(EP.cartazAtivo) && !EP.cartazOculto(EP.cartazAtivo) ? EP.cartazAtivo : null) ||
+    area.querySelector('.cartaz:not(.cartaz-oculto)');
   // Centro da parte visível do cartaz (onde o usuário está olhando)
   EP.centroVisivel = cartaz => {
     const r = cartaz.getBoundingClientRect(), { W, H } = EP.dim(cartaz);
@@ -366,7 +490,7 @@
   };
   EP.inserir = (el, cartaz, centro) => {
     cartaz = cartaz || EP.cartazAlvo();
-    if (!cartaz) { alert('Gere ou crie um cartaz primeiro.'); return null; }
+    if (!cartaz) { EP.avisoSemCartaz(); return null; }
     el.classList.add('ed', 'livre');
     el.dataset.v = '2';
     el.dataset.uid = EP.novoUid();
@@ -380,7 +504,7 @@
   EP.criar = (tipo, opc) => {
     opc = opc || {};
     const cartaz = opc.cartaz || EP.cartazAlvo();
-    if (!cartaz) { alert('Gere ou crie um cartaz primeiro.'); return null; }
+    if (!cartaz) { EP.avisoSemCartaz(); return null; }
     EP.registrar();
     const el = document.createElement('div');
     el.className = 'livre-' + tipo;
@@ -575,10 +699,16 @@
     const livres = [...cartaz.querySelectorAll('.livre')].map(el => {
       const c = el.cloneNode(true); c.classList.remove('sel', 'editando-texto'); return c.outerHTML;
     });
-    return { versao: 2, fundo: cartaz.style.background || '', papeis, livres };
+    // versão 3: caixas de preço separadas em moldura / rótulo / valor
+    return { versao: 3, fundo: cartaz.style.background || '', papeis, livres };
   };
   EP.aplicarLayout = (cartaz, layout) => {
     EP.preparar(cartaz);
+    // Modelo salvo antes da separação: "de"/"por" eram a caixa inteira. Volta a caixa ao formato
+    // antigo, aplica e separa de novo (o preparar do fim converte posição, giro e escala exatos
+    // para as 3 partes, medindo neste cartaz e neste formato).
+    const antigo = !(layout.versao >= 3) && layout.papeis && (layout.papeis.de || layout.papeis.por);
+    if (antigo) EP.juntarCaixas(cartaz);
     if (layout.fundo !== undefined) cartaz.style.background = layout.fundo;
     Object.entries(layout.papeis || {}).forEach(([papel, d]) => {
       const el = cartaz.querySelector(`[data-papel="${papel}"]`);
@@ -602,8 +732,8 @@
         EP.travar([el], !!d.trava);
       } else if (d.alvo) {
         // modelo salvo pela versão anterior
-        const alvo = EP.alvoTexto(el);
-        if (alvo !== el) { const tmp = document.createElement('div'); tmp.setAttribute('style', d.alvo); ['color', 'fontFamily', 'fontWeight'].forEach(k => { alvo.style[k] = tmp.style[k]; }); }
+        const alvo = el.classList.contains('box-price') ? el.querySelector('.value-price') : EP.alvoTexto(el);
+        if (alvo && alvo !== el) { const tmp = document.createElement('div'); tmp.setAttribute('style', d.alvo); ['color', 'fontFamily', 'fontWeight'].forEach(k => { alvo.style[k] = tmp.style[k]; }); }
       }
       if (uid) el.dataset.uid = uid;
     });
