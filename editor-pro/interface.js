@@ -18,6 +18,7 @@
     mais: '<path d="M5 10h10M10 5v10"/>',
     regua: '<path d="M2.5 13.5 13.5 2.5l4 4-11 11z"/><path d="m6 10 1.5 1.5M8.5 7.5 10 9M11 5l1.5 1.5"/>',
     grade: '<rect x="3" y="3" width="14" height="14" rx="1"/><path d="M3 7.7h14M3 12.3h14M7.7 3v14M12.3 3v14"/>',
+    folha: '<path d="M5 2.5h6.5l3.5 3.5v11.5H5z"/><path d="M11.5 2.5V6H15"/><path d="M10 9.5v5M7.5 12h5"/>',
     arquivo: '<path d="M5 2.5h6.5l3.5 3.5v11.5H5z"/><path d="M11.5 2.5V6H15"/>',
     layout: '<rect x="3" y="3" width="6" height="6" rx="1"/><rect x="11" y="3" width="6" height="6" rx="1"/><rect x="3" y="11" width="6" height="6" rx="1"/><rect x="11" y="11" width="6" height="6" rx="1"/>',
     ajuda: '<circle cx="10" cy="10" r="7.5"/><path d="M7.8 7.8a2.3 2.3 0 1 1 3 2.2c-.6.2-.8.7-.8 1.2v.5"/><path d="M10 14.3v.2"/>',
@@ -75,6 +76,10 @@
   barra.setAttribute('role', 'toolbar');
   barra.setAttribute('aria-label', 'Ferramentas do editor');
   barra.innerHTML = `
+    <div class="grupo" role="group" aria-label="Nova folha">
+      <button type="button" class="pro-btn" data-acao="nova-folha" title="Folha em branco, sem modelo pronto (Shift+N)">${svg('folha')}<span class="rotulo-btn">Folha em branco</span></button>
+    </div>
+    <span class="divisor" aria-hidden="true"></span>
     <div class="grupo" role="group" aria-label="Adicionar ao cartaz">
       <button type="button" class="pro-btn" data-acao="add-texto" title="Adicionar texto (T)">${svg('texto')}<span class="rotulo-btn">Texto</span></button>
       <button type="button" class="pro-btn" data-pop="formas" aria-haspopup="true" aria-expanded="false" title="Adicionar forma">${svg('formas')}<span class="rotulo-btn">Formas</span>${svg('seta', 'seta-menu')}</button>
@@ -371,7 +376,8 @@
         [0.25, 0.35, 0.5, 0.75, 1, 1.5, 2].map(v => `<button type="button" class="pro-item" role="menuitemradio" aria-checked="${Math.abs(z - v) < 0.005}" data-acao="zoom-valor" data-valor="${v}"><span></span><span>${Math.round(v * 100)}%</span>${v === 1 ? '<kbd>Shift+0</kbd>' : '<span></span>'}</button>`).join('');
     },
     arquivo: p => {
-      p.innerHTML = itemMenu('abrir-projeto', 'abrir', 'Abrir projeto…', 'Volta a editar cartazes salvos', { kbd: K + '+O' }) +
+      p.innerHTML = itemMenu('nova-folha', 'folha', 'Folha em branco', 'Cartaz vazio, sem modelo pronto, para montar do zero', { kbd: 'Shift+N' }) + '<hr>' +
+        itemMenu('abrir-projeto', 'abrir', 'Abrir projeto…', 'Volta a editar cartazes salvos', { kbd: K + '+O' }) +
         itemMenu('salvar-projeto', 'salvar', 'Salvar projeto', 'Baixa um arquivo .cartaz.json com todos os cartazes', { kbd: K + '+S' }) + '<hr>' +
         itemMenu('add-imagem', 'imagem', 'Inserir imagem do computador…', 'Também dá para arrastar o arquivo ou colar (' + K + '+V)');
     },
@@ -550,6 +556,7 @@
       case 'regua': EP.alternarRegua && EP.alternarRegua(); break;
       case 'grade': EP.alternarGrade && EP.alternarGrade(); break;
       case 'atalhos': abrirAtalhos(); break;
+      case 'nova-folha': EP.novaFolha(); ui.avisar('Folha em branco criada'); break;
       case 'salvar-projeto': if (EP.salvarProjeto()) ui.avisar('Projeto salvo'); break;
       case 'abrir-projeto': inputProj.click(); break;
       case 'aplicar-todos': {
@@ -1118,7 +1125,7 @@
   }).join('');
   const GRUPOS_ATALHOS = [
     ['Selecionar e mover', [['Selecionar vários', 'Shift+clique'], ['Selecionar tudo', K + '+A'], ['Próximo elemento', 'Tab'], ['Tirar seleção', 'Esc'], ['Mover 1 mm', 'Setas'], ['Mover 10 mm', 'Shift+Setas'], ['Duplicar arrastando', 'Alt+arrastar'], ['Arrastar sem encaixe', K + '+arrastar'], ['Girar de 15 em 15°', 'Shift+girar']]],
-    ['Editar', [['Desfazer', K + '+Z'], ['Refazer', K + '+Y'], ['Copiar', K + '+C'], ['Colar', K + '+V'], ['Recortar', K + '+X'], ['Duplicar', K + '+D'], ['Excluir', 'Delete'], ['Copiar estilo', K + '+Alt+C'], ['Colar estilo', K + '+Alt+V']]],
+    ['Editar', [['Folha em branco', 'Shift+N'], ['Desfazer', K + '+Z'], ['Refazer', K + '+Y'], ['Copiar', K + '+C'], ['Colar', K + '+V'], ['Recortar', K + '+X'], ['Duplicar', K + '+D'], ['Excluir', 'Delete'], ['Copiar estilo', K + '+Alt+C'], ['Colar estilo', K + '+Alt+V']]],
     ['Camadas', [['Trazer para frente', K + '+]'], ['Enviar para trás', K + '+['], ['Trazer para o topo', K + '+Shift+]'], ['Enviar para o fundo', K + '+Shift+['], ['Agrupar', K + '+G'], ['Desagrupar', K + '+Shift+G'], ['Travar / destravar', 'Alt+Shift+L']]],
     ['Texto', [['Editar texto', 'Enter ou 2 cliques'], ['Nova linha', 'Shift+Enter'], ['Negrito', K + '+B'], ['Itálico', K + '+I'], ['Sublinhado', K + '+U'], ['Maiúsculas', K + '+Shift+K'], ['Alinhar à esquerda', K + '+Shift+L'], ['Centralizar texto', K + '+Shift+E'], ['Alinhar à direita', K + '+Shift+R']]],
     ['Inserir', [['Texto', 'T'], ['Retângulo', 'R'], ['Círculo', 'C'], ['Linha', 'L']]],

@@ -730,6 +730,7 @@
       if (code === 'Digit0') return fazer('zoom-valor', '1');
       if (code === 'KeyR') return fazer('regua');
       if (code === 'KeyG') return fazer('grade');
+      if (code === 'KeyN') return fazer('nova-folha');
     }
     if (e.key === '?') return fazer('atalhos');
     if (!ctrl && !e.altKey && !e.shiftKey) {
@@ -791,7 +792,7 @@
       EP.cartazes().forEach(c => {
         if (c.dataset.pro) return;
         EP.preparar(c);
-        if (modelo) EP.aplicarLayout(c, modelo);
+        if (modelo && !c.dataset.branco) EP.aplicarLayout(c, modelo);
         c.dataset.pro = '1';
       });
       if (EP.sel.some(x => !x.isConnected)) EP.selecionar(EP.sel.filter(x => x.isConnected), { sozinho: true });

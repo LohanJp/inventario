@@ -603,6 +603,28 @@
   };
   EP.lerModelo = () => { try { return JSON.parse(localStorage.getItem(CHAVE_MODELO) || 'null'); } catch (e) { return null; } };
 
+  /* ---------- Folha em branco (sem modelo pronto) ---------- */
+  EP.novaFolha = () => {
+    EP.registrar();
+    if (typeof modoEditavel !== 'undefined' && !modoEditavel) {
+      // liga o modo editável sem criar o cartaz de exemplo
+      modoEditavel = true; document.body.classList.add('modo-editavel');
+    }
+    const f = typeof formatoAtual !== 'undefined' ? formatoAtual : 'a3';
+    const c = document.createElement('article');
+    c.className = 'cartaz ' + f;
+    c.dataset.branco = '1';
+    c.innerHTML = '<div class="area-util"></div>';
+    area.appendChild(c);
+    EP.preparar(c);
+    c.dataset.pro = '1';
+    EP.selecionar([]);
+    EP.cartazAtivo = c;
+    EP.emitir('mudou');
+    c.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    return c;
+  };
+
   /* ---------- Projeto em arquivo (.json) ---------- */
   function limparHtml(raiz) {
     raiz.querySelectorAll('script, iframe, object, embed, link, meta, style, form, input, textarea, button').forEach(n => n.remove());
