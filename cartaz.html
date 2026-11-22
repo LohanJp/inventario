@@ -119,6 +119,135 @@
     .grade-icones button:focus-visible, .linha-cores button:focus-visible { outline: 3px solid var(--raio); outline-offset: 2px; }
     @media (max-width: 480px) { .grade-icones { grid-template-columns: repeat(3, 1fr); } }
 
+    /* --- Conferência antes de imprimir (tela apenas: some no PDF e na impressão) --- */
+    :root { --erro: #b3261e; }
+    .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+    .selo-problemas { display: inline-flex; align-items: center; gap: 4px; font: 700 13px/1 "Archivo", system-ui, sans-serif; color: var(--erro); background: #fff; border: 1px solid #e3b3ae; border-radius: 999px; padding: 6px 12px 6px 7px; cursor: pointer; }
+    .selo-problemas::before { content: "!"; margin-right: 3px; flex: 0 0 18px; height: 18px; border-radius: 50%; background: var(--erro); color: #fff; font-size: 12px; display: grid; place-items: center; }
+    .selo-problemas:hover { border-color: var(--erro); }
+    /* janela média: só o número (a barra não quebra); o texto completo continua no aria-label e no title */
+    @media (min-width: 901px) and (max-width: 1399px) {
+      .selo-problemas .selo-txt { display: none; }
+      .selo-problemas { gap: 5px; padding: 5px 9px 5px 5px; }
+      .barra:has(.selo-problemas:not([hidden])) { gap: 6px; }
+      .barra:has(.selo-problemas:not([hidden])) .btn:not(.btn-raio) { padding-left: 12px; padding-right: 12px; }
+      .barra:has(.selo-problemas:not([hidden])) #contagem { margin-right: 2px; }
+    }
+    .selo-problemas:focus-visible, .conf-ir:focus-visible, .conf-tabela input:focus-visible, .conf-alternar:focus-visible { outline: 3px solid var(--raio); outline-offset: 2px; }
+    .conferencia { margin: 20px 24px 0; background: var(--painel); border: 1px solid #c9cdc6; border-radius: 10px; box-shadow: 0 1px 2px rgba(0,0,0,.06); scroll-margin-top: 80px; }
+    .conf-topo { display: flex; align-items: center; gap: 4px 12px; flex-wrap: wrap; padding: 10px 12px 10px 16px; }
+    .conf-topo h2 { margin: 0; font: 700 16px/1.2 "Archivo", system-ui, sans-serif; }
+    .conf-resumo { margin: 0; font-size: 13px; color: var(--tinta-suave); }
+    .conf-resumo b { color: var(--erro); }
+    .conf-alternar { padding: 8px 12px; margin-left: auto; }
+    .conf-arquivos { list-style: none; margin: 0; padding: 0 16px 10px; display: flex; flex-wrap: wrap; gap: 4px 18px; font-size: 13px; color: var(--tinta-suave); }
+    .conf-arquivos:empty { display: none; }
+    .conf-arquivos li { display: flex; align-items: baseline; gap: 6px; }
+    .conf-arquivos li::before { content: ""; flex: 0 0 8px; height: 8px; border-radius: 50%; background: #aab0a6; transform: translateY(-1px); }
+    .conf-arquivos li.ok { color: var(--ok); }
+    .conf-arquivos li.ok::before { background: var(--ok); }
+    .conf-arquivos li.alerta { color: var(--alerta); font-weight: 600; }
+    .conf-arquivos li.alerta::before { background: var(--alerta); }
+    .conf-rolagem { max-height: min(46vh, 440px); overflow: auto; background: #fff; border-top: 1px solid var(--linha); border-radius: 0 0 10px 10px; }
+    .conf-tabela { width: 100%; border-collapse: collapse; font-size: 13px; line-height: 1.3; }
+    .conf-tabela th { position: sticky; top: 0; z-index: 1; background: #fff; text-align: left; font-size: 12px; font-weight: 600; color: var(--tinta-suave); padding: 8px 10px; border-bottom: 1px solid var(--linha); white-space: nowrap; }
+    .conf-tabela td { padding: 6px 10px; border-bottom: 1px solid #eef0ec; vertical-align: middle; }
+    .conf-tabela .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .conf-tabela .c-inc { width: 1%; padding-left: 14px; }
+    .conf-tabela td.c-num { color: var(--tinta-suave); }
+    .conf-tabela td.c-val, .conf-tabela td.c-orig { white-space: nowrap; }
+    .conf-tabela tbody tr { cursor: pointer; }
+    .conf-tabela tbody tr:hover { background: #f4f6f1; }
+    .conf-tabela tr.erro > td:first-child { box-shadow: inset 4px 0 0 var(--erro); }
+    .conf-tabela tr.atencao > td:first-child { box-shadow: inset 4px 0 0 var(--alerta); }
+    .conf-tabela tr.oculta > td { color: #6b7168; }
+    .conf-tabela tr.oculta .conf-ir { color: #6b7168; text-decoration: line-through; }
+    .conf-inc { display: grid; place-items: center; width: 28px; height: 28px; margin: -4px 0; cursor: pointer; }
+    .conf-tabela input[type=checkbox] { width: 18px; height: 18px; margin: 0; accent-color: var(--tinta); cursor: pointer; }
+    .conf-tabela td.c-nome { width: 34%; max-width: 0; } /* a coluna do nome fica com a sobra e corta com reticências */
+    .conf-ir { display: block; max-width: 100%; border: 0; background: none; padding: 2px 0; font: 600 13px/1.3 "Archivo", system-ui, sans-serif; color: var(--tinta); text-align: left; cursor: pointer; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .conf-ir:hover { text-decoration: underline; }
+    .conf-n { display: none; }
+    .conf-sem { color: var(--erro); font-weight: 700; }
+    .conf-problemas { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 4px; }
+    .conf-problemas li { font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 10px; }
+    .conf-tabela td.c-sit { min-width: 150px; }
+    .conf-problemas li.erro { color: var(--erro); background: #fbeceb; }
+    .conf-problemas li.atencao { color: var(--alerta); background: #fdf1e3; }
+    .conf-ok { color: var(--ok); font-weight: 600; }
+    .conf-fora { color: var(--tinta-suave); }
+    /* Marca do cartaz na mesa (fica dentro do cartaz, em mm: acompanha o zoom da mesa; some no PDF e na impressão).
+       Etiqueta centralizada no alto: o A5 no celular passa da largura da tela e corta as laterais. */
+    #preview-area > .cartaz.cartaz-alerta { outline: 1.2mm solid var(--erro); outline-offset: 1.2mm; }
+    #preview-area > .cartaz.cartaz-alerta.cartaz-atencao { outline-color: var(--alerta); }
+    #preview-area > .cartaz.a3.cartaz-alerta { outline-width: 2.4mm; outline-offset: 2.4mm; }
+    #preview-area > .cartaz[data-alerta]::after, #preview-area > .cartaz.cartaz-oculto::after {
+      position: absolute; top: 0; left: 50%; transform: translateX(-50%); z-index: 60; max-width: 92%; padding: 1.4mm 3mm; border-radius: 0 0 2mm 2mm;
+      color: #fff; font: 700 4mm/1.25 "Archivo", system-ui, sans-serif; letter-spacing: 0; text-transform: none;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis; pointer-events: none; }
+    #preview-area > .cartaz.a3[data-alerta]::after, #preview-area > .cartaz.a3.cartaz-oculto::after { padding: 2.8mm 6mm; border-radius: 0 0 4mm 4mm; font-size: 8mm; }
+    #preview-area > .cartaz[data-alerta]::after { content: attr(data-alerta); background: var(--erro); }
+    #preview-area > .cartaz.cartaz-atencao[data-alerta]::after { background: var(--alerta); }
+    #preview-area > .cartaz.cartaz-oculto { opacity: .45; }
+    #preview-area > .cartaz.cartaz-oculto::after { content: "Oculto: não sai no PDF"; background: var(--tinta); }
+    #preview-area > .cartaz.cartaz-foco { outline: 1.2mm solid var(--raio); outline-offset: 1.2mm; }
+    #preview-area > .cartaz.a3.cartaz-foco { outline-width: 2.4mm; outline-offset: 2.4mm; }
+    /* Sem preço DE: o cartaz sai só com o POR, logo abaixo do nome (sem caixa DE vazia nem "DE R$ —").
+       Nos modos de edição a caixa DE continua no lugar (as posições do editor dependem dela): apagada na tela,
+       para dar para digitar o preço, e invisível no PDF e na impressão enquanto estiver sem preço. */
+    body:not(.modo-editavel) .cartaz.sem-de .box-price:first-child { display: none; }
+    body.modo-editavel .cartaz.sem-de .box-price:first-child { visibility: hidden; }
+    @media screen { body.modo-editavel:not(.exportando) .cartaz.sem-de .box-price:first-child { visibility: visible; opacity: .4; } }
+    body.exportando #preview-area > .cartaz { outline: none !important; }
+    body.exportando #preview-area > .cartaz::after { content: none !important; display: none !important; }
+    .dialogo { border: 0; border-radius: 12px; padding: 0; width: min(560px, calc(100vw - 32px)); color: var(--tinta); box-shadow: 0 20px 60px rgba(30,35,30,.35); }
+    .dialogo::backdrop { background: rgba(35,38,42,.45); }
+    .dialogo h2 { margin: 0; font-size: 18px; line-height: 1.3; }
+    .aviso-pdf-texto { margin: 6px 0 10px; font-size: 14px; color: var(--tinta-suave); }
+    .aviso-pdf-lista { list-style: none; margin: 0; padding: 0; max-height: min(44vh, 360px); overflow: auto; border: 1px solid var(--linha); border-radius: 8px; }
+    .aviso-pdf-lista li { padding: 8px 12px; border-bottom: 1px solid #eef0ec; font-size: 14px; line-height: 1.35; }
+    .aviso-pdf-lista li:last-child { border-bottom: 0; }
+    .aviso-pdf-lista strong { display: block; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .aviso-pdf-lista span { font-size: 13px; color: var(--tinta-suave); }
+    .aviso-pdf-lista span.erro { color: var(--erro); font-weight: 600; }
+    .aviso-pdf-lista span.atencao { color: var(--alerta); font-weight: 600; }
+    .aviso-pdf-arquivos { margin: 10px 0 0; font-size: 13px; color: var(--alerta); font-weight: 600; }
+    @media (min-width: 901px) { body.editor-pro .conferencia { margin-right: calc(var(--pro-largura, 300px) + 24px); } }
+    /* Conferência estreita (celular, ou mesa apertada pelo painel da versão de teste): linhas viram cartões */
+    .conferencia { container-type: inline-size; }
+    @media (max-width: 900px) {
+      .conferencia { margin: 12px 8px 0; }
+      .conf-rolagem { max-height: none; overflow: visible; }
+    }
+    @container (max-width: 760px) {
+      .conf-topo { padding: 10px 8px 10px 14px; }
+      .conf-resumo { order: 3; flex-basis: 100%; }
+      .conf-rolagem { background: none; border-top: 0; }
+      .conf-tabela, .conf-tabela tbody { display: block; }
+      .conf-tabela thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+      .conf-tabela tbody { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 8px; padding: 0 8px 10px; }
+      .conf-tabela tr { display: grid; grid-template-columns: 36px 1fr 1fr 1fr; grid-template-areas: "inc nome nome nome" "inc de por desc" "inc orig val val" "inc sit sit sit";
+        align-content: start; gap: 6px 8px; padding: 10px 12px 10px 6px; background: #fff; border: 1px solid var(--linha); border-radius: 8px; }
+      .conf-tabela tr.erro { border-color: #e3b3ae; box-shadow: inset 4px 0 0 var(--erro); }
+      .conf-tabela tr.atencao { border-color: #efcfa8; box-shadow: inset 4px 0 0 var(--alerta); }
+      .conf-tabela tr.erro > td:first-child, .conf-tabela tr.atencao > td:first-child { box-shadow: none; }
+      .conf-tabela tbody tr:hover { background: #fff; }
+      .conf-tabela td { display: block; padding: 0; border: 0; text-align: left; }
+      .conf-tabela td.num { text-align: left; }
+      .conf-tabela td[data-rotulo]::before { content: attr(data-rotulo); display: block; font-size: 11px; font-weight: 600; color: var(--tinta-suave); }
+      .conf-tabela .c-inc { grid-area: inc; width: auto; padding: 0; }
+      .conf-inc { width: 36px; height: 36px; margin: -6px 0 0; }
+      .conf-tabela input[type=checkbox] { width: 22px; height: 22px; }
+      .conf-tabela td.c-num { display: none; }
+      .conf-tabela td.c-nome { grid-area: nome; min-width: 0; width: auto; max-width: none; }
+      .conf-tabela .c-de { grid-area: de; } .conf-tabela .c-por { grid-area: por; } .conf-tabela .c-desc { grid-area: desc; }
+      .conf-tabela .c-orig { grid-area: orig; } .conf-tabela .c-val { grid-area: val; } .conf-tabela .c-sit { grid-area: sit; }
+      .conf-tabela td.c-sit { min-width: 0; }
+      .conf-tabela td.c-sit:has(.conf-ok) { display: none; }
+      .conf-ir { max-width: 100%; font-size: 14px; white-space: normal; padding: 4px 0; }
+      .conf-n { display: inline; color: var(--tinta-suave); font-weight: 600; }
+    }
+
     @media (max-width: 900px) {
       .app { grid-template-columns: 1fr; }
       .painel { position: static; height: auto; border-right: 0; border-bottom: 1px solid var(--linha); }
@@ -246,13 +375,16 @@
     .cartaz.a3 .produto-nome { white-space: nowrap; max-width: 100%; overflow: hidden; }
     /* Na tela o A3 aparece reduzido; na impressão/PDF sai no tamanho real */
     @media screen { .cartaz.a3 { zoom: 0.5; } }
-    body.exportando .cartaz.a3 { zoom: 1; }
+    /* !important: vence também o zoom 0.35 !important da tela estreita (≤ 900px), senão o PDF sai a 52 dpi */
+    body.exportando .cartaz.a3 { zoom: 1 !important; }
     body.exportando .cartaz { margin: 0 !important; border: none !important; box-shadow: none !important; }
     body.exportando .cartaz [contenteditable] { outline: none !important; background: none !important; }
 
 
     @media print {
-      .painel, .barra, .vazio, .dica-editavel { display: none !important; }
+      .painel, .barra, .vazio, .dica-editavel, .conferencia, .selo-problemas, .dialogo { display: none !important; }
+      #preview-area > .cartaz { outline: none !important; }
+      #preview-area > .cartaz::after { content: none !important; display: none !important; }
       .app { display: block; }
       #preview-area { display: block; padding: 0; gap: 0; }
       #preview-area .cartaz { box-shadow: none; }
@@ -307,6 +439,7 @@
     <main class="mesa">
       <div class="barra">
         <span id="contagem">Nenhum cartaz</span>
+        <button id="selo-problemas" class="selo-problemas" type="button" aria-controls="conferencia" hidden></button>
         <div class="segmento" role="radiogroup" aria-label="Tamanho do papel">
           <button type="button" role="radio" data-formato="a3">A3</button>
           <button type="button" role="radio" data-formato="a5">A5</button>
@@ -322,6 +455,37 @@
         <button id="clear" class="btn btn-texto" type="button">Limpar</button>
         <button id="baixar-pdf" class="btn btn-tinta" type="button">Baixar PDF</button>
       </div>
+      <!-- Conferência antes de imprimir: aparece depois de "Gerar cartazes"; nada dela sai no PDF nem na impressão -->
+      <section id="conferencia" class="conferencia" aria-labelledby="conf-titulo" hidden>
+        <header class="conf-topo">
+          <h2 id="conf-titulo">Conferência</h2>
+          <p id="conf-resumo" class="conf-resumo" aria-live="polite"></p>
+          <span class="espaco"></span>
+          <button id="conf-alternar" class="btn btn-texto conf-alternar" type="button" aria-expanded="true" aria-controls="conf-corpo">Recolher</button>
+        </header>
+        <div id="conf-corpo">
+          <ul id="conf-arquivos" class="conf-arquivos"></ul>
+          <div class="conf-rolagem">
+            <table class="conf-tabela" role="table">
+              <caption class="sr-only">Um item por cartaz. Desmarque Incluir para tirar o cartaz do PDF; o botão com o nome leva até o cartaz.</caption>
+              <thead role="rowgroup">
+                <tr role="row">
+                  <th scope="col" role="columnheader" class="c-inc">Incluir</th>
+                  <th scope="col" role="columnheader" class="c-num num">Nº</th>
+                  <th scope="col" role="columnheader" class="c-nome">Produto</th>
+                  <th scope="col" role="columnheader" class="c-de num">DE</th>
+                  <th scope="col" role="columnheader" class="c-orig">Origem<span class="sr-only"> do DE</span></th>
+                  <th scope="col" role="columnheader" class="c-por num">POR</th>
+                  <th scope="col" role="columnheader" class="c-desc num">Desconto</th>
+                  <th scope="col" role="columnheader" class="c-val">Validade</th>
+                  <th scope="col" role="columnheader" class="c-sit">Situação</th>
+                </tr>
+              </thead>
+              <tbody id="conf-linhas" role="rowgroup"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
       <div id="vazio" class="vazio">
         <div class="folha" aria-hidden="true"><i></i></div>
         <strong>Os cartazes aparecem aqui</strong>
@@ -340,6 +504,19 @@
       <div class="galeria-acoes">
         <button type="button" id="galeria-padrao" class="btn btn-texto" hidden>Usar o mesmo dos outros</button>
         <button class="btn btn-tinta" value="ok">Pronto</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="aviso-pdf" class="dialogo" aria-labelledby="aviso-pdf-titulo" aria-describedby="aviso-pdf-texto">
+    <form method="dialog" class="galeria-corpo">
+      <h2 id="aviso-pdf-titulo"></h2>
+      <p id="aviso-pdf-texto" class="aviso-pdf-texto">Estes cartazes saem assim no PDF:</p>
+      <ul id="aviso-pdf-lista" class="aviso-pdf-lista"></ul>
+      <p id="aviso-pdf-arquivos" class="aviso-pdf-arquivos" hidden></p>
+      <div class="galeria-acoes">
+        <button class="btn btn-claro" value="conferir" data-resp="conferir" autofocus>Voltar e conferir</button>
+        <button class="btn btn-tinta" value="baixar" data-resp="baixar">Baixar mesmo assim</button>
       </div>
     </form>
   </dialog>
@@ -391,38 +568,104 @@
     }
     function desenharTodos() { document.querySelectorAll('#preview-area .cartaz').forEach(desenharIcones); }
 
-    function parseMainList(text) {
-      return text.split('\n').filter(line => line.trim()).map(line => {
-        const c = line.split('\t').length >= 9 ? line.split('\t') : line.split(/\s{2,}/);
-        if (c.length < 9) return null;
-        // Formato novo (com etiquetas pedidas/lançadas): verificação na coluna 10 (c[9]).
-        // Formato antigo: verificação na coluna 9 (c[8]).
-        const colAtivo = c.length >= 10 ? 9 : 8;
-        return { ean: c[1], nome: c[3], preco: c[4], validade: c[6], ativo: (c[colAtivo] || '').trim().toUpperCase() };
-      }).filter(p => p && p.ativo === "NÃO");
+    // --- Textos e números que vêm de fora (TSV, lista colada, arquivos) ---
+    // Todo texto de entrada vai para o HTML escapado (nome com "<" não some nem vira código)
+    function escHtml(s) {
+      return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    }
+    // Preço → número (ou null). Aceita "5,49", "R$ 5,49", "1.299,90", "2.99", "1299.90", "1,299.90".
+    // Com vírgula e ponto, o último é o decimal; só pontos: ponto seguido de 3 dígitos é milhar ("1.299").
+    function lerPreco(txt) {
+      const m = String(txt == null ? '' : txt).replace(/\s/g, '').match(/\d[\d.,]*/);
+      if (!m) return null;
+      const s = m[0].replace(/[.,]+$/, '');
+      const v = s.lastIndexOf(','), p = s.lastIndexOf('.');
+      let dec = -1;
+      if (v >= 0 && p >= 0) dec = Math.max(v, p);
+      else if (v >= 0) dec = s.indexOf(',') === v ? v : -1;                        // uma vírgula: decimal; várias: milhar
+      else if (p >= 0) dec = s.indexOf('.') === p && s.length - p - 1 !== 3 ? p : -1; // "2.99" decimal; "1.299" milhar
+      const inteiro = (dec < 0 ? s : s.slice(0, dec)).replace(/[.,]/g, '');
+      const n = parseFloat(inteiro + (dec < 0 ? '' : '.' + s.slice(dec + 1)));
+      return isNaN(n) ? null : Math.round(n * 100) / 100;
+    }
+    // Número → "1.199,90" (pt-BR, com milhar)
+    function formatarPreco(n) {
+      const [i, d] = Math.abs(n).toFixed(2).split('.');
+      return (n < 0 ? '-' : '') + i.replace(/\B(?=(\d{3})+(?!\d))/g, '.') + ',' + d;
+    }
+    const temPreco = n => typeof n === 'number' && n > 0; // 0,00 ou vazio = sem preço
+    // "25/11/2026 00:00:00" ou "2026-11-25" → "25/11/2026"
+    function normalizarValidade(s) {
+      const t = String(s == null ? '' : s).trim();
+      let m = t.match(/(\d{1,2})\/(\d{1,2})\/(\d{4}|\d{2})(?!\d)/);
+      if (m) return `${m[1].padStart(2, '0')}/${m[2].padStart(2, '0')}/${m[3].length === 2 ? '20' + m[3] : m[3]}`;
+      m = t.match(/(\d{4})-(\d{2})-(\d{2})/);
+      return m ? `${m[3]}/${m[2]}/${m[1]}` : t;
+    }
+    // Célula do TSV: sem espaços nas pontas e sem as aspas que o Excel põe ("LEITE ""MOCA""" → LEITE "MOCA")
+    function celula(v) {
+      let s = String(v == null ? '' : v).trim();
+      if (/^"[\s\S]*"$/.test(s)) s = s.slice(1, -1).replace(/""/g, '"').trim();
+      return s;
+    }
+    // Verificação "SIM" / "NÃO" (aceita "NAO" e minúsculas) → 'SIM' | 'NAO' | null
+    function simNao(v) {
+      const t = String(v == null ? '' : v).trim().toUpperCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+      return t === 'SIM' || t === 'NAO' ? t : null;
     }
 
+    function parseMainList(text) {
+      return text.split(/\r?\n/).filter(line => line.trim()).map(line => {
+        const porTab = line.split('\t');
+        const c = (porTab.length >= 9 ? porTab : line.trim().split(/\s{2,}/)).map(celula);
+        if (c.length < 9) return null;
+        // Verificação: a última coluna com SIM/NÃO (formato novo na 10ª, antigo na 9ª; TAB sobrando no fim não atrapalha)
+        let colAtivo = -1;
+        for (let i = c.length - 1; i >= 8; i--) if (simNao(c[i])) { colAtivo = i; break; }
+        if (colAtivo < 0) return null;
+        const porNum = lerPreco(c[4]);
+        return { ean: c[1], nome: c[3], preco: porNum !== null ? formatarPreco(porNum) : c[4], porNum,
+                 validade: normalizarValidade(c[6]), ativo: simNao(c[colAtivo]) };
+      }).filter(p => p && p.ativo === 'NAO');
+    }
+
+    // Lista colada à mão: EAN (8 a 14 dígitos; um código interno antes é ignorado) e preço depois dele
     function parseSecondaryList(text) {
       const map = new Map();
-      text.split('\n').forEach(line => {
-        const ean = line.match(/\d{5,}/);
-        const preco = line.match(/\d+,\d{2}/);
-        if (ean && preco) map.set(ean[0], preco[0]);
+      text.split(/\r?\n/).forEach(line => {
+        const m = line.match(/(?<!\d)\d{8,14}(?!\d)/);
+        if (!m) return;
+        const partes = line.slice(m.index + m[0].length).split(/[\s;|]+/).map(t => t.replace(/^R\$/i, ''))
+          .filter(t => /^\d[\d.,]*$/.test(t));
+        const txt = partes.find(t => /[.,]/.test(t)) || partes[0];
+        const preco = lerPreco(txt);
+        if (temPreco(preco)) map.set(normEan(m[0]), preco);
       });
       return map;
     }
 
     // --- Preços direto dos arquivos da pasta RelatorioAutomatico ---
     // Precos_AAAA-MM-DD: conferência de preços Clube Condor (EAN na coluna AUTOMACAO,
-    //   depois PRECO NORMAL e PRECO CLUBE).
+    //   depois PRECO NORMAL e PRECO CLUBE). Uma linha só com EAN é EAN extra do produto de cima.
     // PRODUTO: EAN (13 dígitos com zeros) + descrição + preço "0000042,900000000.00".
+    // Os preços ficam como número; 0,00 conta como "sem preço".
     const normEan = s => String(s || '').replace(/\D/g, '').replace(/^0+/, '');
+    const PRECO_ARQ = '\\d{1,3}(?:\\.\\d{3})+,\\d{2}|\\d+[.,]\\d{2}';
+    const LINHA_PRECOS = new RegExp(`(?<!\\d)(\\d{8,14})\\s+(${PRECO_ARQ})(?:\\s+(${PRECO_ARQ}))?(?![\\d.,])`);
 
     function parsePrecosClube(text) {
       const map = new Map();
+      let anterior = null;
       text.split(/\r?\n/).forEach(line => {
-        const m = line.match(/(\d{8,14})\s+(\d+,\d{2})\s+(\d+,\d{2})/);
-        if (m) map.set(normEan(m[1]), { normal: m[2], clube: m[3] });
+        const m = line.match(LINHA_PRECOS);
+        if (m) {
+          anterior = { normal: lerPreco(m[2]), clube: m[3] ? lerPreco(m[3]) : null };
+          map.set(normEan(m[1]), anterior);
+          return;
+        }
+        const extra = line.match(/^\s*(\d{8,14})\s*$/);
+        if (extra && anterior) { if (!map.has(normEan(extra[1]))) map.set(normEan(extra[1]), anterior); return; }
+        if (line.trim()) anterior = null;
       });
       return map;
     }
@@ -433,8 +676,8 @@
         const ean = line.match(/^\s*(\d{6,14})\s/);
         const preco = line.match(/(\d+),(\d+)(?:\.\d+)?\s*$/);
         if (!ean || !preco) return;
-        const centavos = preco[2].slice(0, 2).padEnd(2, '0');
-        map.set(normEan(ean[1]), parseInt(preco[1], 10) + ',' + centavos);
+        const n = parseInt(preco[1], 10) + parseInt(preco[2].slice(0, 2).padEnd(2, '0'), 10) / 100;
+        if (temPreco(n)) map.set(normEan(ean[1]), Math.round(n * 100) / 100);
       });
       return map;
     }
@@ -467,10 +710,12 @@
         produto: produto ? parseProduto(await lerTexto(produto)) : new Map(),
         nomePrecos: precos ? precos.name : null,
         nomeProduto: produto ? produto.name : null,
-        dataPrecos
+        dataPrecos,
+        dataProduto: produto ? produto.lastModified : null
       };
+      const nClube = [...new Set(dadosArquivos.clube.values())].filter(v => temPreco(v.clube)).length;
       const partes = [];
-      partes.push(precos ? `${precos.name} (${dadosArquivos.clube.size} preços Clube)` : 'sem arquivo Precos_');
+      partes.push(precos ? `${precos.name} (${nClube} preços Clube)` : 'sem arquivo Precos_');
       partes.push(produto ? `${produto.name} (${dadosArquivos.produto.size} preços normais)` : 'sem arquivo PRODUTO');
       const velho = precos && dataPrecos && dataPrecos !== hojeISO();
       statusPasta.className = velho || !precos || !produto ? 'aviso' : 'ok';
@@ -561,33 +806,41 @@
       aplicarFormato();
     });
 
-    // Diminui a fonte do nome até caber na largura (nomes compridos)
+    // Diminui a fonte do nome até caber na largura (nomes compridos).
+    // Guarda quanto o nome encolheu (1 = tamanho original) para a conferência avisar quando fica pequeno demais.
+    const escalaNome = new WeakMap();
+    let confAtiva = false, confAgendada = false; // conferência (ver "Conferência antes de imprimir", mais abaixo)
     function ajustarNome(el) {
       el.style.fontSize = '';
       let tam = parseFloat(getComputedStyle(el).fontSize);
-      const min = tam * 0.35;
+      const orig = tam, min = tam * 0.35;
       while (el.scrollWidth > el.clientWidth + 1 && tam > min) {
         tam *= 0.95;
         el.style.fontSize = tam + 'px';
       }
+      if (orig > 0) escalaNome.set(el, tam / orig);
+      agendarConferencia();
     }
     function ajustarNomes() {
       document.querySelectorAll('.produto-nome').forEach(ajustarNome);
     }
     document.getElementById('preview-area').addEventListener('input', (e) => {
       if (e.target.classList && e.target.classList.contains('produto-nome')) ajustarNome(e.target);
+      agendarConferencia(); // texto mudado no cartaz (modelo editável / versão de teste): a conferência acompanha
     });
 
+    // Todos os parâmetros são texto (escapados aqui). Sem preço DE (vazio/null): caixa DE com "—" e classe sem-de.
     function montarCartaz(nome, precoDE, precoPor, validade, editavel = false) {
       const ed = editavel ? ' contenteditable="true" spellcheck="false"' : '';
+      const semDE = precoDE == null || String(precoDE).trim() === '' || String(precoDE).trim() === '—';
       return `
-          <article class="cartaz ${formatoAtual}">
+          <article class="cartaz ${formatoAtual}${semDE ? ' sem-de' : ''}">
             <div class="area-util">
               <div class="row-header">
                 <div class="col-thunder" data-lado="left" title="Trocar ícone"></div>
                 <div class="col-title">
                   <div class="bar-top"></div>
-                  <h1 class="produto-nome"${ed}>${nome}</h1>
+                  <h1 class="produto-nome"${ed}>${escHtml(nome)}</h1>
                   <div class="bar-bottom"></div>
                 </div>
                 <div class="col-thunder" data-lado="right" title="Trocar ícone"></div>
@@ -596,15 +849,15 @@
               <div class="precos">
                 <div class="box-price">
                   <div class="label-price"${ed}>DE R$:</div>
-                  <div class="value-price small-val"${ed}>${precoDE}</div>
+                  <div class="value-price small-val"${ed}>${semDE ? '—' : escHtml(precoDE)}</div>
                 </div>
                 <div class="box-price">
                   <div class="label-price"${ed}>POR R$:</div>
-                  <div class="value-price big-val"${ed}>${precoPor}</div>
+                  <div class="value-price big-val"${ed}>${escHtml(precoPor)}</div>
                 </div>
               </div>
 
-              <footer class="validade"><span${ed}>PRODUTO PRÓXIMO DA VALIDADE:</span> <span${ed}>${validade}</span></footer>
+              <footer class="validade"><span${ed}>PRODUTO PRÓXIMO DA VALIDADE:</span> <span${ed}>${escHtml(validade)}</span></footer>
             </div>
           </article>
       `;
@@ -619,25 +872,37 @@
       const produtos = parseMainList(document.getElementById('input').value);
       const precosNormais = parseSecondaryList(document.getElementById('input2').value);
 
-      // Preço DE: 1º lista colada, 2º preço Clube (Precos_), 3º preço normal (PRODUTO), senão o próprio preço
-      const cont = { lista: 0, clube: 0, produto: 0, nenhum: 0 };
+      // Preço DE: 1º lista colada, 2º preço Clube (Precos_), 3º preço normal do Precos_, 4º preço normal (PRODUTO).
+      // 0,00 ou vazio não conta (cai para a próxima fonte). Sem nenhuma: cartaz sem preço DE (fica marcado na conferência).
+      const cont = { lista: 0, clube: 0, normal: 0, produto: 0, nenhum: 0 };
       const semPreco = [];
       produtos.forEach(p => {
         const ean = normEan(p.ean);
-        let precoDE = precosNormais.get(p.ean);
-        if (precoDE) cont.lista++;
-        else if (dadosArquivos && dadosArquivos.clube.has(ean)) { precoDE = dadosArquivos.clube.get(ean).clube; cont.clube++; }
-        else if (dadosArquivos && dadosArquivos.produto.has(ean)) { precoDE = dadosArquivos.produto.get(ean); cont.produto++; }
-        else { precoDE = p.preco; cont.nenhum++; semPreco.push(p.nome); }
+        let precoDE = precosNormais.get(ean), origem = 'nenhum';
+        const cl = dadosArquivos ? dadosArquivos.clube.get(ean) : null;
+        const pr = dadosArquivos ? dadosArquivos.produto.get(ean) : null;
+        if (temPreco(precoDE)) origem = 'lista';
+        else if (cl && temPreco(cl.clube)) { precoDE = cl.clube; origem = 'clube'; }
+        else if (cl && temPreco(cl.normal)) { precoDE = cl.normal; origem = 'normal'; }
+        else if (temPreco(pr)) { precoDE = pr; origem = 'produto'; }
+        else { precoDE = null; semPreco.push(p.nome); }
+        cont[origem]++;
 
-        preview.insertAdjacentHTML('beforeend', montarCartaz(p.nome, precoDE, p.preco, p.validade, modoEditavel));
+        const deTxt = precoDE === null ? '' : formatarPreco(precoDE);
+        preview.insertAdjacentHTML('beforeend', montarCartaz(p.nome, deTxt, p.preco, p.validade, modoEditavel));
+        const c = preview.lastElementChild;
+        c.dataset.ean = ean;
+        c.dataset.origem = origem;
+        c.dataset.deOrig = deTxt;
       });
       const resumo = document.getElementById('resumo-precos');
       resumo.textContent = produtos.length
-        ? `${produtos.length} cartazes — preço DE: ${cont.lista} da lista, ${cont.clube} do Clube, ${cont.produto} do PRODUTO` +
+        ? `${produtos.length} cartazes — preço DE: ${cont.lista} da lista, ${cont.clube} do Clube, ` +
+          (cont.normal ? `${cont.normal} do preço normal do Precos_, ` : '') + `${cont.produto} do PRODUTO` +
           (cont.nenhum ? `, ${cont.nenhum} sem preço DE (${semPreco.join(', ')})` : '')
         : '';
       ajustarNomes();
+      mostrarConferencia(produtos.length > 0);
     });
 
     // Modelo editável: deixa editáveis todos os cartazes já na tela.
@@ -700,6 +965,11 @@
     document.getElementById('baixar-pdf').addEventListener('click', async () => {
       const cartazes = [...document.querySelectorAll('#preview-area .cartaz:not(.cartaz-oculto)')]; // ocultos (olho) ficam de fora
       if (!cartazes.length) { alert(document.querySelector('#preview-area .cartaz') ? 'Todos os cartazes estão ocultos. Mostre pelo menos um (área Ocultos, no fim da mesa) para baixar o PDF.' : 'Gere ou crie um cartaz primeiro.'); return; }
+      // Conferência: cartazes do lote com problema pedem confirmação antes do PDF
+      if (confAtiva) {
+        const comProblema = analisarCartazes().filter(it => !it.oculto && it.problemas.length);
+        if (comProblema.length && !(await perguntarProblemas(comProblema))) return;
+      }
       if (!window.html2canvas || !window.jspdf) { alert('Não carregou o gerador de PDF. Verifique a internet e recarregue a página.'); return; }
       const botao = document.getElementById('baixar-pdf');
       const textoOriginal = botao.textContent;
@@ -746,9 +1016,19 @@
 
     // Contagem de cartazes e tela vazia
     const areaPreview = document.getElementById('preview-area');
+    // Mesmo texto que a versão de teste usa (editor-pro/paginas.js): "3 cartazes · 1 oculto"
+    function atualizarContagem() {
+      const total = areaPreview.querySelectorAll('.cartaz').length;
+      const ocultos = areaPreview.querySelectorAll('.cartaz.cartaz-oculto').length, v = total - ocultos;
+      const txt = !total ? 'Nenhum cartaz'
+        : !ocultos ? `${total} cartaz${total > 1 ? 'es' : ''}`
+        : `${v ? v + (v > 1 ? ' cartazes' : ' cartaz') : 'Nenhum visível'} · ${ocultos} oculto${ocultos > 1 ? 's' : ''}`;
+      const el = document.getElementById('contagem');
+      if (el.textContent !== txt) el.textContent = txt;
+    }
     function atualizarMesa() {
       const n = areaPreview.querySelectorAll('.cartaz').length;
-      document.getElementById('contagem').textContent = n ? `${n} cartaz${n > 1 ? 'es' : ''}` : 'Nenhum cartaz';
+      atualizarContagem();
       document.getElementById('vazio').hidden = n > 0;
       areaPreview.querySelectorAll('.cartaz').forEach(c => { if (!c.dataset.desenhado) { c.dataset.desenhado = '1'; desenharIcones(c); } });
       document.body.classList.toggle('modo-editavel', modoEditavel);
@@ -835,7 +1115,281 @@
       document.getElementById('preview-area').innerHTML = "";
       document.getElementById('resumo-precos').textContent = '';
       modoEditavel = false; document.body.classList.remove("modo-editavel");
+      mostrarConferencia(false);
     });
+
+    // --- Conferência antes de imprimir ---
+    // Uma linha por cartaz da mesa (lida do próprio cartaz: vale também depois de editar no modelo editável ou na
+    // versão de teste). "Incluir" desmarcado = classe cartaz-oculto (a mesma do olho da versão de teste), que o PDF
+    // e a impressão já pulam. Cartaz com problema ganha borda e etiqueta na mesa (fora do PDF e da impressão).
+    const ORIGEM_DE = { lista: 'Lista', clube: 'Clube', normal: 'Normal (Precos_)', produto: 'PRODUTO', nenhum: 'Nenhum', editado: 'Editado', mao: 'À mão' };
+    const DESCONTO_SUSPEITO = 70;  // % acima disso pede conferência
+    const NOME_MINIMO = 0.6;       // nome encolhido abaixo de 60% do tamanho original
+    const DIAS_PRODUTO = 7;        // PRODUTO mais velho que isso é "antigo"
+    const confSec = document.getElementById('conferencia');
+    const confCorpo = document.getElementById('conf-corpo');
+    const confLinhas = document.getElementById('conf-linhas');
+    const confAlternar = document.getElementById('conf-alternar');
+    const seloProblemas = document.getElementById('selo-problemas');
+    const movimento = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth';
+
+    function diaZero(d) { const x = new Date(d); x.setHours(0, 0, 0, 0); return x; }
+    function dataValidade(txt) {
+      const m = String(txt || '').match(/(\d{2})\/(\d{2})\/(\d{4})/);
+      if (!m) return null;
+      const d = new Date(+m[3], +m[2] - 1, +m[1]);
+      return d.getMonth() === +m[2] - 1 ? d : null;
+    }
+    const dataBR = d => `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
+
+    function analisarCartazes() {
+      const hoje = diaZero(Date.now()).getTime();
+      const primeiro = new Map(); // EAN|validade → nº do primeiro cartaz incluído
+      return [...areaPreview.querySelectorAll('.cartaz')].map((c, i) => {
+        const q = s => c.querySelector(s);
+        const txt = el => el ? el.textContent.replace(/\s+/g, ' ').trim() : '';
+        const nomeEl = q('.produto-nome'), deEl = q('.value-price.small-val'), porEl = q('.value-price.big-val');
+        const it = { i, c, n: i + 1, oculto: c.classList.contains('cartaz-oculto'), problemas: [],
+                     nome: txt(nomeEl) || (c.dataset.branco ? 'Folha em branco' : 'Sem nome') };
+        if (!nomeEl && !deEl && !porEl) { it.branco = true; return it; }
+        it.deTxt = txt(deEl); it.de = lerPreco(it.deTxt);
+        it.porTxt = txt(porEl); it.por = lerPreco(it.porTxt);
+        it.validade = normalizarValidade(txt(q('.validade span:last-child') || q('.validade')));
+        const deValido = temPreco(it.de) ? it.de : null;
+        it.origem = !c.dataset.origem ? 'mao'
+          : (temPreco(lerPreco(c.dataset.deOrig)) ? lerPreco(c.dataset.deOrig) : null) !== deValido ? 'editado' : c.dataset.origem;
+        // a caixa DE some do cartaz enquanto não houver preço DE (digitar um preço no modelo editável traz de volta)
+        if (deEl && c.classList.contains('sem-de') === !!deValido) c.classList.toggle('sem-de', !deValido);
+        if (it.oculto) return it;
+        const p = (nivel, texto) => it.problemas.push({ nivel, texto });
+        // caixa DE apagada de propósito na versão de teste não é problema
+        if (deEl && !deValido && !deEl.closest('.ed.oculto')) p('erro', 'Sem preço DE (sai só o POR)');
+        if (porEl && !temPreco(it.por)) p('erro', 'Sem preço POR');
+        if (deValido && temPreco(it.por)) {
+          it.desconto = Math.round((1 - it.por / it.de) * 100);
+          if (it.por >= it.de) p('erro', 'POR igual ou maior que o DE');
+          else if (it.desconto > DESCONTO_SUSPEITO) p('atencao', `Desconto alto (${it.desconto}%)`);
+        }
+        const d = dataValidade(it.validade);
+        if (!d) p('atencao', 'Validade não reconhecida');
+        else if (d.getTime() < hoje) p('erro', `Vencido em ${it.validade}`);
+        else if (d.getTime() === hoje) p('atencao', 'Vence hoje');
+        if (c.dataset.ean) {
+          const k = c.dataset.ean + '|' + it.validade;
+          if (primeiro.has(k)) p('atencao', `Repetido do cartaz ${primeiro.get(k)}`); else primeiro.set(k, it.n);
+        }
+        if (nomeEl && nomeEl.offsetParent) {
+          const escala = escalaNome.get(nomeEl);
+          if (nomeEl.scrollWidth > nomeEl.clientWidth + 1) p('atencao', 'Nome cortado');
+          else if (escala && escala < NOME_MINIMO) p('atencao', `Nome reduzido a ${Math.round(escala * 100)}%`);
+        }
+        it.nivel = it.problemas.some(x => x.nivel === 'erro') ? 'erro' : it.problemas.length ? 'atencao' : '';
+        return it;
+      });
+    }
+
+    // Avisos dos arquivos de preço (topo da conferência)
+    function avisosArquivos(itens) {
+      const av = [];
+      const semDE = itens.some(it => it.problemas.some(x => x.texto.startsWith('Sem preço DE')));
+      const fmt = iso => iso.split('-').reverse().join('/');
+      if (!dadosArquivos) {
+        av.push([semDE ? 'alerta' : '', 'Nenhuma pasta de relatórios lida: o DE só vem da lista colada.']);
+        return av;
+      }
+      const a = dadosArquivos;
+      if (!a.nomePrecos) av.push(['alerta', 'Sem arquivo Precos_: o DE não usa o preço Clube.']);
+      else if (!a.dataPrecos) av.push(['alerta', `${a.nomePrecos}: não deu para ver a data no nome.`]);
+      else if (a.dataPrecos !== hojeISO()) av.push(['alerta', `${a.nomePrecos} é de ${fmt(a.dataPrecos)}, não de hoje. Confira os preços Clube.`]);
+      else av.push(['ok', `${a.nomePrecos} é de hoje.`]);
+      if (!a.nomeProduto) av.push(['alerta', 'Sem arquivo PRODUTO.']);
+      else if (a.dataProduto) {
+        const dias = Math.round((diaZero(Date.now()) - diaZero(a.dataProduto)) / 864e5);
+        const d = dataBR(new Date(a.dataProduto));
+        if (dias > DIAS_PRODUTO) av.push(['alerta', `${a.nomeProduto} é antigo: de ${d} (${dias} dias).`]);
+        else av.push([dias <= 0 ? 'ok' : '', dias <= 0 ? `${a.nomeProduto} é de hoje.` : `${a.nomeProduto} de ${d}.`]);
+      }
+      return av;
+    }
+
+    function linhaConferencia(it) {
+      const nome = escHtml(it.nome);
+      const classe = it.oculto ? 'oculta' : it.nivel || '';
+      const sit = it.oculto ? '<span class="conf-fora">Oculto: fora do PDF</span>'
+        : it.branco ? '<span class="conf-fora">Sem dados para conferir</span>'
+        : it.problemas.length ? `<ul class="conf-problemas">${it.problemas.map(x => `<li class="${x.nivel}">${escHtml(x.texto)}</li>`).join('')}</ul>`
+        : '<span class="conf-ok">OK</span>';
+      const de = it.branco ? '—' : temPreco(it.de) ? escHtml(formatarPreco(it.de)) : '<span class="conf-sem" aria-hidden="true">—</span><span class="sr-only">sem preço</span>';
+      const por = it.branco ? '—' : temPreco(it.por) ? escHtml(formatarPreco(it.por)) : escHtml(it.porTxt || '—');
+      const desc = it.desconto == null ? '—' : it.desconto > 0 ? `-${it.desconto}%` : it.desconto < 0 ? `+${-it.desconto}%` : '0%';
+      const origem = it.branco ? '—' : ORIGEM_DE[it.origem] || '—';
+      return `<tr role="row" class="${classe}" data-i="${it.i}">
+        <td role="cell" class="c-inc"><label class="conf-inc"><input type="checkbox" data-foco="inc-${it.i}"${it.oculto ? '' : ' checked'} aria-label="Incluir no PDF: cartaz ${it.n}, ${nome}"></label></td>
+        <td role="cell" class="c-num num">${it.n}</td>
+        <td role="cell" class="c-nome"><button type="button" class="conf-ir" data-foco="ir-${it.i}" title="${nome}" aria-label="Ver cartaz ${it.n}: ${nome}"><span class="conf-n">${it.n}.</span> ${nome}</button></td>
+        <td role="cell" class="c-de num" data-rotulo="DE">${de}</td>
+        <td role="cell" class="c-orig${it.origem === 'nenhum' ? ' conf-sem' : ''}" data-rotulo="Origem do DE">${escHtml(origem)}</td>
+        <td role="cell" class="c-por num" data-rotulo="POR">${por}</td>
+        <td role="cell" class="c-desc num" data-rotulo="Desconto">${desc}</td>
+        <td role="cell" class="c-val" data-rotulo="Validade">${escHtml(it.branco ? '—' : it.validade || '—')}</td>
+        <td role="cell" class="c-sit">${sit}</td>
+      </tr>`;
+    }
+
+    // Marca (ou desmarca) os cartazes na mesa; só mexe no que mudou (os observadores da mesa não entram em laço)
+    function marcarMesa(itens) {
+      const porCartaz = new Map((itens || []).map(it => [it.c, it]));
+      areaPreview.querySelectorAll('.cartaz').forEach(c => {
+        const it = porCartaz.get(c);
+        const tem = !!(it && !it.oculto && it.problemas.length);
+        const t0 = tem ? it.problemas[0].texto : '';
+        const rot = tem ? 'Confira: ' + (/^.[a-zà-ú]/.test(t0) ? t0[0].toLowerCase() + t0.slice(1) : t0) + (it.problemas.length > 1 ? ` (+${it.problemas.length - 1})` : '') : null;
+        if (c.classList.contains('cartaz-alerta') !== tem) c.classList.toggle('cartaz-alerta', tem);
+        const atencao = tem && it.nivel === 'atencao';
+        if (c.classList.contains('cartaz-atencao') !== atencao) c.classList.toggle('cartaz-atencao', atencao);
+        if (rot === null) { if (c.hasAttribute('data-alerta')) c.removeAttribute('data-alerta'); }
+        else if (c.dataset.alerta !== rot) c.dataset.alerta = rot;
+      });
+    }
+
+    function renderConferencia() {
+      confAgendada = false;
+      atualizarContagem();
+      const itens = confAtiva ? analisarCartazes() : null;
+      marcarMesa(itens);
+      if (!itens || !itens.length) {
+        confSec.hidden = true; seloProblemas.hidden = true;
+        return;
+      }
+      confSec.hidden = false;
+      const comProblema = itens.filter(it => !it.oculto && it.problemas.length).length;
+      const ocultos = itens.filter(it => it.oculto).length;
+      trocarHtml(document.getElementById('conf-resumo'),
+        `${itens.length} ${itens.length > 1 ? 'cartazes' : 'cartaz'} · ` +
+        (comProblema ? `<b>${comProblema} com problema</b>` : 'nenhum problema') +
+        (ocultos ? ` · ${ocultos} oculto${ocultos > 1 ? 's' : ''} (fora do PDF)` : ''));
+      trocarHtml(document.getElementById('conf-arquivos'),
+        avisosArquivos(itens).map(([nivel, t]) => `<li class="${nivel}">${escHtml(t)}</li>`).join(''));
+      // reconstrói as linhas sem perder o foco do teclado
+      const foco = document.activeElement && confLinhas.contains(document.activeElement) ? document.activeElement.dataset.foco : null;
+      const html = itens.map(linhaConferencia).join('');
+      if (confLinhas.dataset.html !== html) {
+        confLinhas.innerHTML = html;
+        confLinhas.dataset.html = html;
+        if (foco) { const el = confLinhas.querySelector(`[data-foco="${foco}"]`); if (el) el.focus({ preventScroll: true }); }
+      }
+      seloProblemas.hidden = !comProblema;
+      seloProblemas.innerHTML = `${comProblema}<span class="selo-txt">com problema</span>`;
+      seloProblemas.title = `${comProblema} ${comProblema > 1 ? 'cartazes' : 'cartaz'} com problema`;
+      seloProblemas.setAttribute('aria-label', `${comProblema} ${comProblema > 1 ? 'cartazes' : 'cartaz'} com problema: ver a conferência`);
+      if (window.EP && EP.ativo && EP.agendar) EP.agendar(); // cabeçalhos da versão de teste acompanham a mesa
+    }
+    // só troca o HTML quando muda (leitor de tela não repete o aviso; foco não se perde à toa)
+    function trocarHtml(el, html) { if (el.dataset.html !== html) { el.innerHTML = html; el.dataset.html = html; } }
+    function agendarConferencia() {
+      if (confAgendada) return;
+      confAgendada = true;
+      requestAnimationFrame(renderConferencia);
+    }
+
+    function abrirConferencia(aberta) {
+      confCorpo.hidden = !aberta;
+      confAlternar.setAttribute('aria-expanded', String(aberta));
+      confAlternar.textContent = aberta ? 'Recolher' : 'Mostrar';
+      if (window.EP && EP.ativo && EP.agendar) EP.agendar();
+    }
+    function rolarAteConferencia() {
+      const barra = document.querySelector('.barra');
+      const barras = [...document.querySelectorAll('.barra, .barra-pro')].filter(b => b.offsetParent && getComputedStyle(b).position === 'sticky');
+      confSec.style.scrollMarginTop = (barras.reduce((s, b) => s + b.offsetHeight, 0) || (barra ? barra.offsetHeight : 0)) + 8 + 'px';
+      confSec.scrollIntoView({ behavior: movimento(), block: 'start' });
+    }
+    // Depois de Gerar: mostra a conferência aberta; no celular (ou se ela estiver fora da tela) rola até ela
+    function mostrarConferencia(ativa) {
+      confAtiva = ativa;
+      if (ativa) abrirConferencia(true);
+      renderConferencia();
+      if (!ativa) return;
+      const r = confSec.getBoundingClientRect();
+      if (window.matchMedia('(max-width: 900px)').matches || r.top < 0 || r.top > window.innerHeight * 0.6) rolarAteConferencia();
+    }
+
+    function irParaCartaz(i) {
+      const c = areaPreview.querySelectorAll('.cartaz')[i];
+      if (!c) return;
+      // oculto com a área "Ocultos" da versão de teste fechada: abre a área para o cartaz aparecer
+      if (!c.getClientRects().length && c.classList.contains('cartaz-oculto')) {
+        areaPreview.classList.add('mostrar-ocultos');
+        if (window.EP && EP.sincronizarOcultos) EP.sincronizarOcultos();
+      }
+      if (window.EP && EP.ativo && !c.classList.contains('cartaz-oculto')) { EP.cartazAtivo = c; EP.emitir('mudou'); }
+      c.scrollIntoView({ behavior: movimento(), block: 'center' });
+      areaPreview.querySelectorAll('.cartaz-foco').forEach(x => x.classList.remove('cartaz-foco'));
+      c.classList.add('cartaz-foco');
+      clearTimeout(irParaCartaz.t);
+      irParaCartaz.t = setTimeout(() => c.classList.remove('cartaz-foco'), 1800);
+    }
+    // Incluir/tirar do lote = mesma classe do olho da versão de teste (com o editor ligado, usa o próprio olho: entra no desfazer)
+    function incluirCartaz(i, incluir) {
+      const c = areaPreview.querySelectorAll('.cartaz')[i];
+      if (!c) return;
+      if (window.EP && EP.ativo && EP.ocultarCartaz) EP.ocultarCartaz(c, !incluir);
+      else if (c.classList.contains('cartaz-oculto') === incluir) c.classList.toggle('cartaz-oculto', !incluir);
+      agendarConferencia();
+    }
+
+    confLinhas.addEventListener('change', e => {
+      const cb = e.target.closest('input[type=checkbox]');
+      if (cb) incluirCartaz(+cb.closest('tr').dataset.i, cb.checked);
+    });
+    confLinhas.addEventListener('click', e => {
+      if (e.target.closest('.conf-inc')) return; // a caixinha só inclui/tira, não rola
+      const tr = e.target.closest('tr[data-i]');
+      if (tr) irParaCartaz(+tr.dataset.i);
+    });
+    confAlternar.addEventListener('click', () => abrirConferencia(confCorpo.hidden));
+    seloProblemas.addEventListener('click', () => {
+      abrirConferencia(true);
+      rolarAteConferencia();
+      const primeiro = confLinhas.querySelector('tr.erro .conf-ir, tr.atencao .conf-ir');
+      if (primeiro) primeiro.focus({ preventScroll: true });
+    });
+    // Classe dos cartazes mudou (olho da versão de teste, "Mostrar todos", formato) ou cartazes entraram/saíram
+    new MutationObserver(muts => {
+      if (muts.some(m => m.type === 'childList' ? m.target === areaPreview
+          : m.target.parentNode === areaPreview && m.target.classList.contains('cartaz') && !/^cartaz-(foco|alerta|atencao)$/.test(diffClasse(m)))) agendarConferencia();
+    }).observe(areaPreview, { childList: true, subtree: true, attributes: true, attributeFilter: ['class'], attributeOldValue: true });
+    function diffClasse(m) {
+      const antes = new Set((m.oldValue || '').split(/\s+/)), agora = new Set(m.target.className.split(/\s+/));
+      const mudou = [...antes].filter(x => !agora.has(x)).concat([...agora].filter(x => !antes.has(x)));
+      return mudou.length === 1 ? mudou[0] : mudou.join(' ');
+    }
+
+    // Pergunta antes do PDF quando há cartazes com problema no lote
+    function perguntarProblemas(lista) {
+      const dlg = document.getElementById('aviso-pdf');
+      const n = lista.length;
+      document.getElementById('aviso-pdf-titulo').textContent = `${n} ${n > 1 ? 'cartazes' : 'cartaz'} com problema. Baixar mesmo assim?`;
+      document.getElementById('aviso-pdf-lista').innerHTML = lista.map(it =>
+        `<li><strong>Cartaz ${it.n} · ${escHtml(it.nome)}</strong>${it.problemas.map(x => `<span class="${x.nivel}">${escHtml(x.texto)}</span>`).join('<span aria-hidden="true"> · </span>')}</li>`).join('');
+      const arq = avisosArquivos(lista).filter(([nivel]) => nivel === 'alerta').map(([, t]) => t);
+      const pArq = document.getElementById('aviso-pdf-arquivos');
+      pArq.hidden = !arq.length; pArq.textContent = arq.join(' ');
+      return new Promise(resolve => {
+        dlg.returnValue = '';
+        dlg.addEventListener('close', () => {
+          const r = dlg.returnValue;
+          if (r === 'conferir') {
+            abrirConferencia(true);
+            rolarAteConferencia();
+            const alvo = confLinhas.querySelector('tr.erro .conf-ir, tr.atencao .conf-ir');
+            if (alvo) alvo.focus({ preventScroll: true });
+          }
+          resolve(r === 'baixar');
+        }, { once: true });
+        dlg.showModal();
+      });
+    }
   </script>
 </body>
 </html>
