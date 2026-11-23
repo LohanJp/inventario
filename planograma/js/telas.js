@@ -68,7 +68,6 @@ addEventListener('popstate',e=>{
   if(skipPop){skipPop=false;return}                           // voltar disparado pelo próprio app
   if(ovHist){ovHist=false;[fichaSheet,fltSheet,catSheet].forEach(s=>{if(s.opened)s.close()});if(scanStream)scanStop(true);if($('pf-ask').style.display!=='none')pfAskClose(true);return}   // 1º voltar: fecha ficha/leitor
   const st=e.state||{s:'home'};if(st.o)return;
-  if(curTab==='prod'&&F.fg&&st.s!=='prod'){history.pushState({s:'prod'},'');tabPushed=true;fgSai();return}   // v69: voltar com fornecedor escolhido só sai do fornecedor
   tabPushed=st.s!=='home';if(st.s&&st.s!==curTab)go(st.s,true) // 2º voltar: volta à aba anterior
 });
 try{history.replaceState({s:'home'},'')}catch{}
@@ -174,7 +173,9 @@ function fornIdx(){if(FG)return FG;FG=new Map();
 const sisK=r=>r._sist==='20'||r._sist==='10'?r._sist:'1';   // sem sistemática conta como Sist. 1 (igual ao isCD)
 const fgTit=o=>o?(o.nome||'Fornecedor '+[...o.cod][0]):'Sem fornecedor';
 const fgCod=o=>o&&o.cod.size?'cód. '+[...o.cod].sort().join(', '):'sem código';
-const fsOk=r=>!F.fs||sisK(r)===F.fs;
+/* v70 (Lohan): sem "modo fornecedor" — tocar no fornecedor põe o nome dele no campo de busca e a lista mostra todos os itens dele,
+   de qualquer sistemática (como uma busca: os filtros não escondem nada). Mexer no texto ou tocar no X volta à busca normal. */
+function fgEnter(k){clearTimeout(qT);F.fg=k;F.q='';F.todo='';F.forn='';todoP=null;$('q').value=fgTit(fornIdx().get(k));fsugHide();$('q').blur();if(curTab==='prod')renderList(true);else go('prod')}
 let fsugL=[],fsugI=-1,fsugAll=false;
 function fsugHide(){const el=$('fsug');fsugI=-1;fsugAll=false;if(el.hidden)return;el.hidden=true;el.innerHTML='';$('q').setAttribute('aria-expanded','false');$('q').removeAttribute('aria-activedescendant')}
 function fsugShow(){const q=$('q');if(F.fg||document.activeElement!==q||!allRecords.length)return fsugHide();
@@ -189,9 +190,6 @@ function fsugShow(){const q=$('q');if(F.fg||document.activeElement!==q||!allReco
  if(el.hidden){const f=q.closest('form');el.style.top=(f.offsetTop+f.offsetHeight+4)+'px';el.hidden=false;q.setAttribute('aria-expanded','true')}
  if(fsugI>=0){q.setAttribute('aria-activedescendant','fs-o'+fsugI);const o=$('fs-o'+fsugI);if(o)o.scrollIntoView({block:'nearest'})}else q.removeAttribute('aria-activedescendant')}
 /* entra no modo fornecedor: limpa o texto, fecha o teclado e desenha a lista 1 vez */
-let fgY=0;   // rolagem de antes de entrar no fornecedor (volta nela ao sair)
-function fgEnter(k){clearTimeout(qT);if(!F.fg)fgY=$('s-prod').scrollTop;F.fg=k;F.fs='';F.q='';F.todo='';F.forn='';todoP=null;$('q').value='';fsugHide();$('q').blur();if(curTab==='prod')renderList(true);else go('prod')}
-function fgSai(){F.fg='';F.fs='';renderList(true);const y=fgY;requestAnimationFrame(()=>{$('s-prod').scrollTop=y})}
 let todoF20=false;   // lista de fornecedores aberta no Resumo?
 const todoOk=r=>{if(!F.todo)return true;const T=TODO[F.todo];return !T||T.f(r,todoP||(todoP=pedSet()))};let todoP=null;
 function renderTodo(){const el=$('todo');if(!el)return;if(!allRecords.length){el.innerHTML='';return}
@@ -279,12 +277,12 @@ const T=toks(F.q);
  refreshDep();{const n=nFiltros(),fb=$('flt-btn');$('flt-n').textContent=n;$('flt-n').hidden=!n;fb.classList.toggle('on',!!n);   // botão "Filtros" com quantos estão ligados
   const nm=F.chip==='all'?'':(FLT_SHORT[F.chip]||(CHIPS.find(c=>c[0]===F.chip)||[])[1]||'');fb.title='Filtros'+(nm?' · '+nm:'');fb.setAttribute('aria-label',fb.title)}
  $('sort').value=F.sort;
- $('catx').innerHTML=F.fg?'':(F.cat?`<button class="catx" data-x="cat" type="button">✕ ${esc(short(F.cat))}</button>`:'')+(F.cob?`<button class="catx" data-x="cob" type="button">✕ ${cobTxt(F.cob)}</button>`:'')+(F.giro?`<button class="catx" data-x="giro" type="button">✕ Giro ${esc(F.giro)}</button>`:'')+(F.capx?`<button class="catx" data-x="capx" type="button">✕ Cadastro &lt; 1 caixa</button>`:'')+(F.cadx?`<button class="catx" data-x="cadx" type="button">✕ Não entraram no cadastro</button>`:'')+(F.todo&&TODO[F.todo]&&!F.forn?`<button class="catx" data-x="todo" type="button">✕ ${TODO[F.todo].t}</button>`:'')+(F.forn?`<button class="catx" data-x="forn" type="button">✕ ${esc((()=>{const r=allRecords.find(x=>fornKey(x)===F.forn);return r?fornNome(r):'Fornecedor '+F.forn})())} · cobertura baixa</button>`:'');
+ $('catx').innerHTML=(F.cat?`<button class="catx" data-x="cat" type="button">✕ ${esc(short(F.cat))}</button>`:'')+(F.cob?`<button class="catx" data-x="cob" type="button">✕ ${cobTxt(F.cob)}</button>`:'')+(F.giro?`<button class="catx" data-x="giro" type="button">✕ Giro ${esc(F.giro)}</button>`:'')+(F.capx?`<button class="catx" data-x="capx" type="button">✕ Cadastro &lt; 1 caixa</button>`:'')+(F.cadx?`<button class="catx" data-x="cadx" type="button">✕ Não entraram no cadastro</button>`:'')+(F.todo&&TODO[F.todo]&&!F.forn?`<button class="catx" data-x="todo" type="button">✕ ${TODO[F.todo].t}</button>`:'')+(F.forn?`<button class="catx" data-x="forn" type="button">✕ ${esc((()=>{const r=allRecords.find(x=>fornKey(x)===F.forn);return r?fornNome(r):'Fornecedor '+F.forn})())} · cobertura baixa</button>`:'');
  const fAct=F.chip!=='all'||!!F.cat||!!F.ent||noCD;   // algum filtro ligado?
  const semCD=r=>catOk(r)&&entOk(r)&&cobPass(r,F.cob)&&(!F.d111||is111(r))&&(!F.capx||capMenor(r))&&giroOk(r)&&(!F.cadx||cadNao.has(r.produto))&&todoOk(r)&&(!F.forn||fornKey(r)===F.forn);   // todos os filtros, menos o chip e o F/CD
  const FM=!!F.fg,fo=FM?fornIdx().get(F.fg):null;   // fornIdx() também garante r._fk em todos
-if(FM&&!fo){F.fg='';F.fs=''}   // fornecedor sumiu (relatório novo): sai do modo
- const base=F.fg?(r=>r._fk===F.fg&&fsOk(r)):T.length?(()=>true):r=>semCD(r)&&passesChip(r);   // BUSCANDO: os filtros (chip, categoria, sistemática, F/CD) não escondem nada · v69 FORNECEDOR: tudo dele, a busca procura dentro
+if(FM&&!fo){F.fg='';$('q').value=F.q}   // fornecedor sumiu (relatório novo): volta à busca normal
+ const base=F.fg?(r=>r._fk===F.fg):T.length?(()=>true):r=>semCD(r)&&passesChip(r);   // BUSCANDO: os filtros (chip, categoria, sistemática, F/CD) não escondem nada · v69 FORNECEDOR: tudo dele, a busca procura dentro
  let rel=false;
  list=allRecords.filter(r=>base(r)&&(!T.length||(r._s=score(r,T))>0));
  if(T.length>1&&!list.length){rel=true;list=allRecords.filter(r=>base(r)&&(r._s=score(r,T,true))>0)}   // nada tem TODAS as palavras → mostra os que têm parte
@@ -300,8 +298,8 @@ if(FM&&!fo){F.fg='';F.fs=''}   // fornecedor sumiu (relatório novo): sai do mod
  /* Altura × Largura: sem medidas cadastradas primeiro, depois 1×1, 1×2, 1×3… 2×1, 2×2…; empate → profundidade, depois nome A–Z */
  S.dim=(a,b)=>{const A=num(a.altura),B=num(b.altura),la=num(a.largura),lb=num(b.largura),sa=!(A&&la),sb=!(B&&lb);
   return (sb-sa)||(sa?S.nome(a,b):A-B||la-lb||num(a.prof)-num(b.prof)||S.nome(a,b))};if(!S[F.sort])F.sort='prio';
- list.sort(T.length?(a,b)=>b._s-a._s||S[F.sort](a,b):S[F.sort]);$('cnt').textContent=f0(list.length)+(rel?' itens parciais — nenhum tem todas as palavras':' itens')+(T.length?(fAct&&!F.fg?' · busca ignora os filtros':''):F.fg?'':(()=>{if(!noCD||SIT_CH.has(F.chip)||F.chip==='dep'||F.todo==='trsaiu')return '';const h=allRecords.filter(r=>hideCD(r)&&semCD(r)&&passesChip(r,F.chip,true)),a=h.filter(cdRisk).length,b=h.length-a;return h.length?' · ocultando '+[a?f0(a)+' Ruptura CD':'',b?f0(b)+' em trânsito':''].filter(Boolean).join(' e '):''})());   // conta com TODOS os filtros ligados (antes ignorava giro, 1×1, fornecedor…)
- $('q-x').classList.toggle('on',!!F.q);fgUI(T);
+ list.sort(T.length?(a,b)=>b._s-a._s||S[F.sort](a,b):S[F.sort]);$('cnt').textContent=f0(list.length)+(rel?' itens parciais — nenhum tem todas as palavras':' itens')+(T.length||F.fg?(fAct?' · busca ignora os filtros':''):(()=>{if(!noCD||SIT_CH.has(F.chip)||F.chip==='dep'||F.todo==='trsaiu')return '';const h=allRecords.filter(r=>hideCD(r)&&semCD(r)&&passesChip(r,F.chip,true)),a=h.filter(cdRisk).length,b=h.length-a;return h.length?' · ocultando '+[a?f0(a)+' Ruptura CD':'',b?f0(b)+' em trânsito':''].filter(Boolean).join(' e '):''})());   // conta com TODOS os filtros ligados (antes ignorava giro, 1×1, fornecedor…)
+ $('q-x').classList.toggle('on',!!(F.q||F.fg));
  if(!list.length){const le=$('list-empty');   // v65: a tela vazia diz o motivo e oferece o botão certo
   le.innerHTML=!allRecords.length?'<div class="em-ic">📄</div><p><b>Nenhum relatório carregado</b></p><p class="ln">Carregue o Planograma para ver os produtos.</p><div style="margin-top:14px"><button class="button button-fill button-large" type="button" id="le-load">Carregar relatório</button></div>'
    :'<div class="em-ic">🔍</div><p><b>Nenhum produto com '+(T.length?'essa busca':'esses filtros')+'</b></p>'+(T.length?'<p class="ln">Confira o nome ou tente o código / EAN.</p>':'<div style="margin-top:14px"><button class="button button-tonal button-large" type="button" id="le-clr">Limpar filtros</button></div>');
@@ -485,7 +483,7 @@ $('cadban').onclick=e=>{
   if(e.target.closest('#cad-limpa')){const tudo=cadNao.size||cadEspera();if(tudo&&!confirm('Limpar a conferência? Os itens deixam de ser acompanhados.'))return;
     if(tudo){CAD={};cadSalva();cadNao=new Set()}CADOK=0;try{localStorage.setItem('planograma_cadok',0)}catch{}if(F.cadx)F.cadx=false;renderCadBan();toast('Conferência limpa')}};
 let qT=0;const qGo=()=>{clearTimeout(qT);qT=setTimeout(()=>renderList(true),180)};   // mesmo atraso de antes; v69: dá para cancelar ao escolher um fornecedor
-$('q').oninput=e=>{F.q=e.target.value;qGo();fsugShow()};   // sugestões na hora (índice pronto, <1 ms); a lista espera a pausa
+$('q').oninput=e=>{F.fg='';F.q=e.target.value;qGo();fsugShow()};   // mexeu no texto: deixa de ser o fornecedor e vira busca comum   // sugestões na hora (índice pronto, <1 ms); a lista espera a pausa
 $('q').addEventListener('focus',fsugShow);$('q').addEventListener('blur',fsugHide);
 $('q').addEventListener('keydown',e=>{const on=!$('fsug').hidden;
  if(e.key==='ArrowDown'&&on){e.preventDefault();fsugI=Math.min(fsugI+1,fsugL.length-1);fsugShow()}
@@ -494,19 +492,7 @@ $('q').addEventListener('keydown',e=>{const on=!$('fsug').hidden;
  else if(e.key==='Escape'&&on){e.preventDefault();fsugHide()}});   // 1º Esc fecha as sugestões, o 2º limpa (padrão do campo)
 $('fsug').addEventListener('pointerdown',e=>e.preventDefault());   // tocar na sugestão não tira o foco do campo antes do clique
 $('fsug').onclick=e=>{if(e.target.closest('[data-mais]')){fsugAll=true;return fsugShow()}const o=e.target.closest('[data-i]');if(o)fgEnter(fsugL[+o.dataset.i].k)};
-$('fg-chip').onclick=()=>{fgSai();$('q').focus()};
-$('fsis').onclick=e=>{const b=e.target.closest('[data-fs]');if(!b||F.fs===b.dataset.fs)return;F.fs=b.dataset.fs;renderList(true)};
-const QPH=$('q').placeholder;
-/* topo no modo fornecedor: o chip do fornecedor entra no lugar do botão Filtros (que não vale aqui) e as sistemáticas no lugar da contagem — o topo não muda de altura */
-function fgUI(T){const FM=!!F.fg,o=FM?fornIdx().get(F.fg):null,q=$('q'),c=$('fg-chip'),fs=$('fsis');
- $('flt-btn').hidden=FM;c.hidden=!FM;$('list').dataset.fs=FM?F.fs:'';
- q.placeholder=FM?'Buscar em '+fgTit(o)+'…':QPH;q.setAttribute('aria-label',FM?'Buscar dentro do fornecedor '+fgTit(o):'Buscar produto por nome, EAN ou código, ou fornecedor');
- if(!FM){fs.hidden=true;fs.innerHTML='';$('cnt').classList.remove('vh');return}
- c.querySelector('.fg-n').textContent='🏭 '+fgTit(o);c.setAttribute('aria-label','Sair do fornecedor '+fgTit(o));c.title=fgTit(o)+' · '+fgCod(o)+' · toque para sair';
- const S=[['20','Sist. 20'],['1','Sist. 1'],['10','Sist. 10']].filter(([k])=>o.s[k]);
- fs.hidden=S.length<2;$('cnt').classList.toggle('vh',S.length>=2&&!T.length);   // some da tela (os chips já contam), mas o leitor de tela ainda ouve o total$('catx').innerHTML='';
- if(S.length>=2)fs.innerHTML=[['','Todas',o.n],...S.map(([k,t])=>[k,t,o.s[k]])].map(([k,t,n])=>`<button type="button" class="chip-btn${(F.fs||'')===k?' on':''}" data-fs="${k}" aria-pressed="${(F.fs||'')===k}">${t} <b class="num">${f0(n)}</b></button>`).join('')}
-$('q-x').onclick=()=>{$('q').value='';F.q='';renderList(true);$('q').focus()};
+$('q-x').onclick=()=>{$('q').value='';F.q='';F.fg='';renderList(true);$('q').focus()};
 $('sort').onchange=e=>{F.sort=e.target.value;renderList(true)};
 $('catx').onclick=e=>{const b=e.target.closest('.catx');if(!b)return;if(b.dataset.x==='cob')F.cob=null;else if(b.dataset.x==='giro')F.giro='';else if(b.dataset.x==='cadx')F.cadx=false;else if(b.dataset.x==='capx')F.capx=false;else if(b.dataset.x==='todo')F.todo='';else if(b.dataset.x==='forn'){F.forn='';F.todo=''}else F.cat='';renderList(true)};
 

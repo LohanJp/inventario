@@ -638,11 +638,6 @@ html:not(.dark) .ent.trg.atr{color:color-mix(in srgb,var(--am) 70%,#000)}
 .fs-ic{font-size:20px;flex:none}.fs-go{flex:none;color:var(--mu);font-size:20px}
 .fs-t{flex:1;min-width:0}.fs-t b{display:block;font-size:14.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.fs-t small{display:block;color:var(--mu);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .fs-mais{min-height:48px;color:var(--f7-theme-color);font-weight:600;font-size:13.5px;justify-content:center}
-/* modo fornecedor: chip do fornecedor no lugar de Filtros (mesma linha) e sistemáticas no lugar da contagem (mesma altura) */
-.fg-chip{flex:0 1 auto;min-width:0;max-width:calc(100% - 168px)}.fg-chip .fg-n{min-width:0;overflow:hidden;text-overflow:ellipsis}.fg-chip .fg-x{flex:none;opacity:.8}
-.fsis{display:flex;gap:6px;flex:1;min-width:0;overflow-x:auto;scrollbar-width:none;padding:8px 2px;margin:-10px 0}.fsis::-webkit-scrollbar{display:none}
-.fsis .chip-btn{height:28px;padding:0 10px;font-size:12.5px;gap:4px}.fsis .chip-btn b{font-weight:700;opacity:.7}
-#list[data-fs="20"] .ent.e20,#list[data-fs="1"] .ent.e1,#list[data-fs="10"] .ent.e10{display:none}   /* o chip já diz a sistemática */
 /* X da busca: área de toque de 44 px sem mudar o desenho */
 .sb-f7 .input-clear-button::before{content:'';position:absolute;inset:-11px}
 /* Pedido: subgrupos por fornecedor dentro de "Para pedir · Sist. 20" (mais leves que os grupos principais) */
@@ -652,4 +647,5 @@ html:not(.dark) .ent.trg.atr{color:color-mix(in srgb,var(--am) 70%,#000)}
 #p20 .ent.e20,#pnd .ent.e1{display:none}   /* o grupo já diz a sistemática */
 #plist .swl{content-visibility:auto;contain-intrinsic-size:auto 112px}   /* cartões fora da tela não custam layout */
 @media (min-width:1000px){#plist .trd-b>.trf{grid-column:1/-1}}
-.fsis .chip-btn{position:relative;overflow:visible}.fsis .chip-btn::before{content:'';position:absolute;inset:-8px -2px}   /* área de toque de 44 px sem mudar o desenho */
+/* v70: fornecedor tocável na ficha */
+.kv-lnk{background:none;border:0;padding:6px 0;margin:-6px 0;color:var(--f7-theme-color);font:inherit;font-weight:600;text-align:right;cursor:pointer}

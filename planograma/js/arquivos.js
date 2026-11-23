@@ -222,8 +222,8 @@ addEventListener('pagehide',()=>scanStop(true));   // ⚡ iOS: garante câmera d
 const zeros=x=>String(x||'').replace(/\D/g,'').replace(/^0+/,'');
 const byCode=c=>allRecords.find(r=>zeros(r.automacao)===zeros(c)||zeros(r.produto)===zeros(c));
 $('b-scan').onclick=()=>scanStart(code=>{const r=byCode(code);
-  if(!r){F={...F,chip:'all',cat:'',q:code};$('q').value=code;renderList(true);return toast('Código '+code+' não encontrado')}
-  F={...F,chip:'all',cat:'',q:r.automacao||r.produto};$('q').value=F.q;renderList(true);openSheet(r)});
+  if(!r){F={...F,chip:'all',cat:'',q:code,fg:''};$('q').value=code;renderList(true);return toast('Código '+code+' não encontrado')}
+  F={...F,chip:'all',cat:'',q:r.automacao||r.produto,fg:''};$('q').value=F.q;renderList(true);openSheet(r)});
 $('b-scan2').onclick=()=>scanStart(code=>{const r=byCode(code);
   if(!r)return toast('Código '+code+' não encontrado');
   toast(addS(r)?'Adicionado ao pedido: '+r.descricao:'Já está no pedido');renderPed()});

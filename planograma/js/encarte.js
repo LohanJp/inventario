@@ -312,7 +312,7 @@ $('pf-clear').onclick=()=>{const t=$('pf-txt').value,sl=pfDays[pfSelDay],del=!!(
     else{pfDays[w]=null;if(idb)idbSave({id:'panfleto-d'+w,w,text:''}).catch(()=>{})}}
   pfDayBar()};
 $('pf-txt').oninput=debounce(()=>{try{localStorage.setItem(LSPF,$('pf-txt').value)}catch{}},500);
-function pfSearch(q){F.q=q;F.chip='all';F.cat='';F.fg='';F.fs='';$('q').value=q;go('prod')}   // abre Produtos já pesquisando o texto do panfleto
+function pfSearch(q){F.q=q;F.chip='all';F.cat='';F.fg='';$('q').value=q;go('prod')}   // abre Produtos já pesquisando o texto do panfleto
 $('pf-list').onclick=e=>{if(Date.now()<swBlock)return;
   const h=e.target.closest('.pfh,.pfn');if(h&&h.dataset.q){pfSearch(h.dataset.q);return}
   const c=e.target.closest('.pfc');if(c&&e.target.closest('.infb')){const r=byProd.get(c.dataset.p);if(r)openSheet(r)}};

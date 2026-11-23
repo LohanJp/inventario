@@ -230,7 +230,7 @@ function openSheet(r){if(!r)return;const kv=([a,b])=>`<div class="kv"><span>${a}
  const cad=[['Código · EAN',esc(r.produto)+(r.automacao?' · '+esc(r.automacao):'')],['Categoria',esc(String(r.categoria||'Sem categoria').split('->').join(' › '))],
    r._np?['Planograma','Fora do planograma']:['Planograma (cadastro)',`${esc(r.altura||'—')} × ${esc(r.largura||'—')} × ${esc(r.prof||'—')} = ${esc(r.total||f0(cap))} un`],
    r._np?null:['Cob.Plan',r.cobplan?esc(r.cobplan)+' dias':'—'],['Embalagem · Giro',`caixa com ${f0(ebx)} · ${esc(r.giro||'—')}`],r.corredor&&r.corredor!=='0'?['Corredor',esc(r.corredor)]:null,
-   ['Fornecedor',esc(fornTxt(r))],pr&&(pr.n||pr.promo)?['Preço',precoHtml(r)]:null,axBadges(r)?['Anexos',axBadges(r)]:null].filter(Boolean);
+   ['Fornecedor',fgKey(r)?`<button type="button" class="kv-lnk" data-fg="${esc(r._fk)}" aria-label="Ver todos os itens de ${esc(fgTit(fornIdx().get(r._fk)))}">${esc(fornTxt(r))} ›</button>`:esc(fornTxt(r))],pr&&(pr.n||pr.promo)?['Preço',precoHtml(r)]:null,axBadges(r)?['Anexos',axBadges(r)]:null].filter(Boolean);
  const TABS=[['res','Resumo',resumo],['mov','Movimento',linha+mov.map(kv).join('')],['cad','Cadastro',cad.map(kv).join('')]];
  const rcdBtn=r._sist!=='20'||x0.rcd,rcdVelho=x0.rcd&&rcdDias(x0)>0;
  $('sheetc').innerHTML=`<div class="fb" style="--c:${COLOR[r._k]}"><div class="fb-n"><b class="num">${ctTxt}</b><small>${ctTxt==='—'?'&nbsp;':ctTxt==='1'?'dia':'dias'}</small></div>
@@ -261,3 +261,7 @@ function openSheet(r){if(!r)return;const kv=([a,b])=>`<div class="kv"><span>${a}
  /* v58: "Marcar feito" e "Concluir no pedido" viraram UM botão — marca feito e, se o item está no pedido, conclui lá também (e desfaz os dois juntos) */
  $('sh-done').onclick=()=>{const marking=!r._d;setFeito(r.produto,marking);if(marking)copyEAN(r.automacao||r.produto);closeSheet();go(document.querySelector('section.on').id.slice(2))}}   // ✓ Marcar feito: fica na aba em que estava (antes ia sempre para Produtos)
 
+
+/* v70: tocar no fornecedor da ficha (aba Cadastro) → Produtos com todos os itens dele */
+$('sheetc').addEventListener('click',e=>{const b=e.target.closest('.kv-lnk[data-fg]');if(!b)return;const k=b.dataset.fg;closeSheet();
+  setTimeout(()=>{F={chip:'all',cat:'',q:'',sort:F.sort,ent:ENT0};fgEnter(k)},380)});   // espera a ficha fechar (e o voltar do histórico) antes de trocar de tela
