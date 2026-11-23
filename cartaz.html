@@ -169,6 +169,10 @@
     .conf-ir:hover { text-decoration: underline; }
     .conf-n { display: none; }
     .conf-sem { color: var(--erro); font-weight: 700; }
+    .de-mao { width: 84px; padding: 6px 8px; border: 2px solid var(--erro); border-radius: 6px; font: 600 14px/1.2 "Archivo", system-ui, sans-serif; text-align: right; background: #fff; color: var(--tinta); }
+    .de-mao::placeholder { color: #b9bec5; }
+    .de-mao:focus { outline: none; border-color: var(--tinta); box-shadow: 0 0 0 3px rgba(242,183,5,.45); }
+    .de-mao[aria-invalid="true"] { background: #fbeceb; }
     .conf-problemas { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 4px; }
     .conf-problemas li { font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 10px; }
     .conf-tabela td.c-sit { min-width: 150px; }
@@ -1122,9 +1126,8 @@
     // Uma linha por cartaz da mesa (lida do próprio cartaz: vale também depois de editar no modelo editável ou na
     // versão de teste). "Incluir" desmarcado = classe cartaz-oculto (a mesma do olho da versão de teste), que o PDF
     // e a impressão já pulam. Cartaz com problema ganha borda e etiqueta na mesa (fora do PDF e da impressão).
-    const ORIGEM_DE = { lista: 'Lista', clube: 'Clube', normal: 'Normal (Precos_)', produto: 'PRODUTO', nenhum: 'Nenhum', editado: 'Editado', mao: 'À mão' };
+    const ORIGEM_DE = { lista: 'Lista', clube: 'Clube', normal: 'Normal (Precos_)', produto: 'PRODUTO', nenhum: 'Nenhum', editado: 'Editado', mao: 'À mão', digitado: 'Digitado' };
     const DESCONTO_SUSPEITO = 70;  // % acima disso pede conferência
-    const NOME_MINIMO = 0.6;       // nome encolhido abaixo de 60% do tamanho original
     const DIAS_PRODUTO = 7;        // PRODUTO mais velho que isso é "antigo"
     const confSec = document.getElementById('conferencia');
     const confCorpo = document.getElementById('conf-corpo');
@@ -1163,25 +1166,16 @@
         if (it.oculto) return it;
         const p = (nivel, texto) => it.problemas.push({ nivel, texto });
         // caixa DE apagada de propósito na versão de teste não é problema
-        if (deEl && !deValido && !deEl.closest('.ed.oculto')) p('erro', 'Sem preço DE (sai só o POR)');
+        if (deEl && !deValido && !deEl.closest('.ed.oculto')) { p('erro', 'Sem preço DE: digite o preço'); it.pedirDE = true; }
         if (porEl && !temPreco(it.por)) p('erro', 'Sem preço POR');
         if (deValido && temPreco(it.por)) {
           it.desconto = Math.round((1 - it.por / it.de) * 100);
-          if (it.por >= it.de) p('erro', 'POR igual ou maior que o DE');
+          if (it.por >= it.de) { p('erro', it.por === it.de ? 'DE igual ao POR: digite o preço DE' : 'POR maior que o DE: confira o preço DE'); it.pedirDE = !!deEl; }
           else if (it.desconto > DESCONTO_SUSPEITO) p('atencao', `Desconto alto (${it.desconto}%)`);
         }
-        const d = dataValidade(it.validade);
-        if (!d) p('atencao', 'Validade não reconhecida');
-        else if (d.getTime() < hoje) p('erro', `Vencido em ${it.validade}`);
-        else if (d.getTime() === hoje) p('atencao', 'Vence hoje');
         if (c.dataset.ean) {
           const k = c.dataset.ean + '|' + it.validade;
           if (primeiro.has(k)) p('atencao', `Repetido do cartaz ${primeiro.get(k)}`); else primeiro.set(k, it.n);
-        }
-        if (nomeEl && nomeEl.offsetParent) {
-          const escala = escalaNome.get(nomeEl);
-          if (nomeEl.scrollWidth > nomeEl.clientWidth + 1) p('atencao', 'Nome cortado');
-          else if (escala && escala < NOME_MINIMO) p('atencao', `Nome reduzido a ${Math.round(escala * 100)}%`);
         }
         it.nivel = it.problemas.some(x => x.nivel === 'erro') ? 'erro' : it.problemas.length ? 'atencao' : '';
         return it;
@@ -1191,7 +1185,9 @@
     // Avisos dos arquivos de preço (topo da conferência)
     function avisosArquivos(itens) {
       const av = [];
-      const semDE = itens.some(it => it.problemas.some(x => x.texto.startsWith('Sem preço DE')));
+      const semDE = itens.some(it => it.pedirDE);
+      const pedir = itens.filter(it => it.pedirDE && !it.oculto).length;
+      if (pedir) av.push(['alerta', `${pedir} ${pedir > 1 ? 'cartazes precisam' : 'cartaz precisa'} do preço DE: digite na coluna DE abaixo e aperte Enter.`]);
       const fmt = iso => iso.split('-').reverse().join('/');
       if (!dadosArquivos) {
         av.push([semDE ? 'alerta' : '', 'Nenhuma pasta de relatórios lida: o DE só vem da lista colada.']);
@@ -1219,7 +1215,9 @@
         : it.branco ? '<span class="conf-fora">Sem dados para conferir</span>'
         : it.problemas.length ? `<ul class="conf-problemas">${it.problemas.map(x => `<li class="${x.nivel}">${escHtml(x.texto)}</li>`).join('')}</ul>`
         : '<span class="conf-ok">OK</span>';
-      const de = it.branco ? '—' : temPreco(it.de) ? escHtml(formatarPreco(it.de)) : '<span class="conf-sem" aria-hidden="true">—</span><span class="sr-only">sem preço</span>';
+      const de = it.branco ? '—'
+        : it.pedirDE && !it.oculto ? `<input type="text" inputmode="decimal" class="de-mao" data-foco="de-${it.i}" value="${temPreco(it.de) ? escHtml(formatarPreco(it.de)) : ''}" placeholder="0,00" aria-label="Digite o preço DE do cartaz ${it.n}, ${nome}" autocomplete="off">`
+        : temPreco(it.de) ? escHtml(formatarPreco(it.de)) : '<span class="conf-sem" aria-hidden="true">—</span><span class="sr-only">sem preço</span>';
       const por = it.branco ? '—' : temPreco(it.por) ? escHtml(formatarPreco(it.por)) : escHtml(it.porTxt || '—');
       const desc = it.desconto == null ? '—' : it.desconto > 0 ? `-${it.desconto}%` : it.desconto < 0 ? `+${-it.desconto}%` : '0%';
       const origem = it.branco ? '—' : ORIGEM_DE[it.origem] || '—';
@@ -1342,8 +1340,44 @@
       const cb = e.target.closest('input[type=checkbox]');
       if (cb) incluirCartaz(+cb.closest('tr').dataset.i, cb.checked);
     });
+    // Preço DE digitado na conferência: vai para o cartaz e para a lista de preços à mão (gerar de novo mantém)
+    function aplicarDEDigitado(input) {
+      const i = +input.closest('tr').dataset.i;
+      const c = areaPreview.querySelectorAll('.cartaz')[i];
+      const v = lerPreco(input.value);
+      if (!c || !temPreco(v)) { input.setAttribute('aria-invalid', 'true'); input.select(); return; }
+      const por = lerPreco((c.querySelector('.value-price.big-val') || {}).textContent);
+      if (temPreco(por) && v <= por && !confirm(`O DE (${formatarPreco(v)}) não é maior que o POR (${formatarPreco(por)}). Usar mesmo assim?`)) { input.select(); return; }
+      const deEl = c.querySelector('.value-price.small-val');
+      if (!deEl) return;
+      const txt = formatarPreco(v);
+      deEl.textContent = txt;
+      c.dataset.origem = 'digitado'; c.dataset.deOrig = txt;
+      if (c.dataset.ean) {
+        const ta = document.getElementById('input2');
+        const ean = normEan(c.dataset.ean);
+        const linhas = ta.value.split(/\r?\n/).filter(l => l.trim() && normEan((l.match(/\d{8,14}/) || [''])[0]) !== ean);
+        linhas.push(`${c.dataset.ean}\t${txt}`);
+        ta.value = linhas.join('\n');
+      }
+      // próximo cartaz que ainda precisa do preço recebe o foco
+      const prox = [...confLinhas.querySelectorAll('input.de-mao')].find(x => +x.closest('tr').dataset.i > i);
+      renderConferencia();
+      const alvo = prox && confLinhas.querySelector(`[data-foco="${prox.dataset.foco}"]`);
+      if (alvo) { alvo.focus(); alvo.select(); }
+    }
+    confLinhas.addEventListener('keydown', e => {
+      const inp = e.target.closest('input.de-mao');
+      if (!inp) return;
+      if (e.key === 'Enter') { e.preventDefault(); aplicarDEDigitado(inp); }
+      else inp.removeAttribute('aria-invalid');
+    });
+    confLinhas.addEventListener('change', e => {
+      const inp = e.target.closest('input.de-mao');
+      if (inp && inp.value.trim()) aplicarDEDigitado(inp);
+    });
     confLinhas.addEventListener('click', e => {
-      if (e.target.closest('.conf-inc')) return; // a caixinha só inclui/tira, não rola
+      if (e.target.closest('.conf-inc') || e.target.closest('input.de-mao')) return; // caixinha e campo de preço não rolam
       const tr = e.target.closest('tr[data-i]');
       if (tr) irParaCartaz(+tr.dataset.i);
     });
