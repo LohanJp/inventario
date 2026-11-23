@@ -139,7 +139,7 @@ async function applyLive(c){
   if(lenc!==undefined)await syncEnc(c,lenc).catch(()=>{});
   if(lof!==undefined)await syncOf(c,lof).catch(()=>{});
   if(lpf!==undefined)await syncPf(c,lpf).catch(()=>{});
-  derive();updBadge();
+  deriveLive();updBadge();   // v72: só os concluídos mudam aqui (cada aviso da nuvem custava um recálculo inteiro)
 }
 
 /* DATAS DO TRÂNSITO na nuvem: /trreg/last (data do último relatório lido) e /trreg/data (o registro, em texto).
@@ -163,17 +163,17 @@ const metaTxt=m=>m&&m.date?m.date+(m.hora?' '+String(m.hora).slice(0,5):''):'?';
 const mesmoRel=(a,b,na,nb)=>!!(a&&b&&a.date&&a.date===b.date&&String(a.hora||'')===String(b.hora||'')&&(!nb||na===nb));
 async function syncEstoque(c,ei){
   if(!ei||!ei.exportedAt)return false;
-  const loc=idb?await idbGet('estoque').catch(()=>null):null;
+  const loc=bootEst&&bootEst.map===estoqueMap?bootEst:idb?await idbGet('estoque').catch(()=>null):null;   // v72: não relê o que já está na memória
   if(loc&&loc.map&&(loc.cloudAt===ei.exportedAt||mesmoRel(loc.meta,ei.meta,Object.keys(loc.map).length,ei.total))){   // já tenho esta versão
     if(!estoqueLoaded){estoqueMap=loc.map;estoqueLoaded=true;estoqueMeta=loc.meta||ei.meta||null}
-    if(loc.cloudAt!==ei.exportedAt){loc.cloudAt=ei.exportedAt;idbSave(loc).catch(()=>{})}
+    if(loc.cloudAt!==ei.exportedAt){loc.cloudAt=ei.exportedAt;carimba('est',loc,{cloudAt:loc.cloudAt})}
     return false}
   if(estoqueLoaded&&tsMeta(estoqueMeta)>tsMeta(ei.meta))return false;     // o do aparelho é mais novo: mantém (envie para a nuvem se quiser)
   const data=await cf(cu(c,'estq/data')).then(r=>r.json()).catch(()=>null);
   if(!data||typeof data!=='object')return false;
   estoqueMap=data;estoqueLoaded=true;estoqueMeta=ei.meta||null;
   const nome=ei.name||'nuvem',quando=new Date().toLocaleString('pt-BR');
-  if(idb)idbSave({id:'estoque',map:estoqueMap,meta:estoqueMeta,name:nome,savedAt:quando,cloudAt:ei.exportedAt}).catch(()=>{});
+  bootEst={id:'estoque',map:estoqueMap,meta:estoqueMeta,name:nome,savedAt:quando,cloudAt:ei.exportedAt};if(idb)idbSave(bootEst).catch(()=>{});
   $('cob-status').innerHTML=`<b>✓ ${esc(nome)}</b> · ${f0(Object.keys(estoqueMap).length)} produtos · da nuvem`;
   return true;
 }
@@ -190,14 +190,14 @@ async function loadFromCloud(c,fundo){
     const sigAntes=fundo?liveSig():'';
     prcSync(c).catch(()=>{});trSync(c).catch(()=>{});                                        // preços (opcional): confere em paralelo, sem segurar a abertura
     const estqNovo=await syncEstoque(c,ei);                          // antes de montar a tela, para o MDV/cobertura já virem certos
-    const loc=idb?await idbGet('current').catch(()=>null):null;   // já tem esta versão neste aparelho?
+    const loc=fundo&&bootCur&&bootCur.records===planoRecs?bootCur:idb?await idbGet('current').catch(()=>null):null;   // já tem esta versão neste aparelho? (v72: na conferência usa o que a abertura já leu)
     const pm=pi.meta||{filial:pi.filial,date:pi.date,hora:''};
     const temLoc=!!(loc&&loc.records),
       planoIgual=temLoc&&(loc.cloudAt===pi.exportedAt||mesmoRel(loc.meta,pm,loc.records.length,pi.total)),
       transIgual=temLoc&&(!ti||loc.transAt===ti.exportedAt||(loc.transit&&mesmoRel(transitMeta,ti.meta,Object.keys(loc.transit).length,ti.total))),
       locNovo=temLoc&&!planoIgual&&tsMeta(loc.meta)>tsMeta(pm);      // o relatório do aparelho é MAIS NOVO que o da nuvem (ainda não enviado): não troca pelo antigo
     if(temLoc&&((planoIgual&&transIgual)||locNovo)){
-      if(!locNovo&&(loc.cloudAt!==pi.exportedAt||(ti&&loc.transAt!==ti.exportedAt))){loc.cloudAt=pi.exportedAt;if(ti)loc.transAt=ti.exportedAt;idbSave(loc).catch(()=>{})}   // guarda o carimbo: da próxima vez nem compara
+      if(!locNovo&&(loc.cloudAt!==pi.exportedAt||(ti&&loc.transAt!==ti.exportedAt))){loc.cloudAt=pi.exportedAt;if(ti)loc.transAt=ti.exportedAt;carimba('cur',loc,{cloudAt:loc.cloudAt,transAt:loc.transAt})}   // guarda o carimbo: da próxima vez nem compara (v72: num registro pequeno — antes regravava os 2,6 MB)
       if(!fundo)await loadRecords(loc.records,loc.meta||{},loc.name,loc.transit||null,false,loc.savedAt);
       await applyLive(c);   // ⚡ applyLive já roda o derive()
       if(!fundo){renderHome();busy(false)}
@@ -205,7 +205,8 @@ async function loadFromCloud(c,fundo){
         schedule(()=>{renderFresh();if(id==='home')renderHome();else if(id==='prod')renderList(false);else if(id==='ped')renderPed();else if(id==='data')renderData()})}
       return true;
     }
-    busy(true,fundo?'Relatório novo na nuvem — baixando…':'Baixando o relatório da nuvem…');
+    if(fundo){$('fresh-upd').classList.add('gira');abrTxtF('Baixando relatório novo da nuvem…')}   // v72: em segundo plano não cobre a tela
+    else busy(true,'Baixando o relatório da nuvem…');
 
     const [records,transData]=await Promise.all([gj('plano/records'),ti?gj('trans/data'):Promise.resolve(null)]);
     if(!Array.isArray(records)||!records.length){busy(false);toast('⚠ Não consegui baixar o planograma'+(cerr?': '+cerr:' (resposta vazia da nuvem)'));return false}
@@ -214,14 +215,15 @@ async function loadFromCloud(c,fundo){
     const meta=pi.meta||{filial:pi.filial,date:pi.date,hora:''},chaveAntes=lsKey;
     await loadRecords(records,meta,pi.name||'nuvem',
       transData&&typeof transData==='object'?transData:null,
-      true /* persist to IDB */);
-    try{const r=await idbGet('current');if(r){r.cloudAt=pi.exportedAt;r.transAt=ti?ti.exportedAt:undefined;await idbSave(r)}}catch{}
+      true /* persist to IDB */,undefined,fundo?'fica':undefined);   // v72: em segundo plano fica na aba e mantém a busca
+    try{const r=await idbGet('current');if(r){r.cloudAt=pi.exportedAt;r.transAt=ti?ti.exportedAt:undefined;await idbSave(r);bootCur=r}}catch{}
     await applyLive(c);   // ⚡ applyLive já roda o derive()
     if(chaveAntes&&chaveAntes!==lsKey)pedLimpaConcl();   // relatório de um DIA NOVO veio da nuvem: concluídos do Pedido saem (normalmente o outro aparelho já limpou)
     setRelNovo(null);   // a nuvem trouxe relatório mais novo: nada deste aparelho ficou para enviar
-    renderHome();busy(false);
+    if(fundo){$('fresh-upd').classList.remove('gira');renderFresh();renderAtual();toast('☁️ Relatório de '+(meta.date||'hoje')+' da nuvem aplicado')}
+    else{renderHome();busy(false)}
     return true;
-  }catch(e){busy(false);toast(e.message);return false}
+  }catch(e){busy(false);if(fundo)$('fresh-upd').classList.remove('gira');toast(e.message);return false}
 }
 
 /* SSE: avisa que algo mudou em live/ → relê (pequeno) e redesenha só se for diferente */
@@ -385,17 +387,22 @@ $('b-up').onclick=async()=>{
 };
 
 /* Inicialização: abre app → tenta nuvem → fallback IDB */
+/* v72: carimbos da nuvem num registro pequeno ('carimbo'). Valem só para o MESMO relatório (data + hora + quantidade) — relatório novo carregado aqui não herda o carimbo do antigo */
+let carimbos={};
+const carChave=r=>{const m=(r&&r.meta)||{},n=r&&(r.records?r.records.length:r.map?Object.keys(r.map).length:0);return [m.date||'',m.hora||'',n].join('|')};
+function carimba(qual,rec,dados){carimbos[qual]={...dados,ch:carChave(rec)};if(idb)idbSave({id:'carimbo',...carimbos}).catch(()=>{})}
+function carAplica(qual,rec){const c=carimbos[qual];if(rec&&c&&c.ch===carChave(rec))for(const k in c)if(k!=='ch')rec[k]=c[k]}
+const abrTxtF=t=>{const f=$('fresh-t');if(f)f.textContent=t};
 async function boot(){
-  try{await idbOpen()}catch{}
-  /* v67: pede tudo ao aparelho de uma vez (antes era um de cada vez, com o Planograma por último) — a ordem de uso abaixo não muda */
-  const pre=new Map(),get=id=>pre.has(id)?pre.get(id):idbGet(id);
-  if(idb)for(const id of['estoque','transitmeta','encarte','current',...[0,1,2,3,4,5,6].flatMap(w=>['oferta-d'+w,'panfleto-d'+w])])pre.set(id,new Promise(r=>{try{idbGet(id).then(r,()=>r(null))}catch{r(null)}}));
+  abrTxt('Abrindo estoque e planograma…',.15);
+  /* v72: as leituras já foram pedidas em estado.js (bootPre), antes do Framework7 iniciar */
+  const pre=await bootPre,get=id=>pre.has(id)?pre.get(id):idbGet(id);
   try{                                           // restaura o relatório de estoque ANTES de montar a tela (vale p/ nuvem e p/ local)
+    try{carimbos=(await get('carimbo'))||{};delete carimbos.id}catch{carimbos={}}
     const e=await get('estoque');
-    if(e&&e.map){estoqueMap=e.map;estoqueLoaded=true;estoqueMeta=e.meta||null;
+    if(e&&e.map){bootEst=e;carAplica('est',e);estoqueMap=e.map;estoqueLoaded=true;estoqueMeta=e.meta||null;
       $('cob-status').innerHTML=`<b>✓ ${esc(e.name||'estoque')}</b> · ${f0(Object.keys(estoqueMap).length)} produtos · salvo em ${esc(e.savedAt||'')}`}
   }catch{}
-  await prcRestaura();                           // preços (opcional) guardados no aparelho
   try{const t=await get('transitmeta');if(t&&t.meta)transitMeta=t.meta}catch{}
   try{const en=await get('encarte');                       // restaura o último Encarte carregado (aparece após o planograma abrir)
     if(en&&en.items&&en.items.length){encItems=en.items;encPer=en.per||null;   // 📅 dia do Panfleto (título da planilha)
@@ -422,21 +429,35 @@ async function boot(){
   try{
     const s=await get('current');
     if(s&&s.records){
-      await loadRecords(s.records,s.meta||{},s.name,s.transit||null,false,s.savedAt);
-      if(c){startSSE(c);loadFromCloud(c,true).catch(()=>{})}   // só baixa relatório se a nuvem tiver um NOVO; pedido/concluídos vêm sempre
+      bootCur=s;carAplica('cur',s);abrTxt(null,.45);await ceder();
+      await loadRecords(s.records,s.meta||{},s.name,s.transit||null,false,s.savedAt,'abre');   // calcula em pedaços e desenha só a aba atual
+      await depoisDeAbrir(c);
       return;
     }
   }catch{}
-  if(c){   // aparelho sem relatório guardado: baixa da nuvem
+  if(c){   // aparelho sem relatório guardado: baixa da nuvem (sem cobrir a tela: o recado fica no topo)
+    abrTxt('Baixando da nuvem…',.3);$('h-sub').textContent='Baixando os relatórios da nuvem… primeira vez neste aparelho, pode levar alguns segundos';
     const loaded=await loadFromCloud(c);
-    if(loaded){startSSE(c);return}
+    if(loaded){abrFim();await depoisDeAbrir(c,true);return}
   }
-  if(estoqueLoaded&&Object.values(estoqueMap).some(x=>x&&x.d)){derive();go('home');return}   // só a Cobertura carregada: já dá para usar
-  go('data'); // sem dados em lugar nenhum → vai direto para aba Dados
+  if(estoqueLoaded&&Object.values(estoqueMap).some(x=>x&&x.d)){derive();abrFim();if(curTab==='home')renderHome();await depoisDeAbrir(c);return}   // só a Cobertura carregada: já dá para usar
+  abrFim();if(curTab==='home')go('data'); // sem dados em lugar nenhum → vai direto para aba Dados
+  await depoisDeAbrir(c,true);
+}
+/* v72 — depois que a tela já tem dados: preços (etapa 2), depois a nuvem e o índice de fornecedores, sem disputar o 1º toque */
+let bootCur=null,bootEst=null;   // o que a abertura leu do aparelho (a conferência da nuvem compara com isto em vez de reler)
+async function depoisDeAbrir(c,semNuvem){
+  abrTxt('Abrindo preços…',.8);await ceder();
+  try{await prcRestaura()}catch{}
+  if(typeof fichaPrecoAtualiza==='function')fichaPrecoAtualiza();
+  abrTxt(null,1);setTimeout(()=>{$('abr-bar').classList.add('fim');renderFresh()},350);
+  if(c&&!semNuvem)setTimeout(()=>idle(()=>{startSSE(c);loadFromCloud(c,true).catch(()=>{})}),1200);   // só baixa relatório se a nuvem tiver um NOVO; pedido/concluídos vêm sempre
+  else if(c)setTimeout(()=>startSSE(c),1200);
+  setTimeout(()=>idle(()=>{if(allRecords.length)fornIdxAos()}),3000);
 }
 /* v67 — TELA DE ABERTURA: já vem ligada no HTML (antes aparecia o Resumo vazio "Sem dados" por alguns segundos) e só sai quando o boot termina */
-(async()=>{const dem=setTimeout(()=>{$('lhint').textContent='Ainda abrindo… pode levar alguns segundos'},6000);
-  try{await boot()}finally{clearTimeout(dem);abrindo=false;busy(false);$('load').classList.remove('boot')}})();
+(async()=>{const dem=setTimeout(()=>{if(abrindo)abrTxt('Ainda abrindo… pode levar alguns segundos')},6000);
+  try{await boot()}catch(e){console.error(e)}finally{clearTimeout(dem);abrFim()}})();
 updBadge();
 /* PWA: service worker (funciona offline depois da 1ª abertura) */
 if('serviceWorker' in navigator&&/^https?:/.test(location.protocol)){/* ⚡ registro do SW em tempo ocioso: não compete com a 1ª pintura */
@@ -446,7 +467,7 @@ if('serviceWorker' in navigator&&/^https?:/.test(location.protocol)){/* ⚡ regi
   const tinhaSW=!!navigator.serviceWorker.controller;let recarregou=false;
   navigator.serviceWorker.addEventListener('controllerchange',()=>{if(!tinhaSW||recarregou)return;recarregou=true;
     /* espera o app ficar livre: sem folha/pergunta aberta, sem carregamento em andamento (#load) e sem digitação recente */
-    const livre=()=>!(typeof overlayOn==='function'&&overlayOn())&&!$('load').classList.contains('on')&&Date.now()-ultTecla>1500;
+    const livre=()=>!abrindo&&!(typeof overlayOn==='function'&&overlayOn())&&!$('load').classList.contains('on')&&Date.now()-ultTecla>1500;   // v72: nunca no meio da abertura
     if(livre())return location.reload();
     toast('Versão nova do app pronta — ela entra assim que você terminar o que está fazendo');
     const t=setInterval(()=>{if(livre()){clearInterval(t);try{const pt=$('pf-txt');if(pt)localStorage.setItem(LSPF,pt.value)}catch{}location.reload()}},2000)});
@@ -454,13 +475,16 @@ if('serviceWorker' in navigator&&/^https?:/.test(location.protocol)){/* ⚡ regi
   addEventListener('load',()=>idle(()=>navigator.serviceWorker.register('./sw.js').then(reg=>reg.update()).catch(()=>{})))}
 /* versão do app na aba Dados (nome do cache do SW, ex.: v34) — para conferir se o aparelho já pegou a atualização */
 /* APP_VER = versão do CÓDIGO que está rodando. ⚠ Mantenha igual ao V do sw.js (o teste de fumaça confere). */
-const APP_VER='v71';
+const APP_VER='v72';
 const verNum=v=>parseInt(String(v||'').replace(/\D/g,''),10)||0;   // 'v9' < 'v45' < 'v100' (comparação numérica, não alfabética)
 function mostraVersao(){const el=$('app-ver');if(el)el.textContent='Versão do app: '+APP_VER}
 addEventListener('load',()=>setTimeout(mostraVersao,3000));
 /* ═══ NOVIDADES (nov/2026): depois de atualizar, o Resumo mostra o que mudou (1 vez por versão). Na 1ª instalação não aparece.
    Ao publicar uma versão com mudança visível, acrescente aqui a chave da versão (a mesma do sw.js, ex.: 'v43'). ═══ */
 const NOVIDADES={
+  v72:['⚡ <b>Abertura sem travar</b>: o app aparece na hora e as abas já respondem; blocos cinza mostram o que ainda está carregando, e o topo mostra a etapa',
+       '☁️ Relatório novo da nuvem chega por trás: não cobre a tela, não troca de aba e não apaga a busca',
+       '🔄 Pedido vindo do outro aparelho não recalcula mais todos os itens — a tela fica mais leve'],
   v71:['⏳ Com o filtro <b>Em trânsito</b> ligado, a ordem <b>Mais tempo em trânsito</b> aparece nas opções: os que estão há mais dias a caminho vêm primeiro'],
   v70:['🏭 Fornecedor na busca mais simples: tocar no fornecedor mostra todos os itens dele com o nome no campo de busca — o X volta ao normal',
        '🔗 Na ficha (aba Cadastro), toque no fornecedor para ver todos os itens dele'],

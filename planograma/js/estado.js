@@ -74,3 +74,9 @@ function downloadBlob(blob, filename) {
   document.body.removeChild(a);
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
+
+/* v72 — ABERTURA: abre o banco e já pede ao aparelho os registros da abertura enquanto o Framework7 ainda está iniciando.
+   O boot() (nuvem.js) usa estas mesmas promessas. */
+const BOOT_IDS=['carimbo','estoque','transitmeta','encarte','current',...[0,1,2,3,4,5,6].flatMap(w=>['oferta-d'+w,'panfleto-d'+w])];
+const bootPre=(async()=>{try{await idbOpen()}catch{}const m=new Map();
+  if(idb)for(const id of BOOT_IDS)m.set(id,new Promise(r=>{try{idbGet(id).then(r,()=>r(null))}catch{r(null)}}));return m})();

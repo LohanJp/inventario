@@ -3,11 +3,15 @@
    Todos são scripts comuns que compartilham o mesmo escopo global, então a ORDEM importa. */
 
 /* CARREGAR / SALVAR */
-async function loadRecords(records,meta,name,transit,persist,savedAt){
+/* modo: (nada) = relatório novo escolhido aqui → vai para o Resumo · 'abre' = abertura do app (cálculo em pedaços, fica na aba)
+   · 'fica' = relatório novo da nuvem em segundo plano (não troca de aba, não apaga a busca) */
+async function loadRecords(records,meta,name,transit,persist,savedAt,modo){
  planoRecs=records;allRecords=records;currentMeta=meta;lsKey=lsKeyFor(meta.filial||'',meta.date||'');lsLoad();
  if(transit){transitMap=transit;transitLoaded=true}
  savedInfo={name,savedAt:savedAt||new Date().toLocaleString('pt-BR')};
  if(persist&&idb)await idbSave({id:'current',name,records,meta,savedAt:savedInfo.savedAt,filial:meta.filial,date:meta.date,transit:transitLoaded?transitMap:undefined}).catch(()=>{});
+ if(modo==='abre'){await deriveFatiado();return abrFim()}
+ if(modo==='fica'){derive();return renderAtual()}
  derive();F={chip:'all',cat:'',q:'',sort:'prio',ent:ENT0};$('q').value='';go('home')}
 /* Os relatórios do sistema são UTF-8 (cada acento ocupa 1 coluna). Ler como latin1 transformava Ç, Ã, º… em 2 caracteres e
    DESLOCAVA as colunas dessas linhas (≈2% do planograma): Cob.Plan 999 virava "6 9", estoque 0 virava 9, etc.
@@ -96,7 +100,8 @@ function trAtualiza(){const d=isoDmy(transitMeta&&transitMeta.date)||today();
   for(const p in saiu)if(isoDias(saiu[p].d,d)>TR_SAIU_DIAS)delete saiu[p];
   trReg.last=d;trDirty=true;trSalva();if(typeof trEnvia==='function')trEnvia()}
 const NARROW=matchMedia('(max-width:379.98px)');   // ⚡ innerWidth forçava o layout da aba inteira (1,6 s no Pedido com 345 itens)
-function renderFresh(){
+function renderFresh(){if(abrindo)return;   // v72: durante a abertura o subtítulo mostra a etapa
+
   const el=$('fresh-t'),F_=$('fresh');
   if(!allRecords.length){el.textContent='Nenhum relatório carregado';F_.classList.remove('warn');return}
   const base=String(currentMeta.date||'').trim();let warn=false;

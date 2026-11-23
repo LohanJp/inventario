@@ -104,7 +104,8 @@ function ring(c,n){let off=25,s='';
 let hSist='1';try{const v=localStorage.getItem('planograma_hsist');if(v===''||v==='10'||v==='20')hSist=v}catch{}
 const hSistOk=r=>!hSist||(hSist==='1'?isCD(r):r._sist===hSist);
 const setHSist=v=>{hSist=v;try{localStorage.setItem('planograma_hsist',v)}catch{}renderHome()};
-function renderHome(){let n=allRecords.length;renderBan();
+function renderHome(){if(abrindo)return;let n=allRecords.length;   // v72: na abertura ficam os esqueletos até os dados chegarem
+renderBan();
  $('home-dados').hidden=!n;$('h-load').hidden=!!n;                            // sem dados: só o cartão com o botão de carregar (nada de "—" soltos)
  if(!n){$('h-fil').textContent='Nenhum relatório carregado';$('h-sub').textContent='Carregue o relatório de Planograma para ver a situação dos produtos.';$('h-ring').innerHTML='';$('h-health').innerHTML='';$('kpis').innerHTML='';$('cats').innerHTML='';return}
  /* v60: o Resumo NÃO depende de nenhum filtro (antes o "Esconder falta no CD / em trânsito" dos Filtros mudava os números).
@@ -158,18 +159,19 @@ const fnNorm=s=>norm(s).replace(/[^a-z0-9 ]/g,' ').replace(/\s+/g,' ').trim();
 /* um fornecedor = um CÓDIGO (código diferente com o mesmo nome fica separado; o código aparece na sugestão e no Pedido para diferenciar).
    Sem código → pelo nome. O nome mostrado é o que mais aparece naquele código. */
 const fgParts=r=>{const t=fornNome(r),m=/^(\d+)\s*·\s*(.+)$/.exec(t),c=/^(\d+)/.exec(t);return {t,cod:c?c[1]:'',nome:m?m[2].trim():(/^\d+$/.test(t)?'':t)}};
-const fgKey=r=>(fornIdx(),r._fk);
-let FG=null;   // índice dos fornecedores: chave → {k,nome,cod,n,s:{1,10,20}} · zerado a cada derive() e montado na 1ª vez que precisa
-function fornIdx(){if(FG)return FG;FG=new Map();
- const P=new Map(),up=a=>{while(P.get(a)!==a){P.set(a,P.get(P.get(a)));a=P.get(a)}return a},
-   un=(a,b)=>{if(!P.has(a))P.set(a,a);if(!P.has(b))P.set(b,b);const x=up(a),y=up(b);if(x!==y)P.set(x<y?y:x,x<y?x:y)};   // a menor chave vira a do grupo
- const R=[];for(const r of allRecords){const f=fgParts(r),n=fnNorm(f.nome),a=f.cod?'c:'+f.cod.replace(/^0+/,''):n?'n:'+n:'';   // pelo CÓDIGO (pedido do Lohan: código diferente = fornecedor separado, mesmo com o mesmo nome)
-   if(!a){r._fk='';continue}un(a,a);R.push([r,a,f])}
- for(const [r,a,f] of R){const k=up(a);r._fk=k;let o=FG.get(k);if(!o){o={k,nm:{},cod:new Set(),n:0,s:{}};FG.set(k,o)}
-   if(f.nome)o.nm[f.nome]=(o.nm[f.nome]||0)+1;if(f.cod)o.cod.add(f.cod);o.n++;const si=sisK(r);o.s[si]=(o.s[si]||0)+1}
- for(const o of FG.values()){const ns=Object.entries(o.nm).sort((a,b)=>b[1]-a[1]||b[0].length-a[0].length);o.nome=ns.length?ns[0][0]:'';   // nome que mais aparece
-   o._h=norm(ns.map(x=>x[0]).join(' ')+' '+[...o.cod].join(' ')+' '+[...o.cod].map(c=>c.replace(/^0+/,'')).join(' '))}
- return FG}
+/* chave do fornecedor de UM item, calculada 1 vez e guardada no item (não precisa do índice inteiro) */
+const fgKey=r=>{if(r._fk!==undefined)return r._fk;const f=fgParts(r),n=fnNorm(f.nome);return r._fk=f.cod?'c:'+f.cod.replace(/^0+/,''):n?'n:'+n:''};
+const fgMini=r=>{const f=fgParts(r);return {nome:f.nome,cod:new Set(f.cod?[f.cod]:[])}};   // nome + código para títulos (Pedido, ficha)
+let FG=null,FGsrc=null,fgObra=0;   // índice dos fornecedores (só para as sugestões da busca): chave → {k,nome,cod,n,s} · refeito quando muda o relatório
+function fgAdd(M,r){const k=fgKey(r);if(!k)return;const f=fgParts(r);let o=M.get(k);if(!o){o={k,nm:{},cod:new Set(),n:0,s:{}};M.set(k,o)}
+  if(f.nome)o.nm[f.nome]=(o.nm[f.nome]||0)+1;if(f.cod)o.cod.add(f.cod);o.n++;const si=sisK(r);o.s[si]=(o.s[si]||0)+1}
+function fgFecha(M){for(const o of M.values()){const ns=Object.entries(o.nm).sort((a,b)=>b[1]-a[1]||b[0].length-a[0].length);o.nome=ns.length?ns[0][0]:'';   // nome que mais aparece
+   o._h=norm(ns.map(x=>x[0]).join(' ')+' '+[...o.cod].join(' ')+' '+[...o.cod].map(c=>c.replace(/^0+/,'')).join(' '))}return M}
+function fornIdx(){if(FG)return FG;fgObra++;const M=new Map();for(const r of allRecords)fgAdd(M,r);return FG=fgFecha(M)}   // na hora (quando alguém precisa já)
+/* v72: montado em pedaços, com o app parado (antes era 1 tarefa de ~0,1 s a cada derive, travando o toque) */
+async function fornIdxAos(){if(FG)return;const obra=++fgObra,L=allRecords,M=new Map();let t=performance.now();
+  for(let i=0;i<L.length;i++){fgAdd(M,L[i]);if((i&127)===127&&performance.now()-t>30){await ceder();if(FG||obra!==fgObra||L!==allRecords)return;t=performance.now()}}
+  if(!FG&&L===allRecords)FG=fgFecha(M)}
 const sisK=r=>r._sist==='20'||r._sist==='10'?r._sist:'1';   // sem sistemática conta como Sist. 1 (igual ao isCD)
 const fgTit=o=>o?(o.nome||'Fornecedor '+[...o.cod][0]):'Sem fornecedor';
 const fgCod=o=>o&&o.cod.size?'cód. '+[...o.cod].sort().join(', '):'sem código';
@@ -272,7 +274,8 @@ function ensureVL(){if(vl)return vl;CH=medeCartao();
   vl=app.virtualList.create({el:$('list'),items:[],height:CH||120,renderItem:r=>card(r),scrollableParentEl:$('s-prod'),setListHeight:true,cols:vlCols(),rowsBefore:10,rowsAfter:5});   // janela menor = cada redesenho troca menos cartões (tranco menor ao rolar rápido)
   return vl}
 window.addEventListener('resize',debounce(ajustaAltura,150));   // girou o celular / mudou o tamanho da letra: mede de novo
-function renderList(reset){todoP=null;   // o conjunto do pedido do "Para fazer hoje" é refeito a cada lista
+function renderList(reset){if(abrindo)return;   // v72: o texto digitado fica guardado em F.q e é aplicado quando os dados chegam
+todoP=null;   // o conjunto do pedido do "Para fazer hoje" é refeito a cada lista
 const T=toks(F.q);
  refreshDep();{const n=nFiltros(),fb=$('flt-btn');$('flt-n').textContent=n;$('flt-n').hidden=!n;fb.classList.toggle('on',!!n);   // botão "Filtros" com quantos estão ligados
   const nm=F.chip==='all'?'':(FLT_SHORT[F.chip]||(CHIPS.find(c=>c[0]===F.chip)||[])[1]||'');fb.title='Filtros'+(nm?' · '+nm:'');fb.setAttribute('aria-label',fb.title)}
@@ -489,7 +492,7 @@ $('cadban').onclick=e=>{
     if(tudo){CAD={};cadSalva();cadNao=new Set()}CADOK=0;try{localStorage.setItem('planograma_cadok',0)}catch{}if(F.cadx)F.cadx=false;renderCadBan();toast('Conferência limpa')}};
 let qT=0;const qGo=()=>{clearTimeout(qT);qT=setTimeout(()=>renderList(true),180)};   // mesmo atraso de antes; v69: dá para cancelar ao escolher um fornecedor
 $('q').oninput=e=>{F.fg='';F.q=e.target.value;qGo();fsugShow()};   // mexeu no texto: deixa de ser o fornecedor e vira busca comum   // sugestões na hora (índice pronto, <1 ms); a lista espera a pausa
-$('q').addEventListener('focus',fsugShow);$('q').addEventListener('blur',fsugHide);
+$('q').addEventListener('focus',()=>{if(!FG&&allRecords.length)fornIdxAos();fsugShow()});$('q').addEventListener('blur',fsugHide);
 $('q').addEventListener('keydown',e=>{const on=!$('fsug').hidden;
  if(e.key==='ArrowDown'&&on){e.preventDefault();fsugI=Math.min(fsugI+1,fsugL.length-1);fsugShow()}
  else if(e.key==='ArrowUp'&&on){e.preventDefault();fsugI=Math.max(fsugI-1,-1);fsugShow()}

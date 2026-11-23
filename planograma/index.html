@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="pt-BR"><head><meta charset="UTF-8">
+<html lang="pt-BR" class="abr"><head><meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#f3f5f8">
 <link rel="manifest" href="manifest.webmanifest">
@@ -20,9 +20,10 @@
  <!-- ═══ BARRA DO TOPO: título da aba + idade dos relatórios + nuvem + engrenagem ═══ -->
  <div class="navbar">
   <div class="navbar-bg"></div>
+  <div id="abr-bar" aria-hidden="true"><i></i></div>
   <div class="navbar-inner">
    <div class="left"><span class="brand" aria-hidden="true"><svg viewBox="0 0 32 32" width="30" height="30"><rect width="32" height="32" rx="9" fill="var(--f7-theme-color)"/><path d="M8 22V10M13 22V14M18 22V8M23 22V16" stroke="#fff" stroke-width="3" stroke-linecap="round"/></svg></span></div>
-   <div class="title" id="fresh"><span id="tab-title">Resumo</span><span class="subtitle" id="fresh-t">Nenhum relatório carregado</span></div>
+   <div class="title" id="fresh"><span id="tab-title">Resumo</span><span class="subtitle abr" id="fresh-t" aria-live="polite">Abrindo seus dados…</span></div>
    <div class="right">
     <a class="link icon-only" id="fresh-upd" aria-label="Atualizar com a nuvem" title="Atualizar com a nuvem" role="button" tabindex="0"><svg class="ic" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 0 1-15.5 6.2L3 16"/><path d="M3 21v-5h5"/><path d="M3 12a9 9 0 0 1 15.5-6.2L21 8"/><path d="M21 3v5h-5"/></svg></a>
     <a class="link icon-only" id="fresh-gear" aria-label="Dados e configurações" role="button" tabindex="0"><svg class="ic" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></a>
@@ -42,25 +43,28 @@
 
  <div class="tabs">
  <!-- ═══ RESUMO ═══ -->
- <section id="s-home" class="page-content tab tab-active on">
+ <section id="s-home" class="page-content tab tab-active on" aria-busy="true">
   <div class="wrap">
   <div id="pban"></div>
   <div id="dtban" hidden></div>
   <div id="cadban" hidden></div>
   <div class="card hero-card"><div class="card-content card-content-padding">
-   <div class="hero-row"><div id="h-ring" class="ring"></div><div class="hero-tx"><div class="t" id="h-fil">Sem dados</div><div class="s" id="h-sub">Abra a aba Dados para carregar o relatório</div><div class="hl" id="h-health"></div></div></div>
+   <div class="hero-row"><div id="h-ring" class="ring"><svg viewBox="0 0 36 36" width="92" height="92" aria-hidden="true"><circle r="15.9155" cx="18" cy="18" fill="none" stroke="var(--trk)" stroke-width="4.2"/></svg></div><div class="hero-tx"><div class="t" id="h-fil"><i class="skl" style="width:150px;height:18px"></i></div><div class="s" id="h-sub">Carregando…</div><div class="hl" id="h-health"><i class="skl" style="width:62%"></i></div></div></div>
    <div id="h-hist"></div>
    <button class="button button-fill button-large button-round" id="h-load" type="button" hidden>Carregar relatório de Planograma</button>
   </div></div>
   <div id="home-dados">
+   <div class="skw" aria-hidden="true"><div class="block-title">Para fazer hoje</div><div class="list list-strong inset sk"><ul><li class="sk-row"><i class="skl" style="width:60%"></i></li><li class="sk-row"><i class="skl" style="width:45%"></i></li><li class="sk-row"><i class="skl" style="width:52%"></i></li></ul></div></div>
    <div id="todo"></div>
    <div id="h-top"></div>
    <div class="block-title">Situação dos produtos</div>
    <div class="segmented segmented-strong cssw kpsw" id="kpis-sw" role="group" aria-label="Sistemática da situação dos produtos"><button class="button" type="button" data-hs="">Todas</button><button class="button" type="button" data-hs="1">Sist. 1</button><button class="button" type="button" data-hs="10">Sist. 10</button><button class="button" type="button" data-hs="20">Sist. 20</button><span class="segmented-highlight"></span></div>
+   <div class="kpis skw" aria-hidden="true"><div class="kpi sk"><i class="skl n"></i><i class="skl l"></i></div><div class="kpi sk"><i class="skl n"></i><i class="skl l"></i></div><div class="kpi sk"><i class="skl n"></i><i class="skl l"></i></div><div class="kpi sk"><i class="skl n"></i><i class="skl l"></i></div><div class="kpi sk"><i class="skl n"></i><i class="skl l"></i></div><div class="kpi sk"><i class="skl n"></i><i class="skl l"></i></div><div class="kpi sk"><i class="skl n"></i><i class="skl l"></i></div><div class="kpi sk"><i class="skl n"></i><i class="skl l"></i></div></div>
    <div class="kpis" id="kpis"></div>
    <div class="block-title">Categorias com mais alertas</div>
    <div class="card"><div class="card-content card-content-padding">
     <div class="segmented segmented-strong cssw" id="cats-sw" role="group" aria-label="Sistemática"><button class="button" type="button" data-cs="1">Sist. 1</button><button class="button" type="button" data-cs="10">Sist. 10</button><button class="button" type="button" data-cs="20">Sist. 20</button><span class="segmented-highlight"></span></div>
+    <div class="skw" aria-hidden="true"><div class="bar sk"><i class="skl" style="width:40%"></i><i class="skl" style="width:100%;height:8px;margin-top:8px"></i></div><div class="bar sk"><i class="skl" style="width:40%"></i><i class="skl" style="width:100%;height:8px;margin-top:8px"></i></div><div class="bar sk"><i class="skl" style="width:40%"></i><i class="skl" style="width:100%;height:8px;margin-top:8px"></i></div><div class="bar sk"><i class="skl" style="width:40%"></i><i class="skl" style="width:100%;height:8px;margin-top:8px"></i></div></div>
     <div id="cats"></div>
    </div></div>
   </div>
@@ -68,7 +72,7 @@
  </section>
 
  <!-- ═══ PRODUTOS ═══ -->
- <section id="s-prod" class="page-content tab">
+ <section id="s-prod" class="page-content tab" aria-busy="true">
   <div class="prod-top">
    <form class="searchbar sb-f7" onsubmit="return false" role="search">
     <div class="searchbar-inner">
@@ -87,6 +91,7 @@
    </div>
    <div class="row2"><span id="cnt" aria-live="polite"></span><span id="catx"></span><button type="button" id="exp-txt" class="expb" title="Baixar a lista da tela: Planograma (.txt) ou Relatório (planilha)" hidden>⤓ Baixar</button></div>
   </div>
+  <div class="skw sk-list" aria-hidden="true"><div class="p sk"><i class="skl" style="width:70%;height:15px"></i><i class="skl" style="width:45%"></i><i class="skl" style="width:100%;height:40px;border-radius:10px"></i></div><div class="p sk"><i class="skl" style="width:70%;height:15px"></i><i class="skl" style="width:45%"></i><i class="skl" style="width:100%;height:40px;border-radius:10px"></i></div><div class="p sk"><i class="skl" style="width:70%;height:15px"></i><i class="skl" style="width:45%"></i><i class="skl" style="width:100%;height:40px;border-radius:10px"></i></div><div class="p sk"><i class="skl" style="width:70%;height:15px"></i><i class="skl" style="width:45%"></i><i class="skl" style="width:100%;height:40px;border-radius:10px"></i></div><div class="p sk"><i class="skl" style="width:70%;height:15px"></i><i class="skl" style="width:45%"></i><i class="skl" style="width:100%;height:40px;border-radius:10px"></i></div></div>
   <div class="vlist" id="list"></div>
   <div class="empty" id="list-empty" hidden>Nenhum produto encontrado</div>
   <div style="height:24px"></div>
@@ -105,6 +110,7 @@
   </form>
   <div id="pres"></div>
   <div class="block-title">Lista de pedido</div>
+  <div class="skw" aria-hidden="true"><div class="sk-msg">Carregando o pedido…</div><div class="trd sk"><i class="skl" style="width:55%;height:16px"></i><i class="skl" style="width:35%"></i></div><div class="trd sk"><i class="skl" style="width:55%;height:16px"></i><i class="skl" style="width:35%"></i></div><div class="trd sk"><i class="skl" style="width:55%;height:16px"></i><i class="skl" style="width:35%"></i></div></div>
   <div id="plist"></div>
   </div>
  </section>
@@ -118,6 +124,7 @@
     <div id="ax-menu" style="display:none"><button class="axi" data-ax="enc" type="button">📋 Panfleto</button><button class="axi" data-ax="pan" type="button">🧾 Lâmina</button><button class="axi" data-ax="dia" type="button">⭐ Oferta do dia</button></div></div>
   </div>
   <div class="wrap">
+  <div class="skw sk-msg" aria-hidden="true">Carregando os anexos salvos…</div>
   <div class="pad" id="ax-enc">
    <div class="sec-h"><h2>Análise de Panfleto</h2><p>Carregue a planilha (.xlsx, .csv) com EAN, Host e Nome dos itens do panfleto.</p></div>
    <div class="enc-drop" id="enc-drop" role="button" tabindex="0" aria-label="Carregar planilha do panfleto"><div class="dz-ic">📂</div><div>Toque para carregar ou arraste aqui</div><small><b>.xlsx</b> ou <b>.csv</b> com colunas EAN · Host · Nome</small></div>
@@ -248,7 +255,7 @@
 </div>
 <div id="scan"><video id="sv" playsinline muted></video><div class="sframe"></div><div class="sbar"><b>Aponte para o código de barras</b>A câmera desliga sozinha ao ler ou em 30 s, para poupar bateria<button class="button button-fill button-large" id="scan-x">Fechar câmera</button></div></div>
 <div id="toast" role="status" aria-live="polite"></div>
-<div id="load" class="on boot" role="status" aria-live="polite"><div class="spin"></div><div id="lmsg">Abrindo seus dados…</div><div id="lhint"></div></div>
+<div id="load" role="status" aria-live="polite"><div class="spin"></div><div id="lmsg">Abrindo seus dados…</div><div id="lhint"></div></div>
 
 </div><!-- #app -->
 <div id="novban" hidden></div>

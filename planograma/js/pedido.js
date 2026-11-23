@@ -67,7 +67,8 @@ const dropOpen={p20:true,pnd:true,trd:false,fcd:false,rcd:false,dnd:false};   //
 const LSHINT='planograma_dica_gestos';let hintN=0,hintCounted=false;try{hintN=+localStorage.getItem(LSHINT)||0}catch{}
 const hintHtml=()=>hintN<=3?'<div class="hint"><span>👉 Deslize → concluir · 👈 excluir · segure o cartão = 🔎 depósito</span><button type="button" id="hint-x" aria-label="Fechar dica">✕</button></div>':'';
 const CHEV='<svg class="ch" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>';
-function renderPed(){
+function renderPed(){if(abrindo)return;   // v72: sem o relatório os cartões apareceriam como "fora do planograma"
+
  /* ⛔ Ruptura no CD acaba quando o CD manda: apareceu trânsito → tira a marca (o item segue o caminho normal: trânsito → para pedir/concluir) */
  {let mud=false;for(const x of pedido)if(x.rcd&&!x.done&&inTransit(x)){delete x.rcd;mud=true}if(mud)savePed()}
  updBadge();renderBan();   // badge e faixa acompanham a chave de falta no CD
@@ -94,7 +95,7 @@ function renderPed(){
  const drop=(id,title,sub,l,topo='')=>l.length?det(id,`id="${id}"`,dropOpen[id],title,sub,l.length,()=>topo+ord(l).map(row).join('')):'';
  /* v69 PARA PEDIR separado: Sist. 20 (direto ao fornecedor, um subgrupo por fornecedor) × Sist. 1 (pedido ao CD; inclui Sist. 10 e quem não tem sistemática) */
  const R20=x=>{const r=byProd.get(x.p);return !!r&&r._sist==='20'},A=fl(act),a20=A.filter(R20),a1=A.filter(x=>!R20(x)),n10=a1.filter(x=>{const r=byProd.get(x.p);return r&&r._sist==='10'}).length;
- const G=new Map();for(const x of a20){const r=byProd.get(x.p),k=fgKey(r);let g=G.get(k);if(!g){g={k,o:fornIdx().get(k),l:[]};G.set(k,g)}g.l.push(x)}
+ const G=new Map();for(const x of a20){const r=byProd.get(x.p),k=fgKey(r);let g=G.get(k);if(!g){g={k,o:k?fgMini(r):null,l:[]};G.set(k,g)}g.l.push(x)}
  const GA=[...G.values()].sort((a,b)=>!a.o-!b.o||fgTit(a.o).localeCompare(fgTit(b.o)));   // ordem fixa A–Z: concluir um item não troca os fornecedores de lugar
  const sub=g=>{const u=g.l.filter(x=>x.u==='a').length;return det('f:'+g.k,`data-fk="${esc(g.k)}"`,fOpen[g.k]!==false,esc(fgTit(g.o)),esc(fgCod(g.o))+(u?` · 🔥 ${u} urgente${u>1?'s':''}`:''),g.l.length,()=>ord(g.l).map(row).join(''),' trf')};
  const p20=a20.length?det('p20','id="p20"',dropOpen.p20,'📞 Para pedir · Sist. 20','Direto ao fornecedor · '+(GA.length>1?GA.length+' fornecedores':esc(fgTit(GA[0].o))),a20.length,()=>GA.length>1?GA.map(sub).join(''):ord(a20).map(row).join('')):'';
@@ -230,7 +231,7 @@ function openSheet(r){if(!r)return;const kv=([a,b])=>`<div class="kv"><span>${a}
  const cad=[['Código · EAN',esc(r.produto)+(r.automacao?' · '+esc(r.automacao):'')],['Categoria',esc(String(r.categoria||'Sem categoria').split('->').join(' › '))],
    r._np?['Planograma','Fora do planograma']:['Planograma (cadastro)',`${esc(r.altura||'—')} × ${esc(r.largura||'—')} × ${esc(r.prof||'—')} = ${esc(r.total||f0(cap))} un`],
    r._np?null:['Cob.Plan',r.cobplan?esc(r.cobplan)+' dias':'—'],['Embalagem · Giro',`caixa com ${f0(ebx)} · ${esc(r.giro||'—')}`],r.corredor&&r.corredor!=='0'?['Corredor',esc(r.corredor)]:null,
-   ['Fornecedor',fgKey(r)?`<button type="button" class="kv-lnk" data-fg="${esc(r._fk)}" aria-label="Ver todos os itens de ${esc(fgTit(fornIdx().get(r._fk)))}">${esc(fornTxt(r))} ›</button>`:esc(fornTxt(r))],pr&&(pr.n||pr.promo)?['Preço',precoHtml(r)]:null,axBadges(r)?['Anexos',axBadges(r)]:null].filter(Boolean);
+   ['Fornecedor',fgKey(r)?`<button type="button" class="kv-lnk" data-fg="${esc(r._fk)}" aria-label="Ver todos os itens de ${esc(fgTit(fgMini(r)))}">${esc(fornTxt(r))} ›</button>`:esc(fornTxt(r))],pr&&(pr.n||pr.promo)?['Preço',precoHtml(r)]:null,axBadges(r)?['Anexos',axBadges(r)]:null].filter(Boolean);
  const TABS=[['res','Resumo',resumo],['mov','Movimento',linha+mov.map(kv).join('')],['cad','Cadastro',cad.map(kv).join('')]];
  const rcdBtn=r._sist!=='20'||x0.rcd,rcdVelho=x0.rcd&&rcdDias(x0)>0;
  $('sheetc').innerHTML=`<div class="fb" style="--c:${COLOR[r._k]}"><div class="fb-n"><b class="num">${ctTxt}</b><small>${ctTxt==='—'?'&nbsp;':ctTxt==='1'?'dia':'dias'}</small></div>

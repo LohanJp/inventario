@@ -626,7 +626,6 @@ html:not(.dark) .ent.trg.atr{color:color-mix(in srgb,var(--am) 70%,#000)}
 /* v66 */
 #h-top{padding:0 16px}#h-top .trd{margin-top:14px}
 .rel-load{margin-top:8px;margin-bottom:10px}.rel-load label.button{cursor:pointer}
-#load.boot{background:var(--bg)}   /* v67: na abertura a tela de espera é opaca (não deixa ver o Resumo ainda vazio) */
 
 /* ═══ v69 (nov/2026): fornecedor na busca · Pedido por Sist. 20 × Sist. 1 e por fornecedor ═══ */
 .vh{position:absolute!important;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;margin:-1px;padding:0;border:0}   /* só para leitor de tela */
@@ -649,3 +648,25 @@ html:not(.dark) .ent.trg.atr{color:color-mix(in srgb,var(--am) 70%,#000)}
 @media (min-width:1000px){#plist .trd-b>.trf{grid-column:1/-1}}
 /* v70: fornecedor tocável na ficha */
 .kv-lnk{background:none;border:0;padding:6px 0;margin:-6px 0;color:var(--f7-theme-color);font:inherit;font-weight:600;text-align:right;cursor:pointer}
+
+/* ═══ v72 (nov/2026): abertura progressiva — casca e esqueletos no HTML, sem tela que bloqueia ═══ */
+html:not(.abr) .skw{display:none!important}
+html.abr #todo,html.abr #h-top,html.abr #kpis,html.abr #cats,html.abr #list,html.abr #list-empty,html.abr #plist,html.abr #pban,html.abr #dtban,html.abr #cadban,html.abr #exp-txt{display:none!important}
+html.abr #pbadge{visibility:hidden}
+#abr-bar{position:absolute;left:0;right:0;bottom:0;height:3px;overflow:hidden;pointer-events:none;z-index:2}
+#abr-bar>i{display:block;height:100%;width:0;background:var(--f7-theme-color);border-radius:0 2px 2px 0;transition:width .35s ease,opacity .4s}
+#abr-bar.fim>i{opacity:0}
+#fresh-t.abr{color:var(--f7-theme-color);font-weight:600}
+.skl{display:block;height:12px;border-radius:6px;background:var(--trk);animation:skp 1.4s ease-in-out infinite}
+@keyframes skp{0%,100%{opacity:1}50%{opacity:.5}}
+@media (prefers-reduced-motion:reduce){.skl{animation:none}}
+.sk{pointer-events:none}
+.kpi.sk{min-height:76px}.kpi.sk .skl.n{width:46px;height:22px;margin-bottom:8px}.kpi.sk .skl.l{width:70%;height:11px}
+.sk-row{display:flex;align-items:center;gap:12px;padding:14px 16px;list-style:none}.sk-row+.sk-row{border-top:1px solid var(--bd)}
+.bar.sk{padding:10px 0}
+.sk-list{padding:0 16px}.p.sk{background:var(--card);border-radius:16px;padding:14px;margin:0 0 10px}.p.sk .skl+.skl{margin-top:10px}
+.trd.sk{background:var(--card);border-radius:16px;padding:16px;margin:0 16px 10px}.trd.sk .skl+.skl{margin-top:8px}
+.sk-msg{display:flex;align-items:center;gap:8px;color:var(--mu);font-size:13px;padding:10px 20px}
+.sk-msg::before{content:'';flex:none;width:14px;height:14px;border-radius:50%;border:2px solid var(--trk);border-top-color:var(--f7-theme-color);animation:skg .8s linear infinite}
+@keyframes skg{to{transform:rotate(360deg)}}
+html.abr .ped-head,html.abr .enc-drop,html.abr .of-drop{display:none!important}   /* sem o cabeçalho vazio do Pedido e sem "Toque para carregar" nos anexos enquanto abre */

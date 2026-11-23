@@ -26,10 +26,19 @@ addEventListener('error',e=>showErr(e.message+(e.lineno?' (linha '+e.lineno+')':
 addEventListener('unhandledrejection',e=>showErr(e.reason&&e.reason.message||e.reason));
 /* Tela de carregamento: só aparece se a ação passar de 1 s (now=true: trabalho pesado que trava a tela, mostra já) */
 let busyT=null,busyH=null,busyMsg='Carregando…';
-let abrindo=true;   // v67: true do carregamento da página até o boot terminar
+let abrindo=true;
+/* v72 — ABERTURA PROGRESSIVA (desenho: agente de design · fluidez: agente de IHM · dados: agente de BD)
+   A casca e os esqueletos já vêm no HTML; as abas respondem desde o início. Etapas: 1) estoque + planograma + trânsito → telas prontas;
+   2) preços; 3) nuvem em segundo plano. O andamento aparece no subtítulo do topo e numa linha fina embaixo dele. */
+const ceder=()=>globalThis.scheduler&&scheduler.yield?scheduler.yield():new Promise(r=>setTimeout(r,0));   // deixa o toque e a pintura passarem
+function abrTxt(t,p){const f=$('fresh-t');if(t){f.textContent=t;f.classList.add('abr')}if(p!=null){const b=$('abr-bar');b.classList.remove('fim');b.firstElementChild.style.width=Math.round(p*100)+'%'}}
+function abrFim(){if(!abrindo)return;abrindo=false;document.documentElement.classList.remove('abr');
+  document.querySelectorAll('[aria-busy="true"]').forEach(e=>e.setAttribute('aria-busy','false'));
+  $('fresh-t').classList.remove('abr');renderFresh();renderAtual()}
+function renderAtual(){const id=curTab;if(id==='home')renderHome();else if(id==='prod')renderList(false);else if(id==='ped')renderPed();else if(id==='data'&&typeof renderData==='function')renderData();updBadge()}   // v67: true do carregamento da página até o boot terminar
 function busy(on,m,now){
   const L=$('load');
-  if(!on&&abrindo)return;   // v67: a tela de abertura só sai quando TUDO o que está guardado foi lido (ver boot)
+  if(abrindo){if(on&&m)abrTxt(m);return}   // v72: durante a abertura nada cobre a tela — o recado vai para o subtítulo do topo
   if(!on){clearTimeout(busyT);clearTimeout(busyH);busyT=busyH=null;L.classList.remove('on');return}
   if(m)busyMsg=m;
   if(L.classList.contains('on')){$('lmsg').textContent=busyMsg;return}      // já visível: só troca o texto
@@ -108,7 +117,14 @@ const SG_DIAS=30;
 const dmy=s=>{const m=/^(\d\d)\/(\d\d)\/(\d{2,4})$/.exec(String(s||'').trim());if(!m)return null;const y=+m[3];return new Date(y<100?2000+y:y,+m[2]-1,+m[1])};
 const semVendaDias=r=>{const ref=dmy(estoqueMeta&&estoqueMeta.date)||new Date(),uv=dmy(r._uv);return uv?Math.round((ref-uv)/864e5):Infinity};
 const semGiro=r=>estoqueLoaded&&r._e>0&&!r._m&&semVendaDias(r)>SG_DIAS;
-function derive(){mergeRecs();byProd=new Map(allRecords.map(r=>[r.produto,r]));FG=null;idle(()=>{if(!FG)fornIdx()});for(const r of allRecords){   // v69: índice de fornecedores refeito com o app parado (a 1ª busca não trava)
+/* derive = preparar (deriveIni) + calcular cada item (deriveUm) + avisar o resto (deriveFim).
+   v72: na abertura usa deriveFatiado — o mesmo cálculo em pedaços de ~40 ms, deixando a tela responder entre eles. */
+function derive(){deriveIni();for(const r of allRecords)deriveUm(r);deriveFim()}
+async function deriveFatiado(){deriveIni();const L=allRecords;let t=performance.now();
+  for(let i=0;i<L.length;i++){deriveUm(L[i]);if((i&127)===127&&performance.now()-t>40){await ceder();if(allRecords!==L)return derive();t=performance.now()}}
+  deriveFim()}
+function deriveIni(){mergeRecs();byProd=new Map(allRecords.map(r=>[r.produto,r]));if(FGsrc!==allRecords){FG=null;FGsrc=allRecords}}   // índice de fornecedores só é refeito quando muda o relatório (v72)
+function deriveUm(r){
  const t=transitLoaded?transitMap[r.produto]:null;
  const _x=estoqueLoaded?estoqueMap[r.produto]:null;
  // ESTOQUE vem da Cobertura (mais recente); o Planograma só serve de reserva (e para a capacidade alt × larg × prof)
@@ -127,6 +143,12 @@ function derive(){mergeRecs();byProd=new Map(allRecords.map(r=>[r.produto,r]));F
  const rnd=v=>v===null?null:Math.round(v);r._c=rnd(r._c);r._ct=rnd(r._ct);
  // SITUAÇÃO pela cobertura TOTAL: item com mercadoria a caminho não fica "Crítico" à toa. Ruptura continua sendo estoque ≤ 0 (gôndola vazia agora).
  {const fc=faltaCD(r);r._k=r._e<=0?(fc?'rcd':'rup'):semGiro(r)?'sg':r._ct===null?'nd':fc?'rcd':r._ct<7?'crit':r._ct<15?'aten':'ok';r._vir=r._k==='rcd'&&r._e>0&&r._ct!==null&&r._ct>=15}r._d=doneSet.has(key(r));if(!r._h)r._h=norm(r.descricao+' '+r.produto+' '+r.automacao+' '+String(r.produto||'').replace(/^0+(?=\d)/,'')+' '+String(r.automacao||'').replace(/^0+(?=\d)/,''))}
+/* derive leve (sugestão do agente de BD): quando só mudaram pedido/concluídos vindos da nuvem — relatório, Cobertura e Trânsito são os mesmos — não recalcula as 9 mil situações */
+let _dFor=null;
+const deriveChave=()=>[planoRecs,estoqueMap,transitMap,estoqueLoaded,transitLoaded,estoqueMeta,allRecords.length];
+function deriveLive(){const k=deriveChave();if(!_dFor||k.some((v,i)=>v!==_dFor[i]))return derive();
+  for(const r of allRecords)r._d=doneSet.has(key(r));deriveFim()}
+function deriveFim(){_dFor=deriveChave();
   updBadge();
   if(encItems.length){encDirty=true;if(curTab==='enc'&&axCur==='enc')setTimeout(renderEnc,0)}   // ⚡ Encarte escondido: só marca (redesenha ao abrir)
   if($('pf-txt'))setTimeout(pfSync,0);            // e o Panfleto
