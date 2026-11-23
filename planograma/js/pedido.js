@@ -75,7 +75,7 @@ function renderPed(){if(abrindo)return;   // v72: sem o relatório os cartões a
  if(pedido.length&&!hintCounted){hintCounted=true;hintN++;try{localStorage.setItem(LSHINT,hintN)}catch{}}   // conta 1 vez por abertura do app
  const act0=pedido.filter(x=>!x.done&&!inTransit(x)&&!x.rcd),fcd=pedNoCD?act0.filter(pedFaltaCD):[],act=pedNoCD?act0.filter(x=>!pedFaltaCD(x)):act0,nfcd=act0.filter(pedFaltaCD).length,
    tr=pedido.filter(x=>!x.done&&inTransit(x)),rc=pedido.filter(x=>!x.done&&!inTransit(x)&&x.rcd),dn=pedido.filter(x=>x.done),n=act.length;
- $('phead').innerHTML=`<div class="ph-row"><div class="ph-n num">${n}</div><div><div class="t">${n?`${n} ${n>1?'itens':'item'} para pedir`:(pedido.length?'Nada para pedir agora':'Pedido vazio')}</div><div class="s">${tr.length?`${tr.length} aguardando chegada do trânsito`:(pedido.length?'Itens fora do trânsito aparecem na lista abaixo':'Adicione abaixo ou pelo 🛒 nos produtos.')}</div></div></div>`
+ $('phead').innerHTML=(pedido.length?'':'<div class="ph-vz"><b>Pedido vazio</b> — adicione abaixo ou pelo 🛒 nos produtos.</div>')   // v73: sem a linha grande que repetia os números de baixo
   +(pedido.length?`<div class="ph-st">${rc.length?`<span><b class="num">${n}</b> pedir</span><span><b class="num">${tr.length}</b> trânsito</span><span><b class="num">${rc.length}</b> confirm.</span><span><b class="num">${dn.length}</b> feitos</span>`:`<span><b class="num">${n}</b> para pedir</span><span><b class="num">${tr.length}</b> em trânsito</span><span><b class="num">${dn.length}</b> concluídos</span>`}</div>`:'');
  const nd=pedido.filter(x=>depMap[x.p]&&!x.done).length;if(depOnly&&!nd)depOnly=false;   // tirou o último: desliga o filtro
  const fl=l=>depOnly?l.filter(x=>depMap[x.p]):l;
@@ -101,7 +101,7 @@ function renderPed(){if(abrindo)return;   // v72: sem o relatório os cartões a
  const p20=a20.length?det('p20','id="p20"',dropOpen.p20,'📞 Para pedir · Sist. 20','Direto ao fornecedor · '+(GA.length>1?GA.length+' fornecedores':esc(fgTit(GA[0].o))),a20.length,()=>GA.length>1?GA.map(sub).join(''):ord(a20).map(row).join('')):'';
  const trHtml=p20+drop('pnd',a20.length?'📋 Para pedir · Sist. 1':'📋 Para pedir',(a20.length?'Pedido ao CD':'Ainda falta pedir')+(n10?` · inclui ${n10} da Sist. 10`:''),a1)+drop('trd','⏳ Aguardando trânsito','Ficam aqui até a mercadoria chegar',fl(tr))+drop('fcd','⊘ Ruptura CD','Menos de 40% do cadastro e sem trânsito — o CD não mandou',fl(fcd))+drop('rcd','⛔ Ruptura CD confirmada',(()=>{const v=rc.filter(x=>rcdDias(x)>=RCD_VELHO).length;return v?`${v} há ${RCD_VELHO}+ dias — abra o item e reconfira se o CD já tem`:'Você marcou: o CD está sem — saem daqui quando aparecer trânsito'})(),fl(rc))+drop('dnd','✓ Concluídos','Deslize → para reabrir · saem sozinhos ao carregar o planograma de um dia novo',fl(dn),`<button class="button button-small button-tonal dn-clr" id="pc-clr" type="button">🗑 Limpar ${dn.length} concluído${dn.length>1?'s':''}</button>`);
  const chip=(nd||depOnly)?`<button class="chip-btn ${depOnly?'on':''}" id="pc-dep" type="button" style="--c:var(--in)">🔎 Procurar no depósito (${nd})</button>`:'';
- const cdChip=nfcd?`<button class="chip-btn ${pedNoCD?'on':''}" id="pc-fcd" type="button" style="--c:var(--am)" title="${pedNoCD?'Falta no CD fora de Para pedir — toque para mostrar':'Toque para esconder a falta no CD'}">⚠ Esconder Ruptura CD (${nfcd})</button>`:'';
+ const cdChip=nfcd?`<button class="chip-btn ${pedNoCD?'on':''}" id="pc-fcd" type="button" style="--c:var(--am)" title="${pedNoCD?'Ruptura CD fora de Para pedir — toque para mostrar':'Toque para esconder a falta no CD'}">⚠ Esconder Ruptura CD (${nfcd})</button>`:'';
  const sortBar=`<div class="row2 pedsort">${cdChip}${chip}<label class="chip-btn chip-sel ps-sel"><svg class="ic" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4v16M3 16l4 4 4-4M17 20V4M13 8l4-4 4 4"/></svg><select id="ped-sort" aria-label="Ordenar lista de pedido">${PED_ORD.map(([v,t])=>`<option value="${v}"${v===pedSort?' selected':''}>${t}</option>`).join('')}</select></label></div>`;
  /* v69: segura na tela o cartão que estava em cima — sem isso a lista "pula" ao concluir/excluir (os cartões fora da tela não têm altura medida) */
  /* mede só os cartões que estão na tela (medir um cartão fora da tela obrigaria o navegador a montá-lo — é o que o content-visibility evita) */
@@ -130,7 +130,8 @@ document.addEventListener('click',e=>{
   swBlock=Date.now()+350;const act=a.dataset.sw;
   if(li.closest('#plist')){                                              // PEDIDO
     const x=pedido.find(y=>y.p===c.dataset.p);if(!x){app.swipeout.close(li);return}
-    if(act==='ok'){app.swipeout.close(li);setTimeout(()=>{setFeito(x.p,!x.done);renderPed()},260)}   // → concluir: volta suave e alterna
+    if(act==='ok'){app.swipeout.close(li);setTimeout(()=>{const v=!x.done,r=byProd.get(x.p),nm=r?r.descricao:x.p;setFeito(x.p,v);renderPed();   // → concluir: volta suave e alterna
+      toastUndo((v?'✓ Feito · ':'↩ Reaberto · ')+nm,()=>{setFeito(x.p,!v);renderPed()})},260)}   // v73: aviso com Desfazer (como o excluir)
     else if(act==='del'){app.swipeout.delete(li,()=>{const idx=pedido.indexOf(x);if(idx<0)return;pedido.splice(idx,1);savePed();renderPed();   // ← excluir: sai da tela e aparece "Desfazer"
       toastUndo('Item removido',()=>{pedido.splice(idx,0,x);savePed();renderPed()})})}
     return}
@@ -207,7 +208,7 @@ function openSheet(r){if(!r)return;const kv=([a,b])=>`<div class="kv"><span>${a}
  const peq=[transitLoaded?tl('Trânsito',f0(tP)+' un',tP>0?(ebx>1?f0(Math.floor(tP/ebx))+' cx a caminho':'a caminho')+(trDias(r)>=0?' · '+trDiasTxt(trDias(r)):''):'nada a caminho',tP>0?'var(--tr2)':''):'',
    tP>0&&soE!==null?tl('Só o estoque dura',soE===1?'1 dia':f0(soE)+' dias','acaba em '+dm(mais_(soE)),soE<7?'var(--cr)':''):rcTxt&&!r._c999?tl('Cobertura do relatório',rcTxt+(rcTxt==='1'?' dia':' dias'),'relatório de Cobertura'):'',
    pr&&pr.n?tl('Preço',prcFmt(pr.n),pr.c?'Clube '+prcFmt(pr.c):'sem preço de Clube'):'',
-   dmy(r._ue)?(()=>{const n=Math.max(0,Math.round((ref-dmy(r._ue))/864e5));return tl('Última entrada',n===0?'hoje':n===1?'há 1 dia':'há '+f0(n)+' dias',esc(r._ue),n>30?'var(--am)':'')})():cap>0?tl('Cadastrado',ebx>1?f0(Math.floor(cap/ebx))+' cx':f0(cap)+' un',`${esc(r.altura)}×${esc(r.largura)}×${esc(r.prof)} = ${f0(cap)} un`):r._np?tl('Planograma','fora','sem cadastro'):''].filter(Boolean).join('');
+   dmy(r._ue)?(()=>{const hj=new Date();hj.setHours(0,0,0,0);const n=Math.max(0,Math.round((hj-dmy(r._ue))/864e5));return tl('Última entrada',n===0?'hoje':n===1?'há 1 dia':'há '+f0(n)+' dias',esc(r._ue),n>30?'var(--am)':'')})():cap>0?tl('Cadastrado',ebx>1?f0(Math.floor(cap/ebx))+' cx':f0(cap)+' un',`${esc(r.altura)}×${esc(r.largura)}×${esc(r.prof)} = ${f0(cap)} un`):r._np?tl('Planograma','fora','sem cadastro'):''].filter(Boolean).join('');
  const resumo=`${selos?`<div class="fsel">${selos}</div>`:''}${alerta}${barra}
    <div class="fbig"><div class="ft"><small>Estoque</small><b class="num"${r._e<0?' style="color:var(--cr)"':''}>${f0(r._e)}</b><i>un${ebx>1&&r._e>=0?(r._e<ebx?` · menos de 1 cx de ${f0(ebx)}`:` · ${f0(Math.floor(r._e/ebx))} cx de ${f0(ebx)}`):''}</i></div><div class="ft"><small>MDV</small><b class="num">${r._m?f1(r._m):'—'}</b><i>${r._m?'un por dia':'sem MDV no relatório'}</i></div></div>
    ${peq?`<div class="fpeq">${peq}</div>`:''}${pr&&pr.promo?`<div class="ln fpromo">Promoção Clube: ${esc(pr.promo)}</div>`:''}`;
@@ -247,20 +248,20 @@ function openSheet(r){if(!r)return;const kv=([a,b])=>`<div class="kv"><span>${a}
    document.querySelectorAll('#sheetc [data-ft]').forEach(o=>{const on=o===b;o.classList.toggle('on',on);o.setAttribute('aria-selected',on)});
    document.querySelectorAll('#sheetc .fpane').forEach(p=>p.hidden=p.id!=='fp-'+k);document.querySelector('#sheetc .shb').scrollTop=0});
  shOn('sheet',true);if(!fichaSheet.opened)fichaSheet.open();pushOv('sheet');$('sh-x').onclick=closeSheet;
- const aba=()=>go(document.querySelector('section.on').id.slice(2));
+ const aba=()=>{const s=document.querySelector('section.on').id.slice(2);if(s==='enc')go('enc');else renderAtual()};   // v73: redesenha sem voltar a lista para o topo
  /* remover pela ficha agora tem "Desfazer" (volta o item inteiro: quantidade, urgência, ruptura no CD) */
  $('sh-ped').onclick=()=>{if(inPed(r.produto)){const tirados=pedido.map((x,i)=>[i,x]).filter(([,x])=>x.p===r.produto);pedido=pedido.filter(x=>x.p!==r.produto);savePed();
      toastUndo('Removido do pedido',()=>{for(const [i,x] of tirados)pedido.splice(Math.min(i,pedido.length),0,x);savePed();aba()})}else{addS(r);toast(addMsg(r))}closeSheet();aba()};
  /* ✓ concluir sem precisar deslizar (o mesmo que deslizar → no Pedido) */
  document.querySelectorAll('#sheetc [data-u]').forEach(b=>b.onclick=()=>{const u=b.dataset.u,novo=!inPed(r.produto)&&u;setUrg(r,u);
-   toast(u?`${URG[u].t}${novo?' · adicionado ao pedido':''}`:'Urgência normal');closeSheet();go(document.querySelector('section.on').id.slice(2))});
+   toast(u?`${URG[u].t}${novo?' · adicionado ao pedido':''}`:'Urgência normal');closeSheet();aba()});
  if($('sh-trok'))$('sh-trok').onclick=()=>{delete trReg.saiu[r.produto];trDirty=true;trSalva();if(typeof trEnvia==='function')trEnvia();toast('Conferido — aviso removido');closeSheet();aba()};
  if($('sh-rcd2'))$('sh-rcd2').onclick=()=>{const x=pedItem(r.produto);if(x){x.rcd=today();savePed()}toast('⛔ Ruptura CD confirmada de novo — conferido hoje');closeSheet();aba()};
  if($('sh-rcd'))$('sh-rcd').onclick=()=>{const v=!(pedItem(r.produto)||{}).rcd,novo=v&&!inPed(r.produto);setRcd(r,v);
-   toast(v?`⛔ Ruptura CD confirmada${novo?' · entrou no pedido':''} — sai de "Para pedir"`:'Ruptura CD desconfirmada');closeSheet();go(document.querySelector('section.on').id.slice(2))};
+   toast(v?`⛔ Ruptura CD confirmada${novo?' · entrou no pedido':''} — sai de "Para pedir"`:'Ruptura CD desconfirmada');closeSheet();aba()};
  $('sh-dep').onclick=()=>{const v=!depMap[r.produto];setDep(r.produto,v);toast(v?'🔎 Procurar no depósito':'Saiu de "Procurar no depósito"');closeSheet()};
  /* v58: "Marcar feito" e "Concluir no pedido" viraram UM botão — marca feito e, se o item está no pedido, conclui lá também (e desfaz os dois juntos) */
- $('sh-done').onclick=()=>{const marking=!r._d;setFeito(r.produto,marking);if(marking)copyEAN(r.automacao||r.produto);closeSheet();go(document.querySelector('section.on').id.slice(2))}}   // ✓ Marcar feito: fica na aba em que estava (antes ia sempre para Produtos)
+ $('sh-done').onclick=()=>{const marking=!r._d;setFeito(r.produto,marking);if(marking)copyEAN(r.automacao||r.produto,'✓ Feito');else toast('↩ Reaberto');closeSheet();aba()}}   // ✓ Marcar feito: fica na aba em que estava (antes ia sempre para Produtos)
 
 
 /* v70: tocar no fornecedor da ficha (aba Cadastro) → Produtos com todos os itens dele */

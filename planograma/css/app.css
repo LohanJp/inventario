@@ -670,3 +670,7 @@ html.abr #pbadge{visibility:hidden}
 .sk-msg::before{content:'';flex:none;width:14px;height:14px;border-radius:50%;border:2px solid var(--trk);border-top-color:var(--f7-theme-color);animation:skg .8s linear infinite}
 @keyframes skg{to{transform:rotate(360deg)}}
 html.abr .ped-head,html.abr .enc-drop,html.abr .of-drop{display:none!important}   /* sem o cabeçalho vazio do Pedido e sem "Toque para carregar" nos anexos enquanto abre */
+
+/* ═══ v73 (nov/2026): correções da vistoria dos testes de usuário ═══ */
+.sh3 .button{white-space:normal;line-height:1.15;height:auto;min-height:48px;padding-top:6px;padding-bottom:6px}   /* "⛔ Confirmar CD" inteiro em 360 px */
+.ph-vz{font-size:14px;color:var(--mu);padding:2px 0}.ph-vz b{color:var(--tx)}

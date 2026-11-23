@@ -34,7 +34,7 @@ $('f-trans').onchange=e=>{const f=e.target.files[0];if(!f)return;e.target.value=
   const tm=parseTransitFile(t);if(!Object.keys(tm).length){busy(false);return toast('Nenhum produto lido no Trânsito — confira o arquivo')}
   transitMap=tm;transitLoaded=true;setRelNovo('t',true);if(idb&&transitMeta)idbSave({id:'transitmeta',meta:transitMeta}).catch(()=>{});derive();trAtualiza();
   if(idb){try{const rec=await idbGet('current');if(rec){rec.transit=transitMap;await idbSave(rec)}}catch{}}
-  busy(false);renderData();toast('Trânsito carregado — '+f0(Object.keys(transitMap).length)+' itens')},'latin1')};
+  busy(false);renderAtual();toast('Trânsito carregado — '+f0(Object.keys(transitMap).length)+' itens')},'latin1')};
 /* ═══ v66 — UM BOTÃO SÓ: escolhe todos os relatórios do dia de uma vez; cada arquivo é reconhecido pelo cabeçalho e entregue
    ao mesmo leitor de antes (as entradas antigas continuam existindo, só sem botão). Ordem: Planograma → Cobertura → Trânsito → Preços. ═══ */
 /* v68 — ATALHO Alt+R (computador, pensado para o AutoHotkey): vai para Dados e abre a janela de arquivos; ao terminar de carregar ENVIA para a nuvem sozinho.
@@ -99,7 +99,7 @@ function trAtualiza(){const d=isoDmy(transitMeta&&transitMeta.date)||today();
   for(const p in reg)if(!tem(p)){saiu[p]={d,desde:reg[p].d,q:reg[p].q,e:reg[p].e};delete reg[p]}
   for(const p in saiu)if(isoDias(saiu[p].d,d)>TR_SAIU_DIAS)delete saiu[p];
   trReg.last=d;trDirty=true;trSalva();if(typeof trEnvia==='function')trEnvia()}
-const NARROW=matchMedia('(max-width:379.98px)');   // ⚡ innerWidth forçava o layout da aba inteira (1,6 s no Pedido com 345 itens)
+const NARROW=matchMedia('(max-width:429.98px)');   // v73: nomes curtos (Cob./Tr.) em todo celular — antes a data do Trânsito sumia em 390 px   // ⚡ innerWidth forçava o layout da aba inteira (1,6 s no Pedido com 345 itens)
 function renderFresh(){if(abrindo)return;   // v72: durante a abertura o subtítulo mostra a etapa
 
   const el=$('fresh-t'),F_=$('fresh');
@@ -234,9 +234,9 @@ $('b-scan2').onclick=()=>scanStart(code=>{const r=byCode(code);
   toast(addS(r)?'Adicionado ao pedido: '+r.descricao:'Já está no pedido');renderPed()});
 
 /* Copia texto para o clipboard silenciosamente */
-async function copyEAN(ean){
+async function copyEAN(ean,pre){
   try{await navigator.clipboard.writeText(ean)}
   catch{const t=document.createElement('textarea');t.value=ean;t.style.cssText='position:fixed;opacity:0';
     document.body.appendChild(t);t.select();document.execCommand('copy');document.body.removeChild(t)}
-  toast('EAN copiado: '+ean)
+  toast((pre?pre+' · ':'')+'EAN copiado: '+ean)
 }

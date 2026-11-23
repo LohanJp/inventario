@@ -52,7 +52,7 @@ async function puxarAtualizar(){
       try{nuvemOk=await loadFromCloud(c);if(nuvemOk)startSSE(c)}finally{go=realGo}}
     if(allRecords.length){if(!nuvemOk)derive();F=f;$('q').value=q}
     go(aba,true);
-    toast(nuvemOk?'Atualizado com a nuvem ✓':c&&navigator.onLine===false?'Sem internet — mostrando os dados do aparelho':'Atualizado ✓');
+    toast(nuvemOk?'Atualizado com a nuvem ✓':c&&(navigator.onLine===false||cloudErr)?'⚠ Sem conexão com a nuvem — mostrando os dados do aparelho':'Atualizado ✓');   // v73: não diz "Atualizado" quando a nuvem falhou
   }catch(e){toast('⚠ Não consegui atualizar: '+(e&&e.message||e))}
   finally{ptrBusy=false;bt.classList.remove('gira');bt.removeAttribute('aria-busy')}}
 $('fresh-upd').onclick=()=>puxarAtualizar();
@@ -141,7 +141,7 @@ const hojeISO=()=>ofISO(new Date());
 const axHoje=(e,t)=>!!e&&(t==='pf'?(e.pf.includes(hojeISO())||(e.pfp||[]).some(p=>hojeISO()>=p.ini&&hojeISO()<=p.fim)):e[t].includes(hojeISO()));
 const TODO={
   critf:{ic:'🟠',t:'Críticos sem trânsito e fora do pedido',f:(r,P)=>r._k==='crit'&&!(transitLoaded&&r._t>0)&&!P.has(r.produto)&&!r._d},
-  enc:{ic:'📋',t:'Panfleto com falta no CD',f:r=>{const e=axBuild().get(r.produto);return !!(e&&e.enc)&&cdRisk(r)&&!(encPer&&encPer.fim&&hojeISO()>encPer.fim)}},
+  enc:{ic:'📋',t:'Panfleto com Ruptura CD',f:r=>{const e=axBuild().get(r.produto);return !!(e&&e.enc)&&cdRisk(r)&&!(encPer&&encPer.fim&&hojeISO()>encPer.fim)}},
   lam:{ic:'🧾',t:'Lâmina de hoje com ruptura ou crítico',f:r=>(r._k==='rup'||r._k==='crit')&&axHoje(axBuild().get(r.produto),'pf')},
   of:{ic:'⭐',t:'Oferta de hoje com ruptura ou crítico',f:r=>(r._k==='rup'||r._k==='crit')&&axHoje(axBuild().get(r.produto),'of')},
   neg:{ic:'▼',t:'Estoque negativo (conferir)',f:r=>r._e<0&&!r._d},
@@ -177,7 +177,7 @@ const fgTit=o=>o?(o.nome||'Fornecedor '+[...o.cod][0]):'Sem fornecedor';
 const fgCod=o=>o&&o.cod.size?'cód. '+[...o.cod].sort().join(', '):'sem código';
 /* v70 (Lohan): sem "modo fornecedor" — tocar no fornecedor põe o nome dele no campo de busca e a lista mostra todos os itens dele,
    de qualquer sistemática (como uma busca: os filtros não escondem nada). Mexer no texto ou tocar no X volta à busca normal. */
-function fgEnter(k){clearTimeout(qT);F.fg=k;F.q='';F.todo='';F.forn='';todoP=null;$('q').value=fgTit(fornIdx().get(k));fsugHide();$('q').blur();if(curTab==='prod')renderList(true);else go('prod')}
+function fgEnter(k){clearTimeout(qT);F.fg=k;F.q='';F.todo='';F.forn='';todoP=null;{const o=fornIdx().get(k);$('q').value=(o&&o.cod.size?[...o.cod].sort().join(', ')+' · ':'')+fgTit(o)}fsugHide();$('q').blur();if(curTab==='prod')renderList(true);else go('prod')}   // v73: com o código, para diferenciar fornecedores de mesmo nome
 let fsugL=[],fsugI=-1,fsugAll=false;
 function fsugHide(){const el=$('fsug');fsugI=-1;fsugAll=false;if(el.hidden)return;el.hidden=true;el.innerHTML='';$('q').setAttribute('aria-expanded','false');$('q').removeAttribute('aria-activedescendant')}
 function fsugShow(){const q=$('q');if(F.fg||document.activeElement!==q||!allRecords.length)return fsugHide();
@@ -215,7 +215,7 @@ $('todo').onclick=e=>{const fa=e.target.closest('[data-forn]');
   if(k==='rcdv'){dropOpen.rcd=true;return go('ped')}
   if(k==='f20'){todoF20=!todoF20;return renderTodo()}
   todoP=null;if(!noCD){noCD=true;salvaCD()}   // do Resumo sempre com "Esconder falta no CD" ligado
-  F={chip:k==='enc'?'cd':'all',cat:'',q:'',sort:'cobt',ent:ENT0,todo:k};$('q').value='';go('prod')};
+  F={chip:k==='enc'?'cd':'all',cat:'',q:'',sort:k==='tratr'?'trd':'cobt',ent:ENT0,todo:k};$('q').value='';go('prod')};   // v73: Trânsito atrasado abre com os mais antigos primeiro
 /* ═══ HISTÓRICO LEVE (nov/2026): 1 resumo por data de planograma (% por situação, todos e só Sist. 1), últimos 60 dias.
    O Resumo mostra a tendência da ruptura com uma linha pequena — dá para ver se o trabalho está fazendo efeito. ═══ */
 const LSH='planograma_hist3';try{localStorage.removeItem('planograma_hist');localStorage.removeItem('planograma_hist2')}catch{}   // hist3 (v60): situações novas (Ruptura loja × Ruptura CD) — recomeça   // hist2: a conta mudou (sem falta no CD) — recomeça para não comparar com a conta antiga
@@ -280,7 +280,7 @@ const T=toks(F.q);
  refreshDep();{const n=nFiltros(),fb=$('flt-btn');$('flt-n').textContent=n;$('flt-n').hidden=!n;fb.classList.toggle('on',!!n);   // botão "Filtros" com quantos estão ligados
   const nm=F.chip==='all'?'':(FLT_SHORT[F.chip]||(CHIPS.find(c=>c[0]===F.chip)||[])[1]||'');fb.title='Filtros'+(nm?' · '+nm:'');fb.setAttribute('aria-label',fb.title)}
  /* v71: com o filtro "Em trânsito" ligado aparece a ordem "Mais tempo em trânsito" (dias desde que entrou em trânsito; sem data vai para o fim) */
- {const trOn=F.chip==='trans'&&transitLoaded,sel=$('sort'),o=sel.querySelector('option[value="trd"]');
+ {const trOn=(F.chip==='trans'||F.todo==='tratr')&&transitLoaded,sel=$('sort'),o=sel.querySelector('option[value="trd"]');
   if(trOn&&!o)sel.options[0].insertAdjacentHTML('afterend','<option value="trd">Mais tempo em trânsito</option>');else if(!trOn&&o)o.remove();
   if(!trOn&&F.sort==='trd')F.sort='prio'}
  $('sort').value=F.sort;
@@ -347,7 +347,7 @@ function cardBody(r,acts,extra,noPed,nova){
   const cxN=n=>ebx>1&&n>=0?(n>0&&n<ebx?'&lt;1':f0(Math.floor(n/ebx)))+' cx':'';
   const lab=(t,n,ex)=>`<small class="lb2"><span>${t}</span><em>${cxN(n)}</em></small><b class="num${ex?' bx':''}"><span class="un">${f0(n)}<i>un</i></span>${ex||''}</b>`;
   const trd=trDias(r)>=0?`<u class="trdl${trDias(r)>=TR_ATRASO?' atr':''}" title="Em trânsito desde ${isoBr(trDesde(r))}">${trDias(r)}d</u>`:'';   // há quantos dias está a caminho
-  const neg=r._e<0&&r._k!=='rcd'?` <span class="neg" title="Estoque negativo${r._t>0?' · já em trânsito':isCD(r)?' · falta no CD':' · falta pedir ao fornecedor'}">▼ ${r._t>0?'negativo':isCD(r)?'falta no CD':'falta pedir'}</span>`
+  const neg=r._e<0&&r._k!=='rcd'?` <span class="neg" title="Estoque negativo${r._t>0?' · já em trânsito':isCD(r)?' · Ruptura CD':' · falta pedir ao fornecedor'}">▼ ${r._t>0?'negativo':isCD(r)?'falta no CD':'falta pedir'}</span>`
     :r._vir?` <span class="neg cdw" title="Pela cobertura estaria Saudável (MDV baixo), mas tem menos de 40% do cadastro e nada a caminho — pode ser estoque virtual">⚠ conferir estoque</span>`:'';   // estoque 0 ou positivo também (nov/2026)
   const sel=(r._sist?`<span class="ent e${esc(r._sist)}">${esc(ENT[r._sist]||'Sist. '+r._sist)}</span>`:'')+(!noPed&&inPed(r.produto)?' '+PEDBADGE:'')+pedTag(r.produto)+axBadges(r)+neg;
   const cob=r._k==='sg'?(semVendaDias(r)===Infinity?'—':f0(semVendaDias(r))+'<i>d s/ venda</i>'):r._ct===null?'—':dias(r._ct)+(rel||r._c999?`<i class="sep">|</i><i class="rr" title="R = cobertura do relatório de Cobertura de Estoque${r._c999?' (veio 999 = sem cálculo)':''}">R:</i>${rel?dias(r._c):'—'}`:'<i>d</i>');
@@ -357,7 +357,7 @@ function cardBody(r,acts,extra,noPed,nova){
   <div class="es">${lab('Estoque',r._e)}</div>
   <div class="es">${transitLoaded?lab('Trânsito',r._t,trd):'<small>Trânsito</small><b class="num">—</b>'}</div>
   <div><small>MDV</small><b class="num">${r._m?f1(r._m):'—'}</b></div>
-  <div class="cv" title="Cobertura total = (estoque + trânsito) ÷ MDV · R = cobertura do relatório"><small>${GLY[r._k]} ${r._k==='rup'?'Ruptura':r._k==='rcd'?'Rupt. CD':SLBL[r._k]}</small><b class="num">${cob}</b></div>
+  <div class="cv" title="Cobertura total = (estoque + trânsito) ÷ MDV · R = cobertura do relatório"><small>${GLY[r._k]} ${r._k==='rup'?'Rupt. loja':r._k==='rcd'?'Rupt. CD':SLBL[r._k]}</small><b class="num">${cob}</b></div>
  </div>${extra||''}`}
 /* cartão deslizável (Framework7 swipeout): → concluir/reabrir · ← pedido (Produtos) ou excluir (Pedido) */
 const swOk=d=>`<b>${d?'↩':'✓'}</b><span>${d?'Reabrir':'Concluir'}</span>`;
@@ -600,7 +600,7 @@ function fltCounts(){
   $('flt-clear').style.visibility=(D.chip!=='all'||D.cat||(D.ent||'')!==ENT0||D.noCD||D.d111||D.capx||D.giro||cobOn(D.cob)||(!D.limpou&&(F.todo||F.forn||F.cadx)))?'':'hidden'}
 function renderFlt(){refreshDep();
   const sit=CHIPS.slice().sort((a,b)=>FORD.indexOf(a[0])-FORD.indexOf(b[0])).filter(c=>c[0]!=='trans'||transitLoaded).map(c=>{   // v65: mesma ordem do Resumo
-    const g=GLY[c[0]]||(c[2]?ic(c[2],13):'');
+    const g=c[0]==='cd'?GLY.rcd:GLY[c[0]]||(c[2]?ic(c[2],13):'');   // v73: Ruptura CD com ⊘ como no Resumo (⚠ parecia o ▲ de Crítico)
     return `<button type="button" class="fs-s${D.chip===c[0]?' on':''}" data-c="${c[0]}" style="--c:${CHIP_C[c[0]]||'var(--tx)'}"><b>${g?`<i>${g}</i>`:''}${c[0]==='dep'?'🔎 Depósito':c[1]}</b><small></small></button>`}).join('');
   const op=D.cob?D.cob.op:'',dd=D.cob&&Number.isFinite(D.cob.d)?D.cob.d:'';
   $('flt-list').innerHTML=`<h5>Situação</h5><div class="fs-grid">${sit}</div>

@@ -77,7 +77,8 @@ function parseEncXLSX(file){
 
 /* situação do item do encarte: falta no CD = estoque < 1 caixa (mesmo critério do botão "Sem falta CD") */
 const encStatus=r=>!r?'miss':cdRisk(r)?'cd':'ok';
-const ENC_TXT={ok:'OK',cd:'Falta no CD',miss:'Não encontrado'};
+const ENC_TXT={ok:'OK',cd:'Ruptura CD',miss:'Não encontrado'};
+const ENC_EXP={ok:'OK',cd:'Falta no CD',miss:'Não encontrado'};   // texto da coluna exportada continua o de antes (a planilha volta para quem mandou)
 /* liga cada item da planilha ao planograma por EAN (automacao) ou host (produto), ignorando zeros à esquerda */
 function encMatch(){
   const byEAN={},byHost={};
@@ -113,7 +114,7 @@ function renderEnc(){encDirty=false;
   </div>`;
   const vis=ents.filter(e=>axHit('enc',e.r,[e.it.nome,e.it.ean,e.it.host].join(' ')));   // 🔍 busca do Encarte
   $('enc-list').innerHTML=(axQ.enc.trim()&&!vis.length?'<div class="empty">Nenhum item do panfleto com essa busca</div>':'')+vis.map(({it,r,k})=>r
-    ?swrap(`<div class="p" data-p="${esc(r.produto)}" style="--c:${COLOR[r._k]}">${cardBody(r,'',k==='ok'?'<div class="sg okk">✓ OK</div>':`<div class="sg cdx">${ic('warn',14)} Falta no CD</div>`)}</div>`,null,'add',inPed(r.produto)?'Já no pedido':'Pedido','🛒')
+    ?swrap(`<div class="p" data-p="${esc(r.produto)}" style="--c:${COLOR[r._k]}">${cardBody(r,'',k==='ok'?'<div class="sg okk">✓ OK</div>':`<div class="sg cdx">${ic('warn',14)} Ruptura CD</div>`)}</div>`,null,'add',inPed(r.produto)?'Já no pedido':'Pedido','🛒')
     :`<div class="p" style="--c:var(--mu);opacity:.6"><div class="hd"><div class="nm">${esc(it.nome||'—')}</div></div><div class="sb">EAN ${esc(it.ean)} · Host ${esc(it.host)} · não encontrado no planograma</div></div>`).join('');
 }
 $('enc-sort').onchange=e=>{encSort=e.target.value;renderEnc()};
@@ -179,7 +180,7 @@ async function exportEncStyled(buf,hdr,st){
 /* Exportar: a planilha volta igual à recebida, só com uma coluna a mais no fim de cada item (OK / Falta no CD) */
 async function exportEnc(){
   if(!encSrc||!encItems.length)return toast('Carregue uma planilha primeiro');
-  const st=new Map(encMatch().map(({it,r})=>[it.row,ENC_TXT[encStatus(r)]]));
+  const st=new Map(encMatch().map(({it,r})=>[it.row,ENC_EXP[encStatus(r)]]));
   const base=encSrc.name.replace(/\.[^.]+$/,''),ext=((encSrc.name.match(/\.([^.]+)$/)||[])[1]||'csv').toLowerCase();
   if(encSrc.kind==='xlsx'&&ext==='xlsx'&&encSrc.buf){          // .xlsx: edita o original (mantém a formatação) e já sai pronto p/ imprimir
     try{const out=await exportEncStyled(encSrc.buf,encSrc.hdr,st);

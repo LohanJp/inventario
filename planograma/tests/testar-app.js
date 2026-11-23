@@ -86,7 +86,7 @@ const srv=http.createServer((q,s)=>{const p=path.join(RAIZ,decodeURIComponent(q.
     await p.evaluate(()=>{const a=document.querySelector('#list li [data-sw=add]');a.click()});await espera(350);
     if(!(await p.evaluate(pr=>!!inPed(pr),pr)))throw Error('não entrou no pedido');return 'item '+pr});
   await passo('adiciona vários itens ao pedido',async()=>{await p.evaluate(()=>{allRecords.filter(r=>r._k==='crit').slice(0,25).forEach(r=>addPed(r,'',true));savePed()});
-    await p.click('#nav [data-s=ped]');await espera(300);return (await p.$eval('#phead .t',e=>e.textContent))});
+    await p.click('#nav [data-s=ped]');await espera(300);return (await p.$eval('#phead .ph-st',e=>e.textContent))});   // v73: o topo do Pedido mostra só os contadores
   await passo('gesto no Pedido: → concluir e ← excluir (com desfazer)',async()=>{
     const n0=await p.evaluate(()=>pedido.length);
     await p.evaluate(()=>document.querySelector('#pnd [data-sw=ok]').click());await espera(500);
@@ -110,7 +110,7 @@ const srv=http.createServer((q,s)=>{const p=path.join(RAIZ,decodeURIComponent(q.
     await p.evaluate(()=>{F={chip:'rup',cat:'',q:'',sort:'cobt'};renderList(true);$('s-prod').scrollTop=0});await espera(200);
     await p.click('#fresh-upd');await p.waitForFunction(()=>!$('fresh-upd').classList.contains('gira'),null,{timeout:30000});await espera(300);
     const r=await p.evaluate(()=>({aba:curTab,chip:F.chip,aviso:$('toast').textContent}));
-    if(r.aba!=='prod'||r.chip!=='rup'||!/Atualizado|Sem internet/.test(r.aviso))throw Error(JSON.stringify(r));return r.aviso});
+    if(r.aba!=='prod'||r.chip!=='rup'||!/Atualizado|Sem internet|Sem conexão com a nuvem/.test(r.aviso))throw Error(JSON.stringify(r));return r.aviso});
   await passo('botão voltar: fecha a ficha e volta ao Resumo',async()=>{await p.click('#nav [data-s=prod]');await espera(300);await p.click('#list .p .infb');await espera(450);
     await p.goBack();await espera(450);if(await p.evaluate(()=>fichaSheet.opened))throw Error('voltar não fechou a ficha');
     await p.goBack();await espera(300);const t=await p.evaluate(()=>curTab);if(t!=='home')throw Error('voltar foi para '+t);return 'ok'});
