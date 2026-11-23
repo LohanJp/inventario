@@ -1127,7 +1127,6 @@
     // versão de teste). "Incluir" desmarcado = classe cartaz-oculto (a mesma do olho da versão de teste), que o PDF
     // e a impressão já pulam. Cartaz com problema ganha borda e etiqueta na mesa (fora do PDF e da impressão).
     const ORIGEM_DE = { lista: 'Lista', clube: 'Clube', normal: 'Normal (Precos_)', produto: 'PRODUTO', nenhum: 'Nenhum', editado: 'Editado', mao: 'À mão', digitado: 'Digitado' };
-    const DESCONTO_SUSPEITO = 70;  // % acima disso pede conferência
     const DIAS_PRODUTO = 7;        // PRODUTO mais velho que isso é "antigo"
     const confSec = document.getElementById('conferencia');
     const confCorpo = document.getElementById('conf-corpo');
@@ -1171,7 +1170,6 @@
         if (deValido && temPreco(it.por)) {
           it.desconto = Math.round((1 - it.por / it.de) * 100);
           if (it.por >= it.de) { p('erro', it.por === it.de ? 'DE igual ao POR: digite o preço DE' : 'POR maior que o DE: confira o preço DE'); it.pedirDE = !!deEl; }
-          else if (it.desconto > DESCONTO_SUSPEITO) p('atencao', `Desconto alto (${it.desconto}%)`);
         }
         if (c.dataset.ean) {
           const k = c.dataset.ean + '|' + it.validade;
