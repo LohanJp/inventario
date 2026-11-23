@@ -108,7 +108,8 @@ const SG_DIAS=30;
 const dmy=s=>{const m=/^(\d\d)\/(\d\d)\/(\d{2,4})$/.exec(String(s||'').trim());if(!m)return null;const y=+m[3];return new Date(y<100?2000+y:y,+m[2]-1,+m[1])};
 const semVendaDias=r=>{const ref=dmy(estoqueMeta&&estoqueMeta.date)||new Date(),uv=dmy(r._uv);return uv?Math.round((ref-uv)/864e5):Infinity};
 const semGiro=r=>estoqueLoaded&&r._e>0&&!r._m&&semVendaDias(r)>SG_DIAS;
-function derive(){mergeRecs();byProd=new Map(allRecords.map(r=>[r.produto,r]));for(const r of allRecords){const t=transitLoaded?transitMap[r.produto]:null;
+function derive(){mergeRecs();byProd=new Map(allRecords.map(r=>[r.produto,r]));FG=null;idle(()=>{if(!FG)fornIdx()});for(const r of allRecords){   // v69: índice de fornecedores refeito com o app parado (a 1ª busca não trava)
+ const t=transitLoaded?transitMap[r.produto]:null;
  const _x=estoqueLoaded?estoqueMap[r.produto]:null;
  // ESTOQUE vem da Cobertura (mais recente); o Planograma só serve de reserva (e para a capacidade alt × larg × prof)
  r._e=_x&&typeof _x.estq==='number'?_x.estq:num(r.qtdestoque);r._t=t?t.qt_transito:0;

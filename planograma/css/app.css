@@ -627,3 +627,29 @@ html:not(.dark) .ent.trg.atr{color:color-mix(in srgb,var(--am) 70%,#000)}
 #h-top{padding:0 16px}#h-top .trd{margin-top:14px}
 .rel-load{margin-top:8px;margin-bottom:10px}.rel-load label.button{cursor:pointer}
 #load.boot{background:var(--bg)}   /* v67: na abertura a tela de espera é opaca (não deixa ver o Resumo ainda vazio) */
+
+/* ═══ v69 (nov/2026): fornecedor na busca · Pedido por Sist. 20 × Sist. 1 e por fornecedor ═══ */
+.vh{position:absolute!important;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;margin:-1px;padding:0;border:0}   /* só para leitor de tela */
+/* sugestões de fornecedor: camada sobre a lista, colada no campo — não empurra nada */
+.fsug{position:absolute;left:12px;right:12px;z-index:30;background:var(--card);border:1px solid var(--bd);border-radius:16px;box-shadow:0 10px 28px rgba(0,0,0,.28);padding:4px 0;max-height:min(60vh,340px);overflow-y:auto;overscroll-behavior:contain}
+.fs-o{display:flex;align-items:center;gap:12px;min-height:56px;padding:8px 14px;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.fs-o+.fs-o{border-top:1px solid var(--bd)}
+.fs-o:hover,.fs-o.on{background:color-mix(in srgb,var(--f7-theme-color) 10%,transparent)}
+.fs-ic{font-size:20px;flex:none}.fs-go{flex:none;color:var(--mu);font-size:20px}
+.fs-t{flex:1;min-width:0}.fs-t b{display:block;font-size:14.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.fs-t small{display:block;color:var(--mu);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fs-mais{min-height:48px;color:var(--f7-theme-color);font-weight:600;font-size:13.5px;justify-content:center}
+/* modo fornecedor: chip do fornecedor no lugar de Filtros (mesma linha) e sistemáticas no lugar da contagem (mesma altura) */
+.fg-chip{flex:0 1 auto;min-width:0;max-width:calc(100% - 168px)}.fg-chip .fg-n{min-width:0;overflow:hidden;text-overflow:ellipsis}.fg-chip .fg-x{flex:none;opacity:.8}
+.fsis{display:flex;gap:6px;flex:1;min-width:0;overflow-x:auto;scrollbar-width:none;padding:8px 2px;margin:-10px 0}.fsis::-webkit-scrollbar{display:none}
+.fsis .chip-btn{height:28px;padding:0 10px;font-size:12.5px;gap:4px}.fsis .chip-btn b{font-weight:700;opacity:.7}
+#list[data-fs="20"] .ent.e20,#list[data-fs="1"] .ent.e1,#list[data-fs="10"] .ent.e10{display:none}   /* o chip já diz a sistemática */
+/* X da busca: área de toque de 44 px sem mudar o desenho */
+.sb-f7 .input-clear-button::before{content:'';position:absolute;inset:-11px}
+/* Pedido: subgrupos por fornecedor dentro de "Para pedir · Sist. 20" (mais leves que os grupos principais) */
+.trd.trf{margin-top:8px}
+.trd.trf>summary{min-height:48px;padding:6px 12px;border-radius:0 12px 12px 0;box-shadow:none;background:color-mix(in srgb,var(--e20) 7%,var(--card));border:0!important;border-left:3px solid var(--e20)!important;font-size:13.5px}
+.trd.trf>summary .cnt{background:none;color:var(--mu);border:1px solid var(--bd);height:24px;min-width:24px;font-size:12px}
+#p20 .ent.e20,#pnd .ent.e1{display:none}   /* o grupo já diz a sistemática */
+#plist .swl{content-visibility:auto;contain-intrinsic-size:auto 112px}   /* cartões fora da tela não custam layout */
+@media (min-width:1000px){#plist .trd-b>.trf{grid-column:1/-1}}
+.fsis .chip-btn{position:relative;overflow:visible}.fsis .chip-btn::before{content:'';position:absolute;inset:-8px -2px}   /* área de toque de 44 px sem mudar o desenho */

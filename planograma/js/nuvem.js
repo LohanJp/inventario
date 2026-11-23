@@ -454,13 +454,16 @@ if('serviceWorker' in navigator&&/^https?:/.test(location.protocol)){/* ⚡ regi
   addEventListener('load',()=>idle(()=>navigator.serviceWorker.register('./sw.js').then(reg=>reg.update()).catch(()=>{})))}
 /* versão do app na aba Dados (nome do cache do SW, ex.: v34) — para conferir se o aparelho já pegou a atualização */
 /* APP_VER = versão do CÓDIGO que está rodando. ⚠ Mantenha igual ao V do sw.js (o teste de fumaça confere). */
-const APP_VER='v68';
+const APP_VER='v69';
 const verNum=v=>parseInt(String(v||'').replace(/\D/g,''),10)||0;   // 'v9' < 'v45' < 'v100' (comparação numérica, não alfabética)
 function mostraVersao(){const el=$('app-ver');if(el)el.textContent='Versão do app: '+APP_VER}
 addEventListener('load',()=>setTimeout(mostraVersao,3000));
 /* ═══ NOVIDADES (nov/2026): depois de atualizar, o Resumo mostra o que mudou (1 vez por versão). Na 1ª instalação não aparece.
    Ao publicar uma versão com mudança visível, acrescente aqui a chave da versão (a mesma do sw.js, ex.: 'v43'). ═══ */
 const NOVIDADES={
+  v69:['🏭 <b>Fornecedor na busca</b>: digite o nome (3 letras) ou o código e toque no fornecedor — aparecem todos os itens dele, de qualquer sistemática, com chips Sist. 20 / Sist. 1 / Sist. 10',
+       '📞 <b>Pedido separado</b>: "Para pedir · Sist. 20" com um grupo por fornecedor e "Para pedir · Sist. 1" (pedido ao CD, inclui a Sist. 10)',
+       '⚡ Pedido mais leve: grupos fechados só montam os cartões ao abrir, e a lista não pula mais ao concluir ou excluir'],
   v68:['⌨️ No computador, <b>Alt+R</b> abre direto a janela de escolher os relatórios e, depois de carregar, envia para a nuvem sozinho — o título da aba mostra "✓ Relatórios enviados" quando termina'],
   v67:['⏳ <b>Tela de abertura</b>: o app mostra "Abrindo seus dados…" até ler tudo o que está guardado — não aparece mais o Resumo vazio "Sem dados" nos primeiros segundos'],
   v66:['📂 <b>Um botão só</b> em Dados: escolha Planograma, Cobertura, Trânsito e Preços de uma vez — o app reconhece cada arquivo',
