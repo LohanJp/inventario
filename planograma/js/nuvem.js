@@ -454,13 +454,14 @@ if('serviceWorker' in navigator&&/^https?:/.test(location.protocol)){/* ⚡ regi
   addEventListener('load',()=>idle(()=>navigator.serviceWorker.register('./sw.js').then(reg=>reg.update()).catch(()=>{})))}
 /* versão do app na aba Dados (nome do cache do SW, ex.: v34) — para conferir se o aparelho já pegou a atualização */
 /* APP_VER = versão do CÓDIGO que está rodando. ⚠ Mantenha igual ao V do sw.js (o teste de fumaça confere). */
-const APP_VER='v70';
+const APP_VER='v71';
 const verNum=v=>parseInt(String(v||'').replace(/\D/g,''),10)||0;   // 'v9' < 'v45' < 'v100' (comparação numérica, não alfabética)
 function mostraVersao(){const el=$('app-ver');if(el)el.textContent='Versão do app: '+APP_VER}
 addEventListener('load',()=>setTimeout(mostraVersao,3000));
 /* ═══ NOVIDADES (nov/2026): depois de atualizar, o Resumo mostra o que mudou (1 vez por versão). Na 1ª instalação não aparece.
    Ao publicar uma versão com mudança visível, acrescente aqui a chave da versão (a mesma do sw.js, ex.: 'v43'). ═══ */
 const NOVIDADES={
+  v71:['⏳ Com o filtro <b>Em trânsito</b> ligado, a ordem <b>Mais tempo em trânsito</b> aparece nas opções: os que estão há mais dias a caminho vêm primeiro'],
   v70:['🏭 Fornecedor na busca mais simples: tocar no fornecedor mostra todos os itens dele com o nome no campo de busca — o X volta ao normal',
        '🔗 Na ficha (aba Cadastro), toque no fornecedor para ver todos os itens dele'],
   v69:['🏭 <b>Fornecedor na busca</b>: digite o nome (3 letras) ou o código e toque no fornecedor — aparecem todos os itens dele, de qualquer sistemática, com chips Sist. 20 / Sist. 1 / Sist. 10',

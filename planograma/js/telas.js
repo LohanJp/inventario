@@ -276,6 +276,10 @@ function renderList(reset){todoP=null;   // o conjunto do pedido do "Para fazer 
 const T=toks(F.q);
  refreshDep();{const n=nFiltros(),fb=$('flt-btn');$('flt-n').textContent=n;$('flt-n').hidden=!n;fb.classList.toggle('on',!!n);   // botão "Filtros" com quantos estão ligados
   const nm=F.chip==='all'?'':(FLT_SHORT[F.chip]||(CHIPS.find(c=>c[0]===F.chip)||[])[1]||'');fb.title='Filtros'+(nm?' · '+nm:'');fb.setAttribute('aria-label',fb.title)}
+ /* v71: com o filtro "Em trânsito" ligado aparece a ordem "Mais tempo em trânsito" (dias desde que entrou em trânsito; sem data vai para o fim) */
+ {const trOn=F.chip==='trans'&&transitLoaded,sel=$('sort'),o=sel.querySelector('option[value="trd"]');
+  if(trOn&&!o)sel.options[0].insertAdjacentHTML('afterend','<option value="trd">Mais tempo em trânsito</option>');else if(!trOn&&o)o.remove();
+  if(!trOn&&F.sort==='trd')F.sort='prio'}
  $('sort').value=F.sort;
  $('catx').innerHTML=(F.cat?`<button class="catx" data-x="cat" type="button">✕ ${esc(short(F.cat))}</button>`:'')+(F.cob?`<button class="catx" data-x="cob" type="button">✕ ${cobTxt(F.cob)}</button>`:'')+(F.giro?`<button class="catx" data-x="giro" type="button">✕ Giro ${esc(F.giro)}</button>`:'')+(F.capx?`<button class="catx" data-x="capx" type="button">✕ Cadastro &lt; 1 caixa</button>`:'')+(F.cadx?`<button class="catx" data-x="cadx" type="button">✕ Não entraram no cadastro</button>`:'')+(F.todo&&TODO[F.todo]&&!F.forn?`<button class="catx" data-x="todo" type="button">✕ ${TODO[F.todo].t}</button>`:'')+(F.forn?`<button class="catx" data-x="forn" type="button">✕ ${esc((()=>{const r=allRecords.find(x=>fornKey(x)===F.forn);return r?fornNome(r):'Fornecedor '+F.forn})())} · cobertura baixa</button>`:'');
  const fAct=F.chip!=='all'||!!F.cat||!!F.ent||noCD;   // algum filtro ligado?
@@ -294,6 +298,7 @@ if(FM&&!fo){F.fg='';$('q').value=F.q}   // fornecedor sumiu (relatório novo): v
  const by=(f,dir)=>(a,b)=>{const va=f(a),vb=f(b);if(va===null||vb===null)return(va===null)-(vb===null)||S.nome(a,b);return(va-vb)*dir||S.nome(a,b)};
  /* v65 Prioridade: o que dá para resolver primeiro (Ruptura loja → Crítico → Atenção, do maior MDV para o menor); Ruptura CD por último */
  {const RK={rup:0,crit:1,aten:2,ok:3,nd:4,sg:5,rcd:6};S.prio=(a,b)=>RK[a._k]-RK[b._k]||(b._m||0)-(a._m||0)||S.nome(a,b)}
+ {const f=r=>r._t>0&&trDias(r)>=0?trDias(r):-1;S.trd=(a,b)=>f(b)-f(a)||(b._m||0)-(a._m||0)||S.nome(a,b)}   // v71: mais dias em trânsito primeiro; empate → quem mais vende
  S.cob_d=by(cobV,-1);S.mdv_d=by(mdvV,-1);S.mdv_a=by(mdvV,1);
  /* Altura × Largura: sem medidas cadastradas primeiro, depois 1×1, 1×2, 1×3… 2×1, 2×2…; empate → profundidade, depois nome A–Z */
  S.dim=(a,b)=>{const A=num(a.altura),B=num(b.altura),la=num(a.largura),lb=num(b.largura),sa=!(A&&la),sb=!(B&&lb);
