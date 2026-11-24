@@ -114,7 +114,7 @@ function renderEnc(){encDirty=false;
   </div>`;
   const vis=ents.filter(e=>axHit('enc',e.r,[e.it.nome,e.it.ean,e.it.host].join(' ')));   // 🔍 busca do Encarte
   $('enc-list').innerHTML=(axQ.enc.trim()&&!vis.length?'<div class="empty">Nenhum item do panfleto com essa busca</div>':'')+vis.map(({it,r,k})=>r
-    ?swrap(`<div class="p" data-p="${esc(r.produto)}" style="--c:${COLOR[r._k]}">${cardBody(r,'',k==='ok'?'<div class="sg okk">✓ OK</div>':`<div class="sg cdx">${ic('warn',14)} Ruptura CD</div>`)}</div>`,null,'add',inPed(r.produto)?'Já no pedido':'Pedido','🛒')
+    ?swrap(`<div class="p" data-p="${esc(r.produto)}" style="--c:${COLOR[r._k]}">${cardBody(r,'',k==='ok'?'<div class="sg okk">✓ OK</div>':`<div class="sg cdx">${ic('warn',14)} Ruptura CD</div>`)}</div>`,null,'add',inPed(r.produto)?'Já no pedido':'Pedido','🛒',r.produto)
     :`<div class="p" style="--c:var(--mu);opacity:.6"><div class="hd"><div class="nm">${esc(it.nome||'—')}</div></div><div class="sb">EAN ${esc(it.ean)} · Host ${esc(it.host)} · não encontrado no planograma</div></div>`).join('');
 }
 $('enc-sort').onchange=e=>{encSort=e.target.value;renderEnc()};
@@ -253,7 +253,7 @@ function pfMatch0(q,top){
   return res.slice(0,top).map(x=>x[1])}
 try{localStorage.removeItem('planograma_axlay')}catch{}   // limpeza: preferência do antigo seletor Resumo/Card (removido)
 /* item do Panfleto / Oferta do dia: o mesmo cartão da lista de Produtos */
-const pfRowHtml=r=>{const dp=DEP.has(r.produto);return swrap(`<div class="p pfc${r._d?' done':''}${dp?' dep':''}" data-p="${esc(r.produto)}" style="--c:${COLOR[r._k]}">${cardBody(r,dp?'<span class="depi" title="Procurar no depósito">🔎</span>':'')}</div>`,r._d,'add',inPed(r.produto)?'Já no pedido':'Pedido','🛒')};
+const pfRowHtml=r=>{const dp=DEP.has(r.produto);return swrap(`<div class="p pfc${r._d?' done':''}${dp?' dep':''}" data-p="${esc(r.produto)}" style="--c:${COLOR[r._k]}">${cardBody(r,dp?'<span class="depi" title="Procurar no depósito">🔎</span>':'')}</div>`,r._d,'add',inPed(r.produto)?'Já no pedido':'Pedido','🛒',r.produto)};
 let pfSortV='arq';try{pfSortV=localStorage.getItem('planograma_pfsort')||'arq'}catch{}   // ordem da Lâmina — lembrada no aparelho
 function renderPf(){
   const box=$('pf-list'),sum=$('pf-sum');refreshDep();

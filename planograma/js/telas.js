@@ -133,7 +133,7 @@ renderBan();
 let topOpen=false;
 function renderTop(R){const el=$('h-top');if(!el)return;const P=pedSet(),
   L=R.filter(r=>(r._k==='rup'||r._k==='crit')&&r._m>0&&!(transitLoaded&&r._t>0)&&!P.has(r.produto)&&!r._d).sort((a,b)=>b._m-a._m||a.descricao.localeCompare(b.descricao)).slice(0,10);
-  el.innerHTML=L.length?`<details class="trd" id="h-topd"${topOpen?' open':''}><summary><span>🔥 Mais vendidos em risco<small>Ruptura ou crítico, sem trânsito e fora do pedido · deslize ← para pedir</small></span><span class="cnt">${L.length}</span>${CHEV}</summary><div class="trd-b">${L.map(r=>swrap(`<div class="p" data-p="${esc(r.produto)}" style="--c:${COLOR[r._k]}">${cardBody(r,'')}</div>`,r._d,'add','Pedido','🛒')).join('')}</div></details>`:'';
+  el.innerHTML=L.length?`<details class="trd" id="h-topd"${topOpen?' open':''}><summary><span>🔥 Mais vendidos em risco<small>Ruptura ou crítico, sem trânsito e fora do pedido · deslize ← para pedir</small></span><span class="cnt">${L.length}</span>${CHEV}</summary><div class="trd-b">${L.map(r=>swrap(`<div class="p${DEP.has(r.produto)?' dep':''}" data-p="${esc(r.produto)}" style="--c:${COLOR[r._k]}">${cardBody(r,DEP.has(r.produto)?DEPI:'')}</div>`,r._d,'add','Pedido','🛒',r.produto)).join('')}</div></details>`:'';
   const d=$('h-topd');if(d)d.ontoggle=()=>{topOpen=d.open}}
 $('h-top').onclick=e=>{if(Date.now()<swBlock||!e.target.closest('.infb'))return;const c=e.target.closest('.p');if(c)openSheet(byProd.get(c.dataset.p))};
 /* Categorias com mais alertas — por sistemática. Só a Sist. 1 (CD) tem a divisão "dá para pedir" × "sem no CD" */
@@ -255,7 +255,7 @@ $('h-sub').onclick=e=>{if(!e.target.closest('#h-fcd'))return;F={chip:'cd',cat:''
 $('kpis').onclick=e=>{const b=e.target.closest('.kpi');if(!b)return;const k=b.dataset.k;F={chip:k==='tr'?'trans':k==='rcd'?'cd':k,cat:'',q:'',sort:k==='crit'||k==='rcd'?'mdv_d':k==='ok'?'nome':'cobt',ent:hSist};$('q').value='';go('prod')};   // Crítico abre do maior MDV para o menor   // a lista bate com o número tocado (todas ou só Sist. 1)
 $('cats').onclick=e=>{const b=e.target.closest('.bar');if(!b)return;if(!noCD){noCD=true;salvaCD()}F={chip:'alert',cat:b.dataset.c,q:'',sort:'cobt',ent:catSist};$('q').value='';go('prod')};
 /* ═══ PRODUTOS ═══ */
-const CHIPS=[['all','Todos'],['cd','Ruptura CD','warn'],['dep','🔎 Procurar no depósito'],['alert','Alertas'],['rup','Ruptura loja'],['crit','Crítico'],['aten','Atenção'],['ok','Saudável'],['sg','Sem giro'],['nd','Sem MDV'],['trans','Em trânsito'],['pend','Pendentes'],['done','Feitos']];
+const CHIPS=[['all','Todos'],['cd','Ruptura CD','warn'],['dep','🔎 Depósito'],['alert','Alertas'],['rup','Ruptura loja'],['crit','Crítico'],['aten','Atenção'],['ok','Saudável'],['sg','Sem giro'],['nd','Sem MDV'],['trans','Em trânsito'],['pend','Pendentes'],['done','Feitos']];
 const CHIP_C={rup:'var(--cr)',crit:'var(--crit)',aten:'var(--am)',ok:'var(--ok)',sg:'var(--sg)',nd:'var(--mu)',alert:'var(--cr)',cd:'var(--rcd)',sug:'var(--am)',trans:'var(--in)',dep:'var(--in)',done:'var(--ok)'};
 /* 🔎 itens do pedido marcados para procurar no depósito (atualizado a cada renderList) */
 const LSDEP='planograma_dep';let depMap={};try{(JSON.parse(localStorage.getItem(LSDEP)||'[]')||[]).forEach(k=>{if(k)depMap[k]=true})}catch{}   // ⚠ precisa vir ANTES de refreshDep: a Oferta do dia chama refreshDep() na abertura
@@ -363,11 +363,12 @@ function cardBody(r,acts,extra,noPed,nova){
  </div>${extra||''}`}
 /* cartão deslizável (Framework7 swipeout): → concluir/reabrir · ← pedido (Produtos) ou excluir (Pedido) */
 const swOk=d=>`<b>${d?'↩':'✓'}</b><span>${d?'Reabrir':'Concluir'}</span>`;
-const swli=(inner,done,cls,txt,ico)=>`<li class="swipeout swr"><div class="swipeout-content">${inner}</div>${done===null?'':`<div class="swipeout-actions-left"><a class="swipeout-overswipe sw-ok" data-sw="ok">${swOk(done)}</a></div>`}<div class="swipeout-actions-right"><a class="swipeout-overswipe sw-${cls}" data-sw="${cls}"><b>${ico}</b><span>${txt}</span></a></div></li>`;
-const swrap=(inner,done,cls,txt,ico)=>`<div class="swl"><ul>${swli(inner,done,cls,txt,ico)}</ul></div>`;   // fora da lista virtual (Pedido, Encarte, Panfleto, Oferta)
+const swDep=d=>`<b>🔎</b><span>${d?'Desmarcar':'Depósito'}</span>`;   // v75: botão Depósito ao lado do Pedido/Excluir (substitui o segurar)
+const swli=(inner,done,cls,txt,ico,p)=>`<li class="swipeout swr"><div class="swipeout-content">${inner}</div>${done===null?'':`<div class="swipeout-actions-left"><a class="swipeout-overswipe sw-ok" data-sw="ok">${swOk(done)}</a></div>`}<div class="swipeout-actions-right">${p===undefined?'':`<a class="sw-dep${depMap[p]?' on':''}" data-sw="dep">${swDep(depMap[p])}</a>`}<a class="swipeout-overswipe sw-${cls}" data-sw="${cls}"><b>${ico}</b><span>${txt}</span></a></div></li>`;
+const swrap=(inner,done,cls,txt,ico,p)=>`<div class="swl"><ul>${swli(inner,done,cls,txt,ico,p)}</ul></div>`;   // fora da lista virtual (Pedido, Encarte, Panfleto, Oferta)
 function toggleDone(r,c){setFeito(r.produto,!r._d);updBadge();c.classList.toggle('done',r._d);
   const g=c.closest('.swr');if(g){const a=g.querySelector('[data-sw=ok]');if(a)a.innerHTML=swOk(r._d)}if(r._d)copyEAN(r.automacao||r.produto)}
-function card(r){const dp=DEP.has(r.produto);return swli(`<div class="p ${r._d?'done':''}${dp?' dep':''}" data-p="${esc(r.produto)}" style="--c:${COLOR[r._k]}">${cardBody(r,dp?DEPI:'',undefined,undefined,F.d111&&NOVA>0&&is111(r)?novaDim(r):undefined)}</div>`,r._d,'add',inPed(r.produto)?'Já no pedido':'Pedido','🛒')}
+function card(r){const dp=DEP.has(r.produto);return swli(`<div class="p ${r._d?'done':''}${dp?' dep':''}" data-p="${esc(r.produto)}" style="--c:${COLOR[r._k]}">${cardBody(r,dp?DEPI:'',undefined,undefined,F.d111&&NOVA>0&&is111(r)?novaDim(r):undefined)}</div>`,r._d,'add',inPed(r.produto)?'Já no pedido':'Pedido','🛒',r.produto)}
 
 /* ═══ Exportar a lista da tela (filtros + ordem) para o script de cadastro: lista_cadastro.txt = produto;altura;largura;profundidade ═══ */
 function exportaCadastro(){if(!list.length)return toast('Nenhum item na lista');

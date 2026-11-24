@@ -60,12 +60,11 @@ $('pban').onclick=e=>{if(e.target.closest('[data-up]'))return $('b-up').click();
 /* ordem da lista do pedido (vale para Para pedir · Aguardando trânsito · Concluídos) — lembrada no aparelho */
 const PED_ORD=[['nome','Nome A–Z'],['cob_a','Menor cobertura'],['cob_d','Maior cobertura'],['mdv_d','Maior MDV'],['mdv_a','Menor MDV']];
 let pedSort='nome';try{const v=localStorage.getItem('planograma_pedsort');if(PED_ORD.some(o=>o[0]===v))pedSort=v}catch{}
-let depOnly=false;   // filtro "🔎 Procurar no depósito" ligado?
 const fOpen={};let pedGB={};   // v69: fornecedores abertos/fechados (Sist. 20) · corpo dos grupos montado só quando abre
 const dropOpen={p20:true,pnd:true,trd:false,rup:false,dnd:false};   // lembra quais grupos do pedido estão abertos ("Para pedir" já começa aberto)
 /* dica de gestos: aparece nas 3 primeiras vezes que o Pedido é aberto (ou até tocar no ✕) */
 const LSHINT='planograma_dica_gestos';let hintN=0,hintCounted=false;try{hintN=+localStorage.getItem(LSHINT)||0}catch{}
-const hintHtml=()=>hintN<=3?'<div class="hint"><span>👉 Deslize → concluir · 👈 excluir · segure o cartão = 🔎 depósito · <button type="button" class="lnk" data-aj="gestos">ver todos os gestos</button></span><button type="button" id="hint-x" aria-label="Fechar dica">✕</button></div>':'';
+const hintHtml=()=>hintN<=3?'<div class="hint"><span>👉 Deslize → concluir · 👈 excluir ou 🔎 depósito · <button type="button" class="lnk" data-aj="gestos">ver todos os gestos</button></span><button type="button" id="hint-x" aria-label="Fechar dica">✕</button></div>':'';
 const CHEV='<svg class="ch" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>';
 function renderPed(){if(abrindo)return;   // v72: sem o relatório os cartões apareceriam como "fora do planograma"
 
@@ -77,12 +76,11 @@ function renderPed(){if(abrindo)return;   // v72: sem o relatório os cartões a
    tr=pedido.filter(x=>!x.done&&inTransit(x)),rc=pedido.filter(x=>!x.done&&!inTransit(x)&&x.rcd),dn=pedido.filter(x=>x.done),n=act.length;
  $('phead').innerHTML=(pedido.length?'':'<div class="ph-vz"><b>Pedido vazio</b> — adicione abaixo ou pelo 🛒 nos produtos.</div>')   // v73: sem a linha grande que repetia os números de baixo
   +(pedido.length?`<div class="ph-st">${rc.length?`<span><b class="num">${n}</b> pedir</span><span><b class="num">${tr.length}</b> trânsito</span><span><b class="num">${rc.length}</b> confirm.</span><span><b class="num">${dn.length}</b> feitos</span>`:`<span><b class="num">${n}</b> para pedir</span><span><b class="num">${tr.length}</b> em trânsito</span><span><b class="num">${dn.length}</b> concluídos</span>`}</div>`:'');
- const nd=pedido.filter(x=>depMap[x.p]&&!x.done).length;if(depOnly&&!nd)depOnly=false;   // tirou o último: desliga o filtro
- const fl=l=>depOnly?l.filter(x=>depMap[x.p]):l;
+ const fl=l=>l;   // v75: sem o filtro "Procurar no depósito" (o 🔎 continua marcado no cartão)
  const row0=x=>{const r=byProd.get(x.p),di=depMap[x.p]?DEPI:'';
   if(!r)return `<div class="pi ${x.done?'done':''}${depMap[x.p]?' dep':''}" data-p="${esc(x.p)}"><div class="hd"><div class="nm">${esc(x.d)}</div><div class="acts">${di}</div></div><div class="sb">${esc(x.p)} · fora do planograma carregado</div></div>`;
   return `<div class="p pedc ${x.done?'done':''}${depMap[x.p]?' dep':''}" data-p="${esc(x.p)}" style="--c:${COLOR[r._k]}">${cardBody(r,di,'',true)}</div>`};
- const row=x=>swrap(row0(x),x.done,'del','Excluir','🗑');
+ const row=x=>swrap(row0(x),x.done,'del','Excluir','🗑',x.p);
  const nome=(a,b)=>String(a.d||'').localeCompare(String(b.d||'')),R=x=>byProd.get(x.p);
  const cob=x=>{const r=R(x);return r&&r._ct!==null&&r._k!=='sg'?Math.max(r._ct,0):null},mdv=x=>{const r=R(x);return r&&r._m?r._m:null};
  const by=(f,dir)=>(a,b)=>{const va=f(a),vb=f(b);if(va===null||vb===null)return(va===null)-(vb===null)||nome(a,b);return(va-vb)*dir||nome(a,b)};   // sem número vai pro fim
@@ -102,7 +100,7 @@ function renderPed(){if(abrindo)return;   // v72: sem o relatório os cartões a
  const trHtml=p20+drop('pnd',a20.length?'📋 Para pedir · Sist. 1':'📋 Para pedir',(a20.length?'Pedido ao CD':'Ainda falta pedir')+(n10?` · inclui ${n10} da Sist. 10`:''),a1)+drop('trd','⏳ Aguardando trânsito','Ficam aqui até a mercadoria chegar',fl(tr))+drop('rup','⊘ Ruptura CD',(()=>{   // v74 (Lohan): um grupo só com TODAS as rupturas de CD — as automáticas e as que você confirmou; a Ruptura loja continua em "Para pedir"
     const v=rc.filter(x=>rcdDias(x)>=RCD_VELHO).length;
     return 'O CD não tem — fora de "Para pedir"'+(rc.length?` · ${rc.length} confirmada${rc.length>1?'s':''} por você`+(v?` (${v} há ${RCD_VELHO}+ dias: reconfira)`:''):'')})(),fl([...rc,...fcd]))+drop('dnd','✓ Concluídos','Deslize → para reabrir · saem sozinhos ao carregar o planograma de um dia novo',fl(dn),`<button class="button button-small button-tonal dn-clr" id="pc-clr" type="button">🗑 Limpar ${dn.length} concluído${dn.length>1?'s':''}</button>`);
- const chip=(nd||depOnly)?`<button class="chip-btn ${depOnly?'on':''}" id="pc-dep" type="button" style="--c:var(--in)">🔎 Procurar no depósito (${nd})</button>`:'';
+ const chip='';
  const cdChip='';   // v74: sem o botão "Esconder Ruptura CD" — a Ruptura CD fica sempre no grupo dela
  const sortBar=`<div class="row2 pedsort">${cdChip}${chip}<label class="chip-btn chip-sel ps-sel"><svg class="ic" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4v16M3 16l4 4 4-4M17 20V4M13 8l4-4 4 4"/></svg><select id="ped-sort" aria-label="Ordenar lista de pedido">${PED_ORD.map(([v,t])=>`<option value="${v}"${v===pedSort?' selected':''}>${t}</option>`).join('')}</select></label></div>`;
  /* v69: segura na tela o cartão que estava em cima — sem isso a lista "pula" ao concluir/excluir (os cartões fora da tela não têm altura medida) */
@@ -123,13 +121,15 @@ function swAddPed(r,li,c){
   if(c&&!c.querySelector('.ent.ped')){const sb=c.querySelector('.sb');if(sb){const e1=sb.querySelector('.ent');if(e1)e1.insertAdjacentHTML('afterend',' '+PEDBADGE);else sb.insertAdjacentHTML('beforeend',' '+PEDBADGE)}}   // 🛒 logo depois do selo CD
   toast(addMsg(r))}
 /* ═══ GESTOS (Framework7 swipeout) — Produtos, Pedido, Encarte, Panfleto e Oferta do dia ═══
-   → concluir / reabrir · ← pedido (Produtos e anexos) · ← excluir (Pedido). Arrastar até o fim já executa a ação. */
+   → concluir / reabrir · ← pedido (Produtos e anexos) ou excluir (Pedido) + 🔎 depósito em todas. Arrastar até o fim já executa a ação. */
 let swBlock=0;
 app.on('swipeoutOpen swipeoutOpened',()=>{swBlock=Date.now()+350});      // evita o "clique fantasma" que abriria a ficha
 document.addEventListener('click',e=>{
   const a=e.target.closest('[data-sw]');if(!a)return;e.preventDefault();
   const li=a.closest('.swipeout'),c=li&&li.querySelector('.swipeout-content>[data-p]');if(!c)return;
   swBlock=Date.now()+350;const act=a.dataset.sw;
+  if(act==='dep'){app.swipeout.close(li);const p=c.dataset.p;setTimeout(()=>{toggleDep(p);   // v75: 🔎 Depósito no deslizar ← (todas as telas)
+    const v=!!depMap[p];c.classList.toggle('dep',v);if(a.isConnected){a.innerHTML=swDep(v);a.classList.toggle('on',v)}},260);return}   // telas que não redesenham (Resumo, Encarte)
   if(li.closest('#plist')){                                              // PEDIDO
     const x=pedido.find(y=>y.p===c.dataset.p);if(!x){app.swipeout.close(li);return}
     if(act==='ok'){app.swipeout.close(li);setTimeout(()=>{const v=!x.done,r=byProd.get(x.p),nm=r?r.descricao:x.p;setFeito(x.p,v);renderPed();   // → concluir: volta suave e alterna
@@ -139,24 +139,8 @@ document.addEventListener('click',e=>{
     return}
   const r=byProd.get(c.dataset.p);app.swipeout.close(li);if(!r)return;   // PRODUTOS / ANEXOS
   if(act==='ok')toggleDone(r,c);else if(act==='add')swAddPed(r,li,c)});
-/* segurar o cartão ~0,8 s (LP_MS) liga/desliga 🔎 (Produtos, Pedido, Panfleto, Oferta). Android manda "contextmenu" ao segurar; iOS só o timer — por isso os dois */
-const LP_MS=800;   // tempo segurando o cartão para marcar 🔎 Procurar no depósito
-function bindLP(host,sel){
-  let T=null,V=null,p0=null,C=null,At=0,t0=0;
-  const cancel=()=>{clearTimeout(T);clearTimeout(V);T=V=null;p0=null;if(C){C.classList.remove('lpress');C=null}};
-  const fire=p=>{if(Date.now()-At<900)return;At=Date.now();swBlock=Date.now()+700;toggleDep(p)};   // evita disparar 2× (timer + menu)
-  host.addEventListener('touchstart',e=>{cancel();const c=e.target.closest(sel);if(!c||e.touches.length!==1)return;
-    p0={x:e.touches[0].clientX,y:e.touches[0].clientY};C=c;t0=Date.now();
-    V=setTimeout(()=>{if(C)C.classList.add('lpress')},LP_MS*.45);                       // o card "acende" enquanto segura
-    T=setTimeout(()=>{T=null;fire(c.dataset.p)},LP_MS)},{passive:true});
-  host.addEventListener('touchmove',e=>{if(!p0)return;const t=e.touches[0];if(Math.abs(t.clientX-p0.x)>10||Math.abs(t.clientY-p0.y)>10)cancel()},{passive:true});   // deslizar/rolar cancela
-  host.addEventListener('touchend',cancel,{passive:true});                       // (touchcancel não cancela: o Android manda ao abrir o menu)
-  host.addEventListener('contextmenu',e=>{const c=e.target.closest(sel);if(!c)return;e.preventDefault();if(p0&&Date.now()-t0>=LP_MS-40)fire(c.dataset.p)});
-}
-bindLP($('plist'),'.pedc,.pi');bindLP($('list'),'.p');bindLP($('pf-list'),'.pfc');bindLP($('of-list'),'.pfc');
 $('plist').onclick=e=>{if(Date.now()<swBlock)return;
   if(e.target.closest('#hint-x')){hintN=99;try{localStorage.setItem(LSHINT,hintN)}catch{}renderPed();return}
-  if(e.target.closest('#pc-dep')){depOnly=!depOnly;renderPed();return}
   if(e.target.closest('#pc-clr')){const antes=pedido.slice(),n=pedLimpaConcl();renderPed();
     if(n)toastUndo(`${n} concluído${n>1?'s':''} removido${n>1?'s':''} do pedido`,()=>{const tem=new Set(pedido.map(x=>x.p));pedido=[...pedido,...antes.filter(x=>x.done&&!tem.has(x.p))];savePed();renderPed()});return}
   if(e.target.closest('#pe-scan'))return $('b-scan2').click();

@@ -475,13 +475,14 @@ if('serviceWorker' in navigator&&/^https?:/.test(location.protocol)){/* ⚡ regi
   addEventListener('load',()=>idle(()=>navigator.serviceWorker.register('./sw.js').then(reg=>reg.update()).catch(()=>{})))}
 /* versão do app na aba Dados (nome do cache do SW, ex.: v34) — para conferir se o aparelho já pegou a atualização */
 /* APP_VER = versão do CÓDIGO que está rodando. ⚠ Mantenha igual ao V do sw.js (o teste de fumaça confere). */
-const APP_VER='v74';
+const APP_VER='v75';
 const verNum=v=>parseInt(String(v||'').replace(/\D/g,''),10)||0;   // 'v9' < 'v45' < 'v100' (comparação numérica, não alfabética)
 function mostraVersao(){const el=$('app-ver');if(el)el.textContent='Versão do app: '+APP_VER}
 addEventListener('load',()=>setTimeout(mostraVersao,3000));
 /* ═══ NOVIDADES (nov/2026): depois de atualizar, o Resumo mostra o que mudou (1 vez por versão). Na 1ª instalação não aparece.
    Ao publicar uma versão com mudança visível, acrescente aqui a chave da versão (a mesma do sw.js, ex.: 'v43'). ═══ */
 const NOVIDADES={
+  v75:['👈 Deslizar para a esquerda agora mostra <b>🔎 Depósito</b> ao lado de Pedido/Excluir, em todas as telas','Saiu o <b>segurar o cartão</b> e o botão "Procurar no depósito" do Pedido'],
   v74:['⊘ Pedido: <b>Ruptura CD num grupo só</b> (automáticas e confirmadas), sempre fora de "Para pedir" — saiu o botão "Esconder Ruptura CD"',
        '📏 Cobertura mais clara: o número grande é o cálculo (estoque + trânsito) ÷ MDV; "Rel." só aparece quando o relatório diz outra coisa — a ficha explica os dois',
        '❓ Nova tela <b>Como funciona</b> (engrenagem → Dados) e atalhos "?" que abrem já na parte certa',
