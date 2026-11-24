@@ -9,6 +9,8 @@ const NF0=new Intl.NumberFormat('pt-BR',{maximumFractionDigits:0}),NF1=new Intl.
 const f0=v=>NF0.format(+v||0),f1=v=>NF1.format(+v||0);   // +v: sempre número (dado vindo da nuvem nunca vira HTML)
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 GLY.rcd='⊘';SLBL.rcd='Ruptura CD';SLBL.rup='Ruptura loja';
+/* v74 (Lohan): "loja" só faz sentido na Sist. 1 (onde existe a Ruptura CD); na 10 e 20 é só "Ruptura" */
+const sitLbl=r=>r._k==='rup'&&!isCD(r)?'Ruptura':SLBL[r._k];
 const COLOR={rup:'var(--cr)',rcd:'var(--rcd)',crit:'var(--crit)',aten:'var(--am)',ok:'var(--ok)',nd:'var(--mu)',sg:'var(--sg)'};   // Crítico (laranja) ≠ Ruptura (vermelho), igual ao Resumo
 const LBL={rup:'Rupt. loja',rcd:'Rupt. CD',crit:'Crítico',aten:'Atenção',ok:'OK',nd:'Sem MDV',sg:'Sem giro'};
 /* aviso (toast): máx. 2 linhas (texto inteiro no title); com janela/folha aberta aparece no TOPO, para não cobrir os botões */

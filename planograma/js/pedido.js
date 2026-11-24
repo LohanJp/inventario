@@ -16,7 +16,7 @@ const pend=()=>pedido.filter(x=>!x.done&&!inTransit(x)&&!x.rcd&&!(pedNoCD&&pedFa
 const pedItem=p=>pedido.find(x=>x.p===p&&!x.done);
 /* ⚠ FALTA NO CD no Pedido (nov/2026): liga sozinho toda vez que você entra no Pedido (go) — os itens que o CD não tem
    (Sist. 1, menos de 1 caixa, sem trânsito) saem de "Para pedir" e ficam num grupo fechado; o botão mostra/esconde. */
-let pedNoCD=true;
+const pedNoCD=true;   // v74: Ruptura CD nunca entra em "Para pedir" (o botão de esconder saiu)
 const pedFaltaCD=x=>{const r=byProd.get(x.p);return !!r&&cdRisk(r)};
 /* há quantos dias o item está marcado como ⛔ Ruptura no CD · RCD_VELHO dias sem reconferir → entra no "Para fazer hoje" */
 const RCD_VELHO=7;
@@ -62,10 +62,10 @@ const PED_ORD=[['nome','Nome A–Z'],['cob_a','Menor cobertura'],['cob_d','Maior
 let pedSort='nome';try{const v=localStorage.getItem('planograma_pedsort');if(PED_ORD.some(o=>o[0]===v))pedSort=v}catch{}
 let depOnly=false;   // filtro "🔎 Procurar no depósito" ligado?
 const fOpen={};let pedGB={};   // v69: fornecedores abertos/fechados (Sist. 20) · corpo dos grupos montado só quando abre
-const dropOpen={p20:true,pnd:true,trd:false,fcd:false,rcd:false,dnd:false};   // lembra quais grupos do pedido estão abertos ("Para pedir" já começa aberto)
+const dropOpen={p20:true,pnd:true,trd:false,rup:false,dnd:false};   // lembra quais grupos do pedido estão abertos ("Para pedir" já começa aberto)
 /* dica de gestos: aparece nas 3 primeiras vezes que o Pedido é aberto (ou até tocar no ✕) */
 const LSHINT='planograma_dica_gestos';let hintN=0,hintCounted=false;try{hintN=+localStorage.getItem(LSHINT)||0}catch{}
-const hintHtml=()=>hintN<=3?'<div class="hint"><span>👉 Deslize → concluir · 👈 excluir · segure o cartão = 🔎 depósito</span><button type="button" id="hint-x" aria-label="Fechar dica">✕</button></div>':'';
+const hintHtml=()=>hintN<=3?'<div class="hint"><span>👉 Deslize → concluir · 👈 excluir · segure o cartão = 🔎 depósito · <button type="button" class="lnk" data-aj="gestos">ver todos os gestos</button></span><button type="button" id="hint-x" aria-label="Fechar dica">✕</button></div>':'';
 const CHEV='<svg class="ch" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>';
 function renderPed(){if(abrindo)return;   // v72: sem o relatório os cartões apareceriam como "fora do planograma"
 
@@ -99,9 +99,11 @@ function renderPed(){if(abrindo)return;   // v72: sem o relatório os cartões a
  const GA=[...G.values()].sort((a,b)=>!a.o-!b.o||fgTit(a.o).localeCompare(fgTit(b.o)));   // ordem fixa A–Z: concluir um item não troca os fornecedores de lugar
  const sub=g=>{const u=g.l.filter(x=>x.u==='a').length;return det('f:'+g.k,`data-fk="${esc(g.k)}"`,fOpen[g.k]!==false,esc(fgTit(g.o)),esc(fgCod(g.o))+(u?` · 🔥 ${u} urgente${u>1?'s':''}`:''),g.l.length,()=>ord(g.l).map(row).join(''),' trf')};
  const p20=a20.length?det('p20','id="p20"',dropOpen.p20,'📞 Para pedir · Sist. 20','Direto ao fornecedor · '+(GA.length>1?GA.length+' fornecedores':esc(fgTit(GA[0].o))),a20.length,()=>GA.length>1?GA.map(sub).join(''):ord(a20).map(row).join('')):'';
- const trHtml=p20+drop('pnd',a20.length?'📋 Para pedir · Sist. 1':'📋 Para pedir',(a20.length?'Pedido ao CD':'Ainda falta pedir')+(n10?` · inclui ${n10} da Sist. 10`:''),a1)+drop('trd','⏳ Aguardando trânsito','Ficam aqui até a mercadoria chegar',fl(tr))+drop('fcd','⊘ Ruptura CD','Menos de 40% do cadastro e sem trânsito — o CD não mandou',fl(fcd))+drop('rcd','⛔ Ruptura CD confirmada',(()=>{const v=rc.filter(x=>rcdDias(x)>=RCD_VELHO).length;return v?`${v} há ${RCD_VELHO}+ dias — abra o item e reconfira se o CD já tem`:'Você marcou: o CD está sem — saem daqui quando aparecer trânsito'})(),fl(rc))+drop('dnd','✓ Concluídos','Deslize → para reabrir · saem sozinhos ao carregar o planograma de um dia novo',fl(dn),`<button class="button button-small button-tonal dn-clr" id="pc-clr" type="button">🗑 Limpar ${dn.length} concluído${dn.length>1?'s':''}</button>`);
+ const trHtml=p20+drop('pnd',a20.length?'📋 Para pedir · Sist. 1':'📋 Para pedir',(a20.length?'Pedido ao CD':'Ainda falta pedir')+(n10?` · inclui ${n10} da Sist. 10`:''),a1)+drop('trd','⏳ Aguardando trânsito','Ficam aqui até a mercadoria chegar',fl(tr))+drop('rup','⊘ Ruptura CD',(()=>{   // v74 (Lohan): um grupo só com TODAS as rupturas de CD — as automáticas e as que você confirmou; a Ruptura loja continua em "Para pedir"
+    const v=rc.filter(x=>rcdDias(x)>=RCD_VELHO).length;
+    return 'O CD não tem — fora de "Para pedir"'+(rc.length?` · ${rc.length} confirmada${rc.length>1?'s':''} por você`+(v?` (${v} há ${RCD_VELHO}+ dias: reconfira)`:''):'')})(),fl([...rc,...fcd]))+drop('dnd','✓ Concluídos','Deslize → para reabrir · saem sozinhos ao carregar o planograma de um dia novo',fl(dn),`<button class="button button-small button-tonal dn-clr" id="pc-clr" type="button">🗑 Limpar ${dn.length} concluído${dn.length>1?'s':''}</button>`);
  const chip=(nd||depOnly)?`<button class="chip-btn ${depOnly?'on':''}" id="pc-dep" type="button" style="--c:var(--in)">🔎 Procurar no depósito (${nd})</button>`:'';
- const cdChip=nfcd?`<button class="chip-btn ${pedNoCD?'on':''}" id="pc-fcd" type="button" style="--c:var(--am)" title="${pedNoCD?'Ruptura CD fora de Para pedir — toque para mostrar':'Toque para esconder a falta no CD'}">⚠ Esconder Ruptura CD (${nfcd})</button>`:'';
+ const cdChip='';   // v74: sem o botão "Esconder Ruptura CD" — a Ruptura CD fica sempre no grupo dela
  const sortBar=`<div class="row2 pedsort">${cdChip}${chip}<label class="chip-btn chip-sel ps-sel"><svg class="ic" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4v16M3 16l4 4 4-4M17 20V4M13 8l4-4 4 4"/></svg><select id="ped-sort" aria-label="Ordenar lista de pedido">${PED_ORD.map(([v,t])=>`<option value="${v}"${v===pedSort?' selected':''}>${t}</option>`).join('')}</select></label></div>`;
  /* v69: segura na tela o cartão que estava em cima — sem isso a lista "pula" ao concluir/excluir (os cartões fora da tela não têm altura medida) */
  /* mede só os cartões que estão na tela (medir um cartão fora da tela obrigaria o navegador a montá-lo — é o que o content-visibility evita) */
@@ -155,7 +157,6 @@ bindLP($('plist'),'.pedc,.pi');bindLP($('list'),'.p');bindLP($('pf-list'),'.pfc'
 $('plist').onclick=e=>{if(Date.now()<swBlock)return;
   if(e.target.closest('#hint-x')){hintN=99;try{localStorage.setItem(LSHINT,hintN)}catch{}renderPed();return}
   if(e.target.closest('#pc-dep')){depOnly=!depOnly;renderPed();return}
-  if(e.target.closest('#pc-fcd')){pedNoCD=!pedNoCD;renderPed();updBadge();return}
   if(e.target.closest('#pc-clr')){const antes=pedido.slice(),n=pedLimpaConcl();renderPed();
     if(n)toastUndo(`${n} concluído${n>1?'s':''} removido${n>1?'s':''} do pedido`,()=>{const tem=new Set(pedido.map(x=>x.p));pedido=[...pedido,...antes.filter(x=>x.done&&!tem.has(x.p))];savePed();renderPed()});return}
   if(e.target.closest('#pe-scan'))return $('b-scan2').click();
@@ -175,7 +176,8 @@ function fornTxt(r){
   return cod&&nm?cod+' · '+nm:cod||nm||'—'}
 /* ═══ FICHA DO PRODUTO (folha do Framework7 que sobe de baixo; arraste para baixo para fechar)
    topo: situação + os 5 números principais · meio: entrega e datas (rolável, vazios em "Mais detalhes") · ações SEMPRE visíveis embaixo ═══ */
-function openSheet(r){if(!r)return;const kv=([a,b])=>`<div class="kv"><span>${a}</span><span>${b}</span></div>`;
+let fichaR=null;   // v74: a ficha aberta (a ajuda volta para ela)
+function openSheet(r){if(!r)return;fichaR=r;const kv=([a,b])=>`<div class="kv"><span>${a}</span><span>${b}</span></div>`;
  /* ═══ FICHA "MISTA" (nov/2026, v59): faixa na cor da situação com os dias de cobertura + 3 abas.
       Resumo    → selos, aviso, barra do cadastro do planograma, Estoque e MDV em destaque, blocos menores
       Movimento → linha do tempo (última entrada/venda, hoje, quando acaba) e as datas
@@ -185,7 +187,7 @@ function openSheet(r){if(!r)return;const kv=([a,b])=>`<div class="kv"><span>${a}
  const sgk=r._k==='sg',ebx=num(r.emb)||1,x0=pedItem(r.produto)||{},cap=r._np?0:capOf(r);
  const cx=n=>ebx>1&&n>=ebx?` · ${f0(Math.floor(n/ebx))} cx`:'';
  const ctTxt=r._ct===null||sgk?'—':(r._ct>999?'+999':f0(Math.max(r._ct,0))),rcTxt=r._c999?'999':r._c===null||sgk?'':f0(Math.max(r._c,0));
- const sub=`${GLY[r._k]} ${SLBL[r._k]}`+(sgk?(semVendaDias(r)===Infinity?' · sem venda registrada':` · sem venda há ${f0(semVendaDias(r))} dias`):rcTxt?` · relatório diz ${rcTxt}${r._c999?' (sem cálculo)':rcTxt==='1'?' dia':' dias'}`:'');
+ const sub=`${GLY[r._k]} ${sitLbl(r)}`+(sgk?(semVendaDias(r)===Infinity?' · sem venda registrada':` · sem venda há ${f0(semVendaDias(r))} dias`):rcTxt&&(r._c999||r._c!==r._ct)?` · relatório diz ${rcTxt}${r._c999?' (sem cálculo)':rcTxt==='1'?' dia':' dias'}`:'');   // v74: só quando difere
  /* —— Resumo —— */
  const neg=r._e<0?(r._t>0?'<span class="ent">▼ negativo</span>':''):'';
  const selos=[r._sist?`<span class="ent e${esc(r._sist)}">${esc(ENT[r._sist]||'Sist. '+r._sist)} · sist. ${esc(r._sist)}</span>`:'',r.giro?`<span class="ent">Giro ${esc(r.giro)}</span>`:'',inPed(r.produto)?PEDBADGE:'',pedTag(r.produto),axBadges(r),neg,r._d?'<span class="ent">✓ feito</span>':''].filter(Boolean).join(' ');
@@ -196,6 +198,10 @@ function openSheet(r){if(!r)return;const kv=([a,b])=>`<div class="kv"><span>${a}
    :cdRisk(r)?aviso(r._vir?'⚠ Conferir estoque.':'Ruptura CD.','var(--rcd)',`${cap>0?'Menos de 40% do cadastro':'Estoque zerado'} e nada a caminho${r._vir?' — pela cobertura estaria Saudável (MDV baixo), pode ser estoque virtual':''}${x0.rcd?` — você confirmou a Ruptura CD em ${isoBr(x0.rcd)}`:''}.`)
    :r._e<0?(r._t>0?aviso('Estoque negativo.','var(--am)','Já em trânsito — aguardando chegada.'):aviso('Estoque negativo.','var(--cr)','Falta pedir o item.')):'')
    +(sS&&trSumiu(r)?aviso('Saiu do trânsito','var(--am)',`em ${isoBr(sS.d)}, sem entrada no estoque — ${f0(sS.q)} un estavam a caminho desde ${isoBr(sS.desde)}. <button type="button" class="lnk" id="sh-trok">já conferi ✓</button>`):'');
+ /* v74: explica as duas coberturas numa linha (antes "R:" e "relatório diz" apareciam sem explicação) */
+ const dd=t=>t+(t==='1'?' dia':' dias');
+const tP0=r=>transitLoaded&&r._t>0;
+ const cobExp=sgk||ctTxt==='—'?'':`<div class="fcob"><b>Cobertura ${dd(ctTxt)}</b> = (estoque${tP0(r)?' + trânsito':''}) ÷ MDV${rcTxt?(r._c999?' · o relatório veio <b>999</b> (sem cálculo)':r._c!==r._ct?` · <b>Relatório ${dd(rcTxt)}</b> = só o estoque, pela conta do sistema`:' · igual ao relatório'):''}</div>`;
  const eP=Math.max(r._e,0),tP=transitLoaded?Math.max(r._t,0):0;
  const barra=cap>0?(()=>{const pe=Math.min(100,eP/cap*100),pt=Math.min(100-pe,tP/cap*100);
    return `<div class="fbar"><div class="fbar-h"><span>Cadastro do planograma · ${esc(r.altura||'—')}×${esc(r.largura||'—')}×${esc(r.prof||'—')}</span><b class="num">${f0(Math.round((eP+tP)/cap*100))}% do cadastrado</b></div>
@@ -206,12 +212,12 @@ function openSheet(r){if(!r)return;const kv=([a,b])=>`<div class="kv"><span>${a}
  const soE=r._m>0&&eP>0?Math.floor(eP/r._m):null;                      // dias que SÓ o estoque dura (sem contar o trânsito)
  const pr=typeof precoDe==='function'?precoDe(r):null;
  const peq=[transitLoaded?tl('Trânsito',f0(tP)+' un',tP>0?(ebx>1?f0(Math.floor(tP/ebx))+' cx a caminho':'a caminho')+(trDias(r)>=0?' · '+trDiasTxt(trDias(r)):''):'nada a caminho',tP>0?'var(--tr2)':''):'',
-   tP>0&&soE!==null?tl('Só o estoque dura',soE===1?'1 dia':f0(soE)+' dias','acaba em '+dm(mais_(soE)),soE<7?'var(--cr)':''):rcTxt&&!r._c999?tl('Cobertura do relatório',rcTxt+(rcTxt==='1'?' dia':' dias'),'relatório de Cobertura'):'',
+   tP>0&&soE!==null?tl('Só o estoque dura',soE===1?'1 dia':f0(soE)+' dias','acaba em '+dm(mais_(soE)),soE<7?'var(--cr)':''):'',   // v74: a cobertura do relatório agora está na linha que explica as duas (não repete aqui)
    pr&&pr.n?tl('Preço',prcFmt(pr.n),pr.c?'Clube '+prcFmt(pr.c):'sem preço de Clube'):'',
    dmy(r._ue)?(()=>{const hj=new Date();hj.setHours(0,0,0,0);const n=Math.max(0,Math.round((hj-dmy(r._ue))/864e5));return tl('Última entrada',n===0?'hoje':n===1?'há 1 dia':'há '+f0(n)+' dias',esc(r._ue),n>30?'var(--am)':'')})():cap>0?tl('Cadastrado',ebx>1?f0(Math.floor(cap/ebx))+' cx':f0(cap)+' un',`${esc(r.altura)}×${esc(r.largura)}×${esc(r.prof)} = ${f0(cap)} un`):r._np?tl('Planograma','fora','sem cadastro'):''].filter(Boolean).join('');
- const resumo=`${selos?`<div class="fsel">${selos}</div>`:''}${alerta}${barra}
+ const resumo=`${selos?`<div class="fsel">${selos}</div>`:''}${alerta}${cobExp}${barra}
    <div class="fbig"><div class="ft"><small>Estoque</small><b class="num"${r._e<0?' style="color:var(--cr)"':''}>${f0(r._e)}</b><i>un${ebx>1&&r._e>=0?(r._e<ebx?` · menos de 1 cx de ${f0(ebx)}`:` · ${f0(Math.floor(r._e/ebx))} cx de ${f0(ebx)}`):''}</i></div><div class="ft"><small>MDV</small><b class="num">${r._m?f1(r._m):'—'}</b><i>${r._m?'un por dia':'sem MDV no relatório'}</i></div></div>
-   ${peq?`<div class="fpeq">${peq}</div>`:''}${pr&&pr.promo?`<div class="ln fpromo">Promoção Clube: ${esc(pr.promo)}</div>`:''}`;
+   ${peq?`<div class="fpeq">${peq}</div>`:''}${pr&&pr.promo?`<div class="ln fpromo">Promoção Clube: ${esc(pr.promo)}</div>`:''}<button type="button" class="lnk f-aj" data-aj="num">Como ler esta ficha</button>`;
  /* —— Movimento —— */
  const hojeD=new Date();hojeD.setHours(0,0,0,0);const refHoje=Math.abs(ref-hojeD)<864e5/2;
  const nos=[];{const ue=dmy(r._ue),uv=dmy(r._uv),td=trDesde(r);

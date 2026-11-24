@@ -52,12 +52,13 @@
    <div class="hero-row"><div id="h-ring" class="ring"><svg viewBox="0 0 36 36" width="92" height="92" aria-hidden="true"><circle r="15.9155" cx="18" cy="18" fill="none" stroke="var(--trk)" stroke-width="4.2"/></svg></div><div class="hero-tx"><div class="t" id="h-fil"><i class="skl" style="width:150px;height:18px"></i></div><div class="s" id="h-sub">Carregando…</div><div class="hl" id="h-health"><i class="skl" style="width:62%"></i></div></div></div>
    <div id="h-hist"></div>
    <button class="button button-fill button-large button-round" id="h-load" type="button" hidden>Carregar relatório de Planograma</button>
+   <button class="lnk h-aj" id="h-aj" type="button" data-aj="dia" hidden>Como funciona o app</button>
   </div></div>
   <div id="home-dados">
    <div class="skw" aria-hidden="true"><div class="block-title">Para fazer hoje</div><div class="list list-strong inset sk"><ul><li class="sk-row"><i class="skl" style="width:60%"></i></li><li class="sk-row"><i class="skl" style="width:45%"></i></li><li class="sk-row"><i class="skl" style="width:52%"></i></li></ul></div></div>
    <div id="todo"></div>
    <div id="h-top"></div>
-   <div class="block-title">Situação dos produtos</div>
+   <div class="block-title bt-q">Situação dos produtos<button class="q" type="button" data-aj="sit" aria-label="Como ler a situação dos produtos">?</button></div>
    <div class="segmented segmented-strong cssw kpsw" id="kpis-sw" role="group" aria-label="Sistemática da situação dos produtos"><button class="button" type="button" data-hs="">Todas</button><button class="button" type="button" data-hs="1">Sist. 1</button><button class="button" type="button" data-hs="10">Sist. 10</button><button class="button" type="button" data-hs="20">Sist. 20</button><span class="segmented-highlight"></span></div>
    <div class="kpis skw" aria-hidden="true"><div class="kpi sk"><i class="skl n"></i><i class="skl l"></i></div><div class="kpi sk"><i class="skl n"></i><i class="skl l"></i></div><div class="kpi sk"><i class="skl n"></i><i class="skl l"></i></div><div class="kpi sk"><i class="skl n"></i><i class="skl l"></i></div><div class="kpi sk"><i class="skl n"></i><i class="skl l"></i></div><div class="kpi sk"><i class="skl n"></i><i class="skl l"></i></div><div class="kpi sk"><i class="skl n"></i><i class="skl l"></i></div><div class="kpi sk"><i class="skl n"></i><i class="skl l"></i></div></div>
    <div class="kpis" id="kpis"></div>
@@ -118,7 +119,7 @@
  <!-- ═══ ANEXOS: Encarte · Panfleto · Oferta do dia ═══ -->
  <section id="s-enc" class="page-content tab">
   <div class="axbar">
-   <div class="segmented segmented-strong" id="ax-seg" role="group" aria-label="Tipo de anexo"><button class="button" type="button" data-axs="enc">📋 Panfleto</button><button class="button" type="button" data-axs="pan">🧾 Lâmina</button><button class="button" type="button" data-axs="dia">⭐ Oferta</button><span class="segmented-highlight"></span></div>
+   <div class="ax-segw"><div class="segmented segmented-strong" id="ax-seg" role="group" aria-label="Tipo de anexo"><button class="button" type="button" data-axs="enc">📋 Panfleto</button><button class="button" type="button" data-axs="pan">🧾 Lâmina</button><button class="button" type="button" data-axs="dia">⭐ Oferta</button><span class="segmented-highlight"></span></div><button class="q" type="button" data-aj="anexos" aria-label="O que são Panfleto, Lâmina e Oferta">?</button></div>
    <!-- seletor antigo (o oferta.js continua usando estes ids; fica escondido) -->
    <div class="axw" hidden><button id="ax-btn" type="button"><b id="ax-lbl">Panfleto</b></button>
     <div id="ax-menu" style="display:none"><button class="axi" data-ax="enc" type="button">📋 Panfleto</button><button class="axi" data-ax="pan" type="button">🧾 Lâmina</button><button class="axi" data-ax="dia" type="button">⭐ Oferta do dia</button></div></div>
@@ -182,6 +183,7 @@
   </ul></div>
   <div class="block-footer">Escolha de uma vez os relatórios do dia — <b>Planograma, Cobertura, Trânsito</b> e, se quiser, os de <b>Preços</b> (PRODUTO.TXT e Preços do Clube). O app reconhece cada arquivo sozinho; também aceita o <b>planograma_nuvem_*.json</b> baixado da nuvem. No computador, <b>Alt+R</b> abre esta janela e envia para a nuvem ao terminar.</div>
 
+  <div class="list list-strong inset data-list"><ul><li><a class="item-link item-content" data-aj="" role="button" tabindex="0"><div class="item-media"><span class="dic" style="--c:var(--f7-theme-color)">?</span></div><div class="item-inner"><div class="item-title">Como funciona o app<div class="item-footer">Termos, números, gestos e relatórios</div></div></div></a></li></ul></div>
   <div class="block-title">Aparência</div>
   <div class="block block-strong inset">
    <div class="segmented segmented-strong" id="theme-seg" role="group" aria-label="Tema"><button class="button" type="button" data-t="auto">Automático</button><button class="button" type="button" data-t="light">☀ Claro</button><button class="button" type="button" data-t="dark">☾ Escuro</button><span class="segmented-highlight"></span></div>
@@ -225,11 +227,69 @@
 <div class="sheet-modal sheet-pick" id="flt-sheet">
  <div class="swipe-handler"></div>
  <div class="sheet-modal-inner">
-  <div class="cs-hd"><span>Filtros</span><button id="flt-clear" class="lnk" type="button">Limpar</button><button id="flt-sheet-x" class="shx" type="button" aria-label="Fechar">✕</button></div>
+  <div class="cs-hd"><span class="bt-q">Filtros<button class="q" type="button" data-aj="sit" aria-label="O que quer dizer cada situação">?</button></span><button id="flt-clear" class="lnk" type="button">Limpar</button><button id="flt-sheet-x" class="shx" type="button" aria-label="Fechar">✕</button></div>
   <div class="fs-body page-content" id="flt-list"></div>
   <div class="fs-foot"><button id="flt-cancel" class="button button-tonal button-large" type="button">Cancelar</button><button id="flt-apply" class="button button-fill button-large" type="button">Ver itens</button></div>
  </div>
 </div>
+<!-- ═══ COMO FUNCIONA (v74) — conteúdo num <template>: só é montado no 1º toque, não pesa na abertura ═══ -->
+<div class="sheet-modal sheet-pick sheet-help" id="help-sheet" aria-labelledby="help-t">
+ <div class="swipe-handler"></div>
+ <div class="sheet-modal-inner">
+  <div class="cs-hd"><div class="cs-hd-top"><span id="help-t">Como funciona</span><button id="help-x" class="shx" type="button" aria-label="Fechar ajuda">✕</button></div></div>
+  <div class="fs-body page-content" id="help-body"></div>
+ </div>
+</div>
+<template id="tpl-ajuda"><div class="hl-wrap"><details class="trd hlp" id="aj-dia"><summary><span>O dia a dia em 4 passos<small><span class="vh">, </span>do relatório ao pedido concluído</small></span><svg class="ch" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></summary><div class="hlp-b"><ol class="hl-ol">
+<li><b>Carregue os relatórios do dia</b> — engrenagem ⚙ → <b>📂 Carregar relatórios</b> (no computador: <b>Alt+R</b>). Escolha Planograma, Cobertura e Trânsito de uma vez.</li>
+<li><b>Olhe o Resumo</b> — a situação da loja e o <b>Para fazer hoje</b>: cada linha abre a lista certa em Produtos.</li>
+<li><b>Monte o Pedido</b> — nos cartões, deslize ← (ou toque em <b>Adicionar ao pedido</b> na ficha).</li>
+<li><b>Conclua o que já pediu</b> — no Pedido, deslize →. Errou? Toque em <b>Desfazer</b> no aviso.</li></ol></div></details><details class="trd hlp" id="aj-rel"><summary><span>Relatórios do dia<small><span class="vh">, </span>o que cada arquivo traz</small></span><svg class="ch" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></summary><div class="hlp-b"><dl class="hl-dl">
+<dt>Planograma</dt><dd>A lista de produtos da loja e o cadastro de cada um (embalagem, giro, corredor, fornecedor).</dd>
+<dt>Cobertura</dt><dd>Estoque, MDV, cobertura do sistema, sistemática, última entrada e última venda.</dd>
+<dt>Trânsito</dt><dd>O que está a caminho. O app anota o dia em que cada item entrou em trânsito para contar os dias.</dd>
+<dt>Preços <small>(opcional)</small></dt><dd>PRODUTO.TXT (preço normal) e Preços do Clube — aparecem na ficha.</dd></dl>
+<p>Depois de carregar, envie para a nuvem (aviso azul no Resumo) para os outros aparelhos receberem.</p></div></details><details class="trd hlp" id="aj-sit"><summary><span>Situação dos produtos<small><span class="vh">, </span>o que cada cor e símbolo quer dizer</small></span><svg class="ch" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></summary><div class="hlp-b"><dl class="hl-dl">
+<dt>● Ruptura</dt><dd>Sem estoque (zerado ou negativo). Na <b>Sist. 1</b> se chama <b>Ruptura loja</b> e é quando já tem trânsito a caminho — sem trânsito, vira Ruptura CD. Na 10 e 20 é só Ruptura.</dd>
+<dt>⊘ Ruptura CD</dt><dd>Sist. 1 com menos de 40% do cadastro e nada a caminho: o CD também não tem. Pedir não resolve, por isso fica fora de Crítico, Atenção e Saudável e, no Pedido, num grupo separado.</dd>
+<dt>▲ Crítico</dt><dd>Cobertura menor que 7 dias.</dd>
+<dt>◆ Atenção</dt><dd>Cobertura de 7 a 14 dias.</dd>
+<dt>✓ Saudável</dt><dd>Cobertura de 15 dias ou mais.</dd>
+<dt>■ Sem giro</dt><dd>Tem estoque, mas nenhuma venda há mais de 30 dias — confira se está na gôndola.</dd>
+<dt>– Sem MDV</dt><dd>Vende tão pouco que não dá para calcular a cobertura.</dd>
+<dt>⚠ conferir estoque</dt><dd>Ruptura CD que, pela cobertura, estaria Saudável: pode ser estoque só no sistema.</dd></dl>
+<p>O <b>anel</b> do Resumo mostra quantos % dos produtos estão Saudáveis, na sistemática escolhida (Todas, Sist. 1, 10 ou 20). Os números do Resumo não mudam com os filtros de Produtos.</p></div></details><details class="trd hlp" id="aj-sist"><summary><span>Sistemática 1, 10 e 20<small><span class="vh">, </span>de onde vem a mercadoria</small></span><svg class="ch" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></summary><div class="hlp-b"><dl class="hl-dl">
+<dt>Sist. 1 · <span class="ent e1">CD</span></dt><dd>Vem do CD da rede. É a única que pode ser Ruptura CD.</dd>
+<dt>Sist. 10 · <span class="ent e10">Forn. via CD</span></dt><dd>Pedido ao fornecedor, entregue pelo CD. No Pedido fica junto com a Sist. 1.</dd>
+<dt>Sist. 20 · <span class="ent e20">Fornecedor</span></dt><dd>O fornecedor entrega direto na loja. No Pedido, cada fornecedor tem o seu grupo.</dd></dl></div></details><details class="trd hlp" id="aj-num"><summary><span>Os números do produto<small><span class="vh">, </span>como ler o cartão e a ficha</small></span><svg class="ch" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></summary><div class="hlp-b"><dl class="hl-dl">
+<dt>MDV</dt><dd>Média de venda por dia (unidades).</dd>
+<dt>Estoque</dt><dd>Unidades na loja; as caixas aparecem ao lado do rótulo. Negativo (▼) = o sistema vendeu mais do que entrou: confira.</dd>
+<dt>Cobertura · <b>70d</b></dt><dd>Quantos dias o produto dura: <b>(estoque + trânsito) ÷ MDV</b>. Já conta o que está chegando.</dd>
+<dt>Rel. 69</dt><dd>O que o relatório de Cobertura diz (só o estoque, pela conta do sistema). Só aparece quando é diferente do cálculo. <b>999</b> = o relatório não calculou.</dd>
+<dt>Trânsito · 5d</dt><dd>Unidades a caminho e há quantos dias entraram em trânsito. Laranja = 4 dias ou mais (atrasado).</dd>
+<dt>Cadastro 1×3×18</dt><dd>O cadastro do planograma (lastro × caixas × itens por caixa). <b>Não é espaço físico</b>; a barra da ficha mostra quanto do cadastrado há em estoque.</dd>
+<dt>Giro A · B · C</dt><dd>A velocidade com que o produto sai: <b>A</b> = giro rápido, <b>B</b> = médio, <b>C</b> = giro lento.</dd></dl></div></details><details class="trd hlp" id="aj-busca"><summary><span>Achar produtos<small><span class="vh">, </span>busca, filtros e a ficha</small></span><svg class="ch" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></summary><div class="hlp-b"><ul class="hl-ul">
+<li>Busque por <b>nome</b> (ex.: omo 1,6), <b>EAN</b> ou <b>código</b>. Com 3 letras do nome de um <b>fornecedor</b>, ele aparece em cima: toque para ver todos os itens dele.</li>
+<li>O botão azul ao lado lê o <b>código de barras</b> com a câmera.</li>
+<li><b>Filtros</b> escolhem situação, categoria, sistemática e mais. Enquanto há texto na busca, os filtros não escondem nada.</li>
+<li>O <b>ⓘ</b> de cada cartão abre a <b>ficha</b>: Resumo, Movimento (datas) e Cadastro.</li></ul></div></details><details class="trd hlp" id="aj-gestos"><summary><span>Gestos nos cartões<small><span class="vh">, </span>deslizar e segurar</small></span><svg class="ch" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></summary><div class="hlp-b"><dl class="hl-dl">
+<dt>Deslizar →</dt><dd>Concluir (feito). De novo → reabre.</dd>
+<dt>Deslizar ←</dt><dd>Em Produtos: põe no pedido. No Pedido: exclui.</dd>
+<dt>Segurar o cartão</dt><dd>Marca "🔎 Procurar no depósito".</dd></dl>
+<p>Todos avisam embaixo com <b>Desfazer</b>. Sem gesto: abra a ficha pelo ⓘ e use os botões.</p></div></details><details class="trd hlp" id="aj-ped"><summary><span>Pedido<small><span class="vh">, </span>os grupos e os filtros</small></span><svg class="ch" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></summary><div class="hlp-b"><dl class="hl-dl">
+<dt>📞 Para pedir · Sist. 20</dt><dd>Um grupo por fornecedor (pelo código).</dd>
+<dt>📋 Para pedir · Sist. 1</dt><dd>Pedido ao CD (inclui a Sist. 10).</dd>
+<dt>⏳ Aguardando trânsito</dt><dd>Já tem mercadoria a caminho. É aqui que fica a <b>Ruptura loja</b> da Sist. 1: sem estoque na loja, mas chegando.</dd>
+<dt>⊘ Ruptura CD</dt><dd>Tudo o que o CD não tem: as automáticas e as que você confirmou na ficha (<b>Confirmar CD</b>, selo ⛔). Ficam fora de "Para pedir".</dd>
+<dt>✓ Concluídos</dt><dd>Limpos quando chega o relatório de um dia novo.</dd></dl>
+<p>🔥 Urgente e ⬇ Baixa mudam a ordem. <b>Procurar no depósito</b> mostra só os marcados.</p></div></details><details class="trd hlp" id="aj-anexos"><summary><span>Anexos: Panfleto, Lâmina e Oferta<small><span class="vh">, </span>conferir o que está anunciado</small></span><svg class="ch" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></summary><div class="hlp-b"><dl class="hl-dl">
+<dt>📋 Panfleto</dt><dd>A planilha da semana (.xlsx ou .csv, com EAN). Mostra cada item como OK, Ruptura CD ou Não encontrado.</dd>
+<dt>🧾 Lâmina</dt><dd>O texto da lâmina do dia, colado no campo.</dd>
+<dt>⭐ Oferta</dt><dd>A planilha da oferta do dia.</dd></dl>
+<p>Lâmina e Oferta guardam um por dia da semana. O 🔍 de um item abre o produto.</p></div></details><details class="trd hlp" id="aj-nuvem"><summary><span>Nuvem e outros aparelhos<small><span class="vh">, </span>o código da loja e os avisos do topo</small></span><svg class="ch" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></summary><div class="hlp-b"><ul class="hl-ul">
+<li>Com o mesmo <b>código</b> (engrenagem ⚙), os aparelhos compartilham relatórios, pedido e concluídos.</li>
+<li>Relatório carregado aqui só chega aos outros depois de <b>enviado</b> (aviso azul no Resumo). Pedido e concluídos vão sozinhos.</li>
+<li>No topo: as datas dos relatórios (<b>Plano · Cob. · Tr.</b>). O botão 🔄 confere a nuvem; o <b>ponto laranja</b> nele = algo esperando envio ou sem conexão.</li></ul></div></details></div></template>
 <!-- ═══ CATEGORIA EM ÁRVORE ═══ -->
 <div class="sheet-modal sheet-pick" id="cat-sheet">
  <div class="swipe-handler"></div>
@@ -270,4 +330,5 @@
 <script src="js/precos.js"></script>
 <script src="js/arquivos.js"></script>
 <script src="js/nuvem.js"></script>
+<script src="js/ajuda.js"></script>
 </body></html>

@@ -34,6 +34,7 @@ const mkSheet=(id,o)=>{const el=$(id);if(el){el.setAttribute('role','dialog');el
     if(sheetSwap){sheetSwap=false;return}                                   // trocando de folha (Filtros ⇄ Categoria): a entrada do histórico continua
     if(id==='flt-sheet')D=null;
     if(id==='cat-sheet'&&D){openFlt(true);return}                           // fechou a Categoria: volta para a folha de Filtros
+    if(id==='help-sheet'&&typeof helpVolta!=='undefined'&&helpVolta)return;  // v74: a ajuda aberta pela ficha/filtros volta para eles (a entrada do histórico continua)
     popOv()}}})};
 let D=null,sheetSwap=false;   // D = rascunho dos filtros enquanto a folha está aberta (só vale ao tocar em "Ver N itens")
 const fichaSheet=mkSheet('sheet'),fltSheet=mkSheet('flt-sheet'),catSheet=mkSheet('cat-sheet');
@@ -66,13 +67,13 @@ function popOv(){if(ovHist){ovHist=false;skipPop=true;history.back()}}
 function closeSheet(){if(fichaSheet.opened)fichaSheet.close();else{shOn('sheet',false);popOv()}}
 addEventListener('popstate',e=>{
   if(skipPop){skipPop=false;return}                           // voltar disparado pelo próprio app
-  if(ovHist){ovHist=false;[fichaSheet,fltSheet,catSheet].forEach(s=>{if(s.opened)s.close()});if(scanStream)scanStop(true);if($('pf-ask').style.display!=='none')pfAskClose(true);return}   // 1º voltar: fecha ficha/leitor
+  if(ovHist){ovHist=false;[fichaSheet,fltSheet,catSheet,typeof helpSheet!=='undefined'?helpSheet:null].forEach(s=>{if(s&&s.opened)s.close()});if(scanStream)scanStop(true);if($('pf-ask').style.display!=='none')pfAskClose(true);return}   // 1º voltar: fecha ficha/leitor
   const st=e.state||{s:'home'};if(st.o)return;
   tabPushed=st.s!=='home';if(st.s&&st.s!==curTab)go(st.s,true) // 2º voltar: volta à aba anterior
 });
 try{history.replaceState({s:'home'},'')}catch{}
 const TITLES={home:'Resumo',prod:'Produtos',ped:'Pedido',enc:'Anexos',data:'Dados'};
-function go(s,fromPop){if(s==='ped'&&curTab!=='ped')pedNoCD=true;   // ⚠ toda vez que ENTRA no Pedido: falta no CD escondida (nov/2026)
+function go(s,fromPop){
 
  const el=$('s-'+s);
  document.querySelectorAll('.tabs>section').forEach(e=>e.classList.toggle('on',e===el));
@@ -106,7 +107,7 @@ const hSistOk=r=>!hSist||(hSist==='1'?isCD(r):r._sist===hSist);
 const setHSist=v=>{hSist=v;try{localStorage.setItem('planograma_hsist',v)}catch{}renderHome()};
 function renderHome(){if(abrindo)return;let n=allRecords.length;   // v72: na abertura ficam os esqueletos até os dados chegarem
 renderBan();
- $('home-dados').hidden=!n;$('h-load').hidden=!!n;                            // sem dados: só o cartão com o botão de carregar (nada de "—" soltos)
+ $('home-dados').hidden=!n;$('h-load').hidden=!!n;$('h-aj').hidden=!!n;                            // sem dados: só o cartão com o botão de carregar (nada de "—" soltos)
  if(!n){$('h-fil').textContent='Nenhum relatório carregado';$('h-sub').textContent='Carregue o relatório de Planograma para ver a situação dos produtos.';$('h-ring').innerHTML='';$('h-health').innerHTML='';$('kpis').innerHTML='';$('cats').innerHTML='';return}
  /* v60: o Resumo NÃO depende de nenhum filtro (antes o "Esconder falta no CD / em trânsito" dos Filtros mudava os números).
     Cada item conta na sua situação (base.js): a Ruptura CD tem número próprio e fica fora de Crítico/Atenção/Saudável. */
@@ -121,7 +122,8 @@ renderBan();
  const pc=k=>Math.round(c[k]/n*1000)/10;
  $('h-health').innerHTML=`<span style="--c:var(--cr)">${GLY.rup} ${f1(pc('rup'))}% ruptura loja</span><span style="--c:var(--rcd)">${GLY.rcd} ${f1(pc('rcd'))}% ruptura CD</span><span style="--c:var(--crit)">${GLY.crit} ${f1(pc('crit'))}% crítico</span>`;
  histGrava();renderHist();
- const K=[['rup','Ruptura loja','estoque zerado ou negativo — com trânsito a caminho, ou fora da Sist. 1','var(--cr)'],['rcd','Ruptura CD','Sist. 1, sem trânsito e com menos de 40% do cadastro do planograma','var(--rcd)'],['crit','Crítico','cobertura total < 7 dias (sem Ruptura CD)','var(--crit)'],['aten','Atenção','cobertura total de 7 a 14 dias (sem Ruptura CD)','var(--am)'],['ok','Saudável','cobertura total de 15 dias ou mais','var(--ok)'],['sg','Sem giro',`com estoque, MDV 0 e sem venda há mais de ${SG_DIAS} dias`,'var(--sg)'],['nd','Sem MDV','sem MDV para calcular a cobertura','var(--mu)']];
+ const K=[['rup',hSist==='1'?'Ruptura loja':'Ruptura',hSist==='1'?'sem estoque na loja, com trânsito a caminho':'estoque zerado ou negativo','var(--cr)'],   // v74: "loja" só na Sist. 1
+['rcd','Ruptura CD','Sist. 1, sem trânsito e com menos de 40% do cadastro do planograma','var(--rcd)'],['crit','Crítico','cobertura total < 7 dias (sem Ruptura CD)','var(--crit)'],['aten','Atenção','cobertura total de 7 a 14 dias (sem Ruptura CD)','var(--am)'],['ok','Saudável','cobertura total de 15 dias ou mais','var(--ok)'],['sg','Sem giro',`com estoque, MDV 0 e sem venda há mais de ${SG_DIAS} dias`,'var(--sg)'],['nd','Sem MDV','sem MDV para calcular a cobertura','var(--mu)']];
  if(transitLoaded)K.push(['tr','Em trânsito','itens com entrada a caminho','var(--in)']);   // não é situação: faixa larga embaixo
  const pct=k=>{const v=c[k]/n*100;return v>0&&v<0.1?'&lt;0,1%':f1(v)+'%'};   // % de todos os produtos
  $('kpis').innerHTML=K.map(k=>`<button class="kpi${k[0]==='tr'?' kw':''}" data-k="${k[0]}" style="--c:${k[3]}" title="${k[2]}" type="button"><span class="n num">${f0(c[k[0]])}</span><span class="l"><b><span class="kg" aria-hidden="true">${k[0]==='tr'?'⇢':GLY[k[0]]}</span>${k[1]}</b></span><span class="kr"><i class="kb"><u style="width:${Math.max(2,c[k[0]]/n*100).toFixed(1)}%"></u></i><span class="pc num">${pct(k[0])}</span></span></button>`).join('');
@@ -212,7 +214,7 @@ $('todo').onclick=e=>{const fa=e.target.closest('[data-forn]');
   if(fa){todoP=null;F={chip:'all',cat:'',q:'',sort:'cobt',ent:'20',todo:'f20',forn:fa.dataset.forn};$('q').value='';return go('prod')}
   const a=e.target.closest('[data-todo]');if(!a)return;const k=a.dataset.todo;
   if(k==='urg')return go('ped');
-  if(k==='rcdv'){dropOpen.rcd=true;return go('ped')}
+  if(k==='rcdv'){dropOpen.rup=true;return go('ped')}
   if(k==='f20'){todoF20=!todoF20;return renderTodo()}
   todoP=null;if(!noCD){noCD=true;salvaCD()}   // do Resumo sempre com "Esconder falta no CD" ligado
   F={chip:k==='enc'?'cd':'all',cat:'',q:'',sort:k==='tratr'?'trd':'cobt',ent:ENT0,todo:k};$('q').value='';go('prod')};   // v73: Trânsito atrasado abre com os mais antigos primeiro
@@ -341,7 +343,7 @@ const DEPI='<span class="depi" title="Procurar no depósito">🔎</span>';
 const embTxt=r=>{const e=num(r.emb);return e?`emb ${f0(e)}`:'emb —'};
 function cardBody(r,acts,extra,noPed,nova){
   const dias=v=>v>999?'+999':f0(Math.max(v,0));   // coberturas já vêm arredondadas (dias inteiros)
-  const rel=r._c!==null;                                                        // sempre mostra também a cobertura do relatório de Cobertura
+  const rel=r._c!==null,relDif=r._c999||(rel&&r._c!==r._ct);   // v74: a cobertura do relatório só aparece quando é DIFERENTE da calculada (trânsito, arredondamento ou 999)
   const ebx=num(r.emb)||1;
   /* v65: as caixas vão na linha do rótulo ("Estoque      12 cx") e só as unidades ficam grandes — antes "300un | 12cx" quebrava e cortava */
   const cxN=n=>ebx>1&&n>=0?(n>0&&n<ebx?'&lt;1':f0(Math.floor(n/ebx)))+' cx':'';
@@ -350,14 +352,14 @@ function cardBody(r,acts,extra,noPed,nova){
   const neg=r._e<0&&r._k!=='rcd'?` <span class="neg" title="Estoque negativo${r._t>0?' · já em trânsito':isCD(r)?' · Ruptura CD':' · falta pedir ao fornecedor'}">▼ ${r._t>0?'negativo':isCD(r)?'falta no CD':'falta pedir'}</span>`
     :r._vir?` <span class="neg cdw" title="Pela cobertura estaria Saudável (MDV baixo), mas tem menos de 40% do cadastro e nada a caminho — pode ser estoque virtual">⚠ conferir estoque</span>`:'';   // estoque 0 ou positivo também (nov/2026)
   const sel=(r._sist?`<span class="ent e${esc(r._sist)}">${esc(ENT[r._sist]||'Sist. '+r._sist)}</span>`:'')+(!noPed&&inPed(r.produto)?' '+PEDBADGE:'')+pedTag(r.produto)+axBadges(r)+neg;
-  const cob=r._k==='sg'?(semVendaDias(r)===Infinity?'—':f0(semVendaDias(r))+'<i>d s/ venda</i>'):r._ct===null?'—':dias(r._ct)+(rel||r._c999?`<i class="sep">|</i><i class="rr" title="R = cobertura do relatório de Cobertura de Estoque${r._c999?' (veio 999 = sem cálculo)':''}">R:</i>${rel?dias(r._c):'—'}`:'<i>d</i>');
+  const cob=r._k==='sg'?(semVendaDias(r)===Infinity?'—':f0(semVendaDias(r))+'<i>d s/ venda</i>'):r._ct===null?'—':dias(r._ct)+'<i>d</i>'+(relDif?`<i class="sep">|</i><i class="rr" title="Rel. = cobertura que o relatório de Cobertura traz (só o estoque)${r._c999?' — veio 999 = sem cálculo':''}">Rel.</i>${rel?dias(r._c):'—'}`:'');
   return `<div class="hd"><div class="nm">${esc(r.descricao)}</div><div class="acts">${acts}${INFOBTN}</div></div>
  <div class="sb"><span class="sbt"><span class="cod">${esc(r.produto)}</span> · ${r._np?'<span title="Fora do planograma">s/ plano</span>':(nova===undefined?dimTxt(r):nova?(()=>{const i=novaInfo(r,NOVA)||{};return `<b class="nv" title="Medida nova (era ${dimTxt(r).replace(/<[^>]+>/g,'')}): ${NOVA} dias × MDV ${f1(r._m)} ÷ emb ${f0(num(r.emb)||1)} = ${i.quer}${i.cap?` · cortado no máximo do sistema (${LIMITE} dias ≈ ${f0(i.q)} un)`:''}">➜ 1×${nova}×${porCx(r)}${i.cap?' <small class="nvx">máx.</small>':''}</b>`})():`<b class="nv nv0" title="Sem MDV: não dá para calcular (fica fora do TXT)">${dimTxt(r).replace(/<[^>]+>/g,'')} · sem MDV</b>`)+(nova?'':' · '+embTxt(r))}</span>${sel?`<span class="sbb"> ${sel}</span>`:''}</div>
  <div class="st3">
   <div class="es">${lab('Estoque',r._e)}</div>
   <div class="es">${transitLoaded?lab('Trânsito',r._t,trd):'<small>Trânsito</small><b class="num">—</b>'}</div>
   <div><small>MDV</small><b class="num">${r._m?f1(r._m):'—'}</b></div>
-  <div class="cv" title="Cobertura total = (estoque + trânsito) ÷ MDV · R = cobertura do relatório"><small>${GLY[r._k]} ${r._k==='rup'?'Rupt. loja':r._k==='rcd'?'Rupt. CD':SLBL[r._k]}</small><b class="num">${cob}</b></div>
+  <div class="cv" title="Dias de cobertura = (estoque + trânsito) ÷ MDV · Rel. = o que o relatório diz (só o estoque), quando é diferente"><small>${GLY[r._k]} ${r._k==='rup'?(isCD(r)?'Rupt. loja':'Ruptura'):r._k==='rcd'?'Rupt. CD':SLBL[r._k]}</small><b class="num">${cob}</b></div>
  </div>${extra||''}`}
 /* cartão deslizável (Framework7 swipeout): → concluir/reabrir · ← pedido (Produtos) ou excluir (Pedido) */
 const swOk=d=>`<b>${d?'↩':'✓'}</b><span>${d?'Reabrir':'Concluir'}</span>`;
@@ -414,7 +416,7 @@ function relLinha(r){
   const selos=[r._sist?(ENT[r._sist]||'Sist. '+r._sist):'',inPed(r.produto)?'🛒 no pedido':'',semTag(axBadges(r)),
     r._e<0?'▼ negativo · '+(r._t>0?'em trânsito':isCD(r)?'falta no CD':'falta pedir'):cdRisk(r)?'⚠ falta no CD':''].filter(Boolean).join(' · ');
   return {k:REL_K.includes(r._k)?r._k:'nd',nome:r.descricao||'',sb:[r.produto,dim,embTxt(r),selos].filter(Boolean).join(' · '),
-    est:unCx(r._e),tr:transitLoaded?unCx(r._t):'—',mdv:r._m?f1(r._m):'—',sit:`${GLY[r._k]||''} ${SLBL[r._k]||''}`.trim(),cob}}
+    est:unCx(r._e),tr:transitLoaded?unCx(r._t):'—',mdv:r._m?f1(r._m):'—',sit:`${GLY[r._k]||''} ${r._k?sitLbl(r):''}`.trim(),cob}}
 async function exportaRelatorio(){
   if(!list.length)return toast('Nenhum item na lista');
   try{await ensureJSZip()}catch(e){return toast('Não consegui montar a planilha — '+e.message)}
