@@ -36,8 +36,9 @@ const cu=(c,path)=>`${FB}/planograma/${encodeURIComponent(c)}/${path}.json`;
    descrição/fornecedor/categoria da Cobertura só vão para quem NÃO está no planograma. 4,8 MB → ~1,1 MB (relatórios de 23/11).
    No aparelho continua tudo no formato de sempre: empacota só para enviar, desempacota ao baixar. */
 const PL_FORA=new Set(['st','referencia','pbl']),ES_FORA=new Set(['vda12','compra','bloq','cl','r']);   // campos sem uso no app
-function colPack(vals){const u=new Map(),i=vals.map(v=>{const k=v===undefined?null:v;let n=u.get(k);if(n===undefined){n=u.size;u.set(k,n)}return n});
-  return u.size<vals.length*.4?{d:[...u.keys()],i}:vals.map(v=>v===undefined?null:v)}   // poucos valores diferentes → lista + posição
+/* ⚠ v77.1: o Firebase recusa (erro 400) null dentro de lista — campo vazio vai como '' */
+function colPack(vals){const u=new Map(),i=vals.map(v=>{const k=v===undefined||v===null?'':v;let n=u.get(k);if(n===undefined){n=u.size;u.set(k,n)}return n});
+  return u.size<vals.length*.4?{d:[...u.keys()],i}:vals.map(v=>v===undefined||v===null?'':v)}   // poucos valores diferentes → lista + posição
 const colVal=(c,j)=>Array.isArray(c)?c[j]:c.d[c.i[j]];
 function planoPack(recs){const ks=new Set();for(const r of recs)for(const k in r)if(k[0]!=='_'&&!PL_FORA.has(k))ks.add(k);
   const c={};for(const k of ks)c[k]=colPack(recs.map(r=>r[k]));return{v:2,n:recs.length,c}}
@@ -47,7 +48,7 @@ function estqPack(map,recs){const P=new Map(recs.map(r=>[r.produto,r])),ps=Objec
   const dup=(p,k)=>{const r=P.get(p);return !!r&&(k==='d'?!!r.descricao:k==='c'?!!r.categoria:k==='f'?!!(String(r.fornec||'').trim()&&String(r.nome||'').trim()):false)};   // já está no planograma: vai só lá
   const c={};for(const k of ks)c[k]=colPack(ps.map(p=>dup(p,k)?undefined:map[p][k]));
   return{v:2,n:ps.length,p:ps,c,nd:ps.map(p=>dup(p,'d')?1:0).join('')}}
-function estqUnpack(o){const map={},ks=Object.keys(o.c);for(let j=0;j<o.n;j++){const x={};for(const k of ks){const v=colVal(o.c[k],j);if(v!==null&&v!==undefined)x[k]=v}
+function estqUnpack(o){const map={},ks=Object.keys(o.c);for(let j=0;j<o.n;j++){const x={};for(const k of ks){const v=colVal(o.c[k],j);if(v!==null&&v!==undefined&&v!=='')x[k]=v}
   if(o.nd&&o.nd[j]==='1')x.nd=1;map[o.p[j]]=x}return map}   // nd = "a descrição está no planograma"
 
 async function cf(url,o){
@@ -497,13 +498,14 @@ if('serviceWorker' in navigator&&/^https?:/.test(location.protocol)){/* ⚡ regi
   addEventListener('load',()=>idle(()=>navigator.serviceWorker.register('./sw.js').then(reg=>reg.update()).catch(()=>{})))}
 /* versão do app na aba Dados (nome do cache do SW, ex.: v34) — para conferir se o aparelho já pegou a atualização */
 /* APP_VER = versão do CÓDIGO que está rodando. ⚠ Mantenha igual ao V do sw.js (o teste de fumaça confere). */
-const APP_VER='v77';
+const APP_VER='v78';
 const verNum=v=>parseInt(String(v||'').replace(/\D/g,''),10)||0;   // 'v9' < 'v45' < 'v100' (comparação numérica, não alfabética)
 function mostraVersao(){const el=$('app-ver');if(el)el.textContent='Versão do app: '+APP_VER}
 addEventListener('load',()=>setTimeout(mostraVersao,3000));
 /* ═══ NOVIDADES (nov/2026): depois de atualizar, o Resumo mostra o que mudou (1 vez por versão). Na 1ª instalação não aparece.
    Ao publicar uma versão com mudança visível, acrescente aqui a chave da versão (a mesma do sw.js, ex.: 'v43'). ═══ */
 const NOVIDADES={
+  v78:['🔧 Corrige o erro 400 ao enviar a cobertura para a nuvem'],
   v77:['📈 Ficha com a aba <b>Histórico</b>: estoque, MDV, preço e venda estimada dia a dia, e a causa provável quando a venda cai. O PC grava um dia a cada envio — o diagnóstico aparece com 14 dias'],
   v76:['☁️ Nuvem mais leve: planograma e cobertura vão num formato enxuto (~5 MB → ~1 MB por dia novo) e saiu o backup antigo que ocupava espaço'],
   v75:['👈 Deslizar para a esquerda agora mostra <b>🔎 Depósito</b> ao lado de Pedido/Excluir, em todas as telas','Saiu o <b>segurar o cartão</b> e o botão "Procurar no depósito" do Pedido'],
