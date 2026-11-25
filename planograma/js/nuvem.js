@@ -5,11 +5,11 @@
 /* ═══ NUVEM — Fonte de verdade única no Firebase ═══════════════════════════
    Estrutura:
      /planograma/{code}/plano/info     — metadados (filial, date, total, exportedAt)
-     /planograma/{code}/plano/v2       — planograma em colunas (v76; antes plano/records, array de produtos)
+     /planograma/{code}/plano/v3       — planograma em colunas, guardado como UM texto (v81; v2 = colunas soltas, antes plano/records)
      /planograma/{code}/trans/info     — metadados do trânsito
      /planograma/{code}/trans/data     — transitMap (escrito no upload)
      /planograma/{code}/estq/info      — metadados do relatório de Cobertura (nome, data/hora do relatório, total)
-     /planograma/{code}/estq/v2        — cobertura em colunas (v76; antes estq/data, o estoqueMap inteiro)
+     /planograma/{code}/estq/v3        — cobertura em colunas, como UM texto (v81; v2 = colunas soltas, antes estq/data)
      /planograma/{code}/live/done      — { "produto": true/null } em tempo real
      /planograma/{code}/live/pedido    — array do pedido em tempo real
      /planograma/{code}/live/dep       — array de códigos marcados 🔎 Procurar no depósito
@@ -72,8 +72,13 @@ function fbFix(k,v){if(typeof v==='number'&&!isFinite(v))return 0;
   return v}
 const fbJSON=v=>JSON.stringify(v,fbFix);
 
+/* v81: escrita grande (ou apagar um nó grande) com writeSizeLimit=unlimited — sem isso o Firebase recusa com WRITE_TOO_BIG
+   ("Data to write exceeds the maximum size that can be modified…", 25/11) */
+const cuG=(c,path)=>cu(c,path)+'?writeSizeLimit=unlimited';
+/* lê o pacote enxuto: v3 (texto) ou v2 (objeto) */
+const lePack=x=>{try{const o=typeof x==='string'?JSON.parse(x):x;return o&&o.v===2?o:null}catch{return null}};
 function put(c,path,val){
-  const url=cu(c,path);
+  const url=val===null?cuG(c,path):cu(c,path);
   fetch(url,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(val)})
     .catch(()=>{}); // fire-and-forget para ações do usuário
 }
@@ -203,9 +208,11 @@ async function syncEstoque(c,ei){
     if(loc.cloudAt!==ei.exportedAt){loc.cloudAt=ei.exportedAt;carimba('est',loc,{cloudAt:loc.cloudAt})}
     return false}
   if(estoqueLoaded&&tsMeta(estoqueMeta)>tsMeta(ei.meta))return false;     // o do aparelho é mais novo: mantém (envie para a nuvem se quiser)
-  let data=await cf(cu(c,ei.fmt===2?'estq/v2':'estq/data')).then(r=>r.json()).catch(()=>null);   // v76: enxuto (fmt 2) ou antigo
-  try{if(ei.fmt===2)data=data&&data.v===2?estqUnpack(data):null}catch{data=null}
-  if(ei.fmt===2&&!data)data=await cf(cu(c,'estq/data')).then(r=>r.json()).catch(()=>null);   // v79: idem para a Cobertura
+  const gE=p=>cf(cu(c,p)).then(r=>r.json()).catch(()=>null);
+  let data=null;   // v81: v3 (texto) → v2 (colunas soltas) → antigo; usa o primeiro que vier inteiro
+  if(ei.fmt===3){const k=lePack(await gE('estq/v3'));try{data=k?estqUnpack(k):null}catch{data=null}}
+  if(!data&&ei.fmt>=2){const k=lePack(await gE('estq/v2'));try{data=k?estqUnpack(k):null}catch{data=null}}
+  if(!data)data=await gE('estq/data');
   if(!data||typeof data!=='object')return false;
   estoqueMap=data;estoqueLoaded=true;estoqueMeta=ei.meta||null;
   const nome=ei.name||'nuvem',quando=new Date().toLocaleString('pt-BR');
@@ -244,9 +251,10 @@ async function loadFromCloud(c,fundo){
     if(fundo){$('fresh-upd').classList.add('gira');abrTxtF('Baixando relatório novo da nuvem…')}   // v72: em segundo plano não cobre a tela
     else busy(true,'Baixando o relatório da nuvem…');
 
-    const [rec0,transData]=await Promise.all([gj(pi.fmt===2?'plano/v2':'plano/records'),ti?gj('trans/data'):Promise.resolve(null)]);   // v76: formato enxuto (fmt 2) ou o antigo, se o PC ainda estiver na versão velha
-    let records=rec0;try{if(pi.fmt===2)records=rec0&&rec0.v===2?planoUnpack(rec0):null}catch{records=null}
-    if(pi.fmt===2&&!records)records=await gj('plano/records');   // v79: o formato novo não chegou inteiro na nuvem → usa o antigo
+    const [rec0,transData]=await Promise.all([gj(pi.fmt===3?'plano/v3':pi.fmt===2?'plano/v2':'plano/records'),ti?gj('trans/data'):Promise.resolve(null)]);   // v76: formato enxuto (fmt 2) ou o antigo, se o PC ainda estiver na versão velha
+    let records=rec0;try{if(pi.fmt>=2){const k=lePack(rec0);records=k?planoUnpack(k):null}}catch{records=null}
+    if(pi.fmt===3&&!records){const k=lePack(await gj('plano/v2'));try{records=k?planoUnpack(k):null}catch{records=null}}   // v81
+    if(pi.fmt>=2&&!records)records=await gj('plano/records');   // v79: o formato novo não chegou inteiro na nuvem → usa o antigo
     if(!Array.isArray(records)||!records.length){busy(false);toast('⚠ Não consegui baixar o planograma'+(cerr?': '+cerr:' (resposta vazia da nuvem)'));return false}
 
     if(ti)transitMeta=ti.meta||{date:ti.date||'',hora:''};            // data REAL do relatório de Trânsito
@@ -359,15 +367,15 @@ $('b-up').onclick=async()=>{
     /* v79: um depois do outro — antes, em paralelo, o aviso "formato novo" (info) chegava mesmo quando os dados falhavam (erro 400 de 25/11) */
     cfErros=[];let pOk=false;
     try{   // v80: se o planograma falhar, o resto (trânsito, cobertura, pedido) continua sendo enviado
-    await cf(cu(c,'plano/v2'),{method:'PUT',headers:{'Content-Type':'application/json'},
-        body:fbJSON(planoPack(planoRecs))}).then(r=>{if(!r.ok)throw Error('Falha ao enviar records')});   // v76: formato enxuto
+    await cf(cuG(c,'plano/v3'),{method:'PUT',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify(JSON.stringify(planoPack(planoRecs)))})   // v81: o pacote vai como UM texto (1 nó no Firebase, em vez de ~150 mil).then(r=>{if(!r.ok)throw Error('Falha ao enviar records')});   // v76: formato enxuto
     await Promise.all([
       cf(cu(c,'plano/info'),{method:'PUT',headers:{'Content-Type':'application/json'},
         body:JSON.stringify({exportedAt:now,name:savedInfo?.name||'planograma',
-          filial:currentMeta.filial||'',date:currentMeta.date||'',total:planoRecs.length,fmt:2,
+          filial:currentMeta.filial||'',date:currentMeta.date||'',total:planoRecs.length,fmt:3,
           meta:currentMeta})}).then(r=>{if(!r.ok)throw Error('Falha ao enviar info')})
     ]);
-    put(c,'plano/records',null);put(c,'data',null);put(c,'info',null);   // v76: apaga o formato antigo e o backup da versão velha (data/info de 21/10, que o app não lê)
+    put(c,'plano/records',null);put(c,'plano/v2',null);put(c,'data',null);put(c,'info',null);   // v76: apaga o formato antigo e o backup da versão velha (data/info de 21/10, que o app não lê)
     setRelNovo('p',false);pOk=true;
     }catch(e){fails.push('planograma')}
     if(encSrc&&encItems.length){encPending=true;await encSaveLocal();pushEnc()}   // Encarte vai junto
@@ -393,7 +401,7 @@ $('b-up').onclick=async()=>{
          confirm(`O Trânsito na nuvem é mais novo (${metaTxt(tm)}) que o deste aparelho (${metaTxt(tl)}). Substituir mesmo assim?`)){
         try{
           const rs=await Promise.all([
-            cf(cu(c,'trans/data'),{method:'PUT',headers:{'Content-Type':'application/json'},body:fbJSON(transitMap)}),
+            cf(cuG(c,'trans/data'),{method:'PUT',headers:{'Content-Type':'application/json'},body:fbJSON(transitMap)}),
             cf(cu(c,'trans/info'),{method:'PUT',headers:{'Content-Type':'application/json'},
               body:JSON.stringify({exportedAt:now,date:tl.date||'',meta:transitMeta||null,total:Object.keys(transitMap).length})})
           ]);
@@ -412,11 +420,11 @@ $('b-up').onclick=async()=>{
         const semData=!estoqueMeta||!estoqueMeta.date;                 // sem data no relatório local: não dá para provar que a nuvem é mais nova
         if(!ei||semData||tsMeta(ei.meta)<=tsMeta(estoqueMeta)||
            confirm(`A Cobertura na nuvem é mais nova (${metaTxt(ei.meta)}) que a deste aparelho. Substituir mesmo assim?`)){
-          const r1=await cf(cu(c,'estq/v2'),{method:'PUT',headers:{'Content-Type':'application/json'},body:fbJSON(estqPack(estoqueMap,planoRecs))});   // v76: enxuto
+          const r1=await cf(cuG(c,'estq/v3'),{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(JSON.stringify(estqPack(estoqueMap,planoRecs)))});   // v81: UM texto
           if(!r1.ok)throw Error('data');
           const r2=await cf(cu(c,'estq/info'),{method:'PUT',headers:{'Content-Type':'application/json'},
-            body:JSON.stringify({exportedAt:now,name:(await idbGet('estoque').catch(()=>null)||{}).name||'cobertura',meta:estoqueMeta||null,total:Object.keys(estoqueMap).length,fmt:2})});
-          if(!r2.ok)throw Error('info');put(c,'estq/data',null);   // v76: apaga o formato antigo
+            body:JSON.stringify({exportedAt:now,name:(await idbGet('estoque').catch(()=>null)||{}).name||'cobertura',meta:estoqueMeta||null,total:Object.keys(estoqueMap).length,fmt:3})});
+          if(!r2.ok)throw Error('info');put(c,'estq/data',null);put(c,'estq/v2',null);   // v76/v81: apaga os formatos antigos
           eUp=true;setRelNovo('c',false);
         }else eNote=' · cobertura NÃO enviada (nuvem é mais nova)';
       }catch(e){fails.push('cobertura')}
@@ -520,13 +528,14 @@ if('serviceWorker' in navigator&&/^https?:/.test(location.protocol)){/* ⚡ regi
   addEventListener('load',()=>idle(()=>navigator.serviceWorker.register('./sw.js').then(reg=>reg.update()).catch(()=>{})))}
 /* versão do app na aba Dados (nome do cache do SW, ex.: v34) — para conferir se o aparelho já pegou a atualização */
 /* APP_VER = versão do CÓDIGO que está rodando. ⚠ Mantenha igual ao V do sw.js (o teste de fumaça confere). */
-const APP_VER='v80';
+const APP_VER='v81';
 const verNum=v=>parseInt(String(v||'').replace(/\D/g,''),10)||0;   // 'v9' < 'v45' < 'v100' (comparação numérica, não alfabética)
 function mostraVersao(){const el=$('app-ver');if(el)el.textContent='Versão do app: '+APP_VER}
 addEventListener('load',()=>setTimeout(mostraVersao,3000));
 /* ═══ NOVIDADES (nov/2026): depois de atualizar, o Resumo mostra o que mudou (1 vez por versão). Na 1ª instalação não aparece.
    Ao publicar uma versão com mudança visível, acrescente aqui a chave da versão (a mesma do sw.js, ex.: 'v43'). ═══ */
 const NOVIDADES={
+  v81:['🔧 Corrige o erro “Data to write exceeds the maximum size” ao enviar o planograma: o pacote vai como um texto só'],
   v80:['🔧 Envio para a nuvem: se uma parte falhar, as outras continuam, o aviso diz qual parte e por quê, e os dados são conferidos antes de sair'],
   v79:['🔧 Envio do planograma mais seguro: a nuvem só passa a usar o formato novo depois que os dados chegam inteiros'],
   v78:['🔧 Corrige o erro 400 ao enviar a cobertura para a nuvem'],

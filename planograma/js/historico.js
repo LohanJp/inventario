@@ -21,7 +21,7 @@ async function histEnvia(c){
     const p=typeof precoDe==='function'?precoDe(r):null;
     up[r.produto+'/'+dd]=[hR2(e),hR2(m),hR2(t),p?hR2(p.n):0,p?hR2(p.c):0];n++}
   if(!n)return 0;
-  const rs=await cf(cu(c,'hist/'+ym),{method:'PATCH',headers:{'Content-Type':'application/json'},body:fbJSON(up)});
+  const rs=await cf(cuG(c,'hist/'+ym),{method:'PATCH',headers:{'Content-Type':'application/json'},body:fbJSON(up)});
   if(!rs.ok)throw Error('hist');
   put(c,'hist/'+hMes(ym,-(H_MESES+1)),null);          // o mês que passou dos 13 sai (apagar de novo um mês vazio não custa nada)
   return n}
