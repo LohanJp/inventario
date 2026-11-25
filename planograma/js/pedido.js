@@ -223,7 +223,7 @@ const tP0=r=>transitLoaded&&r._t>0;
    r._np?['Planograma','Fora do planograma']:['Planograma (cadastro)',`${esc(r.altura||'—')} × ${esc(r.largura||'—')} × ${esc(r.prof||'—')} = ${esc(r.total||f0(cap))} un`],
    r._np?null:['Cob.Plan',r.cobplan?esc(r.cobplan)+' dias':'—'],['Embalagem · Giro',`caixa com ${f0(ebx)} · ${esc(r.giro||'—')}`],r.corredor&&r.corredor!=='0'?['Corredor',esc(r.corredor)]:null,
    ['Fornecedor',fgKey(r)?`<button type="button" class="kv-lnk" data-fg="${esc(r._fk)}" aria-label="Ver todos os itens de ${esc(fgTit(fgMini(r)))}">${esc(fornTxt(r))} ›</button>`:esc(fornTxt(r))],pr&&(pr.n||pr.promo)?['Preço',precoHtml(r)]:null,axBadges(r)?['Anexos',axBadges(r)]:null].filter(Boolean);
- const TABS=[['res','Resumo',resumo],['mov','Movimento',linha+mov.map(kv).join('')],['cad','Cadastro',cad.map(kv).join('')]];
+ const TABS=[['res','Resumo',resumo],['mov','Movimento',linha+mov.map(kv).join('')],['cad','Cadastro',cad.map(kv).join('')],['hist','Histórico','']];   // v77: Histórico só carrega ao tocar
  const rcdBtn=r._sist!=='20'||x0.rcd,rcdVelho=x0.rcd&&rcdDias(x0)>0;
  $('sheetc').innerHTML=`<div class="fb" style="--c:${COLOR[r._k]}"><div class="fb-n"><b class="num">${ctTxt}</b><small>${ctTxt==='—'?'&nbsp;':ctTxt==='1'?'dia':'dias'}</small></div>
    <div class="fb-t"><span class="fb-s">${sub}</span><h3>${esc(r.descricao)}</h3><span class="fb-c">${esc(r.produto)}${r.automacao?' · EAN '+esc(r.automacao):''}</span></div>
@@ -236,7 +236,7 @@ const tP0=r=>transitLoaded&&r._t>0;
   <div class="grid grid-cols-${rcdBtn&&!rcdVelho?3:2} grid-gap sh3">${rcdBtn&&!rcdVelho?`<button class="button button-tonal button-large shr${x0.rcd?' on':''}" id="sh-rcd" type="button">${x0.rcd?'↩ Desconfirmar':'⛔ Confirmar CD'}</button>`:''}<button class="button button-tonal button-large" id="sh-dep" type="button">${depMap[r.produto]?'↩ Depósito':'🔎 Depósito'}</button><button class="button button-tonal button-large" id="sh-done" type="button" title="Marca o produto como feito — vale para a aba Produtos e para o Pedido.">${r._d?'↩ Desfazer feito':'✓ Feito'}</button></div></div>`;
  document.querySelectorAll('#sheetc [data-ft]').forEach(b=>b.onclick=()=>{const k=b.dataset.ft;
    document.querySelectorAll('#sheetc [data-ft]').forEach(o=>{const on=o===b;o.classList.toggle('on',on);o.setAttribute('aria-selected',on)});
-   document.querySelectorAll('#sheetc .fpane').forEach(p=>p.hidden=p.id!=='fp-'+k);document.querySelector('#sheetc .shb').scrollTop=0});
+   document.querySelectorAll('#sheetc .fpane').forEach(p=>p.hidden=p.id!=='fp-'+k);document.querySelector('#sheetc .shb').scrollTop=0;if(k==='hist')histAba(r)});
  shOn('sheet',true);if(!fichaSheet.opened)fichaSheet.open();pushOv('sheet');$('sh-x').onclick=closeSheet;
  const aba=()=>{const s=document.querySelector('section.on').id.slice(2);if(s==='enc')go('enc');else renderAtual()};   // v73: redesenha sem voltar a lista para o topo
  /* remover pela ficha agora tem "Desfazer" (volta o item inteiro: quantidade, urgência, ruptura no CD) */
