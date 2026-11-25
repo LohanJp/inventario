@@ -110,8 +110,8 @@ function mergeRecs(){
   _mFor={p:planoRecs,e:estoqueMap,l:estoqueLoaded};
   const out=planoRecs.slice();
   if(estoqueLoaded){const have=new Set(planoRecs.map(r=>r.produto));
-    for(const p in estoqueMap){const x=estoqueMap[p];if(!x||!x.d||have.has(p))continue;
-      out.push({st:'A',automacao:'',produto:p,descricao:x.d,emb:'',referencia:x.r||'',fornec:'',nome:x.f||'',sist:x.sist||'',giro:'',corredor:'',altura:'',largura:'',prof:'',total:'',cobplan:'',qtdestoque:'',categoria:x.c||'',_np:true})}}
+    for(const p in estoqueMap){const x=estoqueMap[p];if(!x||!(x.d||x.nd)||have.has(p))continue;   // v76: nd = descrição ficou no planograma (nuvem enxuta)
+      out.push({st:'A',automacao:'',produto:p,descricao:x.d||'Cód. '+p,emb:'',referencia:x.r||'',fornec:'',nome:x.f||'',sist:x.sist||'',giro:'',corredor:'',altura:'',largura:'',prof:'',total:'',cobplan:'',qtdestoque:'',categoria:x.c||'',_np:true})}}
   allRecords=out}
 /* ═══ SEM GIRO ═══ tem estoque, MDV 0 e nenhuma venda há mais de SG_DIAS dias (conta a partir da data do relatório de Cobertura).
    O MDV do relatório vem sem casas decimais: MDV 0 com venda recente é só item que vende pouco (fica pela cobertura normal). */

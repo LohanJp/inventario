@@ -172,8 +172,8 @@ async function restauraAnexos(a){if(!a||typeof a!=='object')return 0;let n=0;con
 /* arquivo "Baixar tudo da nuvem" (app:'planograma-nuvem') → mesmo formato do backup, para abrir pelo botão do Planograma */
 function nuvemToBackup(n){const D=n.dados||{},P=D.plano||{},E=D.estq||{},T=D.trans||{},L=D.live||{};
   return{app:'planograma',version:2,name:(P.info&&P.info.name)||'nuvem',meta:(P.info&&(P.info.meta||{filial:P.info.filial,date:P.info.date}))||{},
-    records:Array.isArray(P.records)?P.records:[],transit:T.data||null,transitMeta:(T.info&&T.info.meta)||null,
-    estoque:E.data?{map:E.data,meta:(E.info&&E.info.meta)||null}:null,
+    records:P.v2&&P.v2.v===2?planoUnpack(P.v2):Array.isArray(P.records)?P.records:[],transit:T.data||null,transitMeta:(T.info&&T.info.meta)||null,   // v76: lê o formato enxuto e o antigo
+    estoque:E.v2&&E.v2.v===2?{map:estqUnpack(E.v2),meta:(E.info&&E.info.meta)||null}:E.data?{map:E.data,meta:(E.info&&E.info.meta)||null}:null,
     done:L.done?Object.keys(L.done).filter(k=>L.done[k]===true):[],pedido:Array.isArray(L.pedido)?L.pedido:[],dep:Array.isArray(L.dep)?L.dep:[],
     anexos:{enc:D.enc&&D.enc.data,of:D.of||{},pf:D.pf||{},live:{enc:L.enc,of:L.of,pf:L.pf}}}}
 async function importBackup(text,fname){try{let b=JSON.parse(text);if(b&&b.app==='planograma-nuvem')b=nuvemToBackup(b);if(b.app!=='planograma'||!Array.isArray(b.records))throw 0;
