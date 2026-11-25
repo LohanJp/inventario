@@ -21,10 +21,19 @@ async function histEnvia(c){
     const p=typeof precoDe==='function'?precoDe(r):null;
     up[r.produto+'/'+dd]=[hR2(e),hR2(m),hR2(t),p?hR2(p.n):0,p?hR2(p.c):0];n++}
   if(!n)return 0;
-  const rs=await cf(cuG(c,'hist/'+ym),{method:'PATCH',headers:{'Content-Type':'application/json'},body:fbJSON(up)});
+  await histConserta(c,ym).catch(()=>{});
+  const rs=await cf(cuG(c,'hist/'+ym),{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(up)});   // ⚠ JSON puro: a "/" em "produto/dia" é o caminho (v80 trocava por "_")
   if(!rs.ok)throw Error('hist');
   put(c,'hist/'+hMes(ym,-(H_MESES+1)),null);          // o mês que passou dos 13 sai (apagar de novo um mês vazio não custa nada)
   return n}
+
+/* v82: o envio da v80/v81 gravou "produto_dia" (a "/" virou "_"). Move para produto/dia e apaga o errado — roda só se achar */
+async function histConserta(c,ym){
+  const sh=await cf(cu(c,'hist/'+ym)+'?shallow=true').then(r=>r.json());if(!sh||typeof sh!=='object')return 0;
+  const ruins=Object.keys(sh).filter(k=>/^[^_]+_\d\d$/.test(k));if(!ruins.length)return 0;
+  const tudo=await cf(cu(c,'hist/'+ym)).then(r=>r.json());const up={};
+  for(const k of ruins){const v=tudo&&tudo[k];const i=k.lastIndexOf('_');if(Array.isArray(v))up[k.slice(0,i)+'/'+k.slice(i+1)]=v;up[k]=null}
+  const r=await cf(cuG(c,'hist/'+ym),{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(up)});return r.ok?ruins.length:0}
 
 /* ═══ LER (na ficha) ═══ */
 const hMem=new Map();                                // nesta abertura do app
