@@ -190,6 +190,7 @@ async function syncEstoque(c,ei){
   if(estoqueLoaded&&tsMeta(estoqueMeta)>tsMeta(ei.meta))return false;     // o do aparelho é mais novo: mantém (envie para a nuvem se quiser)
   let data=await cf(cu(c,ei.fmt===2?'estq/v2':'estq/data')).then(r=>r.json()).catch(()=>null);   // v76: enxuto (fmt 2) ou antigo
   try{if(ei.fmt===2)data=data&&data.v===2?estqUnpack(data):null}catch{data=null}
+  if(ei.fmt===2&&!data)data=await cf(cu(c,'estq/data')).then(r=>r.json()).catch(()=>null);   // v79: idem para a Cobertura
   if(!data||typeof data!=='object')return false;
   estoqueMap=data;estoqueLoaded=true;estoqueMeta=ei.meta||null;
   const nome=ei.name||'nuvem',quando=new Date().toLocaleString('pt-BR');
@@ -230,6 +231,7 @@ async function loadFromCloud(c,fundo){
 
     const [rec0,transData]=await Promise.all([gj(pi.fmt===2?'plano/v2':'plano/records'),ti?gj('trans/data'):Promise.resolve(null)]);   // v76: formato enxuto (fmt 2) ou o antigo, se o PC ainda estiver na versão velha
     let records=rec0;try{if(pi.fmt===2)records=rec0&&rec0.v===2?planoUnpack(rec0):null}catch{records=null}
+    if(pi.fmt===2&&!records)records=await gj('plano/records');   // v79: o formato novo não chegou inteiro na nuvem → usa o antigo
     if(!Array.isArray(records)||!records.length){busy(false);toast('⚠ Não consegui baixar o planograma'+(cerr?': '+cerr:' (resposta vazia da nuvem)'));return false}
 
     if(ti)transitMeta=ti.meta||{date:ti.date||'',hora:''};            // data REAL do relatório de Trânsito
@@ -339,9 +341,10 @@ $('b-up').onclick=async()=>{
     }
     busy(true,'Enviando planograma…');
     const now=new Date().toISOString();let tUp=false;const fails=[];
+    /* v79: um depois do outro — antes, em paralelo, o aviso "formato novo" (info) chegava mesmo quando os dados falhavam (erro 400 de 25/11) */
+    await cf(cu(c,'plano/v2'),{method:'PUT',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify(planoPack(planoRecs))}).then(r=>{if(!r.ok)throw Error('Falha ao enviar records')});   // v76: formato enxuto
     await Promise.all([
-      cf(cu(c,'plano/v2'),{method:'PUT',headers:{'Content-Type':'application/json'},
-        body:JSON.stringify(planoPack(planoRecs))}).then(r=>{if(!r.ok)throw Error('Falha ao enviar records')}),   // v76: formato enxuto
       cf(cu(c,'plano/info'),{method:'PUT',headers:{'Content-Type':'application/json'},
         body:JSON.stringify({exportedAt:now,name:savedInfo?.name||'planograma',
           filial:currentMeta.filial||'',date:currentMeta.date||'',total:planoRecs.length,fmt:2,
@@ -498,13 +501,14 @@ if('serviceWorker' in navigator&&/^https?:/.test(location.protocol)){/* ⚡ regi
   addEventListener('load',()=>idle(()=>navigator.serviceWorker.register('./sw.js').then(reg=>reg.update()).catch(()=>{})))}
 /* versão do app na aba Dados (nome do cache do SW, ex.: v34) — para conferir se o aparelho já pegou a atualização */
 /* APP_VER = versão do CÓDIGO que está rodando. ⚠ Mantenha igual ao V do sw.js (o teste de fumaça confere). */
-const APP_VER='v78';
+const APP_VER='v79';
 const verNum=v=>parseInt(String(v||'').replace(/\D/g,''),10)||0;   // 'v9' < 'v45' < 'v100' (comparação numérica, não alfabética)
 function mostraVersao(){const el=$('app-ver');if(el)el.textContent='Versão do app: '+APP_VER}
 addEventListener('load',()=>setTimeout(mostraVersao,3000));
 /* ═══ NOVIDADES (nov/2026): depois de atualizar, o Resumo mostra o que mudou (1 vez por versão). Na 1ª instalação não aparece.
    Ao publicar uma versão com mudança visível, acrescente aqui a chave da versão (a mesma do sw.js, ex.: 'v43'). ═══ */
 const NOVIDADES={
+  v79:['🔧 Envio do planograma mais seguro: a nuvem só passa a usar o formato novo depois que os dados chegam inteiros'],
   v78:['🔧 Corrige o erro 400 ao enviar a cobertura para a nuvem'],
   v77:['📈 Ficha com a aba <b>Histórico</b>: estoque, MDV, preço e venda estimada dia a dia, e a causa provável quando a venda cai. O PC grava um dia a cada envio — o diagnóstico aparece com 14 dias'],
   v76:['☁️ Nuvem mais leve: planograma e cobertura vão num formato enxuto (~5 MB → ~1 MB por dia novo) e saiu o backup antigo que ocupava espaço'],
