@@ -51,6 +51,7 @@
   <div class="card hero-card"><div class="card-content card-content-padding">
    <div class="hero-row"><div id="h-ring" class="ring"><svg viewBox="0 0 36 36" width="92" height="92" aria-hidden="true"><circle r="15.9155" cx="18" cy="18" fill="none" stroke="var(--trk)" stroke-width="4.2"/></svg></div><div class="hero-tx"><div class="t" id="h-fil"><i class="skl" style="width:150px;height:18px"></i></div><div class="s" id="h-sub">Carregando…</div><div class="hl" id="h-health"><i class="skl" style="width:62%"></i></div></div></div>
    <div id="h-hist"></div>
+   <div id="h-parc" class="h-parc" hidden></div>
    <button class="button button-fill button-large button-round" id="h-load" type="button" hidden>Carregar relatório de Planograma</button>
    <button class="lnk h-aj" id="h-aj" type="button" data-aj="dia" hidden>Como funciona o app</button>
   </div></div>
@@ -133,6 +134,7 @@
    <div id="enc-title" class="ax-meta" style="display:none"></div>
    <div class="row2 axsort" id="enc-sortbar" style="display:none"><label class="chip-btn chip-sel" title="Ordenar por"><svg class="ic" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4v16M3 16l4 4 4-4M17 20V4M13 8l4-4 4 4"/></svg><select id="enc-sort" aria-label="Ordenar por"><option value="arq">Ordem da planilha</option><option value="stat">Falta no CD primeiro</option><option value="cob">Menor cobertura</option><option value="est">Menor estoque</option><option value="mdv">Maior MDV</option><option value="nome">Nome A–Z</option></select></label></div>
    <button class="button button-tonal" id="enc-export" style="display:none">⬇ Exportar planilha com situação</button>
+   <button class="lnk" id="enc-del" type="button" style="display:none">🗑 Limpar o panfleto</button>
    <input class="axq" id="enc-q" type="search" aria-label="Buscar no panfleto" autocomplete="off" spellcheck="false" enterkeyhint="search" placeholder="Buscar no panfleto (nome, EAN ou código)…" style="display:none">
    <div id="enc-summary-box"></div>
    <div id="enc-list"></div>

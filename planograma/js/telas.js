@@ -61,12 +61,12 @@ $('fresh-upd').onclick=()=>puxarAtualizar();
 /* navegação */
 /* ═══ BOTÃO/GESTO VOLTAR ═══ cada tela e cada janela (ficha, leitor) vira uma entrada do histórico:
    voltar fecha a janela → volta ao Resumo → (só aí) sai do app. Pilha máxima: Resumo → aba → janela. */
-let curTab='home',tabPushed=false,ovHist=false,skipPop=false,inGo=false;
+let curTab='home',tabPushed=false,ovHist=false,skipPop=false,inGo=false,pushDepois='';   // pushDepois (v83): aba aberta enquanto o "voltar" do app ainda não terminou
 function pushOv(k){if(ovHist)history.replaceState({o:k},'');else{history.pushState({o:k},'');ovHist=true}}   // ficha após leitor reaproveita a mesma entrada
 function popOv(){if(ovHist){ovHist=false;skipPop=true;history.back()}}
 function closeSheet(){if(fichaSheet.opened)fichaSheet.close();else{shOn('sheet',false);popOv()}}
 addEventListener('popstate',e=>{
-  if(skipPop){skipPop=false;return}                           // voltar disparado pelo próprio app
+  if(skipPop){skipPop=false;if(pushDepois){history.pushState({s:pushDepois},'');tabPushed=true;pushDepois=''}return}   // voltar disparado pelo próprio app · v83: só empilha a aba nova DEPOIS que ele termina (antes saía do app)
   if(ovHist){ovHist=false;[fichaSheet,fltSheet,catSheet,typeof helpSheet!=='undefined'?helpSheet:null].forEach(s=>{if(s&&s.opened)s.close()});if(scanStream)scanStop(true);if($('pf-ask').style.display!=='none')pfAskClose(true);return}   // 1º voltar: fecha ficha/leitor
   const st=e.state||{s:'home'};if(st.o)return;
   tabPushed=st.s!=='home';if(st.s&&st.s!==curTab)go(st.s,true) // 2º voltar: volta à aba anterior
@@ -84,8 +84,8 @@ function go(s,fromPop){
  if(s==='enc'){axSeg();if(axCur==='pan')pfOpen();if(axCur==='dia')ofOpen();if(axCur==='enc'&&encDirty)renderEnc()}
  el.scrollTop=0;
  if(!fromPop&&s!==curTab){                                      // registra no histórico (home → aba; entre abas não empilha)
-   if(s==='home'){if(tabPushed){tabPushed=false;skipPop=true;history.back()}else history.replaceState({s:'home'},'')}
-   else if(curTab==='home'){history.pushState({s},'');tabPushed=true}
+   if(s==='home'){pushDepois='';if(tabPushed){tabPushed=false;skipPop=true;history.back()}else if(!skipPop)history.replaceState({s:'home'},'')}
+   else if(curTab==='home'){if(skipPop)pushDepois=s;else{history.pushState({s},'');tabPushed=true}}
    else history.replaceState({s},'')}
  curTab=s;renderFresh()}
 let tabJust=false;   // ⚡ o tabShow do F7 roda ANTES deste click: sem a marca, a aba nova era desenhada 2 vezes
@@ -107,6 +107,8 @@ const hSistOk=r=>!hSist||(hSist==='1'?isCD(r):r._sist===hSist);
 const setHSist=v=>{hSist=v;try{localStorage.setItem('planograma_hsist',v)}catch{}renderHome()};
 function renderHome(){if(abrindo)return;let n=allRecords.length;   // v72: na abertura ficam os esqueletos até os dados chegarem
 renderBan();
+ {const f=[!estoqueLoaded&&'Cobertura',!transitLoaded&&'Trânsito'].filter(Boolean),e=$('h-parc');e.hidden=!n||!f.length;   // v83: relatório faltando → avisa que os números são parciais
+  if(n&&f.length)e.textContent=`⚠ Sem o relatório de ${f.join(' e ')}: números parciais${!transitLoaded?' · a Ruptura CD só é calculada com o Trânsito':''}`}
  $('home-dados').hidden=!n;$('h-load').hidden=!!n;$('h-aj').hidden=!!n;                            // sem dados: só o cartão com o botão de carregar (nada de "—" soltos)
  if(!n){$('h-fil').textContent='Nenhum relatório carregado';$('h-sub').textContent='Carregue o relatório de Planograma para ver a situação dos produtos.';$('h-ring').innerHTML='';$('h-health').innerHTML='';$('kpis').innerHTML='';$('cats').innerHTML='';return}
  /* v60: o Resumo NÃO depende de nenhum filtro (antes o "Esconder falta no CD / em trânsito" dos Filtros mudava os números).
@@ -120,13 +122,13 @@ renderBan();
  document.querySelectorAll('#kpis-sw button').forEach(b=>{const on=b.dataset.hs===hSist;b.classList.toggle('on',on);b.classList.toggle('button-active',on)});
  $('h-ring').innerHTML=ring(c,n);
  const pc=k=>Math.round(c[k]/n*1000)/10;
- $('h-health').innerHTML=`<span style="--c:var(--cr)">${GLY.rup} ${f1(pc('rup'))}% ruptura loja</span><span style="--c:var(--rcd)">${GLY.rcd} ${f1(pc('rcd'))}% ruptura CD</span><span style="--c:var(--crit)">${GLY.crit} ${f1(pc('crit'))}% crítico</span>`;
+ $('h-health').innerHTML=`<span style="--c:var(--cr)">${GLY.rup} ${f1(pc('rup'))}% ${hSist==='1'?'ruptura loja':'ruptura'}</span>${hSist==='10'||hSist==='20'?'':`<span style="--c:var(--rcd)">${GLY.rcd} ${f1(pc('rcd'))}% ruptura CD</span>`}<span style="--c:var(--crit)">${GLY.crit} ${f1(pc('crit'))}% crítico</span>`;
  histGrava();renderHist();
  const K=[['rup',hSist==='1'?'Ruptura loja':'Ruptura',hSist==='1'?'sem estoque na loja, com trânsito a caminho':'estoque zerado ou negativo','var(--cr)'],   // v74: "loja" só na Sist. 1
 ['rcd','Ruptura CD','Sist. 1, sem trânsito e com menos de 40% do cadastro do planograma','var(--rcd)'],['crit','Crítico','cobertura total < 7 dias (sem Ruptura CD)','var(--crit)'],['aten','Atenção','cobertura total de 7 a 14 dias (sem Ruptura CD)','var(--am)'],['ok','Saudável','cobertura total de 15 dias ou mais','var(--ok)'],['sg','Sem giro',`com estoque, MDV 0 e sem venda há mais de ${SG_DIAS} dias`,'var(--sg)'],['nd','Sem MDV','sem MDV para calcular a cobertura','var(--mu)']];
  if(transitLoaded)K.push(['tr','Em trânsito','itens com entrada a caminho','var(--in)']);   // não é situação: faixa larga embaixo
  const pct=k=>{const v=c[k]/n*100;return v>0&&v<0.1?'&lt;0,1%':f1(v)+'%'};   // % de todos os produtos
- $('kpis').innerHTML=K.map(k=>`<button class="kpi${k[0]==='tr'?' kw':''}" data-k="${k[0]}" style="--c:${k[3]}" title="${k[2]}" type="button"><span class="n num">${f0(c[k[0]])}</span><span class="l"><b><span class="kg" aria-hidden="true">${k[0]==='tr'?'⇢':GLY[k[0]]}</span>${k[1]}</b></span><span class="kr"><i class="kb"><u style="width:${Math.max(2,c[k[0]]/n*100).toFixed(1)}%"></u></i><span class="pc num">${pct(k[0])}</span></span></button>`).join('');
+ $('kpis').innerHTML=K.filter(k=>!(k[0]==='rcd'&&(hSist==='10'||hSist==='20'))).map(k=>`<button class="kpi${k[0]==='tr'?' kw':''}" data-k="${k[0]}" style="--c:${k[3]}" title="${k[2]}" type="button"><span class="n num">${f0(c[k[0]])}</span><span class="l"><b><span class="kg" aria-hidden="true">${k[0]==='tr'?'⇢':GLY[k[0]]}</span>${k[1]}</b></span><span class="kr"><i class="kb"><u style="width:${Math.max(2,c[k[0]]/n*100).toFixed(1)}%"></u></i><span class="pc num">${pct(k[0])}</span></span></button>`).join('');
  renderCats();renderTodo();renderTop(R)}
 /* v66 — MAIS VENDIDOS EM RISCO: os 10 de maior MDV em Ruptura loja ou Crítico, sem trânsito e fora do pedido (da sistemática escolhida no Resumo).
    Mesmo formato dos grupos do Pedido (abre/fecha) e o MESMO cartão das listas: deslize ← para pôr no pedido, ⓘ abre a ficha. */
@@ -143,7 +145,7 @@ const hojeISO=()=>ofISO(new Date());
 const axHoje=(e,t)=>!!e&&(t==='pf'?(e.pf.includes(hojeISO())||(e.pfp||[]).some(p=>hojeISO()>=p.ini&&hojeISO()<=p.fim)):e[t].includes(hojeISO()));
 const TODO={
   critf:{ic:'🟠',t:'Críticos sem trânsito e fora do pedido',f:(r,P)=>r._k==='crit'&&!(transitLoaded&&r._t>0)&&!P.has(r.produto)&&!r._d},
-  enc:{ic:'📋',t:'Panfleto com Ruptura CD',f:r=>{const e=axBuild().get(r.produto);return !!(e&&e.enc)&&cdRisk(r)&&!(encPer&&encPer.fim&&hojeISO()>encPer.fim)}},
+  enc:{ic:'📋',t:'Panfleto com Ruptura CD',f:r=>{const e=axBuild().get(r.produto);return !!(e&&e.enc)&&encCD(r)&&!(encPer&&encPer.fim&&hojeISO()>encPer.fim)}},
   lam:{ic:'🧾',t:'Lâmina de hoje com ruptura ou crítico',f:r=>(r._k==='rup'||r._k==='crit')&&axHoje(axBuild().get(r.produto),'pf')},
   of:{ic:'⭐',t:'Oferta de hoje com ruptura ou crítico',f:r=>(r._k==='rup'||r._k==='crit')&&axHoje(axBuild().get(r.produto),'of')},
   neg:{ic:'▼',t:'Estoque negativo (conferir)',f:r=>r._e<0&&!r._d},
@@ -201,7 +203,7 @@ function renderTodo(){const el=$('todo');if(!el)return;if(!allRecords.length){el
   const entPad=r=>ENT0==='1'?isCD(r):!ENT0||r._sist===ENT0;
   const forn={};
   for(const r of allRecords){if(r._sist==='20'){if(TODO.f20.f(r,P)){c.f20++;const k=fornKey(r);(forn[k]=forn[k]||{n:0,t:fornNome(r)}).n++}continue}
-    if(!entPad(r))continue;const esc_=cdRisk(r);for(const k in TODO)if(k!=='f20'&&(k==='enc'||k==='trsaiu'||!esc_)&&TODO[k].f(r,P))c[k]++}   // falta no CD fora (é o que a lista mostra)
+    if(!entPad(r))continue;const esc_=cdRisk(r);for(const k in TODO)if(k!=='f20'&&(k==='enc'||k==='trsaiu'||k==='neg'||!esc_)&&TODO[k].f(r,P))c[k]++}   // v83: negativo entra mesmo sendo Ruptura CD (é erro de estoque, vale conferir)   // falta no CD fora (é o que a lista mostra)
   const urg=pedido.filter(x=>!x.done&&x.u==='a'&&!inTransit(x)&&!x.rcd&&!(pedNoCD&&pedFaltaCD(x))).length;   // igual ao que o Pedido mostra
   const FS=Object.entries(forn).sort((a,b)=>b[1].n-a[1].n||a[1].t.localeCompare(b[1].t));
   const L=Object.keys(TODO).filter(k=>c[k]).map(k=>`<li><a class="item-link item-content${k==='f20'?' td-f20'+(todoF20?' open':''):''}" data-todo="${k}"><div class="item-media td-ic">${TODO[k].ic}</div><div class="item-inner"><div class="item-title">${TODO[k].t}${k==='f20'?`<small>${f0(FS.length)} fornecedores · toque para ${todoF20?'fechar':'ver'}</small>`:''}</div><div class="item-after"><b class="num">${f0(c[k])}</b></div></div></a></li>`
@@ -211,13 +213,13 @@ function renderTodo(){const el=$('todo');if(!el)return;if(!allRecords.length){el
   if(urg)L.unshift(`<li><a class="item-link item-content" data-todo="urg"><div class="item-media td-ic">🔥</div><div class="item-inner"><div class="item-title">Urgentes no pedido para pedir</div><div class="item-after"><b class="num">${f0(urg)}</b></div></div></a></li>`);
   el.innerHTML=L.length?`<div class="block-title">Para fazer hoje</div><div class="list list-strong inset list-dividers todo-l"><ul>${L.join('')}</ul></div>`:''}
 $('todo').onclick=e=>{const fa=e.target.closest('[data-forn]');
-  if(fa){todoP=null;F={chip:'all',cat:'',q:'',sort:'cobt',ent:'20',todo:'f20',forn:fa.dataset.forn};$('q').value='';return go('prod')}
+  if(fa){todoP=null;F={chip:'all',cat:'',q:'',sort:'cobt',ent:'20',todo:'f20',forn:fa.dataset.forn,src:'todo'};$('q').value='';return go('prod')}
   const a=e.target.closest('[data-todo]');if(!a)return;const k=a.dataset.todo;
   if(k==='urg')return go('ped');
   if(k==='rcdv'){dropOpen.rup=true;return go('ped')}
   if(k==='f20'){todoF20=!todoF20;return renderTodo()}
-  todoP=null;if(!noCD){noCD=true;salvaCD()}   // do Resumo sempre com "Esconder falta no CD" ligado
-  F={chip:k==='enc'?'cd':'all',cat:'',q:'',sort:k==='tratr'?'trd':'cobt',ent:ENT0,todo:k};$('q').value='';go('prod')};   // v73: Trânsito atrasado abre com os mais antigos primeiro
+  todoP=null;   // v83: não liga mais o F/CD salvo do aparelho — o atalho usa o critério dele (F.src)
+  F={chip:k==='enc'?'cd':'all',cat:'',q:'',sort:k==='tratr'?'trd':'cobt',ent:ENT0,todo:k,src:'todo'};$('q').value='';go('prod')};   // v73: Trânsito atrasado abre com os mais antigos primeiro
 /* ═══ HISTÓRICO LEVE (nov/2026): 1 resumo por data de planograma (% por situação, todos e só Sist. 1), últimos 60 dias.
    O Resumo mostra a tendência da ruptura com uma linha pequena — dá para ver se o trabalho está fazendo efeito. ═══ */
 const LSH='planograma_hist3';try{localStorage.removeItem('planograma_hist');localStorage.removeItem('planograma_hist2')}catch{}   // hist3 (v60): situações novas (Ruptura loja × Ruptura CD) — recomeça   // hist2: a conta mudou (sem falta no CD) — recomeça para não comparar com a conta antiga
@@ -252,8 +254,8 @@ $('h-ring').onclick=()=>{if(!allRecords.length)return;setHSist(hSist?'':'1')};
 $('kpis-sw').onclick=e=>{const b=e.target.closest('button');if(!b||b.dataset.hs===hSist)return;setHSist(b.dataset.hs)};
 $('h-ring').setAttribute('role','button');
 $('h-sub').onclick=e=>{if(!e.target.closest('#h-fcd'))return;F={chip:'cd',cat:'',q:'',sort:'cobt',ent:hSist};$('q').value='';go('prod')};
-$('kpis').onclick=e=>{const b=e.target.closest('.kpi');if(!b)return;const k=b.dataset.k;F={chip:k==='tr'?'trans':k==='rcd'?'cd':k,cat:'',q:'',sort:k==='crit'||k==='rcd'?'mdv_d':k==='ok'?'nome':'cobt',ent:hSist};$('q').value='';go('prod')};   // Crítico abre do maior MDV para o menor   // a lista bate com o número tocado (todas ou só Sist. 1)
-$('cats').onclick=e=>{const b=e.target.closest('.bar');if(!b)return;if(!noCD){noCD=true;salvaCD()}F={chip:'alert',cat:b.dataset.c,q:'',sort:'cobt',ent:catSist};$('q').value='';go('prod')};
+$('kpis').onclick=e=>{const b=e.target.closest('.kpi');if(!b)return;const k=b.dataset.k;F={chip:k==='tr'?'trans':k==='rcd'?'cd':k,cat:'',q:'',sort:k==='crit'||k==='rcd'?'mdv_d':k==='ok'?'nome':'cobt',ent:hSist,src:'kpi'};$('q').value='';go('prod')};   // Crítico abre do maior MDV para o menor   // a lista bate com o número tocado (todas ou só Sist. 1)
+$('cats').onclick=e=>{const b=e.target.closest('.bar');if(!b)return;F={chip:'alert',cat:b.dataset.c,q:'',sort:'cobt',ent:catSist,src:'cat'};$('q').value='';go('prod')};
 /* ═══ PRODUTOS ═══ */
 const CHIPS=[['all','Todos'],['cd','Ruptura CD','warn'],['dep','🔎 Depósito'],['alert','Alertas'],['rup','Ruptura loja'],['crit','Crítico'],['aten','Atenção'],['ok','Saudável'],['sg','Sem giro'],['nd','Sem MDV'],['trans','Em trânsito'],['pend','Pendentes'],['done','Feitos']];
 const CHIP_C={rup:'var(--cr)',crit:'var(--crit)',aten:'var(--am)',ok:'var(--ok)',sg:'var(--sg)',nd:'var(--mu)',alert:'var(--cr)',cd:'var(--rcd)',sug:'var(--am)',trans:'var(--in)',dep:'var(--in)',done:'var(--ok)'};
@@ -287,7 +289,7 @@ const T=toks(F.q);
   if(!trOn&&F.sort==='trd')F.sort='prio'}
  $('sort').value=F.sort;
  $('catx').innerHTML=(F.cat?`<button class="catx" data-x="cat" type="button">✕ ${esc(short(F.cat))}</button>`:'')+(F.cob?`<button class="catx" data-x="cob" type="button">✕ ${cobTxt(F.cob)}</button>`:'')+(F.giro?`<button class="catx" data-x="giro" type="button">✕ Giro ${esc(F.giro)}</button>`:'')+(F.capx?`<button class="catx" data-x="capx" type="button">✕ Cadastro &lt; 1 caixa</button>`:'')+(F.cadx?`<button class="catx" data-x="cadx" type="button">✕ Não entraram no cadastro</button>`:'')+(F.todo&&TODO[F.todo]&&!F.forn?`<button class="catx" data-x="todo" type="button">✕ ${TODO[F.todo].t}</button>`:'')+(F.forn?`<button class="catx" data-x="forn" type="button">✕ ${esc((()=>{const r=allRecords.find(x=>fornKey(x)===F.forn);return r?fornNome(r):'Fornecedor '+F.forn})())} · cobertura baixa</button>`:'');
- const fAct=F.chip!=='all'||!!F.cat||!!F.ent||noCD;   // algum filtro ligado?
+ const fAct=nFiltros()>0;   // v83: contava a Sistemática padrão como filtro   // algum filtro ligado?
  const semCD=r=>catOk(r)&&entOk(r)&&cobPass(r,F.cob)&&(!F.d111||is111(r))&&(!F.capx||capMenor(r))&&giroOk(r)&&(!F.cadx||cadNao.has(r.produto))&&todoOk(r)&&(!F.forn||fornKey(r)===F.forn);   // todos os filtros, menos o chip e o F/CD
  const FM=!!F.fg,fo=FM?fornIdx().get(F.fg):null;   // fornIdx() também garante r._fk em todos
 if(FM&&!fo){F.fg='';$('q').value=F.q}   // fornecedor sumiu (relatório novo): volta à busca normal
@@ -329,7 +331,10 @@ function relaxFiltersFor(r){
   if(!catOk(r)){F.cat='';off.push('categoria')}
   if(!entOk(r)){F.ent='';off.push('sistemática')}
   if(!passesChip(r,F.chip,true)){off.push(FLT_SHORT[F.chip]||(CHIPS.find(c=>c[0]===F.chip)||[])[1]||'filtro');F.chip='all'}
-  if(hideCD(r)&&F.chip!=='cd'&&F.chip!=='dep'){if(cdRisk(r))noCD=false;else noCDTr=false;salvaCD();off.push(cdRisk(r)?'F/CD':'F/CD em trânsito')}
+  if(hideCD(r)&&F.chip!=='cd'&&F.chip!=='dep'){const t=cdRisk(r)?'F/CD':'F/CD em trânsito';F.src='';if(hideCD(r)){if(cdRisk(r))noCD=false;else noCDTr=false;salvaCD()}off.push(t)}
+  if(F.todo&&!todoOk(r)){F.todo='';todoP=null;off.push('atalho do Resumo')}   // v83: tirava só os filtros comuns — o item sumia ao limpar a busca
+  if(F.forn&&fornKey(r)!==F.forn){F.forn='';off.push('fornecedor')}
+  if(F.cadx&&!cadNao.has(r.produto)){F.cadx=false;off.push('cadastro')}
   if(!off.length)return;
   renderList();toast('Filtro desmarcado: '+off.join(', '))}
 
@@ -406,7 +411,7 @@ function relFiltros(){const p=[];
   if(F.chip!=='all')p.push(FLT_SHORT[F.chip]||(CHIPS.find(c=>c[0]===F.chip)||[])[1]||F.chip);
   if(F.ent)p.push('Sistemática '+((ENTS.find(e=>e[0]===F.ent)||[])[1]||F.ent));
   if(F.giro)p.push('Giro '+F.giro);if(F.cat)p.push(short(F.cat));if(F.cob)p.push('Cobertura '+cobTxt(F.cob));
-  if(F.d111)p.push('Só 1×1'+(NOVA>0?` · nova cobertura ${NOVA} dias`:''));if(noCD)p.push('sem Ruptura CD'+(noCDTr?' (nem em trânsito)':''));
+  if(F.d111)p.push('Só 1×1'+(NOVA>0?` · nova cobertura ${NOVA} dias`:''));if(cdOn())p.push('sem Ruptura CD'+(cdTrOn()?' (nem em trânsito)':''));
   if(F.q)p.push('busca "'+F.q+'"');return p.join(' · ')}
 function relLinha(r){
   const ebx=num(r.emb)||1,unCx=n=>`${f0(n)} un`+(ebx>1&&n>=0?` | ${n>0&&n<ebx?'<1':f0(Math.floor(n/ebx))} cx`:'');
@@ -512,7 +517,11 @@ let catPath=[];   // caminho atual, ex.: ['MERCEARIA','LIMPEZA']
 /* F/CD em trânsito: qualquer item com trânsito a caminho (só esconde se a sub-opção estiver ligada) */
 let noCDTr=false;try{noCDTr=localStorage.getItem('planograma_nocdtr')==='1'}catch{}
 const cdTr=r=>r._t>0;   // v64: esconde TODO item com trânsito a caminho, de qualquer sistemática e qualquer estoque (pedido do Lohan)
-const hideCD=(r,on=noCD,tr=noCDTr)=>on&&(cdRisk(r)||(tr&&cdTr(r)));
+/* v83: lista aberta por um atalho do Resumo (F.src) usa o MESMO critério da contagem — sem mexer no que o usuário deixou salvo.
+   'kpi' = conta tudo · 'todo'/'cat' = sem Ruptura CD (e sem o "também em trânsito") · atalhos que contam a Ruptura CD não escondem nada */
+const cdOn=()=>F.src==='kpi'||((F.src==='todo')&&(F.todo==='trsaiu'||F.todo==='neg'||F.todo==='enc'))?false:F.src?true:noCD;
+const cdTrOn=()=>F.src?false:noCDTr;
+const hideCD=(r,on=cdOn(),tr=cdTrOn())=>on&&(cdRisk(r)||(tr&&cdTr(r)));
 const salvaCD=()=>{try{localStorage.setItem('planograma_nocd',noCD?'1':'0');localStorage.setItem('planograma_nocdtr',noCDTr?'1':'0')}catch{}};
 /* ═══ 1×1 + nova cobertura (nov/2026). No sistema: 1º campo = 1 · campo do meio = dias × MDV ÷ embalagem · 3º campo = itens por caixa.
    Filtro "Só 1×1" (olha só os 2 primeiros campos) e, com dias informados, medida proposta 1 × (dias × MDV ÷ emb) × itens por caixa ═══ */
@@ -539,12 +548,12 @@ const catOk=r=>!F.cat||r.categoria===F.cat||(r.categoria||'').startsWith(F.cat+'
    escolhida, e o botão parecia quebrado). Só o Resumo ignora os filtros; quando a lista esconde algo, o contador avisa quanto. */
 const SIT_CH=new Set(['cd','trans']);   // na lista "Em trânsito" o filtro de trânsito não age (senão ela ficaria vazia)
 function passesChip(r,ch=F.chip,ignNoCD){
-  return (ignNoCD||SIT_CH.has(ch)||ch==='dep'||F.todo==='trsaiu'||!hideCD(r))&&
+  return (ignNoCD||SIT_CH.has(ch)||ch==='dep'||!hideCD(r))&&
     (ch==='all'||ch===r._k||
     (ch==='alert'&&(r._k==='rup'||r._k==='crit'))||
     (ch==='trans'&&r._t>0)||(ch==='pend'&&!r._d)||
     (ch==='done'&&r._d)||
-    (ch==='cd'&&cdRisk(r))||(ch==='dep'&&DEP.has(r.produto)));}
+    (ch==='cd'&&(cdRisk(r)||(F.todo==='enc'&&encCD(r))))||(ch==='dep'&&DEP.has(r.produto)));}
 function buildCatTree(){const counts={};
   allRecords.forEach(r=>{if(!(dChip(r)&&dEnt(r)&&cobPass(r,D.cob)))return;const segs=(r.categoria||'').split('->');
     for(let i=1;i<=segs.length;i++){const k=segs.slice(0,i).join('->');counts[k]=(counts[k]||0)+1}});
@@ -580,7 +589,7 @@ function closeCat(){if(catSheet.opened)catSheet.close()}
 const setCat=v=>{D.cat=v;closeCat()};                                      // escolheu → volta para Filtros com a categoria marcada
 
 /* ═══ FILTROS (uma folha só): Situação · Sistemática · Categoria · F/CD → toca em "Ver N itens" ═══ */
-const nFiltros=()=>(F.chip!=='all')+(F.d111?1:0)+(F.capx?1:0)+(F.giro?1:0)+(F.cadx?1:0)+(F.todo?1:0)+(F.forn?1:0)+(!!F.cat)+((F.ent||'')!==ENT0)+(noCD?1:0)+(F.cob?1:0);
+const nFiltros=()=>(F.chip!=='all')+(F.d111?1:0)+(F.capx?1:0)+(F.giro?1:0)+(F.cadx?1:0)+(F.todo?1:0)+(F.forn?1:0)+(!!F.cat)+((F.ent||'')!==ENT0)+(cdOn()?1:0)+(F.cob?1:0);
 /* COBERTURA TOTAL maior/menor que N dias — usa o mesmo número arredondado do cartão; "Sem giro" e item sem MDV/cobertura ficam de fora */
 const cobDia=r=>r._ct!==null&&r._k!=='sg'?Math.max(r._ct,0):null;
 const cobOn=c=>!!(c&&(c.op==='lt'||c.op==='gt')&&Number.isFinite(c.d)&&c.d>=0);
@@ -620,12 +629,12 @@ function renderFlt(){refreshDep();
    <label class="fs-ln"><span>Esconder Ruptura CD (F/CD)<small>Sist. 1 sem trânsito e com menos de 40% do cadastro</small></span><input type="checkbox" id="fs-nocd" class="sw-i"${D.noCD?' checked':''}><span class="sw-t fs-tg"></span></label>${D.noCD?`
    <label class="fs-ln fs-sub"><span>Esconder também os em trânsito<small>Todo item com trânsito a caminho, de qualquer estoque</small></span><input type="checkbox" id="fs-nocdtr" class="sw-i"${D.noCDTr?' checked':''}><span class="sw-t fs-tg"></span></label>`:''}`;
   fltCounts()}
-function openFlt(keep){if(!keep||!D)D={chip:F.chip,cat:F.cat||'',ent:F.ent||'',giro:F.giro||'',noCD,noCDTr,d111:!!F.d111,capx:!!F.capx,nova:NOVA||null,cob:F.cob?{...F.cob}:null};renderFlt();fltSheet.open();pushOv('flt')}
+function openFlt(keep){if(!keep||!D)D={chip:F.chip,cat:F.cat||'',ent:F.ent||'',giro:F.giro||'',noCD:cdOn(),noCDTr:cdTrOn(),d111:!!F.d111,capx:!!F.capx,nova:NOVA||null,cob:F.cob?{...F.cob}:null};renderFlt();fltSheet.open();pushOv('flt')}
 function closeFlt(){if(fltSheet.opened)fltSheet.close()}
 $('flt-btn').onclick=()=>openFlt();
 $('flt-sheet-x').onclick=closeFlt;$('flt-cancel').onclick=closeFlt;
 $('flt-clear').onclick=()=>{D={chip:'all',cat:'',ent:ENT0,giro:'',noCD:false,noCDTr:false,d111:false,capx:false,nova:D.nova,cob:null,limpou:true};renderFlt()};
-$('flt-apply').onclick=()=>{if(D.limpou){F.todo='';F.forn='';F.cadx=false;todoP=null}   // Limpar também tira os filtros que vieram do Resumo
+$('flt-apply').onclick=()=>{F.src='';if(D.limpou){F.todo='';F.forn='';F.cadx=false;todoP=null}   // Limpar também tira os filtros que vieram do Resumo
   F.chip=D.chip;F.cat=D.cat;F.ent=D.ent;F.giro=D.giro||'';F.cob=cobOn(D.cob)?{op:D.cob.op,d:D.cob.d}:null;noCD=D.noCD;noCDTr=!!D.noCDTr;salvaCD();if(D.lim>0){LIMITE=D.lim;try{localStorage.setItem('planograma_limcob',LIMITE)}catch{}}F.d111=!!D.d111;F.capx=!!D.capx;NOVA=D.nova>0?D.nova:null;try{localStorage.setItem('planograma_cobnova',NOVA||'')}catch{};closeFlt();renderList(true)};
 $('flt-list').onclick=e=>{
   const nq=e.target.closest('[data-nq]');if(nq){D.nova=+nq.dataset.nq;return renderFlt()}

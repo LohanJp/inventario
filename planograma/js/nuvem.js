@@ -178,6 +178,7 @@ async function applyLive(c){
   if(lenc!==undefined)await syncEnc(c,lenc).catch(()=>{});
   if(lof!==undefined)await syncOf(c,lof).catch(()=>{});
   if(lpf!==undefined)await syncPf(c,lpf).catch(()=>{});
+  for(const x of pedido){const r=byProd.get(x.p);if(!r)continue;const k=key(r),d=doneSet.has(k);if(x.done&&!d)doneSet.add(k);else if(!x.done&&d)doneSet.delete(k)}   // v83: FEITO É UM SÓ também entre aparelhos — no item do pedido vale o estado do pedido
   deriveLive();updBadge();   // v72: só os concluídos mudam aqui (cada aviso da nuvem custava um recálculo inteiro)
 }
 
@@ -258,13 +259,13 @@ async function loadFromCloud(c,fundo){
     if(!Array.isArray(records)||!records.length){busy(false);toast('⚠ Não consegui baixar o planograma'+(cerr?': '+cerr:' (resposta vazia da nuvem)'));return false}
 
     if(ti)transitMeta=ti.meta||{date:ti.date||'',hora:''};            // data REAL do relatório de Trânsito
-    const meta=pi.meta||{filial:pi.filial,date:pi.date,hora:''},chaveAntes=lsKey;
+    const meta=pi.meta||{filial:pi.filial,date:pi.date,hora:''},chaveAntes=lsKey,metaAntes=currentMeta;
     await loadRecords(records,meta,pi.name||'nuvem',
       transData&&typeof transData==='object'?transData:null,
       true /* persist to IDB */,undefined,fundo?'fica':undefined);   // v72: em segundo plano fica na aba e mantém a busca
     try{const r=await idbGet('current');if(r){r.cloudAt=pi.exportedAt;r.transAt=ti?ti.exportedAt:undefined;await idbSave(r);bootCur=r}}catch{}
     await applyLive(c);   // ⚡ applyLive já roda o derive()
-    if(chaveAntes&&chaveAntes!==lsKey)pedLimpaConcl();   // relatório de um DIA NOVO veio da nuvem: concluídos do Pedido saem (normalmente o outro aparelho já limpou)
+    if(diaNovo(chaveAntes,metaAntes,meta))pedLimpaConcl();   // v83: só se este aparelho tinha um dia ANTERIOR (aparelho novo não apaga nada)   // relatório de um DIA NOVO veio da nuvem: concluídos do Pedido saem (normalmente o outro aparelho já limpou)
     setRelNovo(null);   // a nuvem trouxe relatório mais novo: nada deste aparelho ficou para enviar
     if(fundo){$('fresh-upd').classList.remove('gira');renderFresh();renderAtual();toast('☁️ Relatório de '+(meta.date||'hoje')+' da nuvem aplicado')}
     else{renderHome();busy(false)}
@@ -274,7 +275,7 @@ async function loadFromCloud(c,fundo){
 
 /* SSE: avisa que algo mudou em live/ → relê (pequeno) e redesenha só se for diferente */
 let sseConn=null,liveT;
-const liveSig=()=>JSON.stringify([...doneSet].sort())+JSON.stringify(pedido)+Object.keys(depMap).sort().join();
+const liveSig=()=>JSON.stringify([...doneSet].sort())+JSON.stringify(pedido)+Object.keys(depMap).sort().join()+'|'+encCloudAt+'|'+[...(ofDays||[]),...(typeof pfDays!=='undefined'?pfDays:[])].map(d=>d?(d.cloudAt||0)+':'+((d.items||[]).length):'').join();   // v83: anexo que chegou pela nuvem também redesenha (Resumo)
 function liveRefresh(){clearTimeout(liveT);
   liveT=setTimeout(async()=>{
     if(document.hidden)return;                                   // ⚡ em segundo plano não gasta rede nem CPU
@@ -461,7 +462,7 @@ async function boot(){
     if(en&&en.items&&en.items.length){encItems=en.items;encPer=en.per||null;   // 📅 dia do Panfleto (título da planilha)
       encSrc=en.kind==='xlsx'?{kind:'xlsx',name:en.name,buf:en.buf,hdr:en.hdr}:{...parseEncCSV(en.text||''),name:en.name,text:en.text||''};
       if(!encPer&&encSrc.per)encPer=encSrc.per;   // salvo antes do campo per: lê a data do título do .csv
-      encCloudAt=en.cloudAt||0;encPending=!!en.pending;encSavedAt=en.savedAt||'';
+      encCloudAt=en.cloudAt||0;encPending=!!en.pending;encSavedAt=en.savedAt||'';encLoadTs=en.loadTs||0;
       $('enc-title').style.display='';$('enc-title').textContent=`${en.name} · ${encItems.length} itens${encPerMeta()} · salvo em ${en.savedAt||''}`}
   }catch{}
   try{for(let w=0;w<7;w++){const o=await get('oferta-d'+w);if(o&&((o.items&&o.items.length)||(o.del&&o.pending)))ofDays[w]=o}      // restaura as planilhas da semana (1 por dia)
@@ -528,13 +529,14 @@ if('serviceWorker' in navigator&&/^https?:/.test(location.protocol)){/* ⚡ regi
   addEventListener('load',()=>idle(()=>navigator.serviceWorker.register('./sw.js').then(reg=>reg.update()).catch(()=>{})))}
 /* versão do app na aba Dados (nome do cache do SW, ex.: v34) — para conferir se o aparelho já pegou a atualização */
 /* APP_VER = versão do CÓDIGO que está rodando. ⚠ Mantenha igual ao V do sw.js (o teste de fumaça confere). */
-const APP_VER='v82';
+const APP_VER='v83';
 const verNum=v=>parseInt(String(v||'').replace(/\D/g,''),10)||0;   // 'v9' < 'v45' < 'v100' (comparação numérica, não alfabética)
 function mostraVersao(){const el=$('app-ver');if(el)el.textContent='Versão do app: '+APP_VER}
 addEventListener('load',()=>setTimeout(mostraVersao,3000));
 /* ═══ NOVIDADES (nov/2026): depois de atualizar, o Resumo mostra o que mudou (1 vez por versão). Na 1ª instalação não aparece.
    Ao publicar uma versão com mudança visível, acrescente aqui a chave da versão (a mesma do sw.js, ex.: 'v43'). ═══ */
 const NOVIDADES={
+  v83:['🔧 Correções da revisão: celular novo não apaga mais os concluídos do Pedido; Panfleto mostra a situação certa (antes “OK” em ruptura), ganhou concluir →, 🔎 e “Limpar”; atalhos do Resumo abrem a lista com o mesmo número','⛔ Confirmar CD só na Sist. 1 sem trânsito · estoque negativo inclui a Ruptura CD · trânsito atrasado conta até a data do relatório'],
   v82:['🔧 Histórico: corrige o caminho dos dias gravados (o primeiro dia é arrumado sozinho no próximo envio)'],
   v81:['🔧 Corrige o erro “Data to write exceeds the maximum size” ao enviar o planograma: o pacote vai como um texto só'],
   v80:['🔧 Envio para a nuvem: se uma parte falhar, as outras continuam, o aviso diz qual parte e por quê, e os dados são conferidos antes de sair'],

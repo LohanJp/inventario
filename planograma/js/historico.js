@@ -38,9 +38,11 @@ async function histConserta(c,ym){
 /* ═══ LER (na ficha) ═══ */
 const hMem=new Map();                                // nesta abertura do app
 async function histCarrega(p,forca){
-  const k='hist:'+p,mem=hMem.get(p);if(mem&&!forca)return mem;
+  const refD=hYmd(estoqueMeta&&estoqueMeta.date),ult=o=>o&&o.rows&&o.rows.length?o.rows[o.rows.length-1].d:'';
+  const velho=o=>!!refD&&ult(o)<refD;                // v83: chegou Cobertura de um dia mais novo que o guardado → busca de novo
+  const k='hist:'+p,mem=hMem.get(p);if(mem&&!forca&&!(velho(mem)&&navigator.onLine))return mem;
   let loc=null;try{loc=idb?await idbGet(k):null}catch{}
-  const fresco=loc&&Date.now()-loc.at<3*3600e3;      // baixado há menos de 3 h: nem pergunta à nuvem
+  const fresco=loc&&Date.now()-loc.at<3*3600e3&&!velho(loc);   // baixado há menos de 3 h e já com o dia atual: nem pergunta à nuvem
   const c=code();
   if((fresco&&!forca)||!c||!navigator.onLine){const o=loc?{rows:loc.rows,at:loc.at,off:!fresco}:null;if(o)hMem.set(p,o);return o}
   const ref=hYmd(estoqueMeta&&estoqueMeta.date)||new Date().toISOString().slice(0,10).replace(/-/g,''),ym=ref.slice(0,6),meses=[0,-1,-2,-3].map(i=>hMes(ym,i));

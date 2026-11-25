@@ -52,7 +52,11 @@ function pedLimpaConcl(){const n=pedido.filter(x=>x.done).length;if(n){pedido=pe
    Qualquer um dos três caminhos (deslizar em Produtos, deslizar no Pedido, botão "Feito" da ficha) passa por aqui e marca/desmarca os dois. */
 function setFeito(prod,v){v=!!v;const r=byProd.get(prod);if(r&&!!r._d!==v){v?doneSet.add(key(r)):doneSet.delete(key(r));r._d=v;lsSave()}
   const x=pedido.find(y=>y.p===prod);if(x&&!!x.done!==v){x.done=v;savePed()}}
-function addPed(r,q,noSave){if(inPed(r.produto))return false;pedido=pedido.filter(x=>x.p!==r.produto);pedido.push({p:r.produto,d:r.descricao,q:q||'',date:tomorrow(),added:today(),done:false});if(!noSave)savePed();return true}
+function addPed(r,q,noSave){if(inPed(r.produto))return false;
+  const old=pedido.find(x=>x.p===r.produto&&x.done);   // v83 FEITO É UM SÓ: item concluído que volta ao pedido é REABERTO (mantém urgência/obs.) e deixa de ser feito em todo lugar
+  if(old){old.done=false;old.date=tomorrow();if(q)old.q=q}else{pedido=pedido.filter(x=>x.p!==r.produto);pedido.push({p:r.produto,d:r.descricao,q:q||'',date:tomorrow(),added:today(),done:false})}
+  if(r._d){doneSet.delete(key(r));r._d=false;lsSave()}
+  if(!noSave)savePed();return true}
 function renderBan(){const n=pend().length,t=pedido.filter(x=>!x.done&&inTransit(x)).length;
  const rn=typeof code==='function'&&code()?[relNovo.p&&'Planograma',relNovo.c&&'Cobertura',relNovo.t&&'Trânsito'].filter(Boolean):[];   // v65
  $('pban').innerHTML=(rn.length?`<button class="pban pb-nv" data-up="1" type="button"><span class="pb-ic">☁️</span><span class="pb-tx"><b>${rn.join(', ').replace(/, ([^,]*)$/,' e $1')} só neste aparelho</b><small>Toque para enviar para a nuvem — os outros aparelhos ainda não ${rn.length>1?'receberam':'recebeu'}</small></span><span class="pb-go">›</span></button>`:'')+(n||t?`<button class="pban" data-go="ped" type="button"><span class="pb-ic">🛒</span><span class="pb-tx"><b>${n?`${n} ${n>1?'itens':'item'} para pedir`:'Nada para pedir agora'}</b>${t?`<small>${t} aguardando trânsito</small>`:'<small>Toque para abrir o pedido</small>'}</span><span class="pb-go">›</span></button>`:'')}
@@ -129,7 +133,9 @@ document.addEventListener('click',e=>{
   const li=a.closest('.swipeout'),c=li&&li.querySelector('.swipeout-content>[data-p]');if(!c)return;
   swBlock=Date.now()+350;const act=a.dataset.sw;
   if(act==='dep'){app.swipeout.close(li);const p=c.dataset.p;setTimeout(()=>{toggleDep(p);   // v75: 🔎 Depósito no deslizar ← (todas as telas)
-    const v=!!depMap[p];c.classList.toggle('dep',v);if(a.isConnected){a.innerHTML=swDep(v);a.classList.toggle('on',v)}},260);return}   // telas que não redesenham (Resumo, Encarte)
+    const v=!!depMap[p];c.classList.toggle('dep',v);if(a.isConnected){a.innerHTML=swDep(v);a.classList.toggle('on',v)}
+    const ac=c.querySelector('.acts'),di=c.querySelector('.depi');if(v&&!di&&ac)ac.insertAdjacentHTML('afterbegin',DEPI);else if(!v&&di)di.remove();   // v83: o 🔎 também nas telas que não redesenham
+    if(li.closest('#h-top'))renderHome()},260);return}   // telas que não redesenham (Resumo, Encarte)
   if(li.closest('#plist')){                                              // PEDIDO
     const x=pedido.find(y=>y.p===c.dataset.p);if(!x){app.swipeout.close(li);return}
     if(act==='ok'){app.swipeout.close(li);setTimeout(()=>{const v=!x.done,r=byProd.get(x.p),nm=r?r.descricao:x.p;setFeito(x.p,v);renderPed();   // → concluir: volta suave e alterna
@@ -138,7 +144,8 @@ document.addEventListener('click',e=>{
       toastUndo('Item removido',()=>{pedido.splice(idx,0,x);savePed();renderPed()})})}
     return}
   const r=byProd.get(c.dataset.p);app.swipeout.close(li);if(!r)return;   // PRODUTOS / ANEXOS
-  if(act==='ok')toggleDone(r,c);else if(act==='add')swAddPed(r,li,c)});
+  if(act==='ok')toggleDone(r,c);else if(act==='add')swAddPed(r,li,c);
+  if(li.closest('#h-top'))setTimeout(renderHome,280)});   // v83: Mais vendidos em risco — a faixa e o "Para fazer hoje" acompanham
 $('plist').onclick=e=>{if(Date.now()<swBlock)return;
   if(e.target.closest('#hint-x')){hintN=99;try{localStorage.setItem(LSHINT,hintN)}catch{}renderPed();return}
   if(e.target.closest('#pc-clr')){const antes=pedido.slice(),n=pedLimpaConcl();renderPed();
@@ -224,7 +231,8 @@ const tP0=r=>transitLoaded&&r._t>0;
    r._np?null:['Cob.Plan',r.cobplan?esc(r.cobplan)+' dias':'—'],['Embalagem · Giro',`caixa com ${f0(ebx)} · ${esc(r.giro||'—')}`],r.corredor&&r.corredor!=='0'?['Corredor',esc(r.corredor)]:null,
    ['Fornecedor',fgKey(r)?`<button type="button" class="kv-lnk" data-fg="${esc(r._fk)}" aria-label="Ver todos os itens de ${esc(fgTit(fgMini(r)))}">${esc(fornTxt(r))} ›</button>`:esc(fornTxt(r))],pr&&(pr.n||pr.promo)?['Preço',precoHtml(r)]:null,axBadges(r)?['Anexos',axBadges(r)]:null].filter(Boolean);
  const TABS=[['res','Resumo',resumo],['mov','Movimento',linha+mov.map(kv).join('')],['cad','Cadastro',cad.map(kv).join('')],['hist','Histórico','']];   // v77: Histórico só carrega ao tocar
- const rcdBtn=r._sist!=='20'||x0.rcd,rcdVelho=x0.rcd&&rcdDias(x0)>0;
+ const rcdBtn=(isCD(r)&&!(transitLoaded&&r._t>0))||x0.rcd,   // v83: só Sist. 1 sem trânsito (decisão do Lohan); já confirmado continua podendo desconfirmar
+      rcdVelho=x0.rcd&&rcdDias(x0)>0;
  $('sheetc').innerHTML=`<div class="fb" style="--c:${COLOR[r._k]}"><div class="fb-n"><b class="num">${ctTxt}</b><small>${ctTxt==='—'?'&nbsp;':ctTxt==='1'?'dia':'dias'}</small></div>
    <div class="fb-t"><span class="fb-s">${sub}</span><h3>${esc(r.descricao)}</h3><span class="fb-c">${esc(r.produto)}${r.automacao?' · EAN '+esc(r.automacao):''}</span></div>
    <button class="shx" id="sh-x" type="button" aria-label="Fechar">✕</button></div>

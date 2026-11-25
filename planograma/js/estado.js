@@ -45,6 +45,10 @@ function idbGet(id) {
 let lsKey  = 'planograma_done_default';
 let doneSet = new Set();
 
+/* v83: "dia novo" de verdade = já havia um planograma de OUTRO dia neste aparelho e o novo é de data MAIOR.
+   Aparelho novo (chave padrão), dados limpos ou arquivo mais antigo NÃO limpam os concluídos (antes apagava os do Pedido de todos). */
+const dataNum=s=>{const m=/(\d\d)\/(\d\d)\/(\d{4})/.exec(String(s||''));return m?+(m[3]+m[2]+m[1]):0};
+const diaNovo=(kA,mA,mN)=>!!kA&&kA!=='planograma_done_default'&&kA!==lsKey&&dataNum(mN&&mN.date)>dataNum(mA&&mA.date)&&dataNum(mA&&mA.date)>0;
 function lsKeyFor(filial, date) {
   const slug = (filial + '_' + date).replace(/[^a-zA-Z0-9]/g,'_').toLowerCase();
   return 'planograma_done_' + (slug || 'default');

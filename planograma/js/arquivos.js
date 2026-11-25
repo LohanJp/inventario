@@ -22,12 +22,12 @@ function readFile(file,cb,enc){const r=new FileReader();
 $('f-plano').onchange=e=>{const f=e.target.files[0];if(!f)return;e.target.value='';busy(true,'Lendo arquivo…',true);
  if(/\.json$/i.test(f.name))readFile(f,t=>importBackup(t,f.name),'utf-8');
  else readFile(f,async t=>{await tick();const p=parseFile(t);if(!p.records.length){busy(false);return toast('Nenhum produto encontrado no arquivo')}
-  const chaveAntes=lsKey;
-  await loadRecords(p.records,p.meta,f.name,null,true);setRelNovo('p',true);const had=doneSet.size;if(had){lsClear();derive();renderHome()}   // relatório novo: concluídos recomeçam do zero
+  const chaveAntes=lsKey,metaAntes=currentMeta;
+  await loadRecords(p.records,p.meta,f.name,null,true);setRelNovo('p',true);const novoDia=diaNovo(chaveAntes,metaAntes,p.meta);const had=novoDia?doneSet.size:0;if(had){lsClear();derive();renderHome()}   // relatório novo: concluídos recomeçam do zero
   /* planograma de OUTRO dia: zera também os concluídos guardados na NUVEM (antes os "feitos" de ontem voltavam na 1ª sincronização).
      Com a lista da nuvem em mãos apaga já; senão deixa pendente (⏳) e a próxima sincronização apaga em vez de baixar. */
-  else if(chaveAntes&&chaveAntes!==lsKey&&typeof cloudWriteDone==='function'){if(cloudDone.size)cloudWriteDone();else{setPend('done',true);if(navigator.onLine)liveRefresh()}}
-  const nPc=chaveAntes&&chaveAntes!==lsKey?pedLimpaConcl():0;   // dia novo: os concluídos do Pedido também saem (vai para a nuvem pelo savePed)
+  else if(novoDia&&typeof cloudWriteDone==='function'){if(cloudDone.size)cloudWriteDone();else{setPend('done',true);if(navigator.onLine)liveRefresh()}}
+  const nPc=novoDia?pedLimpaConcl():0;   // dia novo: os concluídos do Pedido também saem (vai para a nuvem pelo savePed)
   busy(false);toast(f0(p.records.length)+' produtos carregados'+(had?' · concluídos zerados':'')+(nPc?` · ${nPc} concluído${nPc>1?'s':''} do pedido limpo${nPc>1?'s':''}`:'')+warnTxt())},'latin1')};
 $('f-trans').onchange=e=>{const f=e.target.files[0];if(!f)return;e.target.value='';busy(true,'Lendo trânsito…');
  readFile(f,async t=>{if(!/Qt\.Transito/i.test(t.slice(0,6000))){busy(false);return toast('Este arquivo não é o relatório de Trânsito — nada foi trocado')}   // relatório no lugar errado estragava os números em silêncio
@@ -81,7 +81,7 @@ const isoDmy=s=>{const d=dmy(s);return d?ymd(d):''};
 const isoDias=(a,b)=>{const p=s=>{const m=/^(\d{4})-(\d\d)-(\d\d)$/.exec(s||'');return m?new Date(+m[1],+m[2]-1,+m[3]):null},x=p(a),y=p(b);return x&&y?Math.round((y-x)/864e5):0};
 const isoBr=s=>String(s||'').slice(5).split('-').reverse().join('/');   // 2026-11-08 → 08/11
 const trDesde=r=>transitLoaded&&r._t>0&&trReg.reg[r.produto]?trReg.reg[r.produto].d:'';
-const trDias=r=>{const d=trDesde(r);return d?Math.max(0,isoDias(d,today())):-1};
+const trDias=r=>{const d=trDesde(r);return d?Math.max(0,isoDias(d,isoDmy(transitMeta&&transitMeta.date)||today())):-1};   // v83: conta até a DATA DO RELATÓRIO de Trânsito (relatório velho não deixa tudo "atrasado")
 const trAtrasado=r=>trDias(r)>=TR_ATRASO;
 /* saiu do Trânsito e NÃO entrou no estoque? Considera que chegou se a "Última entrada" é do período do trânsito ou se o estoque subiu.
    Só julga com um relatório de estoque do dia em que saiu (ou mais novo). */
@@ -175,7 +175,10 @@ function nuvemToBackup(n){const D=n.dados||{},P=D.plano||{},E=D.estq||{},T=D.tra
     records:lePack(P.v3)?planoUnpack(lePack(P.v3)):lePack(P.v2)?planoUnpack(lePack(P.v2)):Array.isArray(P.records)?P.records:[],transit:T.data||null,transitMeta:(T.info&&T.info.meta)||null,   // v76: lê o formato enxuto e o antigo
     estoque:lePack(E.v3||E.v2)?{map:estqUnpack(lePack(E.v3||E.v2)),meta:(E.info&&E.info.meta)||null}:E.data?{map:E.data,meta:(E.info&&E.info.meta)||null}:null,
     done:L.done?Object.keys(L.done).filter(k=>L.done[k]===true):[],pedido:Array.isArray(L.pedido)?L.pedido:[],dep:Array.isArray(L.dep)?L.dep:[],
-    anexos:{enc:D.enc&&D.enc.data,of:D.of||{},pf:D.pf||{},live:{enc:L.enc,of:L.of,pf:L.pf}}}}
+    anexos:{enc:D.enc&&D.enc.data,of:D.of||{},pf:D.pf||{},live:{enc:L.enc,of:L.of,pf:L.pf}},
+    trreg:(()=>{const R=D.trreg||{};let v=null;try{v=typeof R.data==='string'?JSON.parse(R.data):R.data}catch{}return v&&v.reg?{reg:v.reg,saiu:v.saiu||{},last:R.last||''}:null})(),   // v83: datas do trânsito
+    precos:(()=>{const R=D.prc||{},I=R.info||{},o={};for(const k of['p','c']){let m=null;try{m=typeof R[k]==='string'?JSON.parse(R[k]):R[k]}catch{}   // v83: preços (antes se perdiam ao importar)
+      if(m&&typeof m==='object')o[k]={map:m,name:(I[k]&&I[k].name)||'nuvem',meta:(I[k]&&I[k].meta)||null,savedAt:(I[k]&&I[k].savedAt)||''}}return o.p||o.c?o:null})()}}
 async function importBackup(text,fname){try{let b=JSON.parse(text);if(b&&b.app==='planograma-nuvem')b=nuvemToBackup(b);if(b.app!=='planograma'||!Array.isArray(b.records))throw 0;
  const meta=b.meta||{};
  if(!b.transit){transitMap={};transitLoaded=false;transitMeta=null;if(idb)idbSave({id:'transitmeta',meta:null}).catch(()=>{})}   // backup sem Trânsito: não mistura com o Trânsito antigo do aparelho

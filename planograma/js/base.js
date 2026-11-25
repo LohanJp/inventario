@@ -62,7 +62,7 @@ let byProd=new Map();
    ordem livre ("1,6 omo" = "omo 1,6"), sem acento, maiúsc./minúsc. iguais e vírgula = ponto (1,6 = 1.6).
    Resultados com palavra no INÍCIO de uma palavra do nome ("omo" em "OMO LIMPEZA") sobem na lista. */
 const norm=s=>String(s??'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/,/g,'.');
-const toks=q=>norm(q).split(/[\s*+\/-]+/).filter(Boolean).map(t=>/^\d+$/.test(t)?t.replace(/^0+(?=\d)/,''):t);   // código digitado: ignora zeros à esquerda
+const toks=q=>norm(q).split(/[\s*+\/\-·,;]+/).filter(Boolean).map(t=>/^\d+$/.test(t)?t.replace(/^0+(?=\d)/,''):t);   // código digitado: ignora zeros à esquerda
 const NUM=/^[\d.]+$/,AN=/[a-z0-9]/;
 function score(r,T,rel){const h=r._h;let sc=0;
   for(const t of T){const wt=NUM.test(t)?1:3;let w=0,i=h.indexOf(t);                 // número pesa menos que palavra
@@ -90,10 +90,10 @@ const capOf=r=>{const c=num(r.total);return c>0?c:num(r.altura)*num(r.largura)*n
 const isCD=r=>!r._sist||r._sist==='1';   // Ruptura CD só vale p/ sistemática 1; sist 10/20 ≤ 0 = Ruptura loja (falta pedir ao fornecedor)
 const RCD_PCT=0.4;
 const abaixoCD=r=>{const c=r._np?0:capOf(r);return c>0?r._e<RCD_PCT*c:r._e<=0};   // estoque abaixo de 40% do cadastro (sem cadastro: zerado)
-const faltaCD=r=>isCD(r)&&!(r._t>0)&&abaixoCD(r);
+const faltaCD=r=>isCD(r)&&transitLoaded&&!(r._t>0)&&abaixoCD(r);   // v83: sem o relatório de Trânsito não dá para saber se está "sem trânsito" — não vira Ruptura CD
 const cdRisk=r=>r._k==='rcd';   // "falta no CD" = Ruptura CD (o selo, o filtro F/CD, o Pedido e o Para fazer hoje usam este)
 let noCD=false;try{noCD=localStorage.getItem('planograma_nocd')==='1'}catch{}
-const addMsg=r=>transitLoaded&&r&&r._t>0?'Adicionado — aguardando chegada do trânsito':'Adicionado ao pedido';
+const addMsg=r=>transitLoaded&&r&&r._t>0?'Adicionado — aguardando chegada do trânsito':r&&cdRisk(r)?'Adicionado — está no grupo ⊘ Ruptura CD do Pedido':'Adicionado ao pedido';
 const addS=r=>addPed(r);
 /* ═══ TIPO DE ENTREGA + DATAS ═══ Sist 1 = CD · 20 = fornecedor direto · 10 = fornecedor através do CD */
 const ENT={'1':'CD','10':'Forn. via CD','20':'Fornecedor'};

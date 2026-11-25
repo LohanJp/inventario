@@ -54,7 +54,7 @@ function rowsToItems(rows){
     if(/^\d{8,14}$/.test(c)){st=i;break}
     if(/ean|cod/i.test(c)){st=i+1;hdr=i;break}}
   const items=[];
-  rows.forEach((r,i)=>{if(i<st)return;const it={ean:String(r[0]||'').trim(),host:String(r[1]||'').trim(),nome:String(r[2]||'').trim(),row:i};if(it.ean.length>=8)items.push(it)});
+  rows.forEach((r,i)=>{if(i<st)return;const it={ean:String(r[0]||'').trim(),host:String(r[1]||'').trim(),nome:String(r[2]||'').trim(),row:i};if(it.ean.length>=8||/^\d{4,}$/.test(it.host))items.push(it)});   // v83: linha só com o código interno (Host) também entra
   return{items,hdr,per:encPeriodo(rows.slice(0,hdr>=0?hdr:st))}}   // per = dia/período do título (linhas acima do cabeçalho)
 /* CSV/TSV: detecta o separador (; tab ,) e guarda as linhas originais */
 function parseEncCSV(text){
@@ -76,9 +76,10 @@ function parseEncXLSX(file){
 }
 
 /* situação do item do encarte: falta no CD = estoque < 1 caixa (mesmo critério do botão "Sem falta CD") */
-const encStatus=r=>!r?'miss':cdRisk(r)?'cd':'ok';
-const ENC_TXT={ok:'OK',cd:'Ruptura CD',miss:'Não encontrado'};
-const ENC_EXP={ok:'OK',cd:'Falta no CD',miss:'Não encontrado'};   // texto da coluna exportada continua o de antes (a planilha volta para quem mandou)
+/* v83: o Panfleto usa a situação real — antes item em Ruptura loja ou Crítico aparecia como "✓ OK" */
+const encCD=r=>!!r&&(cdRisk(r)||!!(pedItem(r.produto)||{}).rcd);   // Ruptura CD (automática ou ⛔ confirmada no pedido)
+const encStatus=r=>!r?'miss':encCD(r)?'cd':(r._k==='rup'||r._k==='crit')?'rc':'ok';
+const ENC_EXP={ok:'OK',cd:'Falta no CD',rc:'Ruptura/Crítico',miss:'Não encontrado'};   // texto da coluna exportada continua o de antes (a planilha volta para quem mandou)
 /* liga cada item da planilha ao planograma por EAN (automacao) ou host (produto), ignorando zeros à esquerda */
 function encMatch(){
   const byEAN={},byHost={};
@@ -89,11 +90,11 @@ function encMatch(){
 let encSort='arq',encDirty=false;
 function renderEnc(){encDirty=false;
   const has=encItems.length>0;
-  $('enc-sortbar').style.display=has?'flex':'none';$('enc-export').style.display=has?'':'none';$('enc-q').style.display=has?'':'none';
+  $('enc-sortbar').style.display=has?'flex':'none';$('enc-export').style.display=has?'':'none';$('enc-del').style.display=has?'':'none';$('enc-q').style.display=has?'':'none';
   if(!has){$('enc-list').innerHTML='';$('enc-summary-box').innerHTML='';return}
   if(!allRecords.length){$('enc-summary-box').innerHTML='';$('enc-list').innerHTML='<div class="empty">Carregue o planograma primeiro (aba Dados).</div>';return}   // antes dizia "não encontrado" em todos
   const ents=encMatch().map(e=>({...e,k:encStatus(e.r)}));
-  const rank={cd:0,ok:1,miss:2};
+  const rank={cd:0,rc:1,ok:2,miss:3};
   const cobN=e=>e.r&&e.r._ct!==null?Math.max(e.r._ct,0):Infinity;   // cobertura total = (estoque + trânsito) ÷ MDV
   // ordenação: itens não encontrados sempre por último (exceto "Ordem da planilha")
   const SORT={
@@ -105,16 +106,17 @@ function renderEnc(){encDirty=false;
     nome:(a,b)=>(a.it.nome||'').localeCompare(b.it.nome||'')
   };
   ents.sort(SORT[encSort]||SORT.arq);
-  const n={ok:0,cd:0,miss:0};ents.forEach(e=>n[e.k]++);
+  const n={ok:0,rc:0,cd:0,miss:0};ents.forEach(e=>n[e.k]++);refreshDep();
   $('enc-summary-box').innerHTML=`<div class="enc-summary">
     <div class="sk"><b>${ents.length}</b><span>TOTAL</span></div>
     <div class="sk" style="color:var(--ok)"><b>${n.ok}</b><span>OK</span></div>
-    <div class="sk" style="color:var(--cr)"><b>${n.cd}</b><span>FALTA NO CD</span></div>
-    <div class="sk" style="color:var(--mu)"><b>${n.miss}</b><span>N/ENCONTRADO</span></div>
+    <div class="sk" style="color:var(--crit)"><b>${n.rc}</b><span>RUPT./CRÍT.</span></div>
+    <div class="sk" style="color:var(--rcd)"><b>${n.cd}</b><span>RUPTURA CD</span></div>
+    <div class="sk" style="color:var(--mu)"><b>${n.miss}</b><span>N/ENCONTR.</span></div>
   </div>`;
   const vis=ents.filter(e=>axHit('enc',e.r,[e.it.nome,e.it.ean,e.it.host].join(' ')));   // 🔍 busca do Encarte
   $('enc-list').innerHTML=(axQ.enc.trim()&&!vis.length?'<div class="empty">Nenhum item do panfleto com essa busca</div>':'')+vis.map(({it,r,k})=>r
-    ?swrap(`<div class="p" data-p="${esc(r.produto)}" style="--c:${COLOR[r._k]}">${cardBody(r,'',k==='ok'?'<div class="sg okk">✓ OK</div>':`<div class="sg cdx">${ic('warn',14)} Ruptura CD</div>`)}</div>`,null,'add',inPed(r.produto)?'Já no pedido':'Pedido','🛒',r.produto)
+    ?(()=>{const dp=DEP.has(r.produto);return swrap(`<div class="p${r._d?' done':''}${dp?' dep':''}" data-p="${esc(r.produto)}" style="--c:${COLOR[r._k]}">${cardBody(r,dp?DEPI:'',k==='cd'?'<div class="sg cdx">⊘ Ruptura CD</div>':'')}</div>`,r._d,'add',inPed(r.produto)?'Já no pedido':'Pedido','🛒',r.produto)})()   // v83: concluir → e 🔎 como na Lâmina/Oferta; o selo só aparece na Ruptura CD (a situação já está no cartão)
     :`<div class="p" style="--c:var(--mu);opacity:.6"><div class="hd"><div class="nm">${esc(it.nome||'—')}</div></div><div class="sb">EAN ${esc(it.ean)} · Host ${esc(it.host)} · não encontrado no planograma</div></div>`).join('');
 }
 $('enc-sort').onchange=e=>{encSort=e.target.value;renderEnc()};
@@ -329,17 +331,21 @@ function ensureXLSX(){
     s.src='https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js';
     s.onload=res;s.onerror=()=>rej(new Error('sem internet para carregar o leitor de planilhas — tente um arquivo .csv'));document.head.appendChild(s)})}
 /* ☁ ENCARTE NA NUVEM: planilha em enc/data (grande) + aviso pequeno em live/enc → os outros aparelhos recebem em tempo real */
-let encCloudAt=0,encPending=false,encSavedAt='',encBusy=false;
+let encCloudAt=0,encPending=false,encSavedAt='',encBusy=false,encLoadTs=0;   // encLoadTs = quando ESTE aparelho carregou o arquivo (v83)
 const ab2b64=buf=>{const u=new Uint8Array(buf);let t='';for(let i=0;i<u.length;i+=0x8000)t+=String.fromCharCode.apply(null,u.subarray(i,i+0x8000));return btoa(t)};
 const b642ab=b=>{const t=atob(b),u=new Uint8Array(t.length);for(let i=0;i<t.length;i++)u[i]=t.charCodeAt(i);return u.buffer};
 function encSaveLocal(){
   if(!idb||!encSrc)return Promise.resolve();
-  return idbSave({id:'encarte',name:encSrc.name,kind:encSrc.kind,items:encItems,hdr:encSrc.hdr,text:encSrc.text,buf:encSrc.buf,savedAt:encSavedAt,cloudAt:encCloudAt,pending:encPending,per:encPer})
+  return idbSave({id:'encarte',name:encSrc.name,kind:encSrc.kind,items:encItems,hdr:encSrc.hdr,text:encSrc.text,buf:encSrc.buf,savedAt:encSavedAt,cloudAt:encCloudAt,pending:encPending,per:encPer,loadTs:encLoadTs})
     .catch(()=>toast('⚠ Não consegui salvar o Panfleto neste aparelho'))}
 async function pushEnc(){
   const c=code();if(!c||!encSrc||!encItems.length||encBusy)return;
   encBusy=true;const at=Date.now(),prev=encCloudAt,H={'Content-Type':'application/json'};
   try{
+    /* v83: carregado sem internet e, nesse meio-tempo, outro aparelho mandou um Panfleto MAIS NOVO → pergunta antes de substituir */
+    const le=await cf(cu(c,'live/enc')).then(r=>r.json()).catch(()=>null);
+    if(le&&le.at&&le.at!==encCloudAt&&encLoadTs&&le.at>encLoadTs&&!le.del&&!confirm(`A nuvem tem um Panfleto mais novo (${le.name||'outro aparelho'}). Substituir pelo deste aparelho (${encSrc.name})?`)){
+      encPending=false;encBusy=false;encCloudAt=0;await syncEnc(c,le);renderEnc();return}
     const data={name:encSrc.name,kind:encSrc.kind,items:encItems,hdr:encSrc.hdr??-1,savedAt:encSavedAt,per:encPer};
     if(encSrc.kind==='xlsx')data.b64=ab2b64(encSrc.buf);else data.text=encSrc.text||'';
     let r=await cf(cu(c,'enc/data'),{method:'PUT',headers:H,body:JSON.stringify(data)});if(!r.ok)throw 0;
@@ -353,6 +359,7 @@ async function pushEnc(){
 async function syncEnc(c,le){
   if(encPending){pushEnc();return}
   if(!le||!le.at||le.at===encCloudAt)return;
+  if(le.del){encLimpaLocal();encCloudAt=le.at;encSaveLocal();renderEnc();return}   // v83: Panfleto limpo em outro aparelho
   const d=await cf(cu(c,'enc/data')).then(r=>r.json()).catch(()=>null);
   if(!d||!Array.isArray(d.items)||!d.items.length)return;
   encItems=d.items;encPer=d.per||null;encSavedAt=d.savedAt||new Date().toLocaleString('pt-BR');
@@ -361,6 +368,14 @@ async function syncEnc(c,le){
   encCloudAt=le.at;encPending=false;await encSaveLocal();
   $('enc-title').style.display='';$('enc-title').textContent=`${d.name} · ${encItems.length} itens${encPerMeta()} · da nuvem`;
 }
+/* v83: 🗑 Limpar o Panfleto (como a Lâmina e a Oferta) — some dos outros aparelhos também */
+function encLimpaLocal(){encItems=[];encPer=null;encSrc=null;encSavedAt='';encPending=false;encLoadTs=0;axQ.enc='';const q=$('enc-q');if(q)q.value='';$('enc-title').textContent='';$('enc-title').style.display='none'}
+$('enc-del').onclick=async()=>{if(!encItems.length||!confirm('Limpar o Panfleto deste aparelho e da nuvem?'))return;
+  encLimpaLocal();if(idb)idbSave({id:'encarte',items:[],cloudAt:encCloudAt}).catch(()=>{});renderEnc();renderHome&&renderHome();
+  const c=code();if(!c)return toast('Panfleto limpo');
+  try{const at=Date.now(),H={'Content-Type':'application/json'};await cf(cuG(c,'enc/data'),{method:'PUT',headers:H,body:'null'});
+    await cf(cu(c,'live/enc'),{method:'PUT',headers:H,body:JSON.stringify({at,del:true})});encCloudAt=at;lastLocal=Date.now();toast('Panfleto limpo neste aparelho e na nuvem')}
+  catch{toast('Panfleto limpo aqui — sem conexão, os outros aparelhos ainda têm')}};
 async function loadEncFile(file){
   if(!file)return;
   $('enc-title').style.display='';
@@ -373,7 +388,9 @@ async function loadEncFile(file){
     } else {
       const txt=await readReport(file);src=parseEncCSV(txt);src.text=txt;
     }
-    encItems=src.items;encPer=src.per||null;encSrc={...src,name:file.name};
+    if(!src.items.length){$('enc-title').textContent=encItems.length?`${encSrc.name} · ${encItems.length} itens${encPerMeta()}`:'';if(!encItems.length)$('enc-title').style.display='none';
+      return toast('Não achei itens neste arquivo — o Panfleto anterior foi mantido')}   // v83: antes trocava por "0 itens" e travava a sincronização
+    encItems=src.items;encPer=src.per||null;encSrc={...src,name:file.name};encLoadTs=Date.now();
     $('enc-title').textContent=`${file.name} · ${encItems.length} itens${encPerMeta()}`;
     encSavedAt=new Date().toLocaleString('pt-BR');encPending=!!code();   // pendente até chegar na nuvem
     encSaveLocal().then(pushEnc);
