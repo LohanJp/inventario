@@ -51,11 +51,26 @@ function estqPack(map,recs){const P=new Map(recs.map(r=>[r.produto,r])),ps=Objec
 function estqUnpack(o){const map={},ks=Object.keys(o.c);for(let j=0;j<o.n;j++){const x={};for(const k of ks){const v=colVal(o.c[k],j);if(v!==null&&v!==undefined&&v!=='')x[k]=v}
   if(o.nd&&o.nd[j]==='1')x.nd=1;map[o.p[j]]=x}return map}   // nd = "a descrição está no planograma"
 
+/* v80: erro da nuvem diz QUAL parte falhou e o motivo que o Firebase devolve (ex.: "Invalid data…"); fica guardado em cfErros para o diagnóstico */
+let cfErros=[];
+const cfParte=url=>{try{return decodeURIComponent(new URL(url).pathname).replace(/^\/planograma\/[^/]+\//,'').replace(/\.json$/,'')}catch{return '?'}};
 async function cf(url,o){
   let r;try{r=await fetch(url,o)}catch{throw Error('Sem conexão com a nuvem')}
   if(r.status===401||r.status===403)throw Error('Sem permissão — confira as regras do Firebase');
   if(r.status===404||r.status===200)return r; // 404 = nó vazio, retorna null via .json()
-  if(!r.ok)throw Error('Erro da nuvem ('+r.status+')');return r}
+  if(!r.ok){let msg='';try{const t=await r.text();try{msg=(JSON.parse(t)||{}).error||t}catch{msg=t}}catch{}
+    const parte=cfParte(url),body=o&&typeof o.body==='string'?o.body:'';
+    cfErros.push({parte,status:r.status,msg:String(msg).slice(0,300),metodo:(o&&o.method)||'GET',kb:Math.round(body.length/1024),at:new Date().toISOString()});
+    throw Error(`Erro da nuvem (${r.status}) em ${parte}${msg?': '+String(msg).slice(0,90):''}`)}
+  return r}
+/* v80: JSON "à prova de Firebase" — o Firebase recusa (400) null/NaN dentro de lista, número infinito e chave com . $ # [ ] / ou vazia */
+const fbKey=k=>k===''?'_':String(k).replace(/[.$#\[\]\/\x00-\x1f\x7f]/g,'_');
+function fbFix(k,v){if(typeof v==='number'&&!isFinite(v))return 0;
+  if(Array.isArray(v))return v.map(x=>x===null||x===undefined||(typeof x==='number'&&!isFinite(x))?'':x);
+  if(v&&typeof v==='object'){let ruim=false;for(const kk in v)if(fbKey(kk)!==kk){ruim=true;break}
+    if(ruim){const o={};for(const kk in v)o[fbKey(kk)]=v[kk];return o}}
+  return v}
+const fbJSON=v=>JSON.stringify(v,fbFix);
 
 function put(c,path,val){
   const url=cu(c,path);
@@ -342,8 +357,10 @@ $('b-up').onclick=async()=>{
     busy(true,'Enviando planograma…');
     const now=new Date().toISOString();let tUp=false;const fails=[];
     /* v79: um depois do outro — antes, em paralelo, o aviso "formato novo" (info) chegava mesmo quando os dados falhavam (erro 400 de 25/11) */
+    cfErros=[];let pOk=false;
+    try{   // v80: se o planograma falhar, o resto (trânsito, cobertura, pedido) continua sendo enviado
     await cf(cu(c,'plano/v2'),{method:'PUT',headers:{'Content-Type':'application/json'},
-        body:JSON.stringify(planoPack(planoRecs))}).then(r=>{if(!r.ok)throw Error('Falha ao enviar records')});   // v76: formato enxuto
+        body:fbJSON(planoPack(planoRecs))}).then(r=>{if(!r.ok)throw Error('Falha ao enviar records')});   // v76: formato enxuto
     await Promise.all([
       cf(cu(c,'plano/info'),{method:'PUT',headers:{'Content-Type':'application/json'},
         body:JSON.stringify({exportedAt:now,name:savedInfo?.name||'planograma',
@@ -351,7 +368,8 @@ $('b-up').onclick=async()=>{
           meta:currentMeta})}).then(r=>{if(!r.ok)throw Error('Falha ao enviar info')})
     ]);
     put(c,'plano/records',null);put(c,'data',null);put(c,'info',null);   // v76: apaga o formato antigo e o backup da versão velha (data/info de 21/10, que o app não lê)
-    setRelNovo('p',false);
+    setRelNovo('p',false);pOk=true;
+    }catch(e){fails.push('planograma')}
     if(encSrc&&encItems.length){encPending=true;await encSaveLocal();pushEnc()}   // Encarte vai junto
     // Envia live/done e live/pedido junto (garante consistência)
     const doneMap={};
@@ -375,7 +393,7 @@ $('b-up').onclick=async()=>{
          confirm(`O Trânsito na nuvem é mais novo (${metaTxt(tm)}) que o deste aparelho (${metaTxt(tl)}). Substituir mesmo assim?`)){
         try{
           const rs=await Promise.all([
-            cf(cu(c,'trans/data'),{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(transitMap)}),
+            cf(cu(c,'trans/data'),{method:'PUT',headers:{'Content-Type':'application/json'},body:fbJSON(transitMap)}),
             cf(cu(c,'trans/info'),{method:'PUT',headers:{'Content-Type':'application/json'},
               body:JSON.stringify({exportedAt:now,date:tl.date||'',meta:transitMeta||null,total:Object.keys(transitMap).length})})
           ]);
@@ -394,7 +412,7 @@ $('b-up').onclick=async()=>{
         const semData=!estoqueMeta||!estoqueMeta.date;                 // sem data no relatório local: não dá para provar que a nuvem é mais nova
         if(!ei||semData||tsMeta(ei.meta)<=tsMeta(estoqueMeta)||
            confirm(`A Cobertura na nuvem é mais nova (${metaTxt(ei.meta)}) que a deste aparelho. Substituir mesmo assim?`)){
-          const r1=await cf(cu(c,'estq/v2'),{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(estqPack(estoqueMap,planoRecs))});   // v76: enxuto
+          const r1=await cf(cu(c,'estq/v2'),{method:'PUT',headers:{'Content-Type':'application/json'},body:fbJSON(estqPack(estoqueMap,planoRecs))});   // v76: enxuto
           if(!r1.ok)throw Error('data');
           const r2=await cf(cu(c,'estq/info'),{method:'PUT',headers:{'Content-Type':'application/json'},
             body:JSON.stringify({exportedAt:now,name:(await idbGet('estoque').catch(()=>null)||{}).name||'cobertura',meta:estoqueMeta||null,total:Object.keys(estoqueMap).length,fmt:2})});
@@ -408,8 +426,9 @@ $('b-up').onclick=async()=>{
     let pUp=[];try{if(PRC.p&&PRC.p.dirty||PRC.c&&PRC.c.dirty){busy(true,'Enviando preços…');pUp=await prcEnvia(c,now)}}catch{fails.push('preços')}
     try{const r=await idbGet('current');if(r){r.cloudAt=now;if(tUp)r.transAt=now;await idbSave(r)}}catch{}
     try{if(eUp){const r=await idbGet('estoque');if(r){r.cloudAt=now;await idbSave(r)}}}catch{}
-    busy(false);toast(fails.length?'Enviado com falhas em: '+fails.join(', ')+' — tente de novo':'Enviado ✓ — planograma'+(tUp?', trânsito':'')+(eUp?', cobertura':'')+(pUp.length?', preços':'')+' e pedido'+eNote);cloudInfo(true);
-  }catch(e){busy(false);toast(e.message)}
+    if(fails.length||cfErros.length)put(c,'diag/envio',{at:now,ver:APP_VER,falhas:fails,erros:cfErros.slice(0,8)});   // v80: o motivo fica na nuvem para conferir
+    busy(false);toast(fails.length?'Enviado com falhas em: '+fails.join(', ')+(cfErros[0]?' · '+cfErros[0].status+' '+cfErros[0].parte+(cfErros[0].msg?': '+cfErros[0].msg.slice(0,60):''):'')+' — tente de novo':'Enviado ✓ — planograma'+(tUp?', trânsito':'')+(eUp?', cobertura':'')+(pUp.length?', preços':'')+' e pedido'+eNote);cloudInfo(true);
+  }catch(e){busy(false);toast(e.message);try{put(c,'diag/envio',{at:new Date().toISOString(),ver:APP_VER,falhas:['geral: '+e.message],erros:cfErros.slice(0,8)})}catch{}}
 };
 
 /* Inicialização: abre app → tenta nuvem → fallback IDB */
@@ -501,13 +520,14 @@ if('serviceWorker' in navigator&&/^https?:/.test(location.protocol)){/* ⚡ regi
   addEventListener('load',()=>idle(()=>navigator.serviceWorker.register('./sw.js').then(reg=>reg.update()).catch(()=>{})))}
 /* versão do app na aba Dados (nome do cache do SW, ex.: v34) — para conferir se o aparelho já pegou a atualização */
 /* APP_VER = versão do CÓDIGO que está rodando. ⚠ Mantenha igual ao V do sw.js (o teste de fumaça confere). */
-const APP_VER='v79';
+const APP_VER='v80';
 const verNum=v=>parseInt(String(v||'').replace(/\D/g,''),10)||0;   // 'v9' < 'v45' < 'v100' (comparação numérica, não alfabética)
 function mostraVersao(){const el=$('app-ver');if(el)el.textContent='Versão do app: '+APP_VER}
 addEventListener('load',()=>setTimeout(mostraVersao,3000));
 /* ═══ NOVIDADES (nov/2026): depois de atualizar, o Resumo mostra o que mudou (1 vez por versão). Na 1ª instalação não aparece.
    Ao publicar uma versão com mudança visível, acrescente aqui a chave da versão (a mesma do sw.js, ex.: 'v43'). ═══ */
 const NOVIDADES={
+  v80:['🔧 Envio para a nuvem: se uma parte falhar, as outras continuam, o aviso diz qual parte e por quê, e os dados são conferidos antes de sair'],
   v79:['🔧 Envio do planograma mais seguro: a nuvem só passa a usar o formato novo depois que os dados chegam inteiros'],
   v78:['🔧 Corrige o erro 400 ao enviar a cobertura para a nuvem'],
   v77:['📈 Ficha com a aba <b>Histórico</b>: estoque, MDV, preço e venda estimada dia a dia, e a causa provável quando a venda cai. O PC grava um dia a cada envio — o diagnóstico aparece com 14 dias'],
