@@ -72,7 +72,7 @@ function score(r,T,rel){const h=r._h;let sc=0;
       while(j>=0){if((j===0||!AN.test(h[j-1]))&&!AN.test(h[j+k]||' ')){w=1;break}j=h.indexOf(q,j+1)}}
     if(w)sc+=wt*w;else if(!rel)return 0}                                              // modo parcial (rel) aceita palavras faltando
   return sc}
-let currentMeta={},savedInfo=null,F={chip:'all',cat:'',q:'',sort:'prio',ent:'1'},shown=40,list=[];
+let currentMeta={},savedInfo=null,F={chip:'all',cat:'',q:'',sort:'prio',ent:'1'},list=[];
 let catSist='1';try{const v=localStorage.getItem('planograma_catsist');if(v==='10'||v==='20')catSist=v}catch{}   // ⚠ declarado aqui no topo: renderCats() roda dentro de renderHome()
 const key=r=>r.automacao||r.produto;
 

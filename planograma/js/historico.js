@@ -24,7 +24,7 @@ async function histEnvia(c){
   await histConserta(c,ym).catch(()=>{});
   const rs=await cf(cuG(c,'hist/'+ym),{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(up)});   // ⚠ JSON puro: a "/" em "produto/dia" é o caminho (v80 trocava por "_")
   if(!rs.ok)throw Error('hist');
-  put(c,'hist/'+hMes(ym,-(H_MESES+1)),null);          // o mês que passou dos 13 sai (apagar de novo um mês vazio não custa nada)
+  put(c,'hist/'+hMes(ym,-H_MESES),null);   // v84: mês atual + 12 anteriores = 13 meses          // o mês que passou dos 13 sai (apagar de novo um mês vazio não custa nada)
   return n}
 
 /* v82: o envio da v80/v81 gravou "produto_dia" (a "/" virou "_"). Move para produto/dia e apaga o errado — roda só se achar */
@@ -51,7 +51,8 @@ async function histCarrega(p,forca){
     const rows=[];for(const [m,v] of partes)if(v&&typeof v==='object')for(const dd in v){const a=v[dd];if(Array.isArray(a))rows.push({d:m+dd,e:+a[0]||0,m:+a[1]||0,t:+a[2]||0,pn:+a[3]||0,pc:+a[4]||0})}
     rows.sort((a,b)=>a.d<b.d?-1:1);
     const o={rows,at:Date.now(),off:false};hMem.set(p,o);if(idb)idbSave({id:k,rows,at:o.at}).catch(()=>{});return o
-  }catch{const o=loc?{rows:loc.rows,at:loc.at,off:true}:null;if(o)hMem.set(p,o);return o}}
+  }catch{const o=loc?{rows:loc.rows,at:loc.at,off:true}:{err:true};   // v84: com internet mas a nuvem falhou → mensagem própria
+    if(o.err)return o;if(o)hMem.set(p,o);return o}}
 
 /* venda estimada dia a dia + marcação dos dias fora do normal.  pe = estoque do dia anterior (para saber se havia o que vender) */
 const hData=s=>new Date(+s.slice(0,4),+s.slice(4,6)-1,+s.slice(6,8));
@@ -83,7 +84,7 @@ function histDiag(S,r){
   const segura=cob!==null&&cob>30?` ${cob} dias de estoque: segure o pedido.`:'';
   if(A.length<5||B.length<5)return{...out,c:'dem',t:'Poucos dias confiáveis',d:'Faltam dias com estoque e venda calculada para apontar uma causa. Tente um período maior.'};
   const ab=`${f1(a)} → ${f1(b)} por dia`,delta=a?(b-a)/a:1;
-  if(ruptB>=2){const perd=Math.round(out.rupT*Math.max(a,b));
+  if(ruptB>=2){const perd=Math.round(ruptB*Math.max(a,b));   // v84: as un. perdidas são dos MESMOS dias citados na frase
     if(delta>-0.15)return{...out,c:'rup',t:'Faltou estoque',d:`Ficou zerado em ${ruptB} dia${ruptB>1?'s':''} dos últimos ${S.length-Math.floor(S.length/2)} dias. Nos dias com estoque a venda seguiu em ~${f1(b)} por dia${perd?` — ≈${f0(perd)} un. deixaram de ser vendidas`:''}.`,
       act:'O MDV do sistema caiu por causa da falta, não da procura: peça antes de zerar.'};
     return{...out,c:'rup',t:'Faltou estoque e a venda caiu',d:`Ficou zerado em ${ruptB} dia${ruptB>1?'s':''}, e mesmo nos dias com estoque a venda caiu: ${ab}.`,act:'Peça antes de zerar e confira se o produto está na gôndola.'}}
@@ -103,13 +104,14 @@ function histAba(r){hR=r;const el=$('fp-hist');if(!el)return;
   histCarrega(r.produto).then(o=>{if(hR!==r||!$('fp-hist'))return;histMostra(r,o)})}
 function histMostra(r,o){const el=$('fp-hist');
   if(!o){el.innerHTML='<p class="hs-msg">Precisa de internet para ver o histórico deste item.</p>';return}
+  if(o.err){el.innerHTML='<p class="hs-msg">Não consegui ler o histórico na nuvem agora. Tente de novo daqui a pouco.</p>';return}
   if(!o.rows.length){el.innerHTML='<p class="hs-msg"><b>Ainda sem histórico.</b><br>O PC grava um dia por envio para a nuvem (Alt+R). Volte aqui depois dos próximos envios.</p>';return}
   const R=o.rows,dias=Math.round((hData(R[R.length-1].d)-hData(R[0].d))/864e5)+1,longo=dias>30;
   const per=longo?hPer:90,fim=R[R.length-1].d,ini=(()=>{const d=hData(fim);d.setDate(d.getDate()-per+1);return d.getFullYear()+String(d.getMonth()+1).padStart(2,'0')+String(d.getDate()).padStart(2,'0')})();
   const S=histSerie(R).filter(x=>x.d>=ini),D=histDiag(S,r),ult=S[S.length-1];
   let topo;
   if(D.cedo){const prev=hData(R[0].d);prev.setDate(prev.getDate()+HIST_MIN);
-    topo=`<div class="hs-v cedo"><b>Coletando dados · ${D.n} de ${HIST_MIN} dias</b><span>Começou em ${hDl(R[0].d)}${S.length<2?' · gráfico a partir do próximo envio':''} · diagnóstico por volta de ${prev.getDate()}/${prev.getMonth()+1}.</span></div>`}
+    topo=`<div class="hs-v cedo"><b>Coletando dados · ${D.n} de ${HIST_MIN} dias</b><span>Começou em ${hDl(R[0].d)}${S.length<2?' · gráfico a partir do próximo envio':''} ${prev<new Date()?' · faltam envios em dias seguidos (dia sem o anterior não conta).':` · diagnóstico por volta de ${prev.getDate()}/${prev.getMonth()+1}.`}</span></div>`}
   else topo=`<div class="hs-v ${D.c}"><b>${esc(D.t)}</b><span>${esc(D.d)}</span>${D.act?`<em>👉 ${esc(D.act)}</em>`:''}</div>`;
   const kp=D.cedo?'':`<div class="hs-kp"><div><small>Venda/dia (estimada)</small><b class="num">${f1(D.a)} → ${f1(D.b)}</b><span>${D.h} dias antes → últimos ${D.h}</span></div>
    <div><small>MDV do sistema</small><b class="num">${f1(ult.m)}</b><span>era ${f1(S[0].m)} em ${hDl(S[0].d)}</span></div>

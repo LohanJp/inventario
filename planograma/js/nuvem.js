@@ -366,10 +366,10 @@ $('b-up').onclick=async()=>{
     busy(true,'Enviando planograma…');
     const now=new Date().toISOString();let tUp=false;const fails=[];
     /* v79: um depois do outro — antes, em paralelo, o aviso "formato novo" (info) chegava mesmo quando os dados falhavam (erro 400 de 25/11) */
-    cfErros=[];let pOk=false;
+    cfErros=[];
     try{   // v80: se o planograma falhar, o resto (trânsito, cobertura, pedido) continua sendo enviado
     await cf(cuG(c,'plano/v3'),{method:'PUT',headers:{'Content-Type':'application/json'},
-        body:JSON.stringify(JSON.stringify(planoPack(planoRecs)))})   // v81: o pacote vai como UM texto (1 nó no Firebase, em vez de ~150 mil).then(r=>{if(!r.ok)throw Error('Falha ao enviar records')});   // v76: formato enxuto
+        body:JSON.stringify(JSON.stringify(planoPack(planoRecs)))}).then(r=>{if(!r.ok)throw Error('Falha ao enviar records')});   // v81: o pacote vai como UM texto (1 nó no Firebase, em vez de ~150 mil)   // v76: formato enxuto
     await Promise.all([
       cf(cu(c,'plano/info'),{method:'PUT',headers:{'Content-Type':'application/json'},
         body:JSON.stringify({exportedAt:now,name:savedInfo?.name||'planograma',
@@ -377,7 +377,7 @@ $('b-up').onclick=async()=>{
           meta:currentMeta})}).then(r=>{if(!r.ok)throw Error('Falha ao enviar info')})
     ]);
     put(c,'plano/records',null);put(c,'plano/v2',null);put(c,'data',null);put(c,'info',null);   // v76: apaga o formato antigo e o backup da versão velha (data/info de 21/10, que o app não lê)
-    setRelNovo('p',false);pOk=true;
+    setRelNovo('p',false);
     }catch(e){fails.push('planograma')}
     if(encSrc&&encItems.length){encPending=true;await encSaveLocal();pushEnc()}   // Encarte vai junto
     // Envia live/done e live/pedido junto (garante consistência)
@@ -431,10 +431,12 @@ $('b-up').onclick=async()=>{
       }catch(e){fails.push('cobertura')}
     }
     await trEnvia();
-    if(eUp){busy(true,'Gravando o histórico do dia…');try{await histEnvia(c)}catch{fails.push('histórico')}}   // v77: 1 linha por item para o dia da Cobertura
+    const hPend=(()=>{try{return !!localStorage.getItem('planograma_histpend')}catch{return false}})();
+    if(eUp||(hPend&&estoqueLoaded)){busy(true,'Gravando o histórico do dia…');try{await histEnvia(c);try{localStorage.removeItem('planograma_histpend')}catch{}}catch{fails.push('histórico');try{localStorage.setItem('planograma_histpend','1')}catch{}}}   // v84: falhou → tenta de novo no próximo envio   // v77: 1 linha por item para o dia da Cobertura
     let pUp=[];try{if(PRC.p&&PRC.p.dirty||PRC.c&&PRC.c.dirty){busy(true,'Enviando preços…');pUp=await prcEnvia(c,now)}}catch{fails.push('preços')}
     try{const r=await idbGet('current');if(r){r.cloudAt=now;if(tUp)r.transAt=now;await idbSave(r)}}catch{}
     try{if(eUp){const r=await idbGet('estoque');if(r){r.cloudAt=now;await idbSave(r)}}}catch{}
+    if(!fails.length&&!cfErros.length)put(c,'diag/envio',null);   // v84: envio limpo apaga o diagnóstico antigo
     if(fails.length||cfErros.length)put(c,'diag/envio',{at:now,ver:APP_VER,falhas:fails,erros:cfErros.slice(0,8)});   // v80: o motivo fica na nuvem para conferir
     busy(false);toast(fails.length?'Enviado com falhas em: '+fails.join(', ')+(cfErros[0]?' · '+cfErros[0].status+' '+cfErros[0].parte+(cfErros[0].msg?': '+cfErros[0].msg.slice(0,60):''):'')+' — tente de novo':'Enviado ✓ — planograma'+(tUp?', trânsito':'')+(eUp?', cobertura':'')+(pUp.length?', preços':'')+' e pedido'+eNote);cloudInfo(true);
   }catch(e){busy(false);toast(e.message);try{put(c,'diag/envio',{at:new Date().toISOString(),ver:APP_VER,falhas:['geral: '+e.message],erros:cfErros.slice(0,8)})}catch{}}
@@ -503,7 +505,6 @@ let bootCur=null,bootEst=null;   // o que a abertura leu do aparelho (a conferê
 async function depoisDeAbrir(c,semNuvem){
   abrTxt('Abrindo preços…',.8);await ceder();
   try{await prcRestaura()}catch{}
-  if(typeof fichaPrecoAtualiza==='function')fichaPrecoAtualiza();
   abrTxt(null,1);setTimeout(()=>{$('abr-bar').classList.add('fim');renderFresh()},350);
   if(c&&!semNuvem)setTimeout(()=>idle(()=>{startSSE(c);loadFromCloud(c,true).catch(()=>{})}),1200);   // só baixa relatório se a nuvem tiver um NOVO; pedido/concluídos vêm sempre
   else if(c)setTimeout(()=>startSSE(c),1200);
@@ -529,86 +530,18 @@ if('serviceWorker' in navigator&&/^https?:/.test(location.protocol)){/* ⚡ regi
   addEventListener('load',()=>idle(()=>navigator.serviceWorker.register('./sw.js').then(reg=>reg.update()).catch(()=>{})))}
 /* versão do app na aba Dados (nome do cache do SW, ex.: v34) — para conferir se o aparelho já pegou a atualização */
 /* APP_VER = versão do CÓDIGO que está rodando. ⚠ Mantenha igual ao V do sw.js (o teste de fumaça confere). */
-const APP_VER='v83';
+const APP_VER='v84';
 const verNum=v=>parseInt(String(v||'').replace(/\D/g,''),10)||0;   // 'v9' < 'v45' < 'v100' (comparação numérica, não alfabética)
 function mostraVersao(){const el=$('app-ver');if(el)el.textContent='Versão do app: '+APP_VER}
 addEventListener('load',()=>setTimeout(mostraVersao,3000));
 /* ═══ NOVIDADES (nov/2026): depois de atualizar, o Resumo mostra o que mudou (1 vez por versão). Na 1ª instalação não aparece.
    Ao publicar uma versão com mudança visível, acrescente aqui a chave da versão (a mesma do sw.js, ex.: 'v43'). ═══ */
 const NOVIDADES={
+  v84:['🧹 Ajustes finos: Desfazer também ao pedir ou concluir em Produtos, rótulos “Ruptura” certos na Sist. 10/20 (busca, .csv, filtros), Desfazer da exclusão não duplica, histórico com mensagens mais claras, e limpeza de código sem uso'],
   v83:['🔧 Correções da revisão: celular novo não apaga mais os concluídos do Pedido; Panfleto mostra a situação certa (antes “OK” em ruptura), ganhou concluir →, 🔎 e “Limpar”; atalhos do Resumo abrem a lista com o mesmo número','⛔ Confirmar CD só na Sist. 1 sem trânsito · estoque negativo inclui a Ruptura CD · trânsito atrasado conta até a data do relatório'],
   v82:['🔧 Histórico: corrige o caminho dos dias gravados (o primeiro dia é arrumado sozinho no próximo envio)'],
   v81:['🔧 Corrige o erro “Data to write exceeds the maximum size” ao enviar o planograma: o pacote vai como um texto só'],
-  v80:['🔧 Envio para a nuvem: se uma parte falhar, as outras continuam, o aviso diz qual parte e por quê, e os dados são conferidos antes de sair'],
-  v79:['🔧 Envio do planograma mais seguro: a nuvem só passa a usar o formato novo depois que os dados chegam inteiros'],
-  v78:['🔧 Corrige o erro 400 ao enviar a cobertura para a nuvem'],
-  v77:['📈 Ficha com a aba <b>Histórico</b>: estoque, MDV, preço e venda estimada dia a dia, e a causa provável quando a venda cai. O PC grava um dia a cada envio — o diagnóstico aparece com 14 dias'],
-  v76:['☁️ Nuvem mais leve: planograma e cobertura vão num formato enxuto (~5 MB → ~1 MB por dia novo) e saiu o backup antigo que ocupava espaço'],
-  v75:['👈 Deslizar para a esquerda agora mostra <b>🔎 Depósito</b> ao lado de Pedido/Excluir, em todas as telas','Saiu o <b>segurar o cartão</b> e o botão "Procurar no depósito" do Pedido'],
-  v74:['⊘ Pedido: <b>Ruptura CD num grupo só</b> (automáticas e confirmadas), sempre fora de "Para pedir" — saiu o botão "Esconder Ruptura CD"',
-       '📏 Cobertura mais clara: o número grande é o cálculo (estoque + trânsito) ÷ MDV; "Rel." só aparece quando o relatório diz outra coisa — a ficha explica os dois',
-       '❓ Nova tela <b>Como funciona</b> (engrenagem → Dados) e atalhos "?" que abrem já na parte certa',
-       '🏷 "Ruptura loja" só na Sist. 1; na 10 e 20 é só "Ruptura"'],
-  v73:['🐞 Correções dos testes de uso: o Resumo já sai certo depois de carregar o Trânsito · agir pela ficha não volta mais a lista para o topo',
-       '✓ Concluir deslizando avisa com <b>Desfazer</b> · "Trânsito atrasado" abre com os mais antigos primeiro · datas do topo sempre visíveis no celular',
-       '🏷 Nomes iguais em todo o app: Rupt. loja / Ruptura CD · fornecedor com o código no campo de busca · topo do Pedido mais enxuto'],
-  v72:['⚡ <b>Abertura sem travar</b>: o app aparece na hora e as abas já respondem; blocos cinza mostram o que ainda está carregando, e o topo mostra a etapa',
-       '☁️ Relatório novo da nuvem chega por trás: não cobre a tela, não troca de aba e não apaga a busca',
-       '🔄 Pedido vindo do outro aparelho não recalcula mais todos os itens — a tela fica mais leve'],
-  v71:['⏳ Com o filtro <b>Em trânsito</b> ligado, a ordem <b>Mais tempo em trânsito</b> aparece nas opções: os que estão há mais dias a caminho vêm primeiro'],
-  v70:['🏭 Fornecedor na busca mais simples: tocar no fornecedor mostra todos os itens dele com o nome no campo de busca — o X volta ao normal',
-       '🔗 Na ficha (aba Cadastro), toque no fornecedor para ver todos os itens dele'],
-  v69:['🏭 <b>Fornecedor na busca</b>: digite o nome (3 letras) ou o código e toque no fornecedor — aparecem todos os itens dele, de qualquer sistemática, com chips Sist. 20 / Sist. 1 / Sist. 10',
-       '📞 <b>Pedido separado</b>: "Para pedir · Sist. 20" com um grupo por fornecedor e "Para pedir · Sist. 1" (pedido ao CD, inclui a Sist. 10)',
-       '⚡ Pedido mais leve: grupos fechados só montam os cartões ao abrir, e a lista não pula mais ao concluir ou excluir'],
-  v68:['⌨️ No computador, <b>Alt+R</b> abre direto a janela de escolher os relatórios e, depois de carregar, envia para a nuvem sozinho — o título da aba mostra "✓ Relatórios enviados" quando termina'],
-  v67:['⏳ <b>Tela de abertura</b>: o app mostra "Abrindo seus dados…" até ler tudo o que está guardado — não aparece mais o Resumo vazio "Sem dados" nos primeiros segundos'],
-  v66:['📂 <b>Um botão só</b> em Dados: escolha Planograma, Cobertura, Trânsito e Preços de uma vez — o app reconhece cada arquivo',
-       '🔥 <b>Mais vendidos em risco</b> no Resumo: os 10 de maior MDV em ruptura ou críticos, sem trânsito e fora do pedido — deslize ← para pedir'],
-  v65:['🧭 <b>Ordem Prioridade</b> (nova ordem padrão): Ruptura loja, Crítico e Atenção primeiro, do maior MDV para o menor — Ruptura CD fica por último',
-       '📦 Cartão: as caixas ficam na linha do rótulo (não cortam mais) · os dias em trânsito aparecem ao lado de "Trânsito" · sem selo repetido de falta no CD',
-       '☁️ Aviso no Resumo quando um relatório carregado aqui ainda não foi para a nuvem — toque para enviar',
-       '⛔ A sua marca agora se chama <b>Ruptura CD confirmada</b> (antes "Ruptura no CD") · Filtros na ordem do Resumo · "Cadastro menor que 1 caixa"',
-       '🖥 No computador: Resumo em duas colunas e cartões lado a lado · ficha mostra a última entrada · tela vazia com botão · avisos longos sem corte'],
-  v64:['🔧 <b>Esconder também os em trânsito</b> agora esconde todo item com trânsito a caminho, seja qual for o estoque'],
-  v61:['🔧 Os filtros <b>Esconder Ruptura CD</b> e <b>também os em trânsito</b> voltaram a funcionar em todas as listas (o Resumo continua sem depender deles); o contador mostra quantos itens ficaram escondidos'],
-  v60:['📊 <b>Situações novas</b>: Ruptura loja (estoque ≤ 0 com trânsito, ou fora da Sist. 1) e <b>Ruptura CD</b> (Sist. 1 sem trânsito e com menos de 40% do cadastro), cada uma com seu número',
-       'Crítico, Atenção e Saudável não contam mais a Ruptura CD · o Resumo não muda com os filtros · Crítico abre do maior MDV para o menor',
-       '⚠ <b>Conferir estoque</b>: selo na Ruptura CD que pela cobertura estaria Saudável (MDV baixo — pode ser estoque virtual)'],
-  v59:['🪪 <b>Ficha nova</b>: faixa colorida com os dias de cobertura e três abas — Resumo (estoque e MDV em destaque), Movimento (linha do tempo) e Cadastro',
-       '✓ <b>Feito é um só</b>: concluir no Pedido e marcar feito em Produtos agora são a mesma coisa, por qualquer caminho'],
-  v58:['✓ Na ficha, <b>Marcar feito</b> agora também conclui o item no pedido — o botão “Concluir no pedido” saiu (eram a mesma coisa)'],
-  v57:['🧹 A <b>sugestão de quantidade</b> saiu do app (cartão do Resumo, filtro Sugestão, linha na ficha e “Adicionar sugestões”). A <b>Nova cobertura</b> do filtro 1×1 do planograma continua igual'],
-  v56:['💲 Os <b>Preços</b> agora vão para a nuvem sozinhos ao carregar os arquivos (e ao abrir o app, se ficou algo sem enviar) — os outros aparelhos recebem sem precisar do “Enviar para a nuvem”'],
-  v55:['🚚 <b>Trânsito com data</b>: o app anota o dia em que cada item entrou em trânsito e conta os dias até chegar (na ficha e no Pedido). No Para fazer hoje: “Trânsito atrasado (4+ dias)” e “Saiu do trânsito sem entrar no estoque”'],
-  v54:['💲 <b>Preços (opcional)</b>: em Dados → Preços, escolha o PRODUTO.TXT e o relatório de Preços do Clube (pode ser os dois de uma vez). A ficha do produto passa a mostrar o preço e o preço do Clube Condor'],
-  v53:['⭐ <b>Oferta do dia pelo código</b>: item com Código/EAN é achado só pelo código (o que não está no planograma vai para “Sem correspondência”, sem chute pelo nome) e o 🔍 abre o produto exato'],
-  v52:['🛒 Os <b>concluídos do Pedido</b> agora saem sozinhos ao carregar o planograma de um dia novo, e o grupo “✓ Concluídos” ganhou o botão <b>Limpar</b> (com Desfazer)'],
-  v51:['🔄 <b>Botão Atualizar</b> no topo, ao lado da engrenagem — substitui o gesto de puxar a tela para baixo (que disparava sem querer ao rolar)'],
-  v50:['🔧 O <b>✕ de limpar a busca</b> voltou para dentro da caixa de pesquisa'],
-  v49:['⚡ <b>Abre na hora</b>: o app abre com o relatório guardado no aparelho e só baixa da nuvem se houver relatório novo. Pedido, concluídos, depósito e Ruptura no CD continuam sincronizando em tempo real'],
-  v48:['📊 <b>Situação dos produtos por sistemática</b>: botões Todas · Sist. 1 · Sist. 10 · Sist. 20 no Resumo (como nas categorias)',
-       '💡 A <b>Sugestão de pedido</b> do Resumo agora é sempre só da Sistemática 1'],
-  v47:['📊 <b>Resumo sem a falta no CD</b>: os números não contam mais os itens que o CD não tem (aparecem à parte, em “+ N em falta no CD”) — e o número tocado bate com a lista',
-       '🔧 Correções: “feitos” de ontem não voltam mais ao carregar o planograma do dia · item que vende pouco (MDV 0) sai do Crítico e vai para Sem MDV · selos e medidas não cortam mais no cartão',
-       '💡 Sugestão também para item sem capacidade cadastrada (15 dias de venda) e aviso quando a caixa fechada passa da capacidade',
-       '⛔ Ruptura no CD mostra há quantos dias está marcada e pede reconferência depois de 7 dias · 🛒 pedido feito em dois aparelhos agora é somado, não sobrescrito',
-       '🔎 Filtro novo: <b>Capacidade menor que 1 caixa</b> (candidatos a recadastro)'],
-  v46:['♿ Revisão completa: abas e botões com nome para leitor de tela, foco visível no teclado, contraste melhor e folhas que fecham com Esc',
-       '✓ Na ficha: <b>Concluir no pedido</b> sem precisar deslizar, e <b>Desfazer</b> ao remover do pedido',
-       '🔧 Correções: Ruptura no CD sai sozinha quando aparece trânsito · Limpar nos Filtros tira também os filtros do Resumo · importar backup não apaga anexos mais novos'],
-  v45:['🏭 <b>Para fazer hoje</b>: fornecedores da Sist. 20 com cobertura baixa, separados por fornecedor (código e nome)',
-       '🎨 Visual revisado: avisos, buscas, botões de ordenar e cores do modo escuro iguais em todas as abas'],
-  v44:['⚠ <b>Pedido</b>: ao entrar, a falta no CD já vem escondida — esses itens saem de "Para pedir" e ficam no grupo <b>Falta no CD</b> (o botão mostra/esconde)',
-       '✅ <b>Para fazer hoje</b> conta sem a falta no CD e abre a lista com "Esconder falta no CD" ligado'],
-  v43:['⚠ Selo <b>falta no CD</b> no cartão também para itens com estoque positivo (Sistemática 1, menos de 1 caixa e sem trânsito) — antes só aparecia nos negativos'],
-  v42:['🔥 <b>Urgência no pedido</b>: na ficha, marque Urgente ou Baixa — urgentes ficam no topo do Pedido em qualquer ordenação',
-       '⛔ <b>Ruptura no CD</b>: na ficha, tira o item de "Para pedir" e põe num grupo próprio até aparecer trânsito',
-       '✅ <b>Para fazer hoje</b> no Resumo: rupturas e críticos sem trânsito e fora do pedido, Panfleto/Lâmina/Oferta com falta e mais',
-       '📋 <b>Conferência do cadastro</b>: o planograma do dia seguinte mostra o que entrou certo e o que não entrou',
-       '📈 Linha de <b>tendência da ruptura</b> no Resumo (aparece a partir do 2º dia)',
-       '⚠ Aviso quando os <b>relatórios são de dias diferentes</b>, com opção de descartar o Trânsito antigo',
-       '💾 O backup e o .json da nuvem agora trazem também <b>Panfleto, Lâmina e Oferta</b>']};
+  v80:['🔧 Envio para a nuvem: se uma parte falhar, as outras continuam, o aviso diz qual parte e por quê, e os dados são conferidos antes de sair']};   // v84: as anteriores (v42–v79) saíram — o aviso só mostra as 4 mais novas; o histórico fica no git
 function mostraNovidades(){const el=$('novban');if(!el)return;const v=APP_VER;let vista='';
   try{vista=localStorage.getItem('planograma_vista')||'';
     if(!vista){const jaUsava=!!localStorage.getItem('planograma_pedido')||Object.keys(localStorage).some(k=>/^planograma_(nocd|pedsort|pfsort|cobnova|limcob)/.test(k));

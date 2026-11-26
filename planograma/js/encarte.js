@@ -261,14 +261,14 @@ function renderPf(){
   const box=$('pf-list'),sum=$('pf-sum');refreshDep();
   $('pf-q').style.display=pfGroups.length?'':'none';$('pf-sortbar').style.display=pfGroups.length?'flex':'none';
   if(!pfGroups.length){box.innerHTML='';return}
-  let ok=0,al=0,vis=0;const qOn=!!axQ.pf.trim();
+  let ok=0,vis=0;const qOn=!!axQ.pf.trim(),alS=new Set();
   const row=pfRowHtml;
   const nm=[];                                                   // sem correspondência → dropdown no fim da lista
   const mainH=[],pedH=[],ents=[];
   pfGroups.forEach((g,i)=>{
     let rs=g.codes.map(c=>byProd.get(c)).filter(Boolean);
     if(!rs.length){if(axHit('pf',null,g.nome))nm.push(g);return}
-    ok++;if(rs[0]._k==='rup'||rs[0]._k==='crit')al++;
+    ok++;rs.forEach(r=>{if(isCD(r)&&(r._k==='rup'||r._k==='crit'))alS.add(r.produto)});   // v84: conta como o Resumo (produtos da Sist. 1)
     if(qOn&&!axHit('pf',null,g.nome)){rs=rs.filter(r=>axHit('pf',r));if(!rs.length)return}vis++;   // 🔍 busca: nome do panfleto ou do produto
     ents.push({g,rs,i})});
   /* ordenar por (o item da lâmina vale pelo 1º produto achado; empate → ordem colada) */
@@ -285,7 +285,7 @@ function renderPf(){
   const pedHtml=pedH.length?`<details class="trd" id="pfped"${pfPedOpen?' open':''} style="margin-top:14px"><summary><span>🛒 Já no pedido<small>Itens da lâmina que você já pediu</small></span><span class="cnt">${pedH.length}</span><svg class="ch" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></summary>${pedH.join('')}</details>`:'';
   const nmHtml=nm.length?`<details class="trd" id="pfnm"${pfNmOpen?' open':''} style="margin-top:14px"><summary><span>❔ Sem correspondência<small>Não achei no planograma</small></span><span class="cnt">${nm.length}</span><svg class="ch" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></summary>${nm.map(g=>`<div class="pfn" data-q="${esc(g.q||g.nome)}"><span>🔍 ${esc(g.nome)}</span>${g.preco?`<b>R$ ${esc(g.preco)}</b>`:''}</div>`).join('')}</details>`:'';
   box.innerHTML=(qOn&&!vis&&!nm.length?'<div class="empty">Nenhum item da lâmina com essa busca</div>':'')+found+pedHtml+nmHtml;
-  sum.textContent=(qOn?`🔍 ${vis} com essa busca · `:'')+`${pfGroups.length} itens · ${ok} encontrados${pedH.length?` · ${pedH.length} já no pedido`:''} · ${pfGroups.length-ok} sem correspondência${al?` · ${al} em ruptura/crítico`:''}`}
+  sum.textContent=(qOn?`🔍 ${vis} com essa busca · `:'')+`${pfGroups.length} itens · ${ok} encontrados${pedH.length?` · ${pedH.length} já no pedido`:''} · ${pfGroups.length-ok} sem correspondência${alS.size?` · ${alS.size} da Sist. 1 em ruptura/crítico`:''}`}
 let pfRunTok=0;
 function pfRun(){
   const txt=$('pf-txt').value;try{localStorage.setItem(LSPF,txt)}catch{}

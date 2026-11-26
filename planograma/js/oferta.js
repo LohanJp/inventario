@@ -86,7 +86,7 @@ function renderOf(){
   const found=[],nm=[];
   ofItems.forEach((it,i)=>{const rs=((ofRes[i]||{}).codes||[]).map(c=>byProd.get(c)).filter(Boolean);
     if(rs.length)found.push({it,rs,approx:ofRes[i].approx});else nm.push(it)});
-  let al=0;found.forEach(g=>{if(g.rs[0]._k==='rup'||g.rs[0]._k==='crit')al++});
+  const alS=new Set();found.forEach(g=>g.rs.forEach(r=>{if(isCD(r)&&(r._k==='rup'||r._k==='crit'))alS.add(r.produto)}));const al=alS.size;   // v84: conta como o Resumo (produtos da Sist. 1 em ruptura/crítico)
   if(ofSortV==='sev'){const R={rup:0,rcd:0,sg:1,crit:2,aten:3,ok:4,nd:5};found.sort((a,b)=>R[a.rs[0]._k]-R[b.rs[0]._k]||(a.rs[0]._ct??999)-(b.rs[0]._ct??999))}
   const grp=(g,rs)=>`<div class="pfh" data-q="${esc(g.approx?ofClean(g.it.desc):rs[0].produto)}"${g.approx?'':' data-cod="1"'}><span>🔍 ${esc(g.it.desc)}${g.approx?' <small>≈ achado pelo nome</small>':''}</span><span class="pp">${ofPrice(g.it)}</span></div>`+rs.map(pfRowHtml).join('');
   const qOn=!!axQ.of.trim();let vis=0;   // 🔍 busca: descrição da planilha ou o produto (nome, EAN, código)
@@ -97,8 +97,8 @@ function renderOf(){
   const pedHtml=inP.length?`<details class="trd" id="ofped"${ofPedOpen?' open':''} style="margin-top:14px"><summary><span>🛒 Já no pedido<small>Itens da oferta que você já pediu</small></span><span class="cnt">${inP.length}</span><svg class="ch" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></summary>${inP.join('')}</details>`:'';
   const nmF=nm.filter(it=>axHit('of',null,[it.desc,it.ean,it.code].join(' ')));
   const nmHtml=nmF.length?`<details class="trd" id="ofnm"${ofNmOpen?' open':''} style="margin-top:14px"><summary><span>❔ Sem correspondência<small>Não achei no planograma</small></span><span class="cnt">${nmF.length}</span><svg class="ch" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></summary>${nmF.map(it=>`<div class="pfn" data-q="${esc(ofClean(it.desc))}"><span>🔍 ${esc(it.desc)}</span><span class="pp">${ofPrice(it)}</span></div>`).join('')}</details>`:'';
-  box.innerHTML=(qOn&&!vis?'<div class="empty">Nenhum item da oferta com essa busca</div>':'')+html+pedHtml+nmHtml;
-  sum.textContent=(qOn?`🔍 ${vis} com essa busca · `:'')+`${ofItems.length} itens · ${found.length} no planograma${inP.length?` · ${inP.length} já no pedido`:''} · ${nm.length} sem correspondência${al?` · ${al} em ruptura/crítico`:''}`}
+  box.innerHTML=(qOn&&!vis&&!nmF.length?'<div class="empty">Nenhum item da oferta com essa busca</div>':'')+html+pedHtml+nmHtml;
+  sum.textContent=(qOn?`🔍 ${vis} com essa busca · `:'')+`${ofItems.length} itens · ${found.length} no planograma${inP.length?` · ${inP.length} já no pedido`:''} · ${nm.length} sem correspondência${al?` · ${al} da Sist. 1 em ruptura/crítico`:''}`}
 function ofShowMeta(){
   const t=$('of-title'),w=$('of-warn');ofDayBar();
   if(!ofItems.length){t.style.display='none';w.style.display='none';return}

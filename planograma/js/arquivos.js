@@ -196,7 +196,7 @@ async function importBackup(text,fname){try{let b=JSON.parse(text);if(b&&b.app==
 $('b-json').onclick=()=>{if(!allRecords.length)return toast('Nada para exportar');const s=((currentMeta.filial||'')+'_'+(currentMeta.date||'')).replace(/[^a-zA-Z0-9]+/g,'_').replace(/^_|_$/g,'');
  downloadBlob(new Blob([JSON.stringify(buildBackup())],{type:'application/json;charset=utf-8'}),`planograma_${s||'dados'}.json`)};
 $('b-csv').onclick=()=>{if(!allRecords.length)return toast('Nada para exportar');const H=['Produto','EAN','Descrição','Categoria','Corredor','Estoque','Trânsito','MDV','Cob.Plan','Cobertura','Cob. total','Situação','Entrega','Últ. entrada','Últ. venda','Feito'];
- const q=v=>'"'+String(v??'').replace(/"/g,'""')+'"';const rows=allRecords.map(r=>[r.produto,r.automacao,r.descricao,r.categoria,r.corredor,r._e,r._t,r._m?r._m.toFixed(2).replace('.',','):'',r.cobplan,r._c===null?'':r._c,r._ct===null?'':r._ct,LBL[r._k],ENT[r._sist]||'',r._ue,r._uv,r._d?'sim':'']);
+ const q=v=>'"'+String(v??'').replace(/"/g,'""')+'"';const rows=allRecords.map(r=>[r.produto,r.automacao,r.descricao,r.categoria,r.corredor,r._e,r._t,r._m?r._m.toFixed(2).replace('.',','):'',r.cobplan,r._c===null?'':r._c,r._ct===null?'':r._ct,sitLbl(r),ENT[r._sist]||'',r._ue,r._uv,r._d?'sim':'']);
  downloadBlob(new Blob(['﻿'+[H,...rows].map(r=>r.map(q).join(';')).join('\n')],{type:'text/csv;charset=utf-8'}),'planograma.csv')};
 
 /* ═══ LEITOR DE CÓDIGO DE BARRAS — economiza bateria: só liga ao tocar, 640×480 a ~15 fps,
@@ -237,9 +237,9 @@ $('b-scan2').onclick=()=>scanStart(code=>{const r=byCode(code);
   toast(addS(r)?'Adicionado ao pedido: '+r.descricao:'Já está no pedido');renderPed()});
 
 /* Copia texto para o clipboard silenciosamente */
-async function copyEAN(ean,pre){
+async function copyEAN(ean,pre,quieto){
   try{await navigator.clipboard.writeText(ean)}
   catch{const t=document.createElement('textarea');t.value=ean;t.style.cssText='position:fixed;opacity:0';
     document.body.appendChild(t);t.select();document.execCommand('copy');document.body.removeChild(t)}
-  toast((pre?pre+' · ':'')+'EAN copiado: '+ean)
+  if(!quieto)toast((pre?pre+' · ':'')+'EAN copiado: '+ean)
 }
