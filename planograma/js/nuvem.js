@@ -54,8 +54,15 @@ function estqUnpack(o){const map={},ks=Object.keys(o.c);for(let j=0;j<o.n;j++){c
 /* v80: erro da nuvem diz QUAL parte falhou e o motivo que o Firebase devolve (ex.: "Invalid data…"); fica guardado em cfErros para o diagnóstico */
 let cfErros=[];
 const cfParte=url=>{try{return decodeURIComponent(new URL(url).pathname).replace(/^\/planograma\/[^/]+\//,'').replace(/\.json$/,'')}catch{return '?'}};
+/* v85: escrita (PUT/PATCH) com tempo limite de 30 s e até 3 tentativas em queda de rede, demora ou erro 5xx da nuvem */
+async function cfTenta(url,o){const esc=o&&(o.method==='PUT'||o.method==='PATCH');let ult;
+  for(let t=0;t<(esc?3:1);t++){if(t)await new Promise(r=>setTimeout(r,1500*t));
+    const ac=typeof AbortController!=='undefined'?new AbortController():null,tm=ac&&esc?setTimeout(()=>ac.abort(),30000):null;
+    try{const r=await fetch(url,ac?{...o,signal:ac.signal}:o);clearTimeout(tm);if(r.status>=500&&t<2){ult=r;continue}return r}
+    catch(e){clearTimeout(tm);ult=e;if(!esc)break}}
+  if(ult instanceof Response)return ult;throw Error(ult&&ult.name==='AbortError'?'A nuvem demorou demais para responder':'Sem conexão com a nuvem')}
 async function cf(url,o){
-  let r;try{r=await fetch(url,o)}catch{throw Error('Sem conexão com a nuvem')}
+  const r=await cfTenta(url,o);
   if(r.status===401||r.status===403)throw Error('Sem permissão — confira as regras do Firebase');
   if(r.status===404||r.status===200)return r; // 404 = nó vazio, retorna null via .json()
   if(!r.ok){let msg='';try{const t=await r.text();try{msg=(JSON.parse(t)||{}).error||t}catch{msg=t}}catch{}
@@ -224,6 +231,7 @@ async function syncEstoque(c,ei){
 /* fundo=true (abertura do app): o app JÁ abriu com o relatório guardado no aparelho; aqui só confere, sem travar a tela,
    se a nuvem tem relatório NOVO. Se for o mesmo, baixa apenas o que é em tempo real (pedido, concluídos, depósito, anexos). */
 async function loadFromCloud(c,fundo){
+  if(fundo&&(enviando||multiCarregando))return false;   // v85: não confere a nuvem no meio de um carregamento/envio
   if(!fundo)busy(true,'Conferindo a nuvem…');
   let cerr='';                                                       // 1º erro de rede/Firebase (antes ficava escondido e o app só abria os dados locais)
   const gj=p=>cf(cu(c,p)).then(r=>r.json()).catch(e=>{cerr=cerr||e.message;return null});
@@ -348,7 +356,21 @@ $('b-cloudjson').onclick=async()=>{
   }catch(e){busy(false);toast('⚠ '+e.message)}};
 
 /* Envia relatório para a nuvem — separado por tipo, com guarda de data E HORA (2 relatórios do mesmo dia não se confundem) */
+/* ═══ v85 ENVIO AUTOMÁTICO ═══ anexou relatório → sobe sozinho (sem tocar no aviso). O que não subiu (sem internet, erro, app fechado)
+   tenta de novo quando a internet volta e na próxima abertura. Nunca dois envios ao mesmo tempo. */
+let enviando=false,envDeNovo=false,envT=null,multiCarregando=false;
+const histPendente=()=>{try{return !!localStorage.getItem('planograma_histpend')}catch{return false}};
+function agendaEnvio(ms){if(!code()||!planoRecs.length)return;clearTimeout(envT);envT=setTimeout(envioAuto,ms||2500)}
+async function envioAuto(){if(!Object.keys(relNovo).length&&!histPendente())return;
+  if(!navigator.onLine){renderBan();return}                                          // volta sozinho no evento 'online'
+  if(enviando||multiCarregando||autoUp||abrindo||busyT||busyH||$('load').classList.contains('on'))return agendaEnvio(2000);   // espera o que estiver rodando
+  await $('b-up').onclick()}
 $('b-up').onclick=async()=>{
+  if(enviando){envDeNovo=true;return}
+  enviando=true;renderBan();
+  try{await enviaNuvem()}finally{enviando=false;renderBan();if(envDeNovo){envDeNovo=false;agendaEnvio(1500)}}};
+addEventListener('online',()=>agendaEnvio(1500));
+async function enviaNuvem(){
   if(!planoRecs.length)return toast('Nada para enviar');
   const c=code()||askCode();if(!c)return;
   busy(true,'Verificando nuvem…');
@@ -359,7 +381,7 @@ $('b-up').onclick=async()=>{
       const pm=pi.meta||{date:pi.date};
       if(tsMeta(pm)>tsMeta(currentMeta)){
         busy(false);
-        if(!confirm(`A nuvem tem um planograma mais recente (${metaTxt(pm)}) do que o seu (${metaTxt(currentMeta)}).\nSobrescrever mesmo assim?`))return;
+        if(!confirm(`A nuvem tem um planograma mais recente (${metaTxt(pm)}) do que o seu (${metaTxt(currentMeta)}).\nSobrescrever mesmo assim?`)){setRelNovo(null);return}   // v85: manteve a nuvem — não pergunta de novo
         busy(true,'Enviando…');
       }
     }
@@ -379,7 +401,7 @@ $('b-up').onclick=async()=>{
     put(c,'plano/records',null);put(c,'plano/v2',null);put(c,'data',null);put(c,'info',null);   // v76: apaga o formato antigo e o backup da versão velha (data/info de 21/10, que o app não lê)
     setRelNovo('p',false);
     }catch(e){fails.push('planograma')}
-    if(encSrc&&encItems.length){encPending=true;await encSaveLocal();pushEnc()}   // Encarte vai junto
+    if(encSrc&&encItems.length){encPending=true;await encSaveLocal();await pushEnc()}   // Encarte vai junto · v85: espera terminar (tudo em fila)
     // Envia live/done e live/pedido junto (garante consistência)
     const doneMap={};
     allRecords.forEach(r=>{const k=key(r);if(doneSet.has(k))doneMap[k]=true});
@@ -408,7 +430,7 @@ $('b-up').onclick=async()=>{
           ]);
           if(rs.every(r=>r.ok)){tUp=true;setRelNovo('t',false)}else fails.push('trânsito');
         }catch{fails.push('trânsito')}
-      }
+      }else{setRelNovo('t',false);cfErros.push({parte:'trans',status:0,msg:'mantido o da nuvem (mais novo)',at:now})}   // v85: decisão tomada — não pergunta de novo; o motivo fica no diag
     }
     // Envia a Cobertura (MDV, cobertura e estoque do relatório), se carregada
     let eUp=false,eNote='';
@@ -427,7 +449,7 @@ $('b-up').onclick=async()=>{
             body:JSON.stringify({exportedAt:now,name:(await idbGet('estoque').catch(()=>null)||{}).name||'cobertura',meta:estoqueMeta||null,total:Object.keys(estoqueMap).length,fmt:3})});
           if(!r2.ok)throw Error('info');put(c,'estq/data',null);put(c,'estq/v2',null);   // v76/v81: apaga os formatos antigos
           eUp=true;setRelNovo('c',false);
-        }else eNote=' · cobertura NÃO enviada (nuvem é mais nova)';
+        }else{eNote=' · cobertura NÃO enviada (nuvem é mais nova)';setRelNovo('c',false)}   // v85: decisão tomada — não pergunta de novo
       }catch(e){fails.push('cobertura')}
     }
     await trEnvia();
@@ -440,7 +462,7 @@ $('b-up').onclick=async()=>{
     if(fails.length||cfErros.length)put(c,'diag/envio',{at:now,ver:APP_VER,falhas:fails,erros:cfErros.slice(0,8)});   // v80: o motivo fica na nuvem para conferir
     busy(false);toast(fails.length?'Enviado com falhas em: '+fails.join(', ')+(cfErros[0]?' · '+cfErros[0].status+' '+cfErros[0].parte+(cfErros[0].msg?': '+cfErros[0].msg.slice(0,60):''):'')+' — tente de novo':'Enviado ✓ — planograma'+(tUp?', trânsito':'')+(eUp?', cobertura':'')+(pUp.length?', preços':'')+' e pedido'+eNote);cloudInfo(true);
   }catch(e){busy(false);toast(e.message);try{put(c,'diag/envio',{at:new Date().toISOString(),ver:APP_VER,falhas:['geral: '+e.message],erros:cfErros.slice(0,8)})}catch{}}
-};
+}
 
 /* Inicialização: abre app → tenta nuvem → fallback IDB */
 /* v72: carimbos da nuvem num registro pequeno ('carimbo'). Valem só para o MESMO relatório (data + hora + quantidade) — relatório novo carregado aqui não herda o carimbo do antigo */
@@ -506,7 +528,7 @@ async function depoisDeAbrir(c,semNuvem){
   abrTxt('Abrindo preços…',.8);await ceder();
   try{await prcRestaura()}catch{}
   abrTxt(null,1);setTimeout(()=>{$('abr-bar').classList.add('fim');renderFresh()},350);
-  if(c&&!semNuvem)setTimeout(()=>idle(()=>{startSSE(c);loadFromCloud(c,true).catch(()=>{})}),1200);   // só baixa relatório se a nuvem tiver um NOVO; pedido/concluídos vêm sempre
+  if(c&&!semNuvem)setTimeout(()=>idle(()=>{startSSE(c);loadFromCloud(c,true).catch(()=>{}).then(()=>agendaEnvio(2500))}),1200);   // v85: depois da conferência, sobe o que ficou pendente   // só baixa relatório se a nuvem tiver um NOVO; pedido/concluídos vêm sempre
   else if(c)setTimeout(()=>startSSE(c),1200);
   setTimeout(()=>idle(()=>{if(allRecords.length)fornIdxAos()}),3000);
 }
@@ -530,19 +552,21 @@ if('serviceWorker' in navigator&&/^https?:/.test(location.protocol)){/* ⚡ regi
   addEventListener('load',()=>idle(()=>navigator.serviceWorker.register('./sw.js').then(reg=>reg.update()).catch(()=>{})))}
 /* versão do app na aba Dados (nome do cache do SW, ex.: v34) — para conferir se o aparelho já pegou a atualização */
 /* APP_VER = versão do CÓDIGO que está rodando. ⚠ Mantenha igual ao V do sw.js (o teste de fumaça confere). */
-const APP_VER='v84';
+const APP_VER='v85';
 const verNum=v=>parseInt(String(v||'').replace(/\D/g,''),10)||0;   // 'v9' < 'v45' < 'v100' (comparação numérica, não alfabética)
 function mostraVersao(){const el=$('app-ver');if(el)el.textContent='Versão do app: '+APP_VER}
 addEventListener('load',()=>setTimeout(mostraVersao,3000));
 /* ═══ NOVIDADES (nov/2026): depois de atualizar, o Resumo mostra o que mudou (1 vez por versão). Na 1ª instalação não aparece.
    Ao publicar uma versão com mudança visível, acrescente aqui a chave da versão (a mesma do sw.js, ex.: 'v43'). ═══ */
 const NOVIDADES={
+  v85:['☁️ Anexou, enviou: os relatórios carregados pelo botão vão para a nuvem sozinhos (como no Alt+R), sem tocar no aviso. O que não subir tenta de novo quando a internet volta e ao abrir o app'],
   v84:['🧹 Ajustes finos: Desfazer também ao pedir ou concluir em Produtos, rótulos “Ruptura” certos na Sist. 10/20 (busca, .csv, filtros), Desfazer da exclusão não duplica, histórico com mensagens mais claras, e limpeza de código sem uso'],
   v83:['🔧 Correções da revisão: celular novo não apaga mais os concluídos do Pedido; Panfleto mostra a situação certa (antes “OK” em ruptura), ganhou concluir →, 🔎 e “Limpar”; atalhos do Resumo abrem a lista com o mesmo número','⛔ Confirmar CD só na Sist. 1 sem trânsito · estoque negativo inclui a Ruptura CD · trânsito atrasado conta até a data do relatório'],
   v82:['🔧 Histórico: corrige o caminho dos dias gravados (o primeiro dia é arrumado sozinho no próximo envio)'],
   v81:['🔧 Corrige o erro “Data to write exceeds the maximum size” ao enviar o planograma: o pacote vai como um texto só'],
   v80:['🔧 Envio para a nuvem: se uma parte falhar, as outras continuam, o aviso diz qual parte e por quê, e os dados são conferidos antes de sair']};   // v84: as anteriores (v42–v79) saíram — o aviso só mostra as 4 mais novas; o histórico fica no git
-function mostraNovidades(){const el=$('novban');if(!el)return;const v=APP_VER;let vista='';
+const NOV_ON=false;   // v85 (Lohan): aviso de Novidades escondido por enquanto — troque para true para voltar
+function mostraNovidades(){const el=$('novban');if(!el)return;if(!NOV_ON){el.hidden=true;el.innerHTML='';try{localStorage.setItem('planograma_vista',APP_VER)}catch{}return}const v=APP_VER;let vista='';
   try{vista=localStorage.getItem('planograma_vista')||'';
     if(!vista){const jaUsava=!!localStorage.getItem('planograma_pedido')||Object.keys(localStorage).some(k=>/^planograma_(nocd|pedsort|pfsort|cobnova|limcob)/.test(k));
       if(!jaUsava){localStorage.setItem('planograma_vista',v);return}                                  // instalou agora: nada de novidades

@@ -42,10 +42,14 @@ $('f-trans').onchange=e=>{const f=e.target.files[0];if(!f)return;e.target.value=
 let autoUp=false,titT=null;const TIT0=document.title;
 const titulo=(t,volta)=>{clearTimeout(titT);document.title=t;if(volta)titT=setTimeout(()=>{document.title=TIT0},volta)};
 document.addEventListener('keydown',e=>{if(!e.altKey||e.ctrlKey||e.metaKey||e.shiftKey||e.code!=='KeyR'||e.repeat)return;e.preventDefault();
-  if(abrindo||$('load').classList.contains('on'))return;
+  if($('load').classList.contains('on'))return;   // v85: abrindo não bloqueia mais — escolhe os arquivos já e o carregamento espera a abertura terminar
   autoUp=true;go('data');titulo('Planograma — escolha os relatórios');$('f-multi').click()});
 $('f-multi').addEventListener('cancel',()=>{if(autoUp){autoUp=false;titulo(TIT0)}});
 $('f-multi').onchange=async e=>{const fs=[...e.target.files];e.target.value='';const auto=autoUp;autoUp=false;if(!fs.length){if(auto)titulo(TIT0);return}
+  multiCarregando=true;try{await carregaVarios(fs,auto)}finally{multiCarregando=false}
+  if(!auto)agendaEnvio(1200)};   // v85: anexou pelo botão → sobe sozinho como no Alt+R
+async function carregaVarios(fs,auto){
+  for(let i=0;i<300&&typeof abrindo!=='undefined'&&abrindo;i++)await new Promise(r=>setTimeout(r,200));   // v85: Alt+R durante a abertura
   if(auto)titulo('⏳ Carregando relatórios');
   const g={j:[],p:[],c:[],t:[],$:[]};
   for(const f of fs){if(/\.json$/i.test(f.name)){g.j.push(f);continue}
@@ -64,7 +68,7 @@ $('f-multi').onchange=async e=>{const fs=[...e.target.files];e.target.value='';c
   titulo('⏳ Enviando para a nuvem');
   try{await $('b-up').onclick();await livre();if(typeof prcAuto==='function')await prcAuto()}catch{}
   const falta=[relNovo.p&&'planograma',relNovo.c&&'cobertura',relNovo.t&&'trânsito'].filter(Boolean);
-  titulo(falta.length?'⚠ Falta enviar: '+falta.join(', '):'✓ Relatórios enviados',120000)};
+  titulo(falta.length?'⚠ Falta enviar: '+falta.join(', '):'✓ Relatórios enviados',120000)}
 /* ═══ TRÂNSITO: DESDE QUANDO (nov/2026) ═══ o relatório de Trânsito só traz a quantidade, sem data. Aqui o app anota o dia em que
    cada item APARECEU em trânsito e vai contando até chegar:
      · 1ª vez com quantidade no Trânsito → guarda a data daquele relatório (reg)

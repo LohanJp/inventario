@@ -20,7 +20,8 @@ function toastUndo(msg,fn){showToast(`<span class="tt">${esc(msg)}</span><button
 /* v65: relatórios carregados de ARQUIVO neste aparelho e ainda não enviados para a nuvem (p = planograma, c = cobertura, t = trânsito) → aviso no Resumo */
 const LSRN='planograma_relnovo';let relNovo={};try{relNovo=JSON.parse(localStorage.getItem(LSRN)||'{}')||{}}catch{}
 function setRelNovo(k,v){if(k===null)relNovo={};else if(!!relNovo[k]===v)return;else if(v)relNovo[k]=true;else delete relNovo[k];
-  try{localStorage.setItem(LSRN,JSON.stringify(relNovo))}catch{}if(typeof renderBan==='function')renderBan()}
+  try{localStorage.setItem(LSRN,JSON.stringify(relNovo))}catch{}if(typeof renderBan==='function')renderBan();
+  if(v&&typeof agendaEnvio==='function')agendaEnvio()}   // v85: anexou → envia sozinho
 function toast(m){showToast(`<span class="tt">${esc(m)}</span>`,false,3200)}
 /* diagnóstico: qualquer erro de JavaScript aparece na tela (antes o app só "parava" sem dizer nada) */
 let errAt=0;const showErr=m=>{if(Date.now()-errAt<4000)return;errAt=Date.now();try{toast('⚠ Erro no app: '+String(m||'desconhecido').slice(0,140))}catch{}};
