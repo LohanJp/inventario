@@ -84,9 +84,7 @@ const trSalva=()=>{try{localStorage.setItem(LSTR,JSON.stringify({...trReg,dirty:
 const isoDmy=s=>{const d=dmy(s);return d?ymd(d):''};
 const isoDias=(a,b)=>{const p=s=>{const m=/^(\d{4})-(\d\d)-(\d\d)$/.exec(s||'');return m?new Date(+m[1],+m[2]-1,+m[3]):null},x=p(a),y=p(b);return x&&y?Math.round((y-x)/864e5):0};
 const isoBr=s=>String(s||'').slice(5).split('-').reverse().join('/');   // 2026-11-08 → 08/11
-/* v86: se o item teve ENTRADA no estoque depois do dia em que entrou no trânsito, aquele trânsito já chegou — o que está em trânsito agora
-   é uma remessa nova: conta a partir da entrada (antes mostrava 14 dias num item que chegou ontem) */
-const trDesde=r=>{if(!(transitLoaded&&r._t>0&&trReg.reg[r.produto]))return '';const d=trReg.reg[r.produto].d,ue=isoDmy(r._ue);return ue&&ue>d?ue:d};
+const trDesde=r=>transitLoaded&&r._t>0&&trReg.reg[r.produto]?trReg.reg[r.produto].d:'';   // v87: voltou ao de antes da v86 (zerar na entrada escondia atraso de entrega PARCIAL do CD)
 const trDias=r=>{const d=trDesde(r);return d?Math.max(0,isoDias(d,isoDmy(transitMeta&&transitMeta.date)||today())):-1};   // v83: conta até a DATA DO RELATÓRIO de Trânsito (relatório velho não deixa tudo "atrasado")
 const trAtrasado=r=>trDias(r)>=TR_ATRASO;
 /* saiu do Trânsito e NÃO entrou no estoque? Considera que chegou se a "Última entrada" é do período do trânsito ou se o estoque subiu.
@@ -101,7 +99,7 @@ function trAtualiza(){const d=isoDmy(transitMeta&&transitMeta.date)||today();
   if(trReg.last&&d<trReg.last)return;                                   // relatório mais antigo que o último lido: não mexe nas datas
   const {reg,saiu}=trReg,so=allRecords.length>0,tem=p=>transitMap[p]&&transitMap[p].qt_transito>0;
   for(const p in transitMap){if(!tem(p)||(so&&!byProd.has(p)))continue;const r=byProd.get(p),e=r?r._e:null,q=transitMap[p].qt_transito;
-    if(reg[p]){reg[p].q=q;if(e!==null)reg[p].e=e;const ue=isoDmy(r&&r._ue);if(ue&&ue>reg[p].d&&ue<=d)reg[p].d=ue}else reg[p]={d,q,e};delete saiu[p]}   // v86: entrada depois do início → remessa nova
+    if(reg[p]){reg[p].q=q;if(e!==null)reg[p].e=e}else reg[p]={d,q,e};delete saiu[p]}
   for(const p in reg)if(!tem(p)){saiu[p]={d,desde:reg[p].d,q:reg[p].q,e:reg[p].e};delete reg[p]}
   for(const p in saiu)if(isoDias(saiu[p].d,d)>TR_SAIU_DIAS)delete saiu[p];
   trReg.last=d;trDirty=true;trSalva();if(typeof trEnvia==='function')trEnvia()}
