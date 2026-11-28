@@ -163,6 +163,10 @@ function fornTxt(r){
   return cod&&nm?cod+' · '+nm:cod||nm||'—'}
 /* ═══ FICHA DO PRODUTO (folha do Framework7 que sobe de baixo; arraste para baixo para fechar)
    topo: situação + os 5 números principais · meio: entrega e datas (rolável, vazios em "Mais detalhes") · ações SEMPRE visíveis embaixo ═══ */
+/* v88: lotes do trânsito na ficha, com ajuste à mão (conferindo as notas de entrada) */
+function trLotesHtml(r){const g=trReg.reg[r.produto];if(!g)return '—';const L=(g.l&&g.l.length)?g.l:[{d:g.d,q:g.q,q0:g.q}];
+  return (g.cf?`<b style="color:var(--am)">⚠ teve entrada em ${isoBr(g.cf)} mas o trânsito não baixou — confira as notas</b><br>`:'')+
+   L.map((x,i)=>`<span class="tl-l">${isoBr(x.d)} · <b class="num">${f0(x.q)}</b> un${x.q0>x.q?` (de ${f0(x.q0)})`:''} <button type="button" class="lnk" data-lote="${i}" data-ac="tudo">chegou tudo</button> <button type="button" class="lnk" data-lote="${i}" data-ac="parte">chegou parte</button></span>`).join('<br>')}
 let fichaR=null;   // v74: a ficha aberta (a ajuda volta para ela)
 function openSheet(r){if(!r)return;fichaR=r;const kv=([a,b])=>`<div class="kv"><span>${a}</span><span>${b}</span></div>`;
  /* ═══ FICHA "MISTA" (nov/2026, v59): faixa na cor da situação com os dias de cobertura + 3 abas.
@@ -217,7 +221,8 @@ const tP0=r=>transitLoaded&&r._t>0;
      if(tP>0&&r._ct!==null&&r._ct<=999&&Math.floor(r._ct)>soE)nos.push([mais_(Math.floor(r._ct)),'com o trânsito','var(--crit)',0])}}
  const linha=`<div class="ftl"><small>Linha do tempo</small><div class="ftl-r">${nos.map(([d,t,c,f])=>`<div class="ftl-n"><i style="border-color:${c};${f?'background:'+c:''}"></i><b class="num">${dm(d)}</b><span>${t}</span></div>`).join('')}</div></div>`;
  const mov=[transitLoaded?['Em trânsito',tP>0?`${f0(tP)} un${cx(tP)}`:'nada a caminho']:null,
-   trDias(r)>=0?['Em trânsito desde',`${isoBr(trDesde(r))} · ${trDiasTxt(trDias(r))}${trDias(r)>=TR_ATRASO?' · <b style="color:var(--am)">atrasado</b>':''}`]:null,
+   trDias(r)>=0?['Em trânsito desde',`${isoBr(trDesde(r))} · ${trDiasTxt(trDias(r))}${trDias(r)>=TR_ATRASO?' · <b style="color:var(--am)">atrasado</b>':''}${(p=>p?` · <b>parcial</b>: chegaram ${f0(p.ch)} de ${f0(p.de)}, faltam ${f0(p.falta)}`:'')(trParcial(r))}`]:null,   // v88
+   trDias(r)>=0?['Lotes no trânsito',trLotesHtml(r)]:null,
    ['Última entrada',esc(dtTxt(r._ue,'sem registro'))],['Última venda',esc(dtTxt(r._uv,'sem venda registrada'))],
    ['Cobertura total (com o trânsito)',ctTxt==='—'?'—':ctTxt+' dias'],['Cobertura do relatório',r._c999?'999 no relatório (sem cálculo)':rcTxt?rcTxt+' dias':'—'],
    ['Entrega',entTxt(r)],x0.rcd?['Ruptura CD confirmada',`em ${isoBr(x0.rcd)}${rcdDias(x0)>0?' · há '+rcdDias(x0)+' dia'+(rcdDias(x0)>1?'s':''):''}`]:null].filter(Boolean);
@@ -259,5 +264,9 @@ const tP0=r=>transitLoaded&&r._t>0;
 
 
 /* v70: tocar no fornecedor da ficha (aba Cadastro) → Produtos com todos os itens dele */
+$('sheetc').addEventListener('click',e=>{const b=e.target.closest('[data-lote]');if(!b||!fichaR)return;const i=+b.dataset.lote,r=fichaR;
+  if(b.dataset.ac==='parte'){const v=prompt('Quantas unidades desse lote chegaram? (confira na nota de entrada)');const n=Math.round(+String(v||'').replace(',','.'));if(!(n>0))return;trAjusta(r.produto,i,n)}
+  else{if(!confirm('Esse lote chegou todo? O que ainda estiver em trânsito passa a contar da última entrada.'))return;trAjusta(r.produto,i)}
+  toast('Lotes do trânsito ajustados');openSheet(r);const t=document.querySelector('#sheetc [data-ft="mov"]');if(t)t.click()});
 $('sheetc').addEventListener('click',e=>{const b=e.target.closest('.kv-lnk[data-fg]');if(!b)return;const k=b.dataset.fg;closeSheet();
   setTimeout(()=>{F={chip:'all',cat:'',q:'',sort:F.sort,ent:ENT0};fgEnter(k)},380)});   // espera a ficha fechar (e o voltar do histórico) antes de trocar de tela

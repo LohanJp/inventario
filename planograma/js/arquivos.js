@@ -95,11 +95,31 @@ function trSumiu(r){const s=trReg.saiu[r.produto];if(!s||(transitLoaded&&r._t>0)
   const ref=isoDmy((estoqueMeta&&estoqueMeta.date)||currentMeta.date);return !(ref&&ref<s.d)}
 const trDiasTxt=n=>n<=0?'hoje':n===1?'1 dia':n+' dias';
 /* roda a cada relatório de Trânsito carregado por arquivo */
+/* ═══ v88 TRÂNSITO EM LOTES (regra do Lohan) ═══ só a quantidade em trânsito + a entrada registrada, sem venda estimada:
+   · o trânsito BAIXOU → a diferença chegou: sai do lote mais antigo até ele zerar, depois do seguinte (entrega parcial fica no lote antigo)
+   · o trânsito SUBIU  → a diferença é um pedido novo: lote separado com a data de hoje (não mistura com o antigo)
+   · teve ENTRADA e o trânsito NÃO baixou → marca "conferir" (pode ter chegado tudo e entrado pedido novo) — ajuste à mão na ficha */
+function trLotes(g,qN,r,d){
+  const L=(g.l&&g.l.length)?g.l.map(x=>({...x})):[{d:g.d,q:g.q,q0:g.q}],qV=L.reduce((s,x)=>s+x.q,0);
+  const u=String(g.u||g.d||''),ue=isoDmy(r&&r._ue),entrou=!!ue&&ue>u&&ue<=d;
+  if(qN<qV){let A=qV-qN;for(const x of L){if(A<=0)break;const t=Math.min(x.q,A);x.q-=t;A-=t}delete g.cf}
+  else{if(qN>qV)L.push({d,q:qN-qV,q0:qN-qV});if(entrou)g.cf=d}
+  const F=L.filter(x=>x.q>0);g.l=F;g.d=F.length?F[0].d:d;g.q=qN;if(r&&r._e!==null&&r._e!==undefined)g.e=r._e;g.u=d}
+/* lote mais antigo com entrega parcial → "chegaram X de Y" (ficha) */
+const trParcial=r=>{const g=transitLoaded&&r._t>0&&trReg.reg[r.produto];const x=g&&g.l&&g.l[0];return x&&x.q0>x.q?{ch:x.q0-x.q,de:x.q0,falta:x.q}:null};
+/* ajuste à mão (ficha): o lote i chegou todo ou em parte. O total em trânsito continua o do relatório: o que passar dos lotes é pedido novo */
+function trAjusta(p,i,qtd){const g=trReg.reg[p],r=byProd.get(p);if(!g)return;const L=(g.l&&g.l.length)?g.l:[{d:g.d,q:g.q,q0:g.q}],x=L[i];if(!x)return;
+  x.q=Math.max(0,x.q-(qtd===undefined?x.q:qtd));let F=L.filter(y=>y.q>0);const tot=r&&r._t>0?r._t:g.q,soma=F.reduce((s,y)=>s+y.q,0);
+  const cf0=g.cf;
+  if(tot>soma){const dd=cf0||String(trReg.last||'').split('~')[0]||today();F.push({d:dd,q:tot-soma,q0:tot-soma});F.sort((a,b)=>a.d<b.d?-1:1);F=F.reduce((o,y)=>{const z=o[o.length-1];if(z&&z.d===y.d){z.q+=y.q;z.q0+=y.q0}else o.push({...y});return o},[])}   // mesmo dia = um lote só   // o relatório ainda mostra essa quantidade em trânsito → o que passa dos lotes é pedido novo, do dia em que o trânsito não baixou
+  g.l=F;g.d=F.length?F[0].d:g.d;delete g.cf;
+  trReg.last=String(trReg.last||'').split('~')[0]+'~'+Date.now();   // carimbo de edição: os outros aparelhos recebem o ajuste
+  trDirty=true;trSalva();if(typeof trEnvia==='function')trEnvia()}
 function trAtualiza(){const d=isoDmy(transitMeta&&transitMeta.date)||today();
-  if(trReg.last&&d<trReg.last)return;                                   // relatório mais antigo que o último lido: não mexe nas datas
+  const lastD=String(trReg.last||'').split('~')[0];if(lastD&&d<lastD)return;   // relatório mais antigo que o último lido: não mexe nas datas ("~…" = carimbo de ajuste à mão)
   const {reg,saiu}=trReg,so=allRecords.length>0,tem=p=>transitMap[p]&&transitMap[p].qt_transito>0;
   for(const p in transitMap){if(!tem(p)||(so&&!byProd.has(p)))continue;const r=byProd.get(p),e=r?r._e:null,q=transitMap[p].qt_transito;
-    if(reg[p]){reg[p].q=q;if(e!==null)reg[p].e=e}else reg[p]={d,q,e};delete saiu[p]}
+    if(reg[p])trLotes(reg[p],q,r,d);else reg[p]={d,q,e,u:d,l:[{d,q,q0:q}]};delete saiu[p]}
   for(const p in reg)if(!tem(p)){saiu[p]={d,desde:reg[p].d,q:reg[p].q,e:reg[p].e};delete reg[p]}
   for(const p in saiu)if(isoDias(saiu[p].d,d)>TR_SAIU_DIAS)delete saiu[p];
   trReg.last=d;trDirty=true;trSalva();if(typeof trEnvia==='function')trEnvia()}

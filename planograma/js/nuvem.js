@@ -552,13 +552,14 @@ if('serviceWorker' in navigator&&/^https?:/.test(location.protocol)){/* ⚡ regi
   addEventListener('load',()=>idle(()=>navigator.serviceWorker.register('./sw.js').then(reg=>reg.update()).catch(()=>{})))}
 /* versão do app na aba Dados (nome do cache do SW, ex.: v34) — para conferir se o aparelho já pegou a atualização */
 /* APP_VER = versão do CÓDIGO que está rodando. ⚠ Mantenha igual ao V do sw.js (o teste de fumaça confere). */
-const APP_VER='v87';
+const APP_VER='v88';
 const verNum=v=>parseInt(String(v||'').replace(/\D/g,''),10)||0;   // 'v9' < 'v45' < 'v100' (comparação numérica, não alfabética)
 function mostraVersao(){const el=$('app-ver');if(el)el.textContent='Versão do app: '+APP_VER}
 addEventListener('load',()=>setTimeout(mostraVersao,3000));
 /* ═══ NOVIDADES (nov/2026): depois de atualizar, o Resumo mostra o que mudou (1 vez por versão). Na 1ª instalação não aparece.
    Ao publicar uma versão com mudança visível, acrescente aqui a chave da versão (a mesma do sw.js, ex.: 'v43'). ═══ */
 const NOVIDADES={
+  v88:['🚚 Trânsito em lotes: entrega parcial do CD continua contando os dias do que falta; pedido novo vira um lote separado; “⚠ confira” quando teve entrada e o trânsito não baixou, com ajuste à mão na ficha'],
   v87:['↩ Dias em trânsito voltam a contar desde o primeiro dia (a v86 zerava na entrada e escondia entrega parcial do CD)'],
   v86:['🔧 Dias em trânsito: se o item teve entrada no estoque depois que entrou no trânsito, a contagem recomeça da entrada (era uma remessa nova)'],
   v85:['☁️ Anexou, enviou: os relatórios carregados pelo botão vão para a nuvem sozinhos (como no Alt+R), sem tocar no aviso. O que não subir tenta de novo quando a internet volta e ao abrir o app'],
